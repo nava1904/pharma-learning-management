@@ -1,0 +1,20 @@
+### Electronic signature for 21 CFR Part 11 compliance.
+class: ElectronicSignature
+
+table: electronic_signature
+
+fields:
+  ### User who signed.
+  user: PharmaUser?, relation
+  ### Timestamp of signature (NTP-synced).
+  timestamp: DateTime, default=now
+  ### Signature meaning: "I have read and understood", "Verification", "Approval".
+  signatureMeaning: String
+  ### Hash of password re-authentication (for verification).
+  passwordReauthHash: String?
+  ### Entity type signed (e.g., training_record, certificate).
+  entityType: String
+  ### Entity ID signed.
+  entityId: String
+  ### IP address at time of signature.
+  ipAddress: String?

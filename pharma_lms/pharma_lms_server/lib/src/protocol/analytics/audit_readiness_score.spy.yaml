@@ -1,0 +1,8 @@
+### Audit readiness score.
+class: AuditReadinessScore
+
+fields:
+  complianceScore: double
+  auditTrailActive: bool
+  departmentCount: int
+  overallScore: double

@@ -1,0 +1,16 @@
+### User progress on material (video watch, scroll depth).
+class: MaterialProgress
+
+table: material_progress
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### The material.
+  material: Material?, relation
+  ### Progress percentage 0-100.
+  progressPct: int, default=0
+  ### When completed (null if in progress).
+  completedAt: DateTime?
+  ### Interaction data as JSON (watch/pause, scroll depth).
+  interactionJson: String?

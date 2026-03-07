@@ -1,0 +1,22 @@
+### Training assignment to user for a course version.
+class: TrainingAssignment
+
+table: training_assignment
+
+fields:
+  ### The user assigned.
+  user: PharmaUser?, relation
+  ### The course version to complete.
+  courseVersion: CourseVersion?, relation
+  ### Who assigned (user ID).
+  assignedBy: PharmaUser?, relation
+  ### When assigned.
+  assignedAt: DateTime, default=now
+  ### Due date.
+  dueDate: DateTime
+  ### Priority: low, medium, high.
+  priority: String, default='medium'
+  ### Reason for assignment.
+  reason: String?
+  ### Source: manual, sop_update, capa, onboarding.
+  source: String, default='manual'

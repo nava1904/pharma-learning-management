@@ -1,0 +1,14 @@
+### Controlled document (SOP, policy).
+class: Document
+
+table: document
+
+fields:
+  ### Document title.
+  title: String
+  ### Document number (e.g., SOP-105).
+  documentNumber: String
+  ### Type: sop, policy, guideline.
+  documentType: String
+  ### Organization for multi-tenant.
+  organization: Organization?, relation

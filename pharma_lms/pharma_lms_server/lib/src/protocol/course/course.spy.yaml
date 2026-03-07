@@ -1,0 +1,18 @@
+### Course entity - learning program container.
+class: Course
+
+table: course
+
+fields:
+  ### Course title.
+  title: String
+  ### SOP number if linked to SOP (e.g., SOP-105).
+  sopNumber: String?
+  ### Description.
+  description: String?
+  ### Status: draft, pending_qa, approved, archived.
+  status: String, default='draft'
+  ### User who created the course.
+  createdBy: PharmaUser?, relation(optional)
+  ### Organization for multi-tenant.
+  organization: Organization?, relation

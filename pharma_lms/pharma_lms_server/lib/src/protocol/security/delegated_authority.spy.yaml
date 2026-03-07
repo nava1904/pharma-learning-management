@@ -1,0 +1,14 @@
+### Delegated authority (e.g., supervisor delegates to delegatee).
+class: DelegatedAuthority
+
+table: delegated_authority
+
+fields:
+  ### Delegator user.
+  delegator: PharmaUser?, relation
+  ### Delegatee user.
+  delegatee: PharmaUser?, relation
+  ### Scope of delegation.
+  scope: String
+  ### When it expires.
+  expiresAt: DateTime

@@ -1,0 +1,12 @@
+### Feature flag for gradual rollout.
+class: FeatureFlag
+
+table: feature_flag
+
+fields:
+  ### Flag key.
+  key: String
+  ### Whether enabled.
+  enabled: bool, default=false
+  ### Organization (null for global).
+  organization: Organization?, relation(optional)

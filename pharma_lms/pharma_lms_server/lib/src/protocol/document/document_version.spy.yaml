@@ -1,0 +1,16 @@
+### Versioned document for lifecycle control.
+class: DocumentVersion
+
+table: document_version
+
+fields:
+  ### The document.
+  document: Document?, relation
+  ### Version string.
+  version: String
+  ### S3/MinIO storage key.
+  storageKey: String
+  ### When effective.
+  effectiveDate: DateTime?
+  ### When obsolete.
+  obsoleteDate: DateTime?

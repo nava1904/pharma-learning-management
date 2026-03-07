@@ -1,0 +1,18 @@
+### Enrollment - user's progress in a course version.
+class: Enrollment
+
+table: enrollment
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### The course version.
+  courseVersion: CourseVersion?, relation
+  ### The assignment that created this enrollment.
+  assignment: TrainingAssignment?, relation(optional)
+  ### Status: not_started, in_progress, completed, overdue.
+  status: String, default='not_started'
+  ### When started.
+  startedAt: DateTime?
+  ### When completed.
+  completedAt: DateTime?

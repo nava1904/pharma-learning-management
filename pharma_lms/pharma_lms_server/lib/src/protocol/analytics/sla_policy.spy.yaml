@@ -1,0 +1,12 @@
+### SLA policy for compliance monitoring.
+class: SlaPolicy
+
+table: sla_policy
+
+fields:
+  ### Metric (e.g., compliance_rate).
+  metric: String
+  ### Threshold (e.g., 90 for 90%).
+  threshold: double
+  ### Role to alert.
+  alertRole: Role?, relation

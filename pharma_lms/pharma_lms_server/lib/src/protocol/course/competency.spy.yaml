@@ -1,0 +1,12 @@
+### Competency/skill definition.
+class: Competency
+
+table: competency
+
+fields:
+  ### Competency name.
+  name: String
+  ### Unique code.
+  code: String
+  ### Level (1, 2, 3, etc.).
+  level: int?

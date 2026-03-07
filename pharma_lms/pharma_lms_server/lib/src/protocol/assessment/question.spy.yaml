@@ -1,0 +1,18 @@
+### Question in a question bank.
+class: Question
+
+table: question
+
+fields:
+  ### The question bank.
+  questionBank: QuestionBank?, relation
+  ### Question text.
+  text: String
+  ### Type: multiple_choice, true_false.
+  questionType: String
+  ### Options as JSON array.
+  optionsJson: String
+  ### Correct answer index or value.
+  correctAnswer: String
+  ### Difficulty: easy, medium, hard.
+  difficulty: String?

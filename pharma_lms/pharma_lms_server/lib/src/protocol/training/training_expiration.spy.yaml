@@ -1,0 +1,14 @@
+### Tracks certification expiry and renewal.
+class: TrainingExpiration
+
+table: training_expiration
+
+fields:
+  ### The certificate.
+  certificate: Certificate?, relation
+  ### When it expires.
+  expiresAt: DateTime
+  ### When reminder was sent.
+  reminderSentAt: DateTime?
+  ### Renewal assignment if created.
+  renewalAssignment: TrainingAssignment?, relation(optional)

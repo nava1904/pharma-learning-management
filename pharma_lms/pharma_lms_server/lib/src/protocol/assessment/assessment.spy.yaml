@@ -1,0 +1,16 @@
+### Assessment linked to course version.
+class: Assessment
+
+table: assessment
+
+fields:
+  ### The course version.
+  courseVersion: CourseVersion?, relation
+  ### The question bank.
+  questionBank: QuestionBank?, relation
+  ### Passing score percentage (e.g., 80).
+  passingScore: int
+  ### Whether to randomize questions.
+  randomize: bool, default=true
+  ### Time limit in minutes.
+  timeLimitMinutes: int?

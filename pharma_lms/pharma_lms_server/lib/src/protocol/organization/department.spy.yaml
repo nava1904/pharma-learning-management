@@ -1,0 +1,12 @@
+### Department within a site.
+class: Department
+
+table: department
+
+fields:
+  ### The site this department belongs to.
+  site: Site?, relation
+  ### Department name.
+  name: String
+  ### Unique code for the department.
+  code: String

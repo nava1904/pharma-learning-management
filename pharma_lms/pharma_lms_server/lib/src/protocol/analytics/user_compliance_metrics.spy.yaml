@@ -1,0 +1,9 @@
+### User compliance metrics.
+class: UserComplianceMetrics
+
+fields:
+  compliant: bool
+  overdueCount: int
+  upcomingCount: int
+  complianceRate: double
+  totalCertificates: int

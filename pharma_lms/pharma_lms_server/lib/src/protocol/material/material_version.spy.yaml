@@ -1,0 +1,14 @@
+### Versioned material for document control.
+class: MaterialVersion
+
+table: material_version
+
+fields:
+  ### The material.
+  material: Material?, relation
+  ### Version number.
+  version: int
+  ### Storage key for this version.
+  storageKey: String
+  ### When created.
+  createdAt: DateTime, default=now

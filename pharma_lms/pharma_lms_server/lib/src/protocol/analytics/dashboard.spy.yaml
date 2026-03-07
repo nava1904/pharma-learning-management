@@ -1,0 +1,12 @@
+### Dashboard configuration.
+class: Dashboard
+
+table: dashboard
+
+fields:
+  ### Dashboard name.
+  name: String
+  ### Widgets configuration as JSON.
+  widgetsJson: String
+  ### Role this dashboard is for.
+  role: Role?, relation(optional)

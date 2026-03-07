@@ -1,0 +1,16 @@
+### Individual question result within an attempt.
+class: AssessmentResult
+
+table: assessment_result
+
+fields:
+  ### The attempt.
+  attempt: AssessmentAttempt?, relation
+  ### The question.
+  question: Question?, relation
+  ### Answer given.
+  answer: String
+  ### Whether the answer was correct.
+  correct: bool
+  ### Points earned.
+  points: int?

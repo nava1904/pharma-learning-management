@@ -1,0 +1,10 @@
+### Links courses to competencies.
+class: CourseCompetency
+
+table: course_competency
+
+fields:
+  ### The course.
+  course: Course?, relation
+  ### The competency.
+  competency: Competency?, relation

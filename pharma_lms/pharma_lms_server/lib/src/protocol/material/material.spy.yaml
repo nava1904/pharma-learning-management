@@ -1,0 +1,14 @@
+### Learning material (PDF, video, SCORM).
+class: Material
+
+table: material
+
+fields:
+  ### Material title.
+  title: String
+  ### Type: pdf, video, scorm.
+  materialType: String
+  ### S3/MinIO storage key.
+  storageKey: String?
+  ### Organization for multi-tenant.
+  organization: Organization?, relation

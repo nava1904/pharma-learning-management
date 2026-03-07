@@ -1,0 +1,12 @@
+### System configuration key-value.
+class: SystemConfiguration
+
+table: system_configuration
+
+fields:
+  ### Configuration key.
+  key: String
+  ### Configuration value.
+  value: String
+  ### Organization (null for global).
+  organization: Organization?, relation(optional)

@@ -1,0 +1,10 @@
+### RBAC role for access control.
+class: Role
+
+table: role
+
+fields:
+  ### Role name (e.g., employee, admin, qa, sme).
+  name: String
+  ### Unique code for the role.
+  code: String

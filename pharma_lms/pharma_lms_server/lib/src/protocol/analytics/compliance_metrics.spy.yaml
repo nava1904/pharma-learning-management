@@ -1,0 +1,9 @@
+### Department compliance metrics.
+class: ComplianceMetrics
+
+fields:
+  totalEmployees: int
+  compliant: int
+  overdue: int
+  upcoming: int
+  complianceRate: double

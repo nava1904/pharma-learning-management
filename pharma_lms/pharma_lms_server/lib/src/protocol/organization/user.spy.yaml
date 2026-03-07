@@ -1,0 +1,26 @@
+### Pharma LMS user - links identity to organization hierarchy.
+class: PharmaUser
+
+table: pharma_user
+
+fields:
+  ### Primary identifier for login and notifications.
+  email: String
+  ### First name.
+  firstName: String
+  ### Last name.
+  lastName: String
+  ### The department this user belongs to.
+  department: Department?, relation
+  ### The job role for training matrix.
+  jobRole: JobRole?, relation
+  ### The site this user is assigned to.
+  site: Site?, relation
+  ### The organization this user belongs to.
+  organization: Organization?, relation
+  ### User status (active, inactive, suspended).
+  status: String, default='active'
+  ### When the user was created.
+  createdAt: DateTime, default=now
+  ### Optional link to serverpod auth user ID.
+  authUserId: int?

@@ -1,0 +1,18 @@
+### Access log for login, session, and access tracking.
+class: AccessLog
+
+table: access_log
+
+fields:
+  ### User who accessed (nullable for failed login).
+  user: PharmaUser?, relation(optional)
+  ### Action (login, logout, session_timeout).
+  action: String
+  ### IP address.
+  ipAddress: String?
+  ### User agent string.
+  userAgent: String?
+  ### Timestamp.
+  timestamp: DateTime, default=now
+  ### Whether the action succeeded.
+  success: bool, default=true

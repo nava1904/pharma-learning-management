@@ -1,0 +1,14 @@
+### Media asset (video, image) linked to material.
+class: MediaAsset
+
+table: media_asset
+
+fields:
+  ### The material.
+  material: Material?, relation
+  ### Type (video, image).
+  assetType: String
+  ### URL or storage path.
+  url: String
+  ### Duration in seconds for video.
+  durationSeconds: int?

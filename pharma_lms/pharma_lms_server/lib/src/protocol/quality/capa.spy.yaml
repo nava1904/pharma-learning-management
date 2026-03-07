@@ -1,0 +1,16 @@
+### CAPA - Corrective and Preventive Action.
+class: Capa
+
+table: capa
+
+fields:
+  ### The quality event.
+  qualityEvent: QualityEvent?, relation
+  ### Description.
+  description: String?
+  ### Root cause analysis.
+  rootCause: String?
+  ### Whether training is required.
+  trainingRequired: bool, default=false
+  ### Training assignment if created.
+  trainingAssignment: TrainingAssignment?, relation(optional)

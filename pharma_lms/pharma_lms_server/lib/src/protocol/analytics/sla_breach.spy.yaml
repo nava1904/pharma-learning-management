@@ -1,0 +1,12 @@
+### SLA breach record.
+class: SlaBreach
+
+table: sla_breach
+
+fields:
+  ### The SLA policy.
+  slaPolicy: SlaPolicy?, relation
+  ### When breached.
+  breachedAt: DateTime, default=now
+  ### When resolved (null if open).
+  resolvedAt: DateTime?

@@ -1,0 +1,18 @@
+### Training record - completion with e-signature. FDA 21 CFR Part 11.
+class: TrainingRecord
+
+table: training_record
+
+fields:
+  ### The enrollment this completes.
+  enrollment: Enrollment?, relation
+  ### The user.
+  user: PharmaUser?, relation
+  ### The course version completed.
+  courseVersion: CourseVersion?, relation
+  ### When completed.
+  completedAt: DateTime, default=now
+  ### Assessment score.
+  score: int?
+  ### Electronic signature for compliance.
+  esignature: ElectronicSignature?, relation

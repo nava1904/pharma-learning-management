@@ -1,0 +1,14 @@
+### Report definition for analytics.
+class: ReportDefinition
+
+table: report_definition
+
+fields:
+  ### Report name.
+  name: String
+  ### Report type.
+  reportType: String
+  ### Query SQL or template.
+  querySql: String?
+  ### Parameters as JSON.
+  paramsJson: String?

@@ -1,0 +1,16 @@
+### Lesson within a module.
+class: Lesson
+
+table: lesson
+
+fields:
+  ### The module.
+  module: Module?, relation
+  ### Lesson title.
+  title: String
+  ### Order index for display.
+  orderIndex: int, default=0
+  ### Linked material for content.
+  material: Material?, relation
+  ### Duration in minutes.
+  durationMinutes: int?

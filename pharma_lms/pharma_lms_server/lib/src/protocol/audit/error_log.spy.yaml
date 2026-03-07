@@ -1,0 +1,14 @@
+### Error log for system failures and exceptions.
+class: ErrorLog
+
+table: error_log
+
+fields:
+  ### Error message.
+  message: String
+  ### Stack trace.
+  stackTrace: String?
+  ### Additional context as JSON.
+  contextJson: String?
+  ### Timestamp.
+  timestamp: DateTime, default=now

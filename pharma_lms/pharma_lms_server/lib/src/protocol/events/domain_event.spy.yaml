@@ -1,0 +1,18 @@
+### Domain event for event-driven workflows.
+class: DomainEvent
+
+table: domain_event
+
+fields:
+  ### Event type.
+  eventType: String
+  ### Aggregate ID.
+  aggregateId: String
+  ### Payload as JSON.
+  payloadJson: String
+  ### When created.
+  createdAt: DateTime, default=now
+  ### When processed (null if pending).
+  processedAt: DateTime?
+  ### Kafka offset if published.
+  kafkaOffset: String?

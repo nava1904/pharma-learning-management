@@ -1,0 +1,14 @@
+### Job role with training matrix for role-based training assignment.
+class: JobRole
+
+table: job_role
+
+fields:
+  ### The department this job role belongs to.
+  department: Department?, relation
+  ### Job role name.
+  name: String
+  ### Unique code for the job role.
+  code: String
+  ### JSON mapping of required course IDs for this role (training matrix).
+  trainingMatrixJson: String?

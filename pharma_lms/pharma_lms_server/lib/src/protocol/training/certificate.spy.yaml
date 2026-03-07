@@ -1,0 +1,20 @@
+### Certificate issued after successful training.
+class: Certificate
+
+table: certificate
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### The course version.
+  courseVersion: CourseVersion?, relation
+  ### The training record.
+  trainingRecord: TrainingRecord?, relation
+  ### When issued.
+  issuedAt: DateTime, default=now
+  ### When it expires.
+  expiresAt: DateTime?
+  ### QR code for verification.
+  qrCode: String?
+  ### Electronic signature.
+  esignature: ElectronicSignature?, relation

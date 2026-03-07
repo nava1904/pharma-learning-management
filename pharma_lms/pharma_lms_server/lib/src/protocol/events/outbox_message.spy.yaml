@@ -1,0 +1,14 @@
+### Outbox pattern for reliable event publishing.
+class: OutboxMessage
+
+table: outbox_message
+
+fields:
+  ### Kafka topic.
+  topic: String
+  ### Payload as JSON.
+  payloadJson: String
+  ### When created.
+  createdAt: DateTime, default=now
+  ### When sent (null if pending).
+  sentAt: DateTime?

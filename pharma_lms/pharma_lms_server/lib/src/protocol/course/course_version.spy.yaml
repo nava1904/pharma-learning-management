@@ -1,0 +1,16 @@
+### Versioned course - immutable history for compliance.
+class: CourseVersion
+
+table: course_version
+
+fields:
+  ### The course.
+  course: Course?, relation
+  ### Version string (e.g., 1.0, 2.0).
+  version: String
+  ### When this version becomes effective.
+  effectiveDate: DateTime?
+  ### When this version is obsolete.
+  obsoleteDate: DateTime?
+  ### Status: draft, approved, effective, obsolete.
+  status: String, default='draft'

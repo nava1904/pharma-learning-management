@@ -1,0 +1,18 @@
+### User attempt at an assessment.
+class: AssessmentAttempt
+
+table: assessment_attempt
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### The assessment.
+  assessment: Assessment?, relation
+  ### Enrollment this attempt is for.
+  enrollment: Enrollment?, relation(optional)
+  ### When started.
+  startedAt: DateTime, default=now
+  ### When completed (null if in progress).
+  completedAt: DateTime?
+  ### Score achieved.
+  score: int?

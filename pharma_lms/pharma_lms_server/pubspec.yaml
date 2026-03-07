@@ -1,0 +1,41 @@
+name: pharma_lms_server
+description: Starting point for a Serverpod server.
+# version: 1.0.0
+# homepage: https://www.example.com
+
+environment:
+  sdk: '^3.8.0'
+
+resolution: workspace
+
+dependencies:
+  http: '>=1.1.0 <2.0.0'
+  serverpod: 3.4.1
+  serverpod_auth_core_server: 3.4.1
+  serverpod_auth_idp_server: 3.4.1
+
+dev_dependencies:
+  lints: '>=3.0.0 <7.0.0'
+  serverpod_cli: 3.4.1
+  serverpod_test: 3.4.1
+  test: ^1.25.5
+
+serverpod:
+  scripts:
+    # Starts the server and applies migrations
+    start: dart bin/main.dart --apply-migrations
+    # Seed sample data (call seed.runSeed via API or use "Seed sample data" on login)
+    seed: echo "Use the 'Seed sample data' button on the login screen, or call client.seed.runSeed()"
+
+    # Build the Flutter web app and copy it to the server's web directory.
+    # Windows uses xcopy since flutter's --output flag doesn't work there.
+    # See: https://github.com/flutter/flutter/issues/157886
+    flutter_build:
+      windows: >-
+        (if exist web\app rmdir /S /Q web\app)
+        & cd /D ..\pharma_lms_flutter
+        && flutter build web --base-href /app/ --wasm
+        && xcopy /E /I /Y build\web ..\pharma_lms_server\web\app
+      posix: |
+        cd ../pharma_lms_flutter
+        flutter build web --base-href /app/ --wasm --output ../pharma_lms_server/web/app

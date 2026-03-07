@@ -1,0 +1,12 @@
+### Module within a course version.
+class: Module
+
+table: module
+
+fields:
+  ### The course version.
+  courseVersion: CourseVersion?, relation
+  ### Module title.
+  title: String
+  ### Order index for display.
+  orderIndex: int, default=0

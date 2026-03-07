@@ -1,0 +1,123 @@
+emailIdp:
+  - login:
+  - startRegistration:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - startPasswordReset:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+admin:
+  - assignTrainingToDepartment:
+  - bulkImportUsers:
+  - updateJobRoleTrainingMatrix:
+  - getRoleBasedCurriculum:
+  - assignRoleBasedTraining:
+  - lockUserByEmail:
+  - unlockUserByEmail:
+analytics:
+  - getTrainingCompletionRate:
+  - getDepartmentComplianceSummary:
+  - getCertificationExpiryRiskCount:
+  - getAuditReadinessScore:
+  - listReportDefinitions:
+  - listDashboards:
+  - getOpenSlaBreaches:
+assessmentBuilder:
+  - createQuestion:
+  - updateQuestion:
+  - createAssessment:
+  - updateAssessment:
+assessment:
+  - getAssessmentForCourse:
+  - getQuestions:
+  - startAttempt:
+  - submitAttempt:
+  - recordAnswer:
+  - listQuestionBanks:
+  - createQuestionBank:
+audit:
+  - getAuditTrail:
+  - getAccessLogs:
+compliance:
+  - getDepartmentCompliance:
+  - getUserCompliance:
+  - isDepartmentBelowThreshold:
+courseBuilder:
+  - createModule:
+  - updateModule:
+  - createLesson:
+  - updateLesson:
+  - createCourseVersion:
+  - updateCourseVersionStatus:
+course:
+  - listCourses:
+  - getCourse:
+  - getCourseVersions:
+  - getCourseVersion:
+  - createCourse:
+  - getModulesForCourseVersion:
+  - getLessonsForModule:
+  - getLessonWithMaterial:
+document:
+  - listDocuments:
+  - getDocument:
+  - getDocumentVersions:
+  - createDocument:
+  - createDocumentVersion:
+  - getDocumentLifecycle:
+  - createApprovalStep:
+event:
+  - triggerSopUpdated:
+  - triggerEmployeeCreated:
+material:
+  - getMaterial:
+  - getMaterialViewUrl:
+  - createMaterial:
+  - getUploadDescription:
+  - verifyUpload:
+  - createMaterialVersion:
+  - getMaterialVersions:
+  - listMaterials:
+  - updateProgress:
+  - getProgress:
+notification:
+  - getInAppNotifications:
+organization:
+  - listOrganizations:
+  - getOrganization:
+  - createOrganization:
+  - listSites:
+  - listDepartments:
+  - listJobRoles:
+  - listUsers:
+qa:
+  - listPendingCourseVersions:
+  - approveCourseVersion:
+  - rejectCourseVersion:
+qualityEvent:
+  - listQualityEvents:
+  - getQualityEvent:
+  - createQualityEvent:
+  - createCapa:
+  - assignTrainingFromCapa:
+  - listInspectionReports:
+  - createInspectionReport:
+seed:
+  - runSeed:
+training:
+  - getAssignmentsForUser:
+  - assignTraining:
+  - getEnrollmentsForUser:
+  - getCertificatesForUser:
+  - getCertificateById:
+  - listElectronicSignatures:
+  - createTrainingSignature:
+  - completeTraining:
+user:
+  - getUser:
+  - getUserByEmail:
+greeting:
+  - hello:

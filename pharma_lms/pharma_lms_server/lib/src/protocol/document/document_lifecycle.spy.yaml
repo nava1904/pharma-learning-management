@@ -1,0 +1,14 @@
+### Document lifecycle state tracking.
+class: DocumentLifecycle
+
+table: document_lifecycle
+
+fields:
+  ### The document version.
+  documentVersion: DocumentVersion?, relation
+  ### State: draft, review, approved, effective, obsolete.
+  state: String
+  ### When changed.
+  changedAt: DateTime, default=now
+  ### Who changed (user ID).
+  changedBy: PharmaUser?, relation

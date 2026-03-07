@@ -1,0 +1,18 @@
+### Inspection report (FDA, etc.).
+class: InspectionReport
+
+table: inspection_report
+
+fields:
+  ### Organization.
+  organization: Organization?, relation
+  ### Site inspected.
+  site: Site?, relation(optional)
+  ### Inspector name/agency.
+  inspector: String?
+  ### Inspection date.
+  inspectionDate: DateTime?
+  ### Findings as JSON.
+  findingsJson: String?
+  ### Status.
+  status: String

@@ -1,0 +1,18 @@
+### Quality event (deviation, CAPA, change control).
+class: QualityEvent
+
+table: quality_event
+
+fields:
+  ### Type: deviation, capa, change_control.
+  eventType: String
+  ### External reference ID.
+  referenceId: String?
+  ### Title.
+  title: String
+  ### Status.
+  status: String
+  ### The site.
+  site: Site?, relation(optional)
+  ### When created.
+  createdAt: DateTime, default=now

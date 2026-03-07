@@ -1,0 +1,12 @@
+### Change control linking to document and training.
+class: ChangeControl
+
+table: change_control
+
+fields:
+  ### The quality event.
+  qualityEvent: QualityEvent?, relation
+  ### The document version changed.
+  documentVersion: DocumentVersion?, relation
+  ### Training trigger/assignment ID.
+  trainingTriggerId: int?

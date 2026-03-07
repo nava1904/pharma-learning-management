@@ -1,0 +1,12 @@
+### Multi-tenant root entity for enterprise pharma companies.
+class: Organization
+
+table: organization
+
+fields:
+  ### Organization name.
+  name: String
+  ### Unique code for the organization.
+  code: String
+  ### When the organization was created.
+  createdAt: DateTime, default=now

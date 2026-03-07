@@ -1,0 +1,10 @@
+### Links users to RBAC roles (many-to-many).
+class: UserRole
+
+table: user_role
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### The role assigned.
+  role: Role?, relation

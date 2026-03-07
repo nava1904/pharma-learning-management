@@ -1,0 +1,9 @@
+### In-app notification (assignment due/overdue).
+class: InAppNotification
+
+fields:
+  type: String
+  assignmentId: int?
+  courseTitle: String
+  dueDate: String
+  message: String

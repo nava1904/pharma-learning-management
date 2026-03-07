@@ -1,0 +1,14 @@
+### Physical site within an organization.
+class: Site
+
+table: site
+
+fields:
+  ### The organization this site belongs to.
+  organization: Organization?, relation
+  ### Site name.
+  name: String
+  ### Unique code for the site.
+  code: String
+  ### Timezone for the site (e.g., America/New_York).
+  timezone: String, default='UTC'

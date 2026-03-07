@@ -1,0 +1,18 @@
+### Approval workflow step for document version.
+class: ApprovalWorkflow
+
+table: approval_workflow
+
+fields:
+  ### The document version.
+  documentVersion: DocumentVersion?, relation
+  ### Step number.
+  step: int
+  ### Approver user.
+  approver: PharmaUser?, relation
+  ### Status: pending, approved, rejected.
+  status: String, default='pending'
+  ### When signed.
+  signedAt: DateTime?
+  ### Electronic signature.
+  esignature: ElectronicSignature?, relation(optional)

@@ -1,0 +1,12 @@
+### Permission linked to a role for RBAC.
+class: Permission
+
+table: permission
+
+fields:
+  ### The role this permission belongs to.
+  role: Role?, relation
+  ### Resource being protected (e.g., course, training, audit).
+  resource: String
+  ### Action allowed (e.g., read, write, approve).
+  action: String

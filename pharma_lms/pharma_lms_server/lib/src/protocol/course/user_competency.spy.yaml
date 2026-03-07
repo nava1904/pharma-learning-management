@@ -1,0 +1,14 @@
+### User's achieved competency with expiry.
+class: UserCompetency
+
+table: user_competency
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### The competency.
+  competency: Competency?, relation
+  ### When achieved.
+  achievedAt: DateTime, default=now
+  ### When it expires (if applicable).
+  expiresAt: DateTime?

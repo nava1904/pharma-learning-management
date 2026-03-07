@@ -1,0 +1,6 @@
+### Result of bulk user import.
+class: BulkImportResult
+
+fields:
+  imported: int
+  errors: List<String>

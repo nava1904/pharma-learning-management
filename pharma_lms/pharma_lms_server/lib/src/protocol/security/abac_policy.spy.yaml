@@ -1,0 +1,12 @@
+### ABAC policy for attribute-based access control.
+class: AbacPolicy
+
+table: abac_policy
+
+fields:
+  ### Policy name.
+  name: String
+  ### Rule as JSON.
+  ruleJson: String
+  ### Effect: allow, deny.
+  effect: String

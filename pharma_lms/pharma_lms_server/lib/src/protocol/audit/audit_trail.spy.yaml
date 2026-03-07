@@ -1,0 +1,24 @@
+### Immutable audit trail - append-only, no updates/deletes. FDA 21 CFR Part 11.
+class: AuditTrail
+
+table: audit_trail
+
+fields:
+  ### Entity type (e.g., course, training_record, document).
+  entityType: String
+  ### Entity ID.
+  entityId: String
+  ### Action performed (create, update, delete, approve).
+  action: String
+  ### Old value as JSON before change.
+  oldValueJson: String?
+  ### New value as JSON after change.
+  newValueJson: String?
+  ### Timestamp of the action.
+  timestamp: DateTime, default=now
+  ### User who performed the action.
+  user: PharmaUser?, relation(optional)
+  ### Reason for change (required for certain actions).
+  reason: String?
+  ### IP address.
+  ipAddress: String?
