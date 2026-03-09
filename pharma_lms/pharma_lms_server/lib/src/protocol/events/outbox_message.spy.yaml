@@ -12,3 +12,9 @@ fields:
   createdAt: DateTime, default=now
   ### When sent (null if pending).
   sentAt: DateTime?
+  ### Status: pending, processing, published, failed, dead_letter.
+  status: String, default='pending'
+  ### Retry count.
+  retryCount: int, default=0
+  ### Last error message.
+  lastError: String?

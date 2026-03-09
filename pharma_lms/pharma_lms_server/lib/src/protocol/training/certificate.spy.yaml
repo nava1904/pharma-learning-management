@@ -18,3 +18,5 @@ fields:
   qrCode: String?
   ### Electronic signature.
   esignature: ElectronicSignature?, relation
+  ### Status: active, obsolete, expired. Obsolete when course version superseded; expired when past expiresAt.
+  status: String, default='active'

@@ -14,3 +14,13 @@ fields:
   trainingRequired: bool, default=false
   ### Training assignment if created.
   trainingAssignment: TrainingAssignment?, relation(optional)
+  ### Lifecycle status: Initiation, Investigation, ActionPlanApproved, Implementation, Verification, Closed.
+  status: String, default='Initiation'
+  ### When RCA was completed.
+  rcaCompletedAt: DateTime?
+  ### When effectiveness check is due (30/60/90 days after training).
+  effectivenessCheckDue: DateTime?
+  ### When CAPA was closed.
+  closedAt: DateTime?
+  ### User who closed the CAPA.
+  closedById: int?

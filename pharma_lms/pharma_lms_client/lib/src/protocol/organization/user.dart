@@ -35,8 +35,14 @@ abstract class PharmaUser implements _i1.SerializableModel {
     String? status,
     DateTime? createdAt,
     this.authUserId,
+    this.employeeId,
+    this.hireDate,
+    this.managerId,
+    this.preferredLanguage,
+    String? timezone,
   }) : status = status ?? 'active',
-       createdAt = createdAt ?? DateTime.now();
+       createdAt = createdAt ?? DateTime.now(),
+       timezone = timezone ?? 'UTC';
 
   factory PharmaUser({
     int? id,
@@ -54,6 +60,11 @@ abstract class PharmaUser implements _i1.SerializableModel {
     String? status,
     DateTime? createdAt,
     int? authUserId,
+    String? employeeId,
+    DateTime? hireDate,
+    int? managerId,
+    String? preferredLanguage,
+    String? timezone,
   }) = _PharmaUserImpl;
 
   factory PharmaUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -89,6 +100,13 @@ abstract class PharmaUser implements _i1.SerializableModel {
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
       authUserId: jsonSerialization['authUserId'] as int?,
+      employeeId: jsonSerialization['employeeId'] as String?,
+      hireDate: jsonSerialization['hireDate'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['hireDate']),
+      managerId: jsonSerialization['managerId'] as int?,
+      preferredLanguage: jsonSerialization['preferredLanguage'] as String?,
+      timezone: jsonSerialization['timezone'] as String?,
     );
   }
 
@@ -135,6 +153,21 @@ abstract class PharmaUser implements _i1.SerializableModel {
   /// Optional link to serverpod auth user ID.
   int? authUserId;
 
+  /// HR system employee ID.
+  String? employeeId;
+
+  /// Hire date.
+  DateTime? hireDate;
+
+  /// Manager user ID.
+  int? managerId;
+
+  /// Preferred language code.
+  String? preferredLanguage;
+
+  /// User timezone (e.g., America/New_York).
+  String? timezone;
+
   /// Returns a shallow copy of this [PharmaUser]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -154,6 +187,11 @@ abstract class PharmaUser implements _i1.SerializableModel {
     String? status,
     DateTime? createdAt,
     int? authUserId,
+    String? employeeId,
+    DateTime? hireDate,
+    int? managerId,
+    String? preferredLanguage,
+    String? timezone,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -174,6 +212,11 @@ abstract class PharmaUser implements _i1.SerializableModel {
       'status': status,
       'createdAt': createdAt.toJson(),
       if (authUserId != null) 'authUserId': authUserId,
+      if (employeeId != null) 'employeeId': employeeId,
+      if (hireDate != null) 'hireDate': hireDate?.toJson(),
+      if (managerId != null) 'managerId': managerId,
+      if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
+      if (timezone != null) 'timezone': timezone,
     };
   }
 
@@ -202,6 +245,11 @@ class _PharmaUserImpl extends PharmaUser {
     String? status,
     DateTime? createdAt,
     int? authUserId,
+    String? employeeId,
+    DateTime? hireDate,
+    int? managerId,
+    String? preferredLanguage,
+    String? timezone,
   }) : super._(
          id: id,
          email: email,
@@ -218,6 +266,11 @@ class _PharmaUserImpl extends PharmaUser {
          status: status,
          createdAt: createdAt,
          authUserId: authUserId,
+         employeeId: employeeId,
+         hireDate: hireDate,
+         managerId: managerId,
+         preferredLanguage: preferredLanguage,
+         timezone: timezone,
        );
 
   /// Returns a shallow copy of this [PharmaUser]
@@ -240,6 +293,11 @@ class _PharmaUserImpl extends PharmaUser {
     String? status,
     DateTime? createdAt,
     Object? authUserId = _Undefined,
+    Object? employeeId = _Undefined,
+    Object? hireDate = _Undefined,
+    Object? managerId = _Undefined,
+    Object? preferredLanguage = _Undefined,
+    Object? timezone = _Undefined,
   }) {
     return PharmaUser(
       id: id is int? ? id : this.id,
@@ -261,6 +319,13 @@ class _PharmaUserImpl extends PharmaUser {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       authUserId: authUserId is int? ? authUserId : this.authUserId,
+      employeeId: employeeId is String? ? employeeId : this.employeeId,
+      hireDate: hireDate is DateTime? ? hireDate : this.hireDate,
+      managerId: managerId is int? ? managerId : this.managerId,
+      preferredLanguage: preferredLanguage is String?
+          ? preferredLanguage
+          : this.preferredLanguage,
+      timezone: timezone is String? ? timezone : this.timezone,
     );
   }
 }

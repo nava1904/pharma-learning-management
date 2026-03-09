@@ -1,18 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
+import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/app_shell.dart';
+import '../../widgets/course_card.dart';
 import '../../widgets/quick_action_button.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/stat_card.dart';
 
 /// Trainer/SME Dashboard: stats, quick actions, my courses.
 class TrainerDashboardScreen extends ConsumerWidget {
   const TrainerDashboardScreen({super.key});
+
+  static Future<void> _openAnalytics(BuildContext context, Course course) async {
+    if (course.id == null) return;
+    try {
+      final versions = await client.course.getCourseVersions(course.id!);
+      final effective = versions
+          .where((v) => v.status == 'effective')
+          .toList()
+        ..sort((a, b) => (b.id ?? 0).compareTo(a.id ?? 0));
+      final versionId = effective.isNotEmpty ? effective.first.id : null;
+      if (versionId != null && context.mounted) {
+        context.push(
+          '/trainer/course-analytics/$versionId',
+          extra: {'courseTitle': course.title},
+        );
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No effective course version for analytics'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,12 +126,10 @@ class TrainerDashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
 
                   // Quick Actions
-                  Text(
-                    'Quick Actions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.slate900,
-                        ),
+                  SectionHeader(
+                    icon: Icons.flash_on,
+                    title: 'Quick Actions',
+                    color: AppColors.indigo600,
                   ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
@@ -150,24 +181,16 @@ class TrainerDashboardScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // My Courses
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'My Courses',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.slate900,
-                            ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            context.push('/trainer/course-builder'),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('New Course'),
-                      ),
-                    ],
+                  // My Courses - Odoo-inspired card grid
+                  SectionHeader(
+                    icon: Icons.menu_book,
+                    title: 'My Courses',
+                    color: AppColors.teal600,
+                    action: ElevatedButton.icon(
+                      onPressed: () => context.push('/trainer/course-builder'),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('New Course'),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (myCourses.isEmpty)
@@ -175,7 +198,7 @@ class TrainerDashboardScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(48),
                       decoration: BoxDecoration(
                         color: AppColors.background,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.slate200),
                       ),
                       child: Column(
@@ -211,124 +234,59 @@ class TrainerDashboardScreen extends ConsumerWidget {
                       ),
                     )
                   else
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.slate200),
-                      ),
-                      child: Column(
-                        children: myCourses.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final course = entry.value;
-                          return Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: AppColors.slate200,
-                                  width:
-                                      index < myCourses.length - 1 ? 1 : 0,
-                                ),
-                              ),
-                            ),
-                            child: Row(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final crossAxisCount = constraints.maxWidth > 900
+                            ? 4
+                            : (constraints.maxWidth > 600
+                                ? 3
+                                : (constraints.maxWidth > 400 ? 2 : 1));
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 0.85,
+                          children: myCourses.map((course) {
+                            return Stack(
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            course.title,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.slate900,
-                                                ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: course.status == 'approved'
-                                                  ? const Color(0xFFDCFCE7)
-                                                  : course.status ==
-                                                          'pending_qa'
-                                                      ? const Color(0xFFFEF3C7)
-                                                      : AppColors.slate100,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: Text(
-                                              course.status
-                                                  .toUpperCase()
-                                                  .replaceAll('_', ' '),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w500,
-                                                    color: course.status ==
-                                                            'approved'
-                                                        ? const Color(0xFF166534)
-                                                        : course.status ==
-                                                                'pending_qa'
-                                                            ? const Color(
-                                                                0xFF854D0E)
-                                                            : AppColors
-                                                                .slate700,
-                                                  ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (course.description != null) ...[
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          course.description!,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: AppColors.slate600,
-                                              ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ],
+                                CourseCard(
+                                  title: course.title,
+                                  subtitle: course.description,
+                                  status: course.status
+                                      .toUpperCase()
+                                      .replaceAll('_', ' '),
+                                  onTap: () => context.push(
+                                    '/trainer/course-builder',
+                                    extra: course,
                                   ),
+                                  ctaLabel: 'Edit',
                                 ),
-                                Row(
-                                  children: [
-                                    TextButton(
-                                      onPressed: () => context.push(
-                                          '/trainer/course-builder',
-                                          extra: course),
-                                      child: const Text('Edit'),
-                                    ),
-                                    if (course.status == 'approved') ...[
-                                      const SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: () => context.push(
-                                            '/trainer/course-builder',
-                                            extra: course),
-                                        child: const Text('Update Version'),
+                                if (course.status == 'approved')
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: IconButton(
+                                        onPressed: () =>
+                                            _openAnalytics(context, course),
+                                        icon: const Icon(Icons.analytics,
+                                            size: 20),
+                                        tooltip: 'Analytics',
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: AppColors.slate100,
+                                          foregroundColor: AppColors.slate700,
+                                        ),
                                       ),
-                                    ],
-                                  ],
-                                ),
+                                    ),
+                                  ),
                               ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                   const SizedBox(height: 24),
 

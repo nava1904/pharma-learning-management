@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -197,14 +198,58 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               const SnackBar(content: Text('Assigned to department')));
         }
       } else if (user?.id != null && version?.id != null) {
-        await client.training.assignTraining(
-          userId: user!.id!,
-          courseVersionId: version!.id!,
-          assignedById: _assignedById,
-          dueDate: due,
-          priority: 'medium',
-          source: 'manual',
-        );
+        try {
+          await client.training.assignTraining(
+            userId: user!.id!,
+            courseVersionId: version!.id!,
+            assignedById: _assignedById,
+            dueDate: due,
+            priority: 'medium',
+            source: 'manual',
+            forceReassign: false,
+          );
+        } catch (e) {
+          final msg = e.toString();
+          if (mounted &&
+              msg.contains('active assignment') &&
+              msg.contains('forceReassign')) {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Duplicate Assignment'),
+                content: const Text(
+                  'User already has an active assignment for this course. '
+                  'Do you want to reassign?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Reassign'),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              await client.training.assignTraining(
+                userId: user!.id!,
+                courseVersionId: version!.id!,
+                assignedById: _assignedById,
+                dueDate: due,
+                priority: 'medium',
+                source: 'manual',
+                forceReassign: true,
+              );
+            } else {
+              rethrow;
+            }
+          } else {
+            rethrow;
+          }
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Assigned to user')));
@@ -258,6 +303,125 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     }
   }
 
+  Future<void> _showUserManagementDialog() async {
+    List<PharmaUser> users = [];
+    try {
+      users = await client.organization.listUsers();
+    } catch (_) {}
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('User Management'),
+        content: SizedBox(
+          width: 400,
+          child: users.isEmpty
+              ? const Text('No users found')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: users.length,
+                  itemBuilder: (context, i) {
+                    final u = users[i];
+                    final email = u.email;
+                    return ListTile(
+                      title: Text('${u.firstName} ${u.lastName}'),
+                      subtitle: Text(email),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              try {
+                                final ok = await client.admin.lockUserByEmail(email);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok ? 'User locked' : 'User not found',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed: $e')),
+                                  );
+                                }
+                              }
+                            },
+                            child: const Text('Lock'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              try {
+                                final ok = await client.admin.unlockUserByEmail(email);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok ? 'User unlocked' : 'User not found',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed: $e')),
+                                  );
+                                }
+                              }
+                            },
+                            child: const Text('Unlock'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSignatureMeaningsDialog() async {
+    List<SignatureMeaning> meanings = [];
+    try {
+      meanings = await client.admin.listSignatureMeanings();
+    } catch (_) {}
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _SignatureMeaningsDialog(
+        initialMeanings: meanings,
+        onCreate: (meaning, orderIndex) async {
+          await client.admin.createSignatureMeaning(
+            meaning: meaning,
+            isActive: true,
+            orderIndex: orderIndex,
+          );
+        },
+        onUpdate: (id, meaning, isActive, orderIndex) async {
+          await client.admin.updateSignatureMeaning(
+            id: id,
+            meaning: meaning,
+            isActive: isActive,
+            orderIndex: orderIndex,
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _exportComplianceReport() async {
     try {
       final summary = await client.analytics.getDepartmentComplianceSummary();
@@ -281,7 +445,25 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         ),
       );
 
-      final bytes = await pdf.save();
+      var bytes = await pdf.save();
+      final hash = sha256.convert(bytes).toString();
+      pdf.addPage(
+        pw.Page(
+          build: (ctx) => pw.Center(
+            child: pw.Text(
+              'Report Hash: $hash',
+              style: pw.TextStyle(fontSize: 10),
+            ),
+          ),
+        ),
+      );
+      bytes = await pdf.save();
+      try {
+        await client.audit.logReportExport(
+          reportType: 'compliance_report',
+          hashSha256: hash,
+        );
+      } catch (_) {}
       final result = await FilePicker.platform.saveFile(
         fileName: 'compliance-report-${DateTime.now().toIso8601String().split('T')[0]}.pdf',
         bytes: bytes,
@@ -324,6 +506,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           onAssignTraining: _showAssignmentWizard,
           onBulkImport: _bulkImport,
           onExportReport: _exportComplianceReport,
+          onManageSignatureMeanings: _showSignatureMeaningsDialog,
+          onManageUsers: _showUserManagementDialog,
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -355,6 +539,8 @@ class _AdminDashboardContent extends ConsumerWidget {
     required this.onAssignTraining,
     required this.onBulkImport,
     required this.onExportReport,
+    required this.onManageSignatureMeanings,
+    required this.onManageUsers,
   });
 
   final TextEditingController searchController;
@@ -364,18 +550,34 @@ class _AdminDashboardContent extends ConsumerWidget {
   final VoidCallback onAssignTraining;
   final VoidCallback onBulkImport;
   final VoidCallback onExportReport;
+  final VoidCallback onManageSignatureMeanings;
+  final VoidCallback onManageUsers;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(usersProvider);
     final coursesAsync = ref.watch(coursesProvider);
     final complianceAsync = ref.watch(departmentComplianceSummaryProvider);
+    final nonCompliantAsync = ref.watch(nonCompliantEmployeesProvider);
+    final upcomingExpAsync = ref.watch(upcomingExpirationsByDeptProvider);
+    final recentAssignAsync = ref.watch(recentAssignmentsProvider);
+    final openCapasAsync = ref.watch(openCapasRequiringTrainingProvider);
+    final pendingQaAsync = ref.watch(pendingQaApprovalsCountProvider);
+    final sopQueueAsync = ref.watch(sopRetrainingQueueProvider);
+    final dlqAsync = ref.watch(dlqFailureCountProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(usersProvider);
         ref.invalidate(coursesProvider);
         ref.invalidate(departmentComplianceSummaryProvider);
+        ref.invalidate(nonCompliantEmployeesProvider);
+        ref.invalidate(upcomingExpirationsByDeptProvider);
+        ref.invalidate(recentAssignmentsProvider);
+        ref.invalidate(openCapasRequiringTrainingProvider);
+        ref.invalidate(pendingQaApprovalsCountProvider);
+        ref.invalidate(sopRetrainingQueueProvider);
+        ref.invalidate(dlqFailureCountProvider);
       },
       child: ListView(
         padding: const EdgeInsets.all(24),
@@ -449,6 +651,79 @@ class _AdminDashboardContent extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
+          // Non-Compliant Employees list
+          nonCompliantAsync.when(
+            data: (employees) {
+              if (employees.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Non-Compliant Employees',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.slate900,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Column(
+                      children: employees.take(10).map((u) => ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.person_off, color: AppColors.destructive, size: 20),
+                        title: Text('${u.firstName} ${u.lastName}', style: const TextStyle(fontSize: 14)),
+                        subtitle: Text(u.email, style: const TextStyle(fontSize: 12)),
+                      )).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+
+          // Pending QA, Open CAPAs, Recent Assignments, SOP Queue, System Alerts
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              pendingQaAsync.when(
+                data: (c) => SizedBox(width: 160, child: StatCard(label: 'Pending QA', value: '$c', icon: Icons.pending_actions, iconBackgroundColor: const Color(0xFFFEF3C7), iconColor: const Color(0xFFD97706))),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              openCapasAsync.when(
+                data: (list) => SizedBox(width: 160, child: StatCard(label: 'Open CAPAs', value: '${list.length}', icon: Icons.assignment_late, iconBackgroundColor: const Color(0xFFFEE2E2), iconColor: AppColors.destructive)),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              recentAssignAsync.when(
+                data: (list) => SizedBox(width: 160, child: StatCard(label: 'Recent Assignments', value: '${list.length}', icon: Icons.assignment, iconBackgroundColor: AppColors.indigo100, iconColor: AppColors.indigo600)),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              sopQueueAsync.when(
+                data: (list) => SizedBox(width: 160, child: StatCard(label: 'SOP Retraining', value: '${list.length}', icon: Icons.update, iconBackgroundColor: const Color(0xFFE0E7FF), iconColor: const Color(0xFF4F46E5))),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              dlqAsync.when(
+                data: (c) => SizedBox(width: 160, child: StatCard(label: 'System Alerts', value: '$c', icon: Icons.warning, iconBackgroundColor: c > 0 ? const Color(0xFFFEE2E2) : AppColors.slate100, iconColor: c > 0 ? AppColors.destructive : AppColors.slate600)),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
           // Quick Actions
           Text(
             'Quick Actions',
@@ -489,6 +764,15 @@ class _AdminDashboardContent extends ConsumerWidget {
                     iconColor: const Color(0xFFD97706),
                   ),
                   QuickActionButton(
+                    label: 'Training Waivers',
+                    subtitle: 'Request, approve, or reject waivers',
+                    icon: Icons.verified_user,
+                    onPressed: () => context.push('/admin/training-waivers'),
+                    backgroundColor: const Color(0xFFDCFCE7),
+                    borderColor: const Color(0xFF86EFAC),
+                    iconColor: const Color(0xFF16A34A),
+                  ),
+                  QuickActionButton(
                     label: 'Create Course',
                     subtitle: 'Build new training module',
                     icon: Icons.menu_book,
@@ -505,6 +789,60 @@ class _AdminDashboardContent extends ConsumerWidget {
                     backgroundColor: const Color(0xFFFEF3C7),
                     borderColor: const Color(0xFFFDE047),
                     iconColor: const Color(0xFFD97706),
+                  ),
+                  QuickActionButton(
+                    label: 'E-Signature Meanings',
+                    subtitle: 'Configure 21 CFR Part 11 signature meanings',
+                    icon: Icons.draw,
+                    onPressed: onManageSignatureMeanings,
+                    backgroundColor: const Color(0xFFE0E7FF),
+                    borderColor: const Color(0xFFA5B4FC),
+                    iconColor: const Color(0xFF4F46E5),
+                  ),
+                  QuickActionButton(
+                    label: 'User Management',
+                    subtitle: 'Lock or unlock user accounts',
+                    icon: Icons.lock,
+                    onPressed: onManageUsers,
+                    backgroundColor: const Color(0xFFFEE2E2),
+                    borderColor: const Color(0xFFFECACA),
+                    iconColor: AppColors.destructive,
+                  ),
+                  QuickActionButton(
+                    label: 'Document Control',
+                    subtitle: 'SOPs, QA classification',
+                    icon: Icons.description,
+                    onPressed: () => context.push('/documents'),
+                    backgroundColor: const Color(0xFFE0E7FF),
+                    borderColor: const Color(0xFFA5B4FC),
+                    iconColor: const Color(0xFF4F46E5),
+                  ),
+                  QuickActionButton(
+                    label: 'Event Triggers',
+                    subtitle: 'Test workflows without Kafka',
+                    icon: Icons.play_arrow,
+                    onPressed: () => context.push('/event-triggers'),
+                    backgroundColor: const Color(0xFFF3E8FF),
+                    borderColor: const Color(0xFFE9D5FF),
+                    iconColor: const Color(0xFF7C3AED),
+                  ),
+                  QuickActionButton(
+                    label: 'Inspection Management',
+                    subtitle: 'Create auditor tokens & packages',
+                    icon: Icons.assignment,
+                    onPressed: () => context.push('/inspection-management'),
+                    backgroundColor: const Color(0xFFE0F2FE),
+                    borderColor: const Color(0xFF7DD3FC),
+                    iconColor: const Color(0xFF0284C7),
+                  ),
+                  QuickActionButton(
+                    label: 'System Health',
+                    subtitle: 'Job status, DLQ, DB connectivity',
+                    icon: Icons.health_and_safety,
+                    onPressed: () => context.push('/admin/health'),
+                    backgroundColor: const Color(0xFFF0FDF4),
+                    borderColor: const Color(0xFFBBF7D0),
+                    iconColor: const Color(0xFF15803D),
                   ),
                 ],
               );
@@ -800,6 +1138,143 @@ class _AdminDashboardContent extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SignatureMeaningsDialog extends StatefulWidget {
+  const _SignatureMeaningsDialog({
+    required this.initialMeanings,
+    required this.onCreate,
+    required this.onUpdate,
+  });
+
+  final List<SignatureMeaning> initialMeanings;
+  final Future<void> Function(String meaning, int orderIndex) onCreate;
+  final Future<void> Function(
+    int id,
+    String? meaning,
+    bool? isActive,
+    int? orderIndex,
+  ) onUpdate;
+
+  @override
+  State<_SignatureMeaningsDialog> createState() =>
+      _SignatureMeaningsDialogState();
+}
+
+class _SignatureMeaningsDialogState extends State<_SignatureMeaningsDialog> {
+  late List<SignatureMeaning> _meanings;
+  final _newMeaningController = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _meanings = List.from(widget.initialMeanings);
+  }
+
+  @override
+  void dispose() {
+    _newMeaningController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _add() async {
+    final text = _newMeaningController.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      await widget.onCreate(text, _meanings.length);
+      if (mounted) {
+        final updated =
+            await client.admin.listSignatureMeanings();
+        setState(() {
+          _meanings = updated;
+          _newMeaningController.clear();
+          _saving = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _toggleActive(SignatureMeaning m) async {
+    final id = m.id;
+    if (id == null) return;
+    setState(() => _saving = true);
+    try {
+      await widget.onUpdate(id, null, !m.isActive, null);
+      if (mounted) {
+        final updated = await client.admin.listSignatureMeanings();
+        setState(() {
+          _meanings = updated;
+          _saving = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('E-Signature Meanings'),
+      content: SizedBox(
+        width: 400,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Configure FDA-compliant signature meanings for 21 CFR Part 11.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              ..._meanings.map((m) => ListTile(
+                    title: Text(m.meaning),
+                    subtitle: Text(
+                      'Order: ${m.orderIndex} • ${m.isActive ? "Active" : "Inactive"}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    trailing: Switch(
+                      value: m.isActive,
+                      onChanged: _saving ? null : (_) => _toggleActive(m),
+                    ),
+                  )),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _newMeaningController,
+                      decoration: const InputDecoration(
+                        labelText: 'New meaning',
+                        border: OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => _add(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _saving ? null : _add,
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

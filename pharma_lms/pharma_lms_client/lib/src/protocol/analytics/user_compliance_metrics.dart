@@ -20,7 +20,8 @@ abstract class UserComplianceMetrics implements _i1.SerializableModel {
     required this.upcomingCount,
     required this.complianceRate,
     required this.totalCertificates,
-  });
+    int? waivedCount,
+  }) : waivedCount = waivedCount ?? 0;
 
   factory UserComplianceMetrics({
     required bool compliant,
@@ -28,6 +29,7 @@ abstract class UserComplianceMetrics implements _i1.SerializableModel {
     required int upcomingCount,
     required double complianceRate,
     required int totalCertificates,
+    int? waivedCount,
   }) = _UserComplianceMetricsImpl;
 
   factory UserComplianceMetrics.fromJson(
@@ -39,6 +41,7 @@ abstract class UserComplianceMetrics implements _i1.SerializableModel {
       upcomingCount: jsonSerialization['upcomingCount'] as int,
       complianceRate: (jsonSerialization['complianceRate'] as num).toDouble(),
       totalCertificates: jsonSerialization['totalCertificates'] as int,
+      waivedCount: jsonSerialization['waivedCount'] as int?,
     );
   }
 
@@ -52,6 +55,9 @@ abstract class UserComplianceMetrics implements _i1.SerializableModel {
 
   int totalCertificates;
 
+  /// ADM-07: Count of approved waivers (waived status in compliance).
+  int waivedCount;
+
   /// Returns a shallow copy of this [UserComplianceMetrics]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -61,6 +67,7 @@ abstract class UserComplianceMetrics implements _i1.SerializableModel {
     int? upcomingCount,
     double? complianceRate,
     int? totalCertificates,
+    int? waivedCount,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -71,6 +78,7 @@ abstract class UserComplianceMetrics implements _i1.SerializableModel {
       'upcomingCount': upcomingCount,
       'complianceRate': complianceRate,
       'totalCertificates': totalCertificates,
+      'waivedCount': waivedCount,
     };
   }
 
@@ -87,12 +95,14 @@ class _UserComplianceMetricsImpl extends UserComplianceMetrics {
     required int upcomingCount,
     required double complianceRate,
     required int totalCertificates,
+    int? waivedCount,
   }) : super._(
          compliant: compliant,
          overdueCount: overdueCount,
          upcomingCount: upcomingCount,
          complianceRate: complianceRate,
          totalCertificates: totalCertificates,
+         waivedCount: waivedCount,
        );
 
   /// Returns a shallow copy of this [UserComplianceMetrics]
@@ -105,6 +115,7 @@ class _UserComplianceMetricsImpl extends UserComplianceMetrics {
     int? upcomingCount,
     double? complianceRate,
     int? totalCertificates,
+    int? waivedCount,
   }) {
     return UserComplianceMetrics(
       compliant: compliant ?? this.compliant,
@@ -112,6 +123,7 @@ class _UserComplianceMetricsImpl extends UserComplianceMetrics {
       upcomingCount: upcomingCount ?? this.upcomingCount,
       complianceRate: complianceRate ?? this.complianceRate,
       totalCertificates: totalCertificates ?? this.totalCertificates,
+      waivedCount: waivedCount ?? this.waivedCount,
     );
   }
 }

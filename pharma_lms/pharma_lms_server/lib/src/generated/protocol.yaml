@@ -10,21 +10,41 @@ emailIdp:
 jwtRefresh:
   - refreshAccessToken:
 admin:
+  - listSignatureMeanings:
+  - createSignatureMeaning:
+  - updateSignatureMeaning:
   - assignTrainingToDepartment:
   - bulkImportUsers:
   - updateJobRoleTrainingMatrix:
   - getRoleBasedCurriculum:
   - assignRoleBasedTraining:
   - lockUserByEmail:
+  - requestTrainingWaiver:
+  - listTrainingWaivers:
+  - approveTrainingWaiver:
+  - rejectTrainingWaiver:
   - unlockUserByEmail:
 analytics:
+  - getCourseAnalytics:
   - getTrainingCompletionRate:
+  - getSystemHealth:
   - getDepartmentComplianceSummary:
   - getCertificationExpiryRiskCount:
   - getAuditReadinessScore:
   - listReportDefinitions:
   - listDashboards:
   - getOpenSlaBreaches:
+  - getNonCompliantEmployees:
+  - getUpcomingExpirationsByDepartment:
+  - getRecentAssignments:
+  - getOpenCapasRequiringTraining:
+  - getPendingQaApprovalsCount:
+  - getSopRetrainingQueue:
+  - getDlqFailureCount:
+  - getTrainingVsDeviationCorrelation:
+  - getComplianceDeviationOverlay:
+  - getSlaSummary:
+  - getRecentActivity:
 assessmentBuilder:
   - createQuestion:
   - updateQuestion:
@@ -39,7 +59,9 @@ assessment:
   - listQuestionBanks:
   - createQuestionBank:
 audit:
+  - logReportExport:
   - getAuditTrail:
+  - getConfigChangeLog:
   - getAccessLogs:
 compliance:
   - getDepartmentCompliance:
@@ -64,14 +86,27 @@ course:
 document:
   - listDocuments:
   - getDocument:
+  - updateDocumentQaClassification:
   - getDocumentVersions:
   - createDocument:
   - createDocumentVersion:
   - getDocumentLifecycle:
+  - transitionDocumentLifecycle:
   - createApprovalStep:
 event:
   - triggerSopUpdated:
   - triggerEmployeeCreated:
+  - triggerEmployeeTransferred:
+inspection:
+  - listInspectionRecords:
+  - createInspectionRecord:
+  - validateAuditorToken:
+  - logAuditorPageView:
+  - listInspectionPackages:
+  - generateInspectionPackage:
+  - signInspectionPackageAsOfficial:
+  - searchEmployeesForAudit:
+  - getSopTrainingCoverage:
 material:
   - getMaterial:
   - getMaterialViewUrl:
@@ -100,7 +135,10 @@ qa:
 qualityEvent:
   - listQualityEvents:
   - getQualityEvent:
+  - listCapas:
   - createQualityEvent:
+  - updateCapaStatus:
+  - closeCapa:
   - createCapa:
   - assignTrainingFromCapa:
   - listInspectionReports:
@@ -108,14 +146,23 @@ qualityEvent:
 seed:
   - runSeed:
 training:
+  - listSignatureMeanings:
   - getAssignmentsForUser:
   - assignTraining:
+  - updateAssignment:
+  - cancelAssignment:
   - getEnrollmentsForUser:
+  - getEnrollmentById:
+  - acknowledgeRetraining:
   - getCertificatesForUser:
+  - getTrainingRecordsForUser:
   - getCertificateById:
+  - getSignatureWithIntegrityCheck:
   - listElectronicSignatures:
   - createTrainingSignature:
   - completeTraining:
+  - listAnnotations:
+  - addAnnotation:
 user:
   - getUser:
   - getUserByEmail:

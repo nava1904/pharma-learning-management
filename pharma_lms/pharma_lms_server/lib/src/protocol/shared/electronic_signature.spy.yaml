@@ -18,3 +18,5 @@ fields:
   entityId: String
   ### IP address at time of signature.
   ipAddress: String?
+  ### HMAC for integrity verification (userId, entityType, entityId, timestamp, meaning).
+  integrityHash: String?

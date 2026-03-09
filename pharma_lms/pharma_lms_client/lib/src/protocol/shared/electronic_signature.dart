@@ -26,6 +26,7 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
     required this.entityType,
     required this.entityId,
     this.ipAddress,
+    this.integrityHash,
   }) : timestamp = timestamp ?? DateTime.now();
 
   factory ElectronicSignature({
@@ -38,6 +39,7 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
     required String entityType,
     required String entityId,
     String? ipAddress,
+    String? integrityHash,
   }) = _ElectronicSignatureImpl;
 
   factory ElectronicSignature.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -57,6 +59,7 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
       entityType: jsonSerialization['entityType'] as String,
       entityId: jsonSerialization['entityId'] as String,
       ipAddress: jsonSerialization['ipAddress'] as String?,
+      integrityHash: jsonSerialization['integrityHash'] as String?,
     );
   }
 
@@ -88,6 +91,9 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
   /// IP address at time of signature.
   String? ipAddress;
 
+  /// HMAC for integrity verification (userId, entityType, entityId, timestamp, meaning).
+  String? integrityHash;
+
   /// Returns a shallow copy of this [ElectronicSignature]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -101,6 +107,7 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
     String? entityType,
     String? entityId,
     String? ipAddress,
+    String? integrityHash,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -115,6 +122,7 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
       'entityType': entityType,
       'entityId': entityId,
       if (ipAddress != null) 'ipAddress': ipAddress,
+      if (integrityHash != null) 'integrityHash': integrityHash,
     };
   }
 
@@ -137,6 +145,7 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
     required String entityType,
     required String entityId,
     String? ipAddress,
+    String? integrityHash,
   }) : super._(
          id: id,
          userId: userId,
@@ -147,6 +156,7 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
          entityType: entityType,
          entityId: entityId,
          ipAddress: ipAddress,
+         integrityHash: integrityHash,
        );
 
   /// Returns a shallow copy of this [ElectronicSignature]
@@ -163,6 +173,7 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
     String? entityType,
     String? entityId,
     Object? ipAddress = _Undefined,
+    Object? integrityHash = _Undefined,
   }) {
     return ElectronicSignature(
       id: id is int? ? id : this.id,
@@ -176,6 +187,9 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
       entityType: entityType ?? this.entityType,
       entityId: entityId ?? this.entityId,
       ipAddress: ipAddress is String? ? ipAddress : this.ipAddress,
+      integrityHash: integrityHash is String?
+          ? integrityHash
+          : this.integrityHash,
     );
   }
 }

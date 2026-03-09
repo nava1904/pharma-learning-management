@@ -52,6 +52,65 @@ class _EsignatureVerificationScreenState
   DateTime? _from;
   DateTime? _to;
 
+  Future<void> _showIntegrityCheck(BuildContext context, int signatureId) async {
+    try {
+      final result = await client.training.getSignatureWithIntegrityCheck(
+        signatureId,
+      );
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            result.integrityViolation
+                ? 'INTEGRITY VIOLATION'
+                : 'Signature Verified',
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (result.integrityViolation)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'HMAC mismatch - possible tampering detected. '
+                    'Do not rely on this signature.',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              if (result.signature != null) ...[
+                Text('Meaning: ${result.signature!.signatureMeaning}'),
+                Text('Entity: ${result.signature!.entityType} / ${result.signature!.entityId}'),
+                Text('Time: ${result.signature!.timestamp.toIso8601String()}'),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verification failed: $e')),
+        );
+      }
+    }
+  }
+
   String _formatDate(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -191,10 +250,15 @@ class _EsignatureVerificationScreenState
                         ..._signatures.map((s) => Card(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
-                                leading: const Icon(
+                                leading: Icon(
                                   Icons.draw,
-                                  color: Colors.green,
+                                  color: s.integrityHash == null
+                                      ? Colors.orange
+                                      : Colors.green,
                                 ),
+                                onTap: s.id != null
+                                    ? () => _showIntegrityCheck(context, s.id!)
+                                    : null,
                                 title: Text(
                                   s.signatureMeaning,
                                   style: const TextStyle(

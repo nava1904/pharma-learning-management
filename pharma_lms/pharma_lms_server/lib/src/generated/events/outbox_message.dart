@@ -21,7 +21,12 @@ abstract class OutboxMessage
     required this.payloadJson,
     DateTime? createdAt,
     this.sentAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    String? status,
+    int? retryCount,
+    this.lastError,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       status = status ?? 'pending',
+       retryCount = retryCount ?? 0;
 
   factory OutboxMessage({
     int? id,
@@ -29,6 +34,9 @@ abstract class OutboxMessage
     required String payloadJson,
     DateTime? createdAt,
     DateTime? sentAt,
+    String? status,
+    int? retryCount,
+    String? lastError,
   }) = _OutboxMessageImpl;
 
   factory OutboxMessage.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -42,6 +50,9 @@ abstract class OutboxMessage
       sentAt: jsonSerialization['sentAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['sentAt']),
+      status: jsonSerialization['status'] as String?,
+      retryCount: jsonSerialization['retryCount'] as int?,
+      lastError: jsonSerialization['lastError'] as String?,
     );
   }
 
@@ -64,6 +75,15 @@ abstract class OutboxMessage
   /// When sent (null if pending).
   DateTime? sentAt;
 
+  /// Status: pending, processing, published, failed, dead_letter.
+  String status;
+
+  /// Retry count.
+  int retryCount;
+
+  /// Last error message.
+  String? lastError;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -76,6 +96,9 @@ abstract class OutboxMessage
     String? payloadJson,
     DateTime? createdAt,
     DateTime? sentAt,
+    String? status,
+    int? retryCount,
+    String? lastError,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -86,6 +109,9 @@ abstract class OutboxMessage
       'payloadJson': payloadJson,
       'createdAt': createdAt.toJson(),
       if (sentAt != null) 'sentAt': sentAt?.toJson(),
+      'status': status,
+      'retryCount': retryCount,
+      if (lastError != null) 'lastError': lastError,
     };
   }
 
@@ -98,6 +124,9 @@ abstract class OutboxMessage
       'payloadJson': payloadJson,
       'createdAt': createdAt.toJson(),
       if (sentAt != null) 'sentAt': sentAt?.toJson(),
+      'status': status,
+      'retryCount': retryCount,
+      if (lastError != null) 'lastError': lastError,
     };
   }
 
@@ -140,12 +169,18 @@ class _OutboxMessageImpl extends OutboxMessage {
     required String payloadJson,
     DateTime? createdAt,
     DateTime? sentAt,
+    String? status,
+    int? retryCount,
+    String? lastError,
   }) : super._(
          id: id,
          topic: topic,
          payloadJson: payloadJson,
          createdAt: createdAt,
          sentAt: sentAt,
+         status: status,
+         retryCount: retryCount,
+         lastError: lastError,
        );
 
   /// Returns a shallow copy of this [OutboxMessage]
@@ -158,6 +193,9 @@ class _OutboxMessageImpl extends OutboxMessage {
     String? payloadJson,
     DateTime? createdAt,
     Object? sentAt = _Undefined,
+    String? status,
+    int? retryCount,
+    Object? lastError = _Undefined,
   }) {
     return OutboxMessage(
       id: id is int? ? id : this.id,
@@ -165,6 +203,9 @@ class _OutboxMessageImpl extends OutboxMessage {
       payloadJson: payloadJson ?? this.payloadJson,
       createdAt: createdAt ?? this.createdAt,
       sentAt: sentAt is DateTime? ? sentAt : this.sentAt,
+      status: status ?? this.status,
+      retryCount: retryCount ?? this.retryCount,
+      lastError: lastError is String? ? lastError : this.lastError,
     );
   }
 }
@@ -193,6 +234,21 @@ class OutboxMessageUpdateTable extends _i1.UpdateTable<OutboxMessageTable> {
         table.sentAt,
         value,
       );
+
+  _i1.ColumnValue<String, String> status(String value) => _i1.ColumnValue(
+    table.status,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> retryCount(int value) => _i1.ColumnValue(
+    table.retryCount,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> lastError(String? value) => _i1.ColumnValue(
+    table.lastError,
+    value,
+  );
 }
 
 class OutboxMessageTable extends _i1.Table<int?> {
@@ -216,6 +272,20 @@ class OutboxMessageTable extends _i1.Table<int?> {
       'sentAt',
       this,
     );
+    status = _i1.ColumnString(
+      'status',
+      this,
+      hasDefault: true,
+    );
+    retryCount = _i1.ColumnInt(
+      'retryCount',
+      this,
+      hasDefault: true,
+    );
+    lastError = _i1.ColumnString(
+      'lastError',
+      this,
+    );
   }
 
   late final OutboxMessageUpdateTable updateTable;
@@ -232,6 +302,15 @@ class OutboxMessageTable extends _i1.Table<int?> {
   /// When sent (null if pending).
   late final _i1.ColumnDateTime sentAt;
 
+  /// Status: pending, processing, published, failed, dead_letter.
+  late final _i1.ColumnString status;
+
+  /// Retry count.
+  late final _i1.ColumnInt retryCount;
+
+  /// Last error message.
+  late final _i1.ColumnString lastError;
+
   @override
   List<_i1.Column> get columns => [
     id,
@@ -239,6 +318,9 @@ class OutboxMessageTable extends _i1.Table<int?> {
     payloadJson,
     createdAt,
     sentAt,
+    status,
+    retryCount,
+    lastError,
   ];
 }
 

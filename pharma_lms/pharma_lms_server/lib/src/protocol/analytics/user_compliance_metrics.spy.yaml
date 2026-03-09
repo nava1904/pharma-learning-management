@@ -7,3 +7,5 @@ fields:
   upcomingCount: int
   complianceRate: double
   totalCertificates: int
+  ### ADM-07: Count of approved waivers (waived status in compliance).
+  waivedCount: int, default=0

@@ -1,0 +1,22 @@
+### User session for login tracking. FDA 21 CFR Part 11.
+class: UserSession
+
+table: user_session
+
+fields:
+  ### The user.
+  user: PharmaUser?, relation
+  ### When session started.
+  startedAt: DateTime, default=now
+  ### When session ended.
+  endedAt: DateTime?
+  ### IP address at login.
+  ipAddress: String?
+  ### User agent string.
+  userAgent: String?
+  ### Device fingerprint.
+  deviceFingerprint: String?
+  ### How session ended: manual_logout, timeout, admin_revoke.
+  endReason: String?
+  ### Whether MFA was verified.
+  isMfaVerified: bool, default=false

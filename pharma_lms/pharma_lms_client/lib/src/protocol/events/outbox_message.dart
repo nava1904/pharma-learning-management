@@ -20,7 +20,12 @@ abstract class OutboxMessage implements _i1.SerializableModel {
     required this.payloadJson,
     DateTime? createdAt,
     this.sentAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    String? status,
+    int? retryCount,
+    this.lastError,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       status = status ?? 'pending',
+       retryCount = retryCount ?? 0;
 
   factory OutboxMessage({
     int? id,
@@ -28,6 +33,9 @@ abstract class OutboxMessage implements _i1.SerializableModel {
     required String payloadJson,
     DateTime? createdAt,
     DateTime? sentAt,
+    String? status,
+    int? retryCount,
+    String? lastError,
   }) = _OutboxMessageImpl;
 
   factory OutboxMessage.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -41,6 +49,9 @@ abstract class OutboxMessage implements _i1.SerializableModel {
       sentAt: jsonSerialization['sentAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['sentAt']),
+      status: jsonSerialization['status'] as String?,
+      retryCount: jsonSerialization['retryCount'] as int?,
+      lastError: jsonSerialization['lastError'] as String?,
     );
   }
 
@@ -61,6 +72,15 @@ abstract class OutboxMessage implements _i1.SerializableModel {
   /// When sent (null if pending).
   DateTime? sentAt;
 
+  /// Status: pending, processing, published, failed, dead_letter.
+  String status;
+
+  /// Retry count.
+  int retryCount;
+
+  /// Last error message.
+  String? lastError;
+
   /// Returns a shallow copy of this [OutboxMessage]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -70,6 +90,9 @@ abstract class OutboxMessage implements _i1.SerializableModel {
     String? payloadJson,
     DateTime? createdAt,
     DateTime? sentAt,
+    String? status,
+    int? retryCount,
+    String? lastError,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -80,6 +103,9 @@ abstract class OutboxMessage implements _i1.SerializableModel {
       'payloadJson': payloadJson,
       'createdAt': createdAt.toJson(),
       if (sentAt != null) 'sentAt': sentAt?.toJson(),
+      'status': status,
+      'retryCount': retryCount,
+      if (lastError != null) 'lastError': lastError,
     };
   }
 
@@ -98,12 +124,18 @@ class _OutboxMessageImpl extends OutboxMessage {
     required String payloadJson,
     DateTime? createdAt,
     DateTime? sentAt,
+    String? status,
+    int? retryCount,
+    String? lastError,
   }) : super._(
          id: id,
          topic: topic,
          payloadJson: payloadJson,
          createdAt: createdAt,
          sentAt: sentAt,
+         status: status,
+         retryCount: retryCount,
+         lastError: lastError,
        );
 
   /// Returns a shallow copy of this [OutboxMessage]
@@ -116,6 +148,9 @@ class _OutboxMessageImpl extends OutboxMessage {
     String? payloadJson,
     DateTime? createdAt,
     Object? sentAt = _Undefined,
+    String? status,
+    int? retryCount,
+    Object? lastError = _Undefined,
   }) {
     return OutboxMessage(
       id: id is int? ? id : this.id,
@@ -123,6 +158,9 @@ class _OutboxMessageImpl extends OutboxMessage {
       payloadJson: payloadJson ?? this.payloadJson,
       createdAt: createdAt ?? this.createdAt,
       sentAt: sentAt is DateTime? ? sentAt : this.sentAt,
+      status: status ?? this.status,
+      retryCount: retryCount ?? this.retryCount,
+      lastError: lastError is String? ? lastError : this.lastError,
     );
   }
 }

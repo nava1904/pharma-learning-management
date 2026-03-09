@@ -27,6 +27,7 @@ abstract class TrainingExpiration
     this.reminderSentAt,
     this.renewalAssignmentId,
     this.renewalAssignment,
+    this.expiryStage,
   });
 
   factory TrainingExpiration({
@@ -37,6 +38,7 @@ abstract class TrainingExpiration
     DateTime? reminderSentAt,
     int? renewalAssignmentId,
     _i3.TrainingAssignment? renewalAssignment,
+    String? expiryStage,
   }) = _TrainingExpirationImpl;
 
   factory TrainingExpiration.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -62,6 +64,7 @@ abstract class TrainingExpiration
           : _i4.Protocol().deserialize<_i3.TrainingAssignment>(
               jsonSerialization['renewalAssignment'],
             ),
+      expiryStage: jsonSerialization['expiryStage'] as String?,
     );
   }
 
@@ -88,6 +91,9 @@ abstract class TrainingExpiration
   /// Renewal assignment if created.
   _i3.TrainingAssignment? renewalAssignment;
 
+  /// Expiry ladder stage: 90d, 60d, 30d, 7d, expired (ADM-06).
+  String? expiryStage;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -102,6 +108,7 @@ abstract class TrainingExpiration
     DateTime? reminderSentAt,
     int? renewalAssignmentId,
     _i3.TrainingAssignment? renewalAssignment,
+    String? expiryStage,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -116,6 +123,7 @@ abstract class TrainingExpiration
         'renewalAssignmentId': renewalAssignmentId,
       if (renewalAssignment != null)
         'renewalAssignment': renewalAssignment?.toJson(),
+      if (expiryStage != null) 'expiryStage': expiryStage,
     };
   }
 
@@ -132,6 +140,7 @@ abstract class TrainingExpiration
         'renewalAssignmentId': renewalAssignmentId,
       if (renewalAssignment != null)
         'renewalAssignment': renewalAssignment?.toJsonForProtocol(),
+      if (expiryStage != null) 'expiryStage': expiryStage,
     };
   }
 
@@ -182,6 +191,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
     DateTime? reminderSentAt,
     int? renewalAssignmentId,
     _i3.TrainingAssignment? renewalAssignment,
+    String? expiryStage,
   }) : super._(
          id: id,
          certificateId: certificateId,
@@ -190,6 +200,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
          reminderSentAt: reminderSentAt,
          renewalAssignmentId: renewalAssignmentId,
          renewalAssignment: renewalAssignment,
+         expiryStage: expiryStage,
        );
 
   /// Returns a shallow copy of this [TrainingExpiration]
@@ -204,6 +215,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
     Object? reminderSentAt = _Undefined,
     Object? renewalAssignmentId = _Undefined,
     Object? renewalAssignment = _Undefined,
+    Object? expiryStage = _Undefined,
   }) {
     return TrainingExpiration(
       id: id is int? ? id : this.id,
@@ -221,6 +233,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
       renewalAssignment: renewalAssignment is _i3.TrainingAssignment?
           ? renewalAssignment
           : this.renewalAssignment?.copyWith(),
+      expiryStage: expiryStage is String? ? expiryStage : this.expiryStage,
     );
   }
 }
@@ -250,6 +263,11 @@ class TrainingExpirationUpdateTable
     table.renewalAssignmentId,
     value,
   );
+
+  _i1.ColumnValue<String, String> expiryStage(String? value) => _i1.ColumnValue(
+    table.expiryStage,
+    value,
+  );
 }
 
 class TrainingExpirationTable extends _i1.Table<int?> {
@@ -272,6 +290,10 @@ class TrainingExpirationTable extends _i1.Table<int?> {
       'renewalAssignmentId',
       this,
     );
+    expiryStage = _i1.ColumnString(
+      'expiryStage',
+      this,
+    );
   }
 
   late final TrainingExpirationUpdateTable updateTable;
@@ -291,6 +313,9 @@ class TrainingExpirationTable extends _i1.Table<int?> {
 
   /// Renewal assignment if created.
   _i3.TrainingAssignmentTable? _renewalAssignment;
+
+  /// Expiry ladder stage: 90d, 60d, 30d, 7d, expired (ADM-06).
+  late final _i1.ColumnString expiryStage;
 
   _i2.CertificateTable get certificate {
     if (_certificate != null) return _certificate!;
@@ -325,6 +350,7 @@ class TrainingExpirationTable extends _i1.Table<int?> {
     expiresAt,
     reminderSentAt,
     renewalAssignmentId,
+    expiryStage,
   ];
 
   @override

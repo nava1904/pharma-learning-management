@@ -28,6 +28,10 @@ abstract class MaterialProgress
     int? progressPct,
     this.completedAt,
     this.interactionJson,
+    this.materialVersionId,
+    this.enrollmentId,
+    this.timeSpentSeconds,
+    this.readTimeMet,
   }) : progressPct = progressPct ?? 0;
 
   factory MaterialProgress({
@@ -39,6 +43,10 @@ abstract class MaterialProgress
     int? progressPct,
     DateTime? completedAt,
     String? interactionJson,
+    int? materialVersionId,
+    int? enrollmentId,
+    int? timeSpentSeconds,
+    bool? readTimeMet,
   }) = _MaterialProgressImpl;
 
   factory MaterialProgress.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -63,6 +71,12 @@ abstract class MaterialProgress
               jsonSerialization['completedAt'],
             ),
       interactionJson: jsonSerialization['interactionJson'] as String?,
+      materialVersionId: jsonSerialization['materialVersionId'] as int?,
+      enrollmentId: jsonSerialization['enrollmentId'] as int?,
+      timeSpentSeconds: jsonSerialization['timeSpentSeconds'] as int?,
+      readTimeMet: jsonSerialization['readTimeMet'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['readTimeMet']),
     );
   }
 
@@ -92,6 +106,18 @@ abstract class MaterialProgress
   /// Interaction data as JSON (watch/pause, scroll depth).
   String? interactionJson;
 
+  /// Material version for retraining tracking.
+  int? materialVersionId;
+
+  /// Enrollment this progress belongs to.
+  int? enrollmentId;
+
+  /// Active engagement time in seconds.
+  int? timeSpentSeconds;
+
+  /// Whether minimum read time was met.
+  bool? readTimeMet;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -107,6 +133,10 @@ abstract class MaterialProgress
     int? progressPct,
     DateTime? completedAt,
     String? interactionJson,
+    int? materialVersionId,
+    int? enrollmentId,
+    int? timeSpentSeconds,
+    bool? readTimeMet,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -120,6 +150,10 @@ abstract class MaterialProgress
       'progressPct': progressPct,
       if (completedAt != null) 'completedAt': completedAt?.toJson(),
       if (interactionJson != null) 'interactionJson': interactionJson,
+      if (materialVersionId != null) 'materialVersionId': materialVersionId,
+      if (enrollmentId != null) 'enrollmentId': enrollmentId,
+      if (timeSpentSeconds != null) 'timeSpentSeconds': timeSpentSeconds,
+      if (readTimeMet != null) 'readTimeMet': readTimeMet,
     };
   }
 
@@ -135,6 +169,10 @@ abstract class MaterialProgress
       'progressPct': progressPct,
       if (completedAt != null) 'completedAt': completedAt?.toJson(),
       if (interactionJson != null) 'interactionJson': interactionJson,
+      if (materialVersionId != null) 'materialVersionId': materialVersionId,
+      if (enrollmentId != null) 'enrollmentId': enrollmentId,
+      if (timeSpentSeconds != null) 'timeSpentSeconds': timeSpentSeconds,
+      if (readTimeMet != null) 'readTimeMet': readTimeMet,
     };
   }
 
@@ -186,6 +224,10 @@ class _MaterialProgressImpl extends MaterialProgress {
     int? progressPct,
     DateTime? completedAt,
     String? interactionJson,
+    int? materialVersionId,
+    int? enrollmentId,
+    int? timeSpentSeconds,
+    bool? readTimeMet,
   }) : super._(
          id: id,
          userId: userId,
@@ -195,6 +237,10 @@ class _MaterialProgressImpl extends MaterialProgress {
          progressPct: progressPct,
          completedAt: completedAt,
          interactionJson: interactionJson,
+         materialVersionId: materialVersionId,
+         enrollmentId: enrollmentId,
+         timeSpentSeconds: timeSpentSeconds,
+         readTimeMet: readTimeMet,
        );
 
   /// Returns a shallow copy of this [MaterialProgress]
@@ -210,6 +256,10 @@ class _MaterialProgressImpl extends MaterialProgress {
     int? progressPct,
     Object? completedAt = _Undefined,
     Object? interactionJson = _Undefined,
+    Object? materialVersionId = _Undefined,
+    Object? enrollmentId = _Undefined,
+    Object? timeSpentSeconds = _Undefined,
+    Object? readTimeMet = _Undefined,
   }) {
     return MaterialProgress(
       id: id is int? ? id : this.id,
@@ -224,6 +274,14 @@ class _MaterialProgressImpl extends MaterialProgress {
       interactionJson: interactionJson is String?
           ? interactionJson
           : this.interactionJson,
+      materialVersionId: materialVersionId is int?
+          ? materialVersionId
+          : this.materialVersionId,
+      enrollmentId: enrollmentId is int? ? enrollmentId : this.enrollmentId,
+      timeSpentSeconds: timeSpentSeconds is int?
+          ? timeSpentSeconds
+          : this.timeSpentSeconds,
+      readTimeMet: readTimeMet is bool? ? readTimeMet : this.readTimeMet,
     );
   }
 }
@@ -258,6 +316,26 @@ class MaterialProgressUpdateTable
         table.interactionJson,
         value,
       );
+
+  _i1.ColumnValue<int, int> materialVersionId(int? value) => _i1.ColumnValue(
+    table.materialVersionId,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> enrollmentId(int? value) => _i1.ColumnValue(
+    table.enrollmentId,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> timeSpentSeconds(int? value) => _i1.ColumnValue(
+    table.timeSpentSeconds,
+    value,
+  );
+
+  _i1.ColumnValue<bool, bool> readTimeMet(bool? value) => _i1.ColumnValue(
+    table.readTimeMet,
+    value,
+  );
 }
 
 class MaterialProgressTable extends _i1.Table<int?> {
@@ -285,6 +363,22 @@ class MaterialProgressTable extends _i1.Table<int?> {
       'interactionJson',
       this,
     );
+    materialVersionId = _i1.ColumnInt(
+      'materialVersionId',
+      this,
+    );
+    enrollmentId = _i1.ColumnInt(
+      'enrollmentId',
+      this,
+    );
+    timeSpentSeconds = _i1.ColumnInt(
+      'timeSpentSeconds',
+      this,
+    );
+    readTimeMet = _i1.ColumnBool(
+      'readTimeMet',
+      this,
+    );
   }
 
   late final MaterialProgressUpdateTable updateTable;
@@ -307,6 +401,18 @@ class MaterialProgressTable extends _i1.Table<int?> {
 
   /// Interaction data as JSON (watch/pause, scroll depth).
   late final _i1.ColumnString interactionJson;
+
+  /// Material version for retraining tracking.
+  late final _i1.ColumnInt materialVersionId;
+
+  /// Enrollment this progress belongs to.
+  late final _i1.ColumnInt enrollmentId;
+
+  /// Active engagement time in seconds.
+  late final _i1.ColumnInt timeSpentSeconds;
+
+  /// Whether minimum read time was met.
+  late final _i1.ColumnBool readTimeMet;
 
   _i2.PharmaUserTable get user {
     if (_user != null) return _user!;
@@ -342,6 +448,10 @@ class MaterialProgressTable extends _i1.Table<int?> {
     progressPct,
     completedAt,
     interactionJson,
+    materialVersionId,
+    enrollmentId,
+    timeSpentSeconds,
+    readTimeMet,
   ];
 
   @override

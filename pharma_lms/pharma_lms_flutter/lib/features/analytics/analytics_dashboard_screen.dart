@@ -3,6 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
+import '../../core/theme/app_colors.dart';
+import '../../widgets/section_header.dart';
 
 /// Analytics dashboard with fl_chart and real API calls.
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -19,6 +21,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   int _certExpiryRisk = 0;
   AuditReadinessScore? _auditReadiness;
   List<SlaBreach> _openBreaches = [];
+  Map<String, dynamic>? _trainingDeviationCorrelation;
+  Map<String, dynamic>? _slaSummary;
+  Map<String, dynamic>? _complianceDeviationOverlay;
   bool _loading = true;
   String? _error;
 
@@ -39,6 +44,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       final certRisk = await client.analytics.getCertificationExpiryRiskCount();
       final readiness = await client.analytics.getAuditReadinessScore();
       final breaches = await client.analytics.getOpenSlaBreaches();
+      final correlation = await client.analytics.getTrainingVsDeviationCorrelation();
+      final slaSummary = await client.analytics.getSlaSummary();
+      final overlay = await client.analytics.getComplianceDeviationOverlay();
 
       setState(() {
         _completionRates = completion;
@@ -46,6 +54,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         _certExpiryRisk = certRisk;
         _auditReadiness = readiness;
         _openBreaches = breaches;
+        _trainingDeviationCorrelation = correlation;
+        _slaSummary = slaSummary;
+        _complianceDeviationOverlay = overlay;
         _loading = false;
       });
     } catch (e) {
@@ -85,8 +96,14 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
           children: [
+            SectionHeader(
+              icon: Icons.analytics,
+              title: 'Analytics Overview',
+              color: AppColors.indigo600,
+            ),
+            const SizedBox(height: 16),
             if (_auditReadiness != null)
               Card(
                 child: Padding(
@@ -263,6 +280,105 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 ),
               ),
             ),
+            if (_trainingDeviationCorrelation != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CAPA Effectiveness',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${((_trainingDeviationCorrelation!['capaEffectivenessRate'] as num?) ?? 0) * 100}% (${_trainingDeviationCorrelation!['closedCapas'] ?? 0}/${_trainingDeviationCorrelation!['totalCapas'] ?? 0} closed)',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_slaSummary != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SLA Summary',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Policies: ${_slaSummary!['policyCount'] ?? 0} | '
+                        'Open breaches: ${_slaSummary!['openBreachCount'] ?? 0}',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_complianceDeviationOverlay != null &&
+                (_complianceDeviationOverlay!['highRiskDepartments'] as List?)?.isNotEmpty == true) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: const Color(0xFFFEF2F2),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber, color: Color(0xFFDC2626)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'High Risk Departments',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: const Color(0xFF991B1B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...((_complianceDeviationOverlay!['highRiskDepartments'] as List?) ?? []).map((d) {
+                        final m = d as Map<String, dynamic>;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(m['departmentName'] ?? ''),
+                              ),
+                              Text(
+                                '${((m['complianceRate'] as num?) ?? 0) * 100}%',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFDC2626),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Overdue: ${m['overdue'] ?? 0}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             if (_openBreaches.isNotEmpty) ...[
               const SizedBox(height: 16),
               Card(

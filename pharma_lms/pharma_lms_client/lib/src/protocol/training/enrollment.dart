@@ -14,7 +14,8 @@ import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import '../organization/user.dart' as _i2;
 import '../course/course_version.dart' as _i3;
 import '../training/training_assignment.dart' as _i4;
-import 'package:pharma_lms_client/src/protocol/protocol.dart' as _i5;
+import '../shared/electronic_signature.dart' as _i5;
+import 'package:pharma_lms_client/src/protocol/protocol.dart' as _i6;
 
 /// Enrollment - user's progress in a course version.
 abstract class Enrollment implements _i1.SerializableModel {
@@ -29,6 +30,10 @@ abstract class Enrollment implements _i1.SerializableModel {
     String? status,
     this.startedAt,
     this.completedAt,
+    this.retrainingChangeSummary,
+    this.acknowledgedAt,
+    this.acknowledgementEsignatureId,
+    this.acknowledgementEsignature,
   }) : status = status ?? 'not_started';
 
   factory Enrollment({
@@ -42,6 +47,10 @@ abstract class Enrollment implements _i1.SerializableModel {
     String? status,
     DateTime? startedAt,
     DateTime? completedAt,
+    String? retrainingChangeSummary,
+    DateTime? acknowledgedAt,
+    int? acknowledgementEsignatureId,
+    _i5.ElectronicSignature? acknowledgementEsignature,
   }) = _EnrollmentImpl;
 
   factory Enrollment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -50,19 +59,19 @@ abstract class Enrollment implements _i1.SerializableModel {
       userId: jsonSerialization['userId'] as int,
       user: jsonSerialization['user'] == null
           ? null
-          : _i5.Protocol().deserialize<_i2.PharmaUser>(
+          : _i6.Protocol().deserialize<_i2.PharmaUser>(
               jsonSerialization['user'],
             ),
       courseVersionId: jsonSerialization['courseVersionId'] as int,
       courseVersion: jsonSerialization['courseVersion'] == null
           ? null
-          : _i5.Protocol().deserialize<_i3.CourseVersion>(
+          : _i6.Protocol().deserialize<_i3.CourseVersion>(
               jsonSerialization['courseVersion'],
             ),
       assignmentId: jsonSerialization['assignmentId'] as int?,
       assignment: jsonSerialization['assignment'] == null
           ? null
-          : _i5.Protocol().deserialize<_i4.TrainingAssignment>(
+          : _i6.Protocol().deserialize<_i4.TrainingAssignment>(
               jsonSerialization['assignment'],
             ),
       status: jsonSerialization['status'] as String?,
@@ -73,6 +82,21 @@ abstract class Enrollment implements _i1.SerializableModel {
           ? null
           : _i1.DateTimeJsonExtension.fromJson(
               jsonSerialization['completedAt'],
+            ),
+      retrainingChangeSummary:
+          jsonSerialization['retrainingChangeSummary'] as String?,
+      acknowledgedAt: jsonSerialization['acknowledgedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['acknowledgedAt'],
+            ),
+      acknowledgementEsignatureId:
+          jsonSerialization['acknowledgementEsignatureId'] as int?,
+      acknowledgementEsignature:
+          jsonSerialization['acknowledgementEsignature'] == null
+          ? null
+          : _i6.Protocol().deserialize<_i5.ElectronicSignature>(
+              jsonSerialization['acknowledgementEsignature'],
             ),
     );
   }
@@ -106,6 +130,17 @@ abstract class Enrollment implements _i1.SerializableModel {
   /// When completed.
   DateTime? completedAt;
 
+  /// For retraining: change summary from document/course version (EMP-10).
+  String? retrainingChangeSummary;
+
+  /// When user acknowledged retraining change summary.
+  DateTime? acknowledgedAt;
+
+  int? acknowledgementEsignatureId;
+
+  /// E-signature for retraining acknowledgement.
+  _i5.ElectronicSignature? acknowledgementEsignature;
+
   /// Returns a shallow copy of this [Enrollment]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -120,6 +155,10 @@ abstract class Enrollment implements _i1.SerializableModel {
     String? status,
     DateTime? startedAt,
     DateTime? completedAt,
+    String? retrainingChangeSummary,
+    DateTime? acknowledgedAt,
+    int? acknowledgementEsignatureId,
+    _i5.ElectronicSignature? acknowledgementEsignature,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -135,6 +174,13 @@ abstract class Enrollment implements _i1.SerializableModel {
       'status': status,
       if (startedAt != null) 'startedAt': startedAt?.toJson(),
       if (completedAt != null) 'completedAt': completedAt?.toJson(),
+      if (retrainingChangeSummary != null)
+        'retrainingChangeSummary': retrainingChangeSummary,
+      if (acknowledgedAt != null) 'acknowledgedAt': acknowledgedAt?.toJson(),
+      if (acknowledgementEsignatureId != null)
+        'acknowledgementEsignatureId': acknowledgementEsignatureId,
+      if (acknowledgementEsignature != null)
+        'acknowledgementEsignature': acknowledgementEsignature?.toJson(),
     };
   }
 
@@ -158,6 +204,10 @@ class _EnrollmentImpl extends Enrollment {
     String? status,
     DateTime? startedAt,
     DateTime? completedAt,
+    String? retrainingChangeSummary,
+    DateTime? acknowledgedAt,
+    int? acknowledgementEsignatureId,
+    _i5.ElectronicSignature? acknowledgementEsignature,
   }) : super._(
          id: id,
          userId: userId,
@@ -169,6 +219,10 @@ class _EnrollmentImpl extends Enrollment {
          status: status,
          startedAt: startedAt,
          completedAt: completedAt,
+         retrainingChangeSummary: retrainingChangeSummary,
+         acknowledgedAt: acknowledgedAt,
+         acknowledgementEsignatureId: acknowledgementEsignatureId,
+         acknowledgementEsignature: acknowledgementEsignature,
        );
 
   /// Returns a shallow copy of this [Enrollment]
@@ -186,6 +240,10 @@ class _EnrollmentImpl extends Enrollment {
     String? status,
     Object? startedAt = _Undefined,
     Object? completedAt = _Undefined,
+    Object? retrainingChangeSummary = _Undefined,
+    Object? acknowledgedAt = _Undefined,
+    Object? acknowledgementEsignatureId = _Undefined,
+    Object? acknowledgementEsignature = _Undefined,
   }) {
     return Enrollment(
       id: id is int? ? id : this.id,
@@ -202,6 +260,19 @@ class _EnrollmentImpl extends Enrollment {
       status: status ?? this.status,
       startedAt: startedAt is DateTime? ? startedAt : this.startedAt,
       completedAt: completedAt is DateTime? ? completedAt : this.completedAt,
+      retrainingChangeSummary: retrainingChangeSummary is String?
+          ? retrainingChangeSummary
+          : this.retrainingChangeSummary,
+      acknowledgedAt: acknowledgedAt is DateTime?
+          ? acknowledgedAt
+          : this.acknowledgedAt,
+      acknowledgementEsignatureId: acknowledgementEsignatureId is int?
+          ? acknowledgementEsignatureId
+          : this.acknowledgementEsignatureId,
+      acknowledgementEsignature:
+          acknowledgementEsignature is _i5.ElectronicSignature?
+          ? acknowledgementEsignature
+          : this.acknowledgementEsignature?.copyWith(),
     );
   }
 }

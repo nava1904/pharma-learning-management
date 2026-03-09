@@ -1,0 +1,22 @@
+### Import log for bulk operations. FDA 21 CFR Part 11.
+class: ImportLog
+
+table: import_log
+
+fields:
+  ### Who performed the import.
+  importedBy: PharmaUser?, relation
+  ### Import type: employee, course, assignment.
+  importType: String
+  ### Original filename.
+  filename: String?
+  ### Total records in file.
+  recordCount: int?
+  ### Successfully imported count.
+  successCount: int?
+  ### Failed count.
+  failureCount: int?
+  ### Failure details as JSON.
+  failureDetailsJson: String?
+  ### When imported.
+  importedAt: DateTime, default=now

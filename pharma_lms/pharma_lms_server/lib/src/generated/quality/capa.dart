@@ -27,7 +27,13 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     bool? trainingRequired,
     this.trainingAssignmentId,
     this.trainingAssignment,
-  }) : trainingRequired = trainingRequired ?? false;
+    String? status,
+    this.rcaCompletedAt,
+    this.effectivenessCheckDue,
+    this.closedAt,
+    this.closedById,
+  }) : trainingRequired = trainingRequired ?? false,
+       status = status ?? 'Initiation';
 
   factory Capa({
     int? id,
@@ -38,6 +44,11 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     bool? trainingRequired,
     int? trainingAssignmentId,
     _i3.TrainingAssignment? trainingAssignment,
+    String? status,
+    DateTime? rcaCompletedAt,
+    DateTime? effectivenessCheckDue,
+    DateTime? closedAt,
+    int? closedById,
   }) = _CapaImpl;
 
   factory Capa.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -62,6 +73,21 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
           : _i4.Protocol().deserialize<_i3.TrainingAssignment>(
               jsonSerialization['trainingAssignment'],
             ),
+      status: jsonSerialization['status'] as String?,
+      rcaCompletedAt: jsonSerialization['rcaCompletedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['rcaCompletedAt'],
+            ),
+      effectivenessCheckDue: jsonSerialization['effectivenessCheckDue'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['effectivenessCheckDue'],
+            ),
+      closedAt: jsonSerialization['closedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['closedAt']),
+      closedById: jsonSerialization['closedById'] as int?,
     );
   }
 
@@ -91,6 +117,21 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
   /// Training assignment if created.
   _i3.TrainingAssignment? trainingAssignment;
 
+  /// Lifecycle status: Initiation, Investigation, ActionPlanApproved, Implementation, Verification, Closed.
+  String status;
+
+  /// When RCA was completed.
+  DateTime? rcaCompletedAt;
+
+  /// When effectiveness check is due (30/60/90 days after training).
+  DateTime? effectivenessCheckDue;
+
+  /// When CAPA was closed.
+  DateTime? closedAt;
+
+  /// User who closed the CAPA.
+  int? closedById;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -106,6 +147,11 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     bool? trainingRequired,
     int? trainingAssignmentId,
     _i3.TrainingAssignment? trainingAssignment,
+    String? status,
+    DateTime? rcaCompletedAt,
+    DateTime? effectivenessCheckDue,
+    DateTime? closedAt,
+    int? closedById,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -121,6 +167,12 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
         'trainingAssignmentId': trainingAssignmentId,
       if (trainingAssignment != null)
         'trainingAssignment': trainingAssignment?.toJson(),
+      'status': status,
+      if (rcaCompletedAt != null) 'rcaCompletedAt': rcaCompletedAt?.toJson(),
+      if (effectivenessCheckDue != null)
+        'effectivenessCheckDue': effectivenessCheckDue?.toJson(),
+      if (closedAt != null) 'closedAt': closedAt?.toJson(),
+      if (closedById != null) 'closedById': closedById,
     };
   }
 
@@ -139,6 +191,12 @@ abstract class Capa implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
         'trainingAssignmentId': trainingAssignmentId,
       if (trainingAssignment != null)
         'trainingAssignment': trainingAssignment?.toJsonForProtocol(),
+      'status': status,
+      if (rcaCompletedAt != null) 'rcaCompletedAt': rcaCompletedAt?.toJson(),
+      if (effectivenessCheckDue != null)
+        'effectivenessCheckDue': effectivenessCheckDue?.toJson(),
+      if (closedAt != null) 'closedAt': closedAt?.toJson(),
+      if (closedById != null) 'closedById': closedById,
     };
   }
 
@@ -190,6 +248,11 @@ class _CapaImpl extends Capa {
     bool? trainingRequired,
     int? trainingAssignmentId,
     _i3.TrainingAssignment? trainingAssignment,
+    String? status,
+    DateTime? rcaCompletedAt,
+    DateTime? effectivenessCheckDue,
+    DateTime? closedAt,
+    int? closedById,
   }) : super._(
          id: id,
          qualityEventId: qualityEventId,
@@ -199,6 +262,11 @@ class _CapaImpl extends Capa {
          trainingRequired: trainingRequired,
          trainingAssignmentId: trainingAssignmentId,
          trainingAssignment: trainingAssignment,
+         status: status,
+         rcaCompletedAt: rcaCompletedAt,
+         effectivenessCheckDue: effectivenessCheckDue,
+         closedAt: closedAt,
+         closedById: closedById,
        );
 
   /// Returns a shallow copy of this [Capa]
@@ -214,6 +282,11 @@ class _CapaImpl extends Capa {
     bool? trainingRequired,
     Object? trainingAssignmentId = _Undefined,
     Object? trainingAssignment = _Undefined,
+    String? status,
+    Object? rcaCompletedAt = _Undefined,
+    Object? effectivenessCheckDue = _Undefined,
+    Object? closedAt = _Undefined,
+    Object? closedById = _Undefined,
   }) {
     return Capa(
       id: id is int? ? id : this.id,
@@ -230,6 +303,15 @@ class _CapaImpl extends Capa {
       trainingAssignment: trainingAssignment is _i3.TrainingAssignment?
           ? trainingAssignment
           : this.trainingAssignment?.copyWith(),
+      status: status ?? this.status,
+      rcaCompletedAt: rcaCompletedAt is DateTime?
+          ? rcaCompletedAt
+          : this.rcaCompletedAt,
+      effectivenessCheckDue: effectivenessCheckDue is DateTime?
+          ? effectivenessCheckDue
+          : this.effectivenessCheckDue,
+      closedAt: closedAt is DateTime? ? closedAt : this.closedAt,
+      closedById: closedById is int? ? closedById : this.closedById,
     );
   }
 }
@@ -261,6 +343,34 @@ class CapaUpdateTable extends _i1.UpdateTable<CapaTable> {
     table.trainingAssignmentId,
     value,
   );
+
+  _i1.ColumnValue<String, String> status(String value) => _i1.ColumnValue(
+    table.status,
+    value,
+  );
+
+  _i1.ColumnValue<DateTime, DateTime> rcaCompletedAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.rcaCompletedAt,
+        value,
+      );
+
+  _i1.ColumnValue<DateTime, DateTime> effectivenessCheckDue(DateTime? value) =>
+      _i1.ColumnValue(
+        table.effectivenessCheckDue,
+        value,
+      );
+
+  _i1.ColumnValue<DateTime, DateTime> closedAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.closedAt,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> closedById(int? value) => _i1.ColumnValue(
+    table.closedById,
+    value,
+  );
 }
 
 class CapaTable extends _i1.Table<int?> {
@@ -287,6 +397,27 @@ class CapaTable extends _i1.Table<int?> {
       'trainingAssignmentId',
       this,
     );
+    status = _i1.ColumnString(
+      'status',
+      this,
+      hasDefault: true,
+    );
+    rcaCompletedAt = _i1.ColumnDateTime(
+      'rcaCompletedAt',
+      this,
+    );
+    effectivenessCheckDue = _i1.ColumnDateTime(
+      'effectivenessCheckDue',
+      this,
+    );
+    closedAt = _i1.ColumnDateTime(
+      'closedAt',
+      this,
+    );
+    closedById = _i1.ColumnInt(
+      'closedById',
+      this,
+    );
   }
 
   late final CapaUpdateTable updateTable;
@@ -309,6 +440,21 @@ class CapaTable extends _i1.Table<int?> {
 
   /// Training assignment if created.
   _i3.TrainingAssignmentTable? _trainingAssignment;
+
+  /// Lifecycle status: Initiation, Investigation, ActionPlanApproved, Implementation, Verification, Closed.
+  late final _i1.ColumnString status;
+
+  /// When RCA was completed.
+  late final _i1.ColumnDateTime rcaCompletedAt;
+
+  /// When effectiveness check is due (30/60/90 days after training).
+  late final _i1.ColumnDateTime effectivenessCheckDue;
+
+  /// When CAPA was closed.
+  late final _i1.ColumnDateTime closedAt;
+
+  /// User who closed the CAPA.
+  late final _i1.ColumnInt closedById;
 
   _i2.QualityEventTable get qualityEvent {
     if (_qualityEvent != null) return _qualityEvent!;
@@ -344,6 +490,11 @@ class CapaTable extends _i1.Table<int?> {
     rootCause,
     trainingRequired,
     trainingAssignmentId,
+    status,
+    rcaCompletedAt,
+    effectivenessCheckDue,
+    closedAt,
+    closedById,
   ];
 
   @override

@@ -1,0 +1,22 @@
+### Dead letter queue for failed event publishing. Enterprise.
+class: DeadLetterQueue
+
+table: dead_letter_queue
+
+fields:
+  ### The outbox message that failed.
+  outboxMessageId: int?
+  ### When it failed.
+  failedAt: DateTime, default=now
+  ### Failure reason.
+  failureReason: String?
+  ### Retry count before moving to DLQ.
+  retryCount: int, default=0
+  ### Whether manually resolved.
+  manuallyResolved: bool, default=false
+  ### Who resolved (if manual).
+  resolvedById: int?
+  ### When resolved.
+  resolvedAt: DateTime?
+  ### Resolution notes.
+  resolutionNotes: String?

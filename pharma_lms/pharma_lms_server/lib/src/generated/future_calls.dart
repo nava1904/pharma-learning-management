@@ -15,10 +15,13 @@ import 'future_calls_generated_models/kafka_event_processor_process_sop_updated_
     as _i2;
 import 'future_calls_generated_models/kafka_event_processor_process_employee_created_model.dart'
     as _i3;
-import 'dart:async' as _i4;
-import '../workers/certification_expiry_worker.dart' as _i5;
-import '../workers/compliance_monitor_worker.dart' as _i6;
-import '../workers/kafka_event_processor.dart' as _i7;
+import 'future_calls_generated_models/kafka_event_processor_process_employee_transferred_model.dart'
+    as _i4;
+import 'dart:async' as _i5;
+import '../workers/capa_effectiveness_worker.dart' as _i6;
+import '../workers/certification_expiry_worker.dart' as _i7;
+import '../workers/compliance_monitor_worker.dart' as _i8;
+import '../workers/kafka_event_processor.dart' as _i9;
 
 /// Invokes a future call.
 typedef _InvokeFutureCall =
@@ -62,6 +65,8 @@ class FutureCalls extends _i1.FutureCallDispatch<_FutureCallRef> {
     String serverId,
   ) {
     var registeredFutureCalls = <String, _i1.FutureCall>{
+      'CapaEffectivenessWorkerRunFutureCall':
+          CapaEffectivenessWorkerRunFutureCall(),
       'CertificationExpiryWorkerRunFutureCall':
           CertificationExpiryWorkerRunFutureCall(),
       'ComplianceMonitorWorkerRunFutureCall':
@@ -70,6 +75,8 @@ class FutureCalls extends _i1.FutureCallDispatch<_FutureCallRef> {
           KafkaEventProcessorProcessSopUpdatedFutureCall(),
       'KafkaEventProcessorProcessEmployeeCreatedFutureCall':
           KafkaEventProcessorProcessEmployeeCreatedFutureCall(),
+      'KafkaEventProcessorProcessEmployeeTransferredFutureCall':
+          KafkaEventProcessorProcessEmployeeTransferredFutureCall(),
       'KafkaEventProcessorProcessOutboxFutureCall':
           KafkaEventProcessorProcessOutboxFutureCall(),
     };
@@ -127,6 +134,9 @@ class _FutureCallRef {
 
   final _InvokeFutureCall _invokeFutureCall;
 
+  late final capaEffectivenessWorker =
+      _CapaEffectivenessWorkerFutureCallDispatcher(_invokeFutureCall);
+
   late final certificationExpiryWorker =
       _CertificationExpiryWorkerFutureCallDispatcher(_invokeFutureCall);
 
@@ -136,6 +146,19 @@ class _FutureCallRef {
   late final kafkaEventProcessor = _KafkaEventProcessorFutureCallDispatcher(
     _invokeFutureCall,
   );
+}
+
+class _CapaEffectivenessWorkerFutureCallDispatcher {
+  _CapaEffectivenessWorkerFutureCallDispatcher(this._invokeFutureCall);
+
+  final _InvokeFutureCall _invokeFutureCall;
+
+  Future<void> run() {
+    return _invokeFutureCall(
+      'CapaEffectivenessWorkerRunFutureCall',
+      null,
+    );
+  }
 }
 
 class _CertificationExpiryWorkerFutureCallDispatcher {
@@ -201,6 +224,26 @@ class _KafkaEventProcessorFutureCallDispatcher {
     );
   }
 
+  Future<void> processEmployeeTransferred({
+    required String userId,
+    required String oldDepartmentId,
+    required String newDepartmentId,
+    required String oldRoleId,
+    required String newRoleId,
+  }) {
+    var object = _i4.KafkaEventProcessorProcessEmployeeTransferredModel(
+      userId: userId,
+      oldDepartmentId: oldDepartmentId,
+      newDepartmentId: newDepartmentId,
+      oldRoleId: oldRoleId,
+      newRoleId: newRoleId,
+    );
+    return _invokeFutureCall(
+      'KafkaEventProcessorProcessEmployeeTransferredFutureCall',
+      object,
+    );
+  }
+
   Future<void> processOutbox() {
     return _invokeFutureCall(
       'KafkaEventProcessorProcessOutboxFutureCall',
@@ -209,36 +252,48 @@ class _KafkaEventProcessorFutureCallDispatcher {
   }
 }
 
-class CertificationExpiryWorkerRunFutureCall extends _i1.FutureCall {
+class CapaEffectivenessWorkerRunFutureCall extends _i1.FutureCall {
   @override
-  _i4.Future<void> invoke(
+  _i5.Future<void> invoke(
     _i1.Session session,
     _i1.SerializableModel? object,
   ) async {
-    await _i5.CertificationExpiryWorker().run(session);
+    await _i6.CapaEffectivenessWorker().run(session);
+  }
+}
+
+class CertificationExpiryWorkerRunFutureCall extends _i1.FutureCall {
+  @override
+  _i5.Future<void> invoke(
+    _i1.Session session,
+    _i1.SerializableModel? object,
+  ) async {
+    await _i7.CertificationExpiryWorker().run(session);
   }
 }
 
 class ComplianceMonitorWorkerRunFutureCall extends _i1.FutureCall {
   @override
-  _i4.Future<void> invoke(
+  _i5.Future<void> invoke(
     _i1.Session session,
     _i1.SerializableModel? object,
   ) async {
-    await _i6.ComplianceMonitorWorker().run(session);
+    await _i8.ComplianceMonitorWorker().run(session);
   }
 }
 
 /// Process SOP updated event - assign retraining to affected employees.
+/// QA gate: only assigns when document.trainingRequiredByQa == 'training_required'.
+/// Scoping: uses affectedDepartmentIdsJson and affectedRoleIdsJson when set.
 class KafkaEventProcessorProcessSopUpdatedFutureCall
     extends _i1.FutureCall<_i2.KafkaEventProcessorProcessSopUpdatedModel> {
   @override
-  _i4.Future<void> invoke(
+  _i5.Future<void> invoke(
     _i1.Session session,
     _i2.KafkaEventProcessorProcessSopUpdatedModel? object,
   ) async {
     if (object != null) {
-      await _i7.KafkaEventProcessor().processSopUpdated(
+      await _i9.KafkaEventProcessor().processSopUpdated(
         session,
         documentId: object.documentId,
         courseVersionId: object.courseVersionId,
@@ -249,15 +304,16 @@ class KafkaEventProcessorProcessSopUpdatedFutureCall
 }
 
 /// Process employee created event - assign role-based training.
+/// Uses TrainingMatrix when available, else all effective course versions.
 class KafkaEventProcessorProcessEmployeeCreatedFutureCall
     extends _i1.FutureCall<_i3.KafkaEventProcessorProcessEmployeeCreatedModel> {
   @override
-  _i4.Future<void> invoke(
+  _i5.Future<void> invoke(
     _i1.Session session,
     _i3.KafkaEventProcessorProcessEmployeeCreatedModel? object,
   ) async {
     if (object != null) {
-      await _i7.KafkaEventProcessor().processEmployeeCreated(
+      await _i9.KafkaEventProcessor().processEmployeeCreated(
         session,
         userId: object.userId,
         departmentId: object.departmentId,
@@ -267,13 +323,35 @@ class KafkaEventProcessorProcessEmployeeCreatedFutureCall
   }
 }
 
-/// Process outbox messages - publish to Kafka.
+/// Process employee transferred - archive old assignments, assign delta for new role/dept.
+class KafkaEventProcessorProcessEmployeeTransferredFutureCall
+    extends
+        _i1.FutureCall<_i4.KafkaEventProcessorProcessEmployeeTransferredModel> {
+  @override
+  _i5.Future<void> invoke(
+    _i1.Session session,
+    _i4.KafkaEventProcessorProcessEmployeeTransferredModel? object,
+  ) async {
+    if (object != null) {
+      await _i9.KafkaEventProcessor().processEmployeeTransferred(
+        session,
+        userId: object.userId,
+        oldDepartmentId: object.oldDepartmentId,
+        newDepartmentId: object.newDepartmentId,
+        oldRoleId: object.oldRoleId,
+        newRoleId: object.newRoleId,
+      );
+    }
+  }
+}
+
+/// Process outbox messages - publish to Kafka. Moves to DLQ after 3 retries.
 class KafkaEventProcessorProcessOutboxFutureCall extends _i1.FutureCall {
   @override
-  _i4.Future<void> invoke(
+  _i5.Future<void> invoke(
     _i1.Session session,
     _i1.SerializableModel? object,
   ) async {
-    await _i7.KafkaEventProcessor().processOutbox(session);
+    await _i9.KafkaEventProcessor().processOutbox(session);
   }
 }

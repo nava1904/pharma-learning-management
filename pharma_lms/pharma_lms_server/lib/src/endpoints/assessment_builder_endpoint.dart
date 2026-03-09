@@ -1,6 +1,8 @@
 import 'package:serverpod/serverpod.dart';
 
+import '../audit_event_types.dart';
 import '../generated/protocol.dart';
+import '../services/audit_service.dart';
 
 /// Assessment builder endpoint for SME/trainers.
 class AssessmentBuilderEndpoint extends Endpoint {
@@ -55,7 +57,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     bool randomize = true,
     int? timeLimitMinutes,
   }) async {
-    return await Assessment.db.insertRow(
+    final result = await Assessment.db.insertRow(
       session,
       Assessment(
         courseVersionId: courseVersionId,
@@ -65,6 +67,14 @@ class AssessmentBuilderEndpoint extends Endpoint {
         timeLimitMinutes: timeLimitMinutes,
       ),
     );
+    await AuditService.log(
+      session,
+      entityType: 'assessment',
+      entityId: result.id.toString(),
+      action: AuditEventType.configChanged,
+      newValueJson: '{"courseVersionId":$courseVersionId,"passingScore":$passingScore}',
+    );
+    return result;
   }
 
   Future<Assessment> updateAssessment(
@@ -81,6 +91,15 @@ class AssessmentBuilderEndpoint extends Endpoint {
       randomize: randomize ?? assessment.randomize,
       timeLimitMinutes: timeLimitMinutes ?? assessment.timeLimitMinutes,
     );
-    return await Assessment.db.updateRow(session, updated);
+    final result = await Assessment.db.updateRow(session, updated);
+    await AuditService.log(
+      session,
+      entityType: 'assessment',
+      entityId: assessmentId.toString(),
+      action: AuditEventType.configChanged,
+      oldValueJson: '{"passingScore":${assessment.passingScore}}',
+      newValueJson: '{"passingScore":${result.passingScore}}',
+    );
+    return result;
   }
 }

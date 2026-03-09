@@ -1,0 +1,26 @@
+### Inspection package - compliance evidence bundle. FDA.
+class: InspectionPackage
+
+table: inspection_package
+
+fields:
+  ### The inspection record.
+  inspectionRecord: InspectionRecord?, relation
+  ### Who generated the package.
+  generatedBy: PharmaUser?, relation
+  ### When generated.
+  generatedAt: DateTime, default=now
+  ### Scope description.
+  scopeDescription: String?
+  ### Included records count.
+  includedRecordsCount: int?
+  ### SHA-256 file hash.
+  fileHash: String?
+  ### Storage URL.
+  storageUrl: String?
+  ### Watermark text.
+  watermarkText: String?
+  ### Whether officially signed by QA Director.
+  isOfficial: bool, default=false
+  ### Official e-signature.
+  officialEsignature: ElectronicSignature?, relation(optional)

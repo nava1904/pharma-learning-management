@@ -32,7 +32,9 @@ abstract class Certificate implements _i1.SerializableModel {
     this.qrCode,
     required this.esignatureId,
     this.esignature,
-  }) : issuedAt = issuedAt ?? DateTime.now();
+    String? status,
+  }) : issuedAt = issuedAt ?? DateTime.now(),
+       status = status ?? 'active';
 
   factory Certificate({
     int? id,
@@ -47,6 +49,7 @@ abstract class Certificate implements _i1.SerializableModel {
     String? qrCode,
     required int esignatureId,
     _i5.ElectronicSignature? esignature,
+    String? status,
   }) = _CertificateImpl;
 
   factory Certificate.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -83,6 +86,7 @@ abstract class Certificate implements _i1.SerializableModel {
           : _i6.Protocol().deserialize<_i5.ElectronicSignature>(
               jsonSerialization['esignature'],
             ),
+      status: jsonSerialization['status'] as String?,
     );
   }
 
@@ -120,6 +124,9 @@ abstract class Certificate implements _i1.SerializableModel {
   /// Electronic signature.
   _i5.ElectronicSignature? esignature;
 
+  /// Status: active, obsolete, expired. Obsolete when course version superseded; expired when past expiresAt.
+  String status;
+
   /// Returns a shallow copy of this [Certificate]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -136,6 +143,7 @@ abstract class Certificate implements _i1.SerializableModel {
     String? qrCode,
     int? esignatureId,
     _i5.ElectronicSignature? esignature,
+    String? status,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -153,6 +161,7 @@ abstract class Certificate implements _i1.SerializableModel {
       if (qrCode != null) 'qrCode': qrCode,
       'esignatureId': esignatureId,
       if (esignature != null) 'esignature': esignature?.toJson(),
+      'status': status,
     };
   }
 
@@ -178,6 +187,7 @@ class _CertificateImpl extends Certificate {
     String? qrCode,
     required int esignatureId,
     _i5.ElectronicSignature? esignature,
+    String? status,
   }) : super._(
          id: id,
          userId: userId,
@@ -191,6 +201,7 @@ class _CertificateImpl extends Certificate {
          qrCode: qrCode,
          esignatureId: esignatureId,
          esignature: esignature,
+         status: status,
        );
 
   /// Returns a shallow copy of this [Certificate]
@@ -210,6 +221,7 @@ class _CertificateImpl extends Certificate {
     Object? qrCode = _Undefined,
     int? esignatureId,
     Object? esignature = _Undefined,
+    String? status,
   }) {
     return Certificate(
       id: id is int? ? id : this.id,
@@ -230,6 +242,7 @@ class _CertificateImpl extends Certificate {
       esignature: esignature is _i5.ElectronicSignature?
           ? esignature
           : this.esignature?.copyWith(),
+      status: status ?? this.status,
     );
   }
 }

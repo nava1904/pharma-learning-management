@@ -1,0 +1,22 @@
+### Auditor page view log. FDA 21 CFR Part 11.
+class: AuditorPageLog
+
+table: auditor_page_log
+
+fields:
+  ### The auditor session.
+  auditorSession: AuditorSession?, relation
+  ### Page URL viewed.
+  pageUrl: String
+  ### Page title.
+  pageTitle: String?
+  ### Entity type: training_record, certificate, esignature, audit_trail, capa, report.
+  entityType: String?
+  ### Entity ID.
+  entityId: String?
+  ### When viewed.
+  viewedAt: DateTime, default=now
+  ### Time on page in seconds.
+  timeOnPageSeconds: int?
+  ### Whether page was exported.
+  exported: bool, default=false

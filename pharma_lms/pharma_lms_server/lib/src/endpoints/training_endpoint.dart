@@ -9,6 +9,15 @@ import '../services/training_assignment_service.dart';
 
 /// Training Assignment domain endpoint.
 class TrainingEndpoint extends Endpoint {
+  /// List active signature meanings for e-signature dropdown (21 CFR Part 11).
+  Future<List<SignatureMeaning>> listSignatureMeanings(Session session) async {
+    return await SignatureMeaning.db.find(
+      session,
+      where: (t) => t.isActive.equals(true),
+      orderBy: (t) => t.orderIndex,
+    );
+  }
+
   Future<List<TrainingAssignment>> getAssignmentsForUser(
     Session session,
     int userId,
@@ -28,7 +37,37 @@ class TrainingEndpoint extends Endpoint {
     String priority = 'medium',
     String? reason,
     String source = 'manual',
+    bool forceReassign = false,
   }) async {
+    int? oldAssignmentId;
+    if (forceReassign) {
+      final oldEnrollments = await Enrollment.db.find(
+        session,
+        where: (t) =>
+            t.userId.equals(userId) &
+            t.courseVersionId.equals(courseVersionId) &
+            t.status.notEquals('completed'),
+      );
+      for (final e in oldEnrollments) {
+        if (e.assignmentId != null) {
+          oldAssignmentId = e.assignmentId;
+          break;
+        }
+      }
+    } else {
+      final hasActive = await TrainingAssignmentService.hasActiveEnrollment(
+        session,
+        userId: userId,
+        courseVersionId: courseVersionId,
+      );
+      if (hasActive) {
+        throw Exception(
+          'User already has an active assignment for this course. '
+          'Use forceReassign to reassign.',
+        );
+      }
+    }
+
     final assignment = await TrainingAssignmentService.assign(
       session,
       userId: userId,
@@ -45,7 +84,53 @@ class TrainingEndpoint extends Endpoint {
       courseVersionId: courseVersionId,
       assignmentId: assignment.id!,
     );
+
+    if (forceReassign && oldAssignmentId != null) {
+      await AuditService.log(
+        session,
+        entityType: 'training_assignment',
+        entityId: oldAssignmentId.toString(),
+        action: 'AssignmentReassigned',
+        oldValueJson: '{"oldAssignmentId":$oldAssignmentId}',
+        newValueJson:
+            '{"newAssignmentId":${assignment.id},"courseVersionId":$courseVersionId,"userId":$userId}',
+        userId: assignedById,
+      );
+    }
+
     return assignment;
+  }
+
+  /// Update assignment due date or priority.
+  Future<TrainingAssignment> updateAssignment(
+    Session session, {
+    required int assignmentId,
+    DateTime? dueDate,
+    String? priority,
+    required int updatedById,
+  }) async {
+    return TrainingAssignmentService.updateAssignment(
+      session,
+      assignmentId: assignmentId,
+      dueDate: dueDate,
+      priority: priority,
+      updatedById: updatedById,
+    );
+  }
+
+  /// Cancel an assignment.
+  Future<TrainingAssignment> cancelAssignment(
+    Session session, {
+    required int assignmentId,
+    required int cancelledById,
+    String? reason,
+  }) async {
+    return TrainingAssignmentService.cancelAssignment(
+      session,
+      assignmentId: assignmentId,
+      cancelledById: cancelledById,
+      reason: reason,
+    );
   }
 
   Future<List<Enrollment>> getEnrollmentsForUser(
@@ -61,11 +146,75 @@ class TrainingEndpoint extends Endpoint {
     );
   }
 
+  /// Get enrollment by ID for course viewer (e.g. to check retraining gate).
+  Future<Enrollment?> getEnrollmentById(
+    Session session,
+    int enrollmentId,
+  ) async {
+    return await Enrollment.db.findById(
+      session,
+      enrollmentId,
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+  }
+
+  /// Acknowledge retraining change summary with e-signature.
+  /// Requires: enrollment has retrainingChangeSummary, acknowledgedAt is null, userId matches.
+  Future<Enrollment> acknowledgeRetraining(
+    Session session, {
+    required int enrollmentId,
+    required int userId,
+    required String signatureMeaning,
+    String? passwordReauthHash,
+  }) async {
+    final enrollment = await Enrollment.db.findById(session, enrollmentId);
+    if (enrollment == null) throw Exception('Enrollment not found');
+    if (enrollment.userId != userId) {
+      throw Exception('Enrollment does not belong to this user');
+    }
+    if (enrollment.retrainingChangeSummary == null ||
+        enrollment.retrainingChangeSummary!.isEmpty) {
+      throw Exception('Enrollment does not require retraining acknowledgement');
+    }
+    if (enrollment.acknowledgedAt != null) {
+      throw Exception('Retraining already acknowledged');
+    }
+
+    final signature = await EsignatureService.sign(
+      session,
+      userId: userId,
+      signatureMeaning: signatureMeaning,
+      entityType: 'enrollment_retraining_ack',
+      entityId: enrollmentId.toString(),
+      passwordReauthHash: passwordReauthHash,
+    );
+
+    final now = DateTime.now();
+    final updated = enrollment.copyWith(
+      acknowledgedAt: now,
+      acknowledgementEsignatureId: signature.id,
+    );
+    return await Enrollment.db.updateRow(session, updated);
+  }
+
   Future<List<Certificate>> getCertificatesForUser(
     Session session,
     int userId,
   ) async {
     return await Certificate.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+  }
+
+  /// Training records for user (enrollment completions with score). Used for training history.
+  Future<List<TrainingRecord>> getTrainingRecordsForUser(
+    Session session,
+    int userId,
+  ) async {
+    return await TrainingRecord.db.find(
       session,
       where: (t) => t.userId.equals(userId),
     );
@@ -83,6 +232,27 @@ class TrainingEndpoint extends Endpoint {
         user: PharmaUser.include(),
         courseVersion: CourseVersion.include(course: Course.include()),
       ),
+    );
+  }
+
+  /// Get signature with integrity verification. Returns null signature if not found.
+  /// integrityViolation is true when HMAC mismatch (tampering detected).
+  Future<SignatureVerificationResult> getSignatureWithIntegrityCheck(
+    Session session,
+    int signatureId,
+  ) async {
+    final sig = await ElectronicSignature.db.findById(
+      session,
+      signatureId,
+      include: ElectronicSignature.include(user: PharmaUser.include()),
+    );
+    if (sig == null) {
+      return SignatureVerificationResult(signature: null, integrityViolation: false);
+    }
+    final ok = EsignatureService.verifyIntegrity(sig);
+    return SignatureVerificationResult(
+      signature: sig,
+      integrityViolation: !ok,
     );
   }
 
@@ -145,6 +315,7 @@ class TrainingEndpoint extends Endpoint {
 
   /// Complete training: create TrainingRecord, Certificate, update Enrollment.
   /// Call after assessment pass and e-signature.
+  /// Idempotent: returns existing certificate if already completed for this enrollment.
   Future<Certificate> completeTraining(
     Session session, {
     required int enrollmentId,
@@ -155,6 +326,21 @@ class TrainingEndpoint extends Endpoint {
   }) async {
     final enrollment = await Enrollment.db.findById(session, enrollmentId);
     if (enrollment == null) throw Exception('Enrollment not found');
+
+    // Idempotency: if already completed, return existing certificate
+    if (enrollment.status == 'completed') {
+      final records = await TrainingRecord.db.find(
+        session,
+        where: (t) => t.enrollmentId.equals(enrollmentId),
+      );
+      if (records.isNotEmpty && records.first.id != null) {
+        final cert = await Certificate.db.findFirstRow(
+          session,
+          where: (t) => t.trainingRecordId.equals(records.first.id!),
+        );
+        if (cert != null) return cert;
+      }
+    }
 
     final now = DateTime.now();
     final expiresAt = now.add(const Duration(days: 365));
@@ -193,6 +379,18 @@ class TrainingEndpoint extends Endpoint {
       ),
     );
 
+    if (enrollment.assignmentId != null) {
+      await AuditService.log(
+        session,
+        entityType: 'training_assignment',
+        entityId: enrollment.assignmentId.toString(),
+        action: 'AssignmentCompleted',
+        newValueJson:
+            '{"enrollmentId":$enrollmentId,"certificateId":${certificate.id},"completedAt":"${now.toIso8601String()}"}',
+        userId: userId,
+      );
+    }
+
     await AuditService.log(
       session,
       entityType: 'training_record',
@@ -210,6 +408,58 @@ class TrainingEndpoint extends Endpoint {
       userId: userId,
     );
 
+    if (enrollment.assignmentId != null) {
+      final capas = await Capa.db.find(
+        session,
+        where: (t) => t.trainingAssignmentId.equals(enrollment.assignmentId!),
+      );
+      if (capas.isNotEmpty && capas.first.id != null) {
+        await Capa.db.updateRow(
+          session,
+          capas.first.copyWith(
+            effectivenessCheckDue: now.add(const Duration(days: 30)),
+            status: 'Verification',
+          ),
+        );
+      }
+    }
+
     return certificate;
+  }
+
+  /// QA-08: List annotations for a training record.
+  Future<List<TrainingRecordAnnotation>> listAnnotations(
+    Session session,
+    int trainingRecordId,
+  ) async {
+    return await TrainingRecordAnnotation.db.find(
+      session,
+      where: (t) => t.trainingRecordId.equals(trainingRecordId),
+      orderBy: (t) => t.createdAt,
+      orderDescending: true,
+      include: TrainingRecordAnnotation.include(
+        author: PharmaUser.include(),
+      ),
+    );
+  }
+
+  /// QA-08: Add annotation to a training record (QA role).
+  Future<TrainingRecordAnnotation> addAnnotation(
+    Session session, {
+    required int trainingRecordId,
+    required int authorId,
+    required String note,
+  }) async {
+    final record =
+        await TrainingRecord.db.findById(session, trainingRecordId);
+    if (record == null) throw Exception('Training record not found');
+    return await TrainingRecordAnnotation.db.insertRow(
+      session,
+      TrainingRecordAnnotation(
+        trainingRecordId: trainingRecordId,
+        authorId: authorId,
+        note: note,
+      ),
+    );
   }
 }

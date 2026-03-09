@@ -12,6 +12,7 @@ enum AppRole {
   qa,
   trainer,
   auditor,
+  analytics,
 }
 
 /// Maps role to demo user email.
@@ -27,6 +28,8 @@ String emailForRole(AppRole role) {
       return 'trainer@pharmacorp.demo';
     case AppRole.auditor:
       return 'auditor@pharmacorp.demo';
+    case AppRole.analytics:
+      return 'analytics@pharmacorp.demo';
   }
 }
 
@@ -44,6 +47,8 @@ AppRole roleForEmail(String email) {
       return AppRole.trainer;
     case 'auditor@pharmacorp.demo':
       return AppRole.auditor;
+    case 'analytics@pharmacorp.demo':
+      return AppRole.analytics;
     default:
       return AppRole.employee;
   }
@@ -62,6 +67,8 @@ String pathForRole(AppRole role) {
       return '/trainer';
     case AppRole.auditor:
       return '/auditor';
+    case AppRole.analytics:
+      return '/analytics';
   }
 }
 

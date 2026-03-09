@@ -161,7 +161,6 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
           'userId': _effectiveUserId,
           'entityType': 'training_record',
           'entityId': 'enrollment-$_effectiveEnrollmentId',
-          'signatureMeaning': 'I have read and understood',
         },
       );
       if (!context.mounted) return;

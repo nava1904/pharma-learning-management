@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../services/audit_service.dart';
 
 /// Course builder endpoint for SME/trainers (TC-07: restricted editing).
 class CourseBuilderEndpoint extends Endpoint {
@@ -83,20 +84,26 @@ class CourseBuilderEndpoint extends Endpoint {
   }
 
   /// Create new course version. TC-07: if course has approved version, only allow draft.
+  /// When superseding (hasApproved), changeSummary is required (TRN-05).
   Future<CourseVersion> createCourseVersion(
     Session session, {
     required int courseId,
     required String version,
     String status = 'draft',
+    String? changeSummary,
   }) async {
     final versions = await CourseVersion.db.find(
       session,
       where: (t) => t.courseId.equals(courseId),
     );
-    final hasApproved = versions.any((v) =>
-        v.status == 'approved' || v.status == 'effective');
+    final hasApproved = versions.any((v) => v.status == 'effective');
     if (hasApproved && status != 'draft') {
       throw Exception('Course has approved version; new version must be draft');
+    }
+    if (hasApproved && (changeSummary == null || changeSummary.trim().isEmpty)) {
+      throw Exception(
+        'Change summary is required when creating a new version that supersedes an effective version',
+      );
     }
     return await CourseVersion.db.insertRow(
       session,
@@ -104,23 +111,39 @@ class CourseBuilderEndpoint extends Endpoint {
         courseId: courseId,
         version: version,
         status: status,
+        changeSummary: changeSummary,
       ),
     );
   }
 
-  /// Update course version status. TC-07: approved -> no edit.
+  /// Update course version status. TC-07: approved/effective -> no edit.
+  /// Lifecycle: draft -> pending_approval (SME) -> effective (QA). Only QA can set effective.
   Future<CourseVersion> updateCourseVersionStatus(
     Session session, {
     required int courseVersionId,
     required String status,
+    int? approverId,
   }) async {
     final version = await CourseVersion.db.findById(session, courseVersionId);
     if (version == null) throw Exception('Course version not found');
     if (version.status == 'approved' || version.status == 'effective') {
       throw Exception('Cannot edit approved/effective version');
     }
+    if (status == 'effective') {
+      throw Exception('Only QA can approve and publish (set effective)');
+    }
     final updated = version.copyWith(status: status);
-    return await CourseVersion.db.updateRow(session, updated);
+    final result = await CourseVersion.db.updateRow(session, updated);
+    await AuditService.log(
+      session,
+      entityType: 'course_version',
+      entityId: courseVersionId.toString(),
+      action: 'CourseStatusChanged',
+      oldValueJson: '{"status":"${version.status}"}',
+      newValueJson: '{"status":"$status"}',
+      userId: approverId,
+    );
+    return result;
   }
 
   Future<void> _ensureVersionEditable(Session session, int courseVersionId) async {

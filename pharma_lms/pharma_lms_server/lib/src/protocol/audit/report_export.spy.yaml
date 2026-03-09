@@ -1,0 +1,24 @@
+### Report export record for audit. FDA 21 CFR Part 11.
+class: ReportExport
+
+table: report_export
+
+fields:
+  ### Who exported.
+  exportedBy: PharmaUser?, relation
+  ### Report type: compliance, training_matrix, audit_trail, certificate_list, inspection_package.
+  reportType: String
+  ### Filter params as JSON.
+  filterParamsJson: String?
+  ### Record count in export.
+  recordCount: int?
+  ### SHA-256 hash for tamper detection.
+  fileHash: String?
+  ### Storage URL.
+  storageUrl: String?
+  ### Watermark text.
+  watermarkText: String?
+  ### When exported.
+  exportedAt: DateTime, default=now
+  ### When export expires (if time-limited).
+  expiresAt: DateTime?

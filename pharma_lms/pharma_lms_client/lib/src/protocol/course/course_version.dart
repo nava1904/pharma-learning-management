@@ -24,6 +24,8 @@ abstract class CourseVersion implements _i1.SerializableModel {
     this.effectiveDate,
     this.obsoleteDate,
     String? status,
+    this.supersededByVersionId,
+    this.changeSummary,
   }) : status = status ?? 'draft';
 
   factory CourseVersion({
@@ -34,6 +36,8 @@ abstract class CourseVersion implements _i1.SerializableModel {
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
     String? status,
+    int? supersededByVersionId,
+    String? changeSummary,
   }) = _CourseVersionImpl;
 
   factory CourseVersion.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -55,6 +59,8 @@ abstract class CourseVersion implements _i1.SerializableModel {
               jsonSerialization['obsoleteDate'],
             ),
       status: jsonSerialization['status'] as String?,
+      supersededByVersionId: jsonSerialization['supersededByVersionId'] as int?,
+      changeSummary: jsonSerialization['changeSummary'] as String?,
     );
   }
 
@@ -80,6 +86,12 @@ abstract class CourseVersion implements _i1.SerializableModel {
   /// Status: draft, approved, effective, obsolete.
   String status;
 
+  /// Version that supersedes this one (when obsolete).
+  int? supersededByVersionId;
+
+  /// Change summary when creating new version from existing (TRN-05).
+  String? changeSummary;
+
   /// Returns a shallow copy of this [CourseVersion]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -91,6 +103,8 @@ abstract class CourseVersion implements _i1.SerializableModel {
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
     String? status,
+    int? supersededByVersionId,
+    String? changeSummary,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -103,6 +117,9 @@ abstract class CourseVersion implements _i1.SerializableModel {
       if (effectiveDate != null) 'effectiveDate': effectiveDate?.toJson(),
       if (obsoleteDate != null) 'obsoleteDate': obsoleteDate?.toJson(),
       'status': status,
+      if (supersededByVersionId != null)
+        'supersededByVersionId': supersededByVersionId,
+      if (changeSummary != null) 'changeSummary': changeSummary,
     };
   }
 
@@ -123,6 +140,8 @@ class _CourseVersionImpl extends CourseVersion {
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
     String? status,
+    int? supersededByVersionId,
+    String? changeSummary,
   }) : super._(
          id: id,
          courseId: courseId,
@@ -131,6 +150,8 @@ class _CourseVersionImpl extends CourseVersion {
          effectiveDate: effectiveDate,
          obsoleteDate: obsoleteDate,
          status: status,
+         supersededByVersionId: supersededByVersionId,
+         changeSummary: changeSummary,
        );
 
   /// Returns a shallow copy of this [CourseVersion]
@@ -145,6 +166,8 @@ class _CourseVersionImpl extends CourseVersion {
     Object? effectiveDate = _Undefined,
     Object? obsoleteDate = _Undefined,
     String? status,
+    Object? supersededByVersionId = _Undefined,
+    Object? changeSummary = _Undefined,
   }) {
     return CourseVersion(
       id: id is int? ? id : this.id,
@@ -158,6 +181,12 @@ class _CourseVersionImpl extends CourseVersion {
           ? obsoleteDate
           : this.obsoleteDate,
       status: status ?? this.status,
+      supersededByVersionId: supersededByVersionId is int?
+          ? supersededByVersionId
+          : this.supersededByVersionId,
+      changeSummary: changeSummary is String?
+          ? changeSummary
+          : this.changeSummary,
     );
   }
 }

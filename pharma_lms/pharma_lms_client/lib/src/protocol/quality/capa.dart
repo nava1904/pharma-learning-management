@@ -26,7 +26,13 @@ abstract class Capa implements _i1.SerializableModel {
     bool? trainingRequired,
     this.trainingAssignmentId,
     this.trainingAssignment,
-  }) : trainingRequired = trainingRequired ?? false;
+    String? status,
+    this.rcaCompletedAt,
+    this.effectivenessCheckDue,
+    this.closedAt,
+    this.closedById,
+  }) : trainingRequired = trainingRequired ?? false,
+       status = status ?? 'Initiation';
 
   factory Capa({
     int? id,
@@ -37,6 +43,11 @@ abstract class Capa implements _i1.SerializableModel {
     bool? trainingRequired,
     int? trainingAssignmentId,
     _i3.TrainingAssignment? trainingAssignment,
+    String? status,
+    DateTime? rcaCompletedAt,
+    DateTime? effectivenessCheckDue,
+    DateTime? closedAt,
+    int? closedById,
   }) = _CapaImpl;
 
   factory Capa.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -61,6 +72,21 @@ abstract class Capa implements _i1.SerializableModel {
           : _i4.Protocol().deserialize<_i3.TrainingAssignment>(
               jsonSerialization['trainingAssignment'],
             ),
+      status: jsonSerialization['status'] as String?,
+      rcaCompletedAt: jsonSerialization['rcaCompletedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['rcaCompletedAt'],
+            ),
+      effectivenessCheckDue: jsonSerialization['effectivenessCheckDue'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['effectivenessCheckDue'],
+            ),
+      closedAt: jsonSerialization['closedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['closedAt']),
+      closedById: jsonSerialization['closedById'] as int?,
     );
   }
 
@@ -88,6 +114,21 @@ abstract class Capa implements _i1.SerializableModel {
   /// Training assignment if created.
   _i3.TrainingAssignment? trainingAssignment;
 
+  /// Lifecycle status: Initiation, Investigation, ActionPlanApproved, Implementation, Verification, Closed.
+  String status;
+
+  /// When RCA was completed.
+  DateTime? rcaCompletedAt;
+
+  /// When effectiveness check is due (30/60/90 days after training).
+  DateTime? effectivenessCheckDue;
+
+  /// When CAPA was closed.
+  DateTime? closedAt;
+
+  /// User who closed the CAPA.
+  int? closedById;
+
   /// Returns a shallow copy of this [Capa]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -100,6 +141,11 @@ abstract class Capa implements _i1.SerializableModel {
     bool? trainingRequired,
     int? trainingAssignmentId,
     _i3.TrainingAssignment? trainingAssignment,
+    String? status,
+    DateTime? rcaCompletedAt,
+    DateTime? effectivenessCheckDue,
+    DateTime? closedAt,
+    int? closedById,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -115,6 +161,12 @@ abstract class Capa implements _i1.SerializableModel {
         'trainingAssignmentId': trainingAssignmentId,
       if (trainingAssignment != null)
         'trainingAssignment': trainingAssignment?.toJson(),
+      'status': status,
+      if (rcaCompletedAt != null) 'rcaCompletedAt': rcaCompletedAt?.toJson(),
+      if (effectivenessCheckDue != null)
+        'effectivenessCheckDue': effectivenessCheckDue?.toJson(),
+      if (closedAt != null) 'closedAt': closedAt?.toJson(),
+      if (closedById != null) 'closedById': closedById,
     };
   }
 
@@ -136,6 +188,11 @@ class _CapaImpl extends Capa {
     bool? trainingRequired,
     int? trainingAssignmentId,
     _i3.TrainingAssignment? trainingAssignment,
+    String? status,
+    DateTime? rcaCompletedAt,
+    DateTime? effectivenessCheckDue,
+    DateTime? closedAt,
+    int? closedById,
   }) : super._(
          id: id,
          qualityEventId: qualityEventId,
@@ -145,6 +202,11 @@ class _CapaImpl extends Capa {
          trainingRequired: trainingRequired,
          trainingAssignmentId: trainingAssignmentId,
          trainingAssignment: trainingAssignment,
+         status: status,
+         rcaCompletedAt: rcaCompletedAt,
+         effectivenessCheckDue: effectivenessCheckDue,
+         closedAt: closedAt,
+         closedById: closedById,
        );
 
   /// Returns a shallow copy of this [Capa]
@@ -160,6 +222,11 @@ class _CapaImpl extends Capa {
     bool? trainingRequired,
     Object? trainingAssignmentId = _Undefined,
     Object? trainingAssignment = _Undefined,
+    String? status,
+    Object? rcaCompletedAt = _Undefined,
+    Object? effectivenessCheckDue = _Undefined,
+    Object? closedAt = _Undefined,
+    Object? closedById = _Undefined,
   }) {
     return Capa(
       id: id is int? ? id : this.id,
@@ -176,6 +243,15 @@ class _CapaImpl extends Capa {
       trainingAssignment: trainingAssignment is _i3.TrainingAssignment?
           ? trainingAssignment
           : this.trainingAssignment?.copyWith(),
+      status: status ?? this.status,
+      rcaCompletedAt: rcaCompletedAt is DateTime?
+          ? rcaCompletedAt
+          : this.rcaCompletedAt,
+      effectivenessCheckDue: effectivenessCheckDue is DateTime?
+          ? effectivenessCheckDue
+          : this.effectivenessCheckDue,
+      closedAt: closedAt is DateTime? ? closedAt : this.closedAt,
+      closedById: closedById is int? ? closedById : this.closedById,
     );
   }
 }

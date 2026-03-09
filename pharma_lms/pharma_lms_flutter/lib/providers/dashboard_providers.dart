@@ -38,6 +38,13 @@ final certificatesProvider = FutureProvider<List<Certificate>>((ref) async {
   return client.training.getCertificatesForUser(user!.id!);
 });
 
+/// Training records for current user (completion with score). Used for training history.
+final trainingRecordsProvider = FutureProvider<List<TrainingRecord>>((ref) async {
+  final user = await ref.watch(currentUserProvider.future);
+  if (user?.id == null) return [];
+  return client.training.getTrainingRecordsForUser(user!.id!);
+});
+
 /// Organizations for admin.
 final organizationsProvider = FutureProvider<List<Organization>>((ref) async {
   return client.organization.listOrganizations();

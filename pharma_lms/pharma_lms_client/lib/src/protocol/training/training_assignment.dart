@@ -30,9 +30,19 @@ abstract class TrainingAssignment implements _i1.SerializableModel {
     String? priority,
     this.reason,
     String? source,
+    String? assignmentType,
+    this.targetRoleId,
+    this.targetDepartmentId,
+    this.targetUserId,
+    String? status,
+    this.cancelledAt,
+    this.cancelledById,
+    this.cancellationReason,
   }) : assignedAt = assignedAt ?? DateTime.now(),
        priority = priority ?? 'medium',
-       source = source ?? 'manual';
+       source = source ?? 'manual',
+       assignmentType = assignmentType ?? 'individual',
+       status = status ?? 'active';
 
   factory TrainingAssignment({
     int? id,
@@ -47,6 +57,14 @@ abstract class TrainingAssignment implements _i1.SerializableModel {
     String? priority,
     String? reason,
     String? source,
+    String? assignmentType,
+    int? targetRoleId,
+    int? targetDepartmentId,
+    int? targetUserId,
+    String? status,
+    DateTime? cancelledAt,
+    int? cancelledById,
+    String? cancellationReason,
   }) = _TrainingAssignmentImpl;
 
   factory TrainingAssignment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -77,6 +95,18 @@ abstract class TrainingAssignment implements _i1.SerializableModel {
       priority: jsonSerialization['priority'] as String?,
       reason: jsonSerialization['reason'] as String?,
       source: jsonSerialization['source'] as String?,
+      assignmentType: jsonSerialization['assignmentType'] as String?,
+      targetRoleId: jsonSerialization['targetRoleId'] as int?,
+      targetDepartmentId: jsonSerialization['targetDepartmentId'] as int?,
+      targetUserId: jsonSerialization['targetUserId'] as int?,
+      status: jsonSerialization['status'] as String?,
+      cancelledAt: jsonSerialization['cancelledAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['cancelledAt'],
+            ),
+      cancelledById: jsonSerialization['cancelledById'] as int?,
+      cancellationReason: jsonSerialization['cancellationReason'] as String?,
     );
   }
 
@@ -115,6 +145,30 @@ abstract class TrainingAssignment implements _i1.SerializableModel {
   /// Source: manual, sop_update, capa, onboarding.
   String source;
 
+  /// Assignment type: role, department, individual, capa.
+  String assignmentType;
+
+  /// Target role ID when assigning by role.
+  int? targetRoleId;
+
+  /// Target department ID when assigning by department.
+  int? targetDepartmentId;
+
+  /// Target user ID when assigning to individual.
+  int? targetUserId;
+
+  /// Status: active, cancelled.
+  String status;
+
+  /// When cancelled.
+  DateTime? cancelledAt;
+
+  /// Who cancelled.
+  int? cancelledById;
+
+  /// Cancellation reason.
+  String? cancellationReason;
+
   /// Returns a shallow copy of this [TrainingAssignment]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -131,6 +185,14 @@ abstract class TrainingAssignment implements _i1.SerializableModel {
     String? priority,
     String? reason,
     String? source,
+    String? assignmentType,
+    int? targetRoleId,
+    int? targetDepartmentId,
+    int? targetUserId,
+    String? status,
+    DateTime? cancelledAt,
+    int? cancelledById,
+    String? cancellationReason,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -148,6 +210,14 @@ abstract class TrainingAssignment implements _i1.SerializableModel {
       'priority': priority,
       if (reason != null) 'reason': reason,
       'source': source,
+      'assignmentType': assignmentType,
+      if (targetRoleId != null) 'targetRoleId': targetRoleId,
+      if (targetDepartmentId != null) 'targetDepartmentId': targetDepartmentId,
+      if (targetUserId != null) 'targetUserId': targetUserId,
+      'status': status,
+      if (cancelledAt != null) 'cancelledAt': cancelledAt?.toJson(),
+      if (cancelledById != null) 'cancelledById': cancelledById,
+      if (cancellationReason != null) 'cancellationReason': cancellationReason,
     };
   }
 
@@ -173,6 +243,14 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
     String? priority,
     String? reason,
     String? source,
+    String? assignmentType,
+    int? targetRoleId,
+    int? targetDepartmentId,
+    int? targetUserId,
+    String? status,
+    DateTime? cancelledAt,
+    int? cancelledById,
+    String? cancellationReason,
   }) : super._(
          id: id,
          userId: userId,
@@ -186,6 +264,14 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
          priority: priority,
          reason: reason,
          source: source,
+         assignmentType: assignmentType,
+         targetRoleId: targetRoleId,
+         targetDepartmentId: targetDepartmentId,
+         targetUserId: targetUserId,
+         status: status,
+         cancelledAt: cancelledAt,
+         cancelledById: cancelledById,
+         cancellationReason: cancellationReason,
        );
 
   /// Returns a shallow copy of this [TrainingAssignment]
@@ -205,6 +291,14 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
     String? priority,
     Object? reason = _Undefined,
     String? source,
+    String? assignmentType,
+    Object? targetRoleId = _Undefined,
+    Object? targetDepartmentId = _Undefined,
+    Object? targetUserId = _Undefined,
+    String? status,
+    Object? cancelledAt = _Undefined,
+    Object? cancelledById = _Undefined,
+    Object? cancellationReason = _Undefined,
   }) {
     return TrainingAssignment(
       id: id is int? ? id : this.id,
@@ -223,6 +317,18 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
       priority: priority ?? this.priority,
       reason: reason is String? ? reason : this.reason,
       source: source ?? this.source,
+      assignmentType: assignmentType ?? this.assignmentType,
+      targetRoleId: targetRoleId is int? ? targetRoleId : this.targetRoleId,
+      targetDepartmentId: targetDepartmentId is int?
+          ? targetDepartmentId
+          : this.targetDepartmentId,
+      targetUserId: targetUserId is int? ? targetUserId : this.targetUserId,
+      status: status ?? this.status,
+      cancelledAt: cancelledAt is DateTime? ? cancelledAt : this.cancelledAt,
+      cancelledById: cancelledById is int? ? cancelledById : this.cancelledById,
+      cancellationReason: cancellationReason is String?
+          ? cancellationReason
+          : this.cancellationReason,
     );
   }
 }

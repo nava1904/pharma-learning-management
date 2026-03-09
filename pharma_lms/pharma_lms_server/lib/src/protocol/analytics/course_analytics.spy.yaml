@@ -1,0 +1,14 @@
+### Course analytics - pass rate and score distribution from TrainingRecord.
+class: CourseAnalytics
+
+fields:
+  ### Course version ID.
+  courseVersionId: int
+  ### Pass rate (passed/total) 0.0-1.0.
+  passRate: double
+  ### Total training records (completed).
+  totalAttempts: int
+  ### Count that passed (score >= passingScore).
+  passedCount: int
+  ### Histogram: bucket label -> count. E.g. "0-20": 2, "21-40": 1, "41-60": 3, "61-80": 5, "81-100": 10.
+  scoreDistributionJson: String?

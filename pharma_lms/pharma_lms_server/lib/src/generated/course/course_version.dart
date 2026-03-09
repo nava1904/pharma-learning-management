@@ -26,6 +26,8 @@ abstract class CourseVersion
     this.effectiveDate,
     this.obsoleteDate,
     String? status,
+    this.supersededByVersionId,
+    this.changeSummary,
   }) : status = status ?? 'draft';
 
   factory CourseVersion({
@@ -36,6 +38,8 @@ abstract class CourseVersion
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
     String? status,
+    int? supersededByVersionId,
+    String? changeSummary,
   }) = _CourseVersionImpl;
 
   factory CourseVersion.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -57,6 +61,8 @@ abstract class CourseVersion
               jsonSerialization['obsoleteDate'],
             ),
       status: jsonSerialization['status'] as String?,
+      supersededByVersionId: jsonSerialization['supersededByVersionId'] as int?,
+      changeSummary: jsonSerialization['changeSummary'] as String?,
     );
   }
 
@@ -84,6 +90,12 @@ abstract class CourseVersion
   /// Status: draft, approved, effective, obsolete.
   String status;
 
+  /// Version that supersedes this one (when obsolete).
+  int? supersededByVersionId;
+
+  /// Change summary when creating new version from existing (TRN-05).
+  String? changeSummary;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -98,6 +110,8 @@ abstract class CourseVersion
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
     String? status,
+    int? supersededByVersionId,
+    String? changeSummary,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -110,6 +124,9 @@ abstract class CourseVersion
       if (effectiveDate != null) 'effectiveDate': effectiveDate?.toJson(),
       if (obsoleteDate != null) 'obsoleteDate': obsoleteDate?.toJson(),
       'status': status,
+      if (supersededByVersionId != null)
+        'supersededByVersionId': supersededByVersionId,
+      if (changeSummary != null) 'changeSummary': changeSummary,
     };
   }
 
@@ -124,6 +141,9 @@ abstract class CourseVersion
       if (effectiveDate != null) 'effectiveDate': effectiveDate?.toJson(),
       if (obsoleteDate != null) 'obsoleteDate': obsoleteDate?.toJson(),
       'status': status,
+      if (supersededByVersionId != null)
+        'supersededByVersionId': supersededByVersionId,
+      if (changeSummary != null) 'changeSummary': changeSummary,
     };
   }
 
@@ -168,6 +188,8 @@ class _CourseVersionImpl extends CourseVersion {
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
     String? status,
+    int? supersededByVersionId,
+    String? changeSummary,
   }) : super._(
          id: id,
          courseId: courseId,
@@ -176,6 +198,8 @@ class _CourseVersionImpl extends CourseVersion {
          effectiveDate: effectiveDate,
          obsoleteDate: obsoleteDate,
          status: status,
+         supersededByVersionId: supersededByVersionId,
+         changeSummary: changeSummary,
        );
 
   /// Returns a shallow copy of this [CourseVersion]
@@ -190,6 +214,8 @@ class _CourseVersionImpl extends CourseVersion {
     Object? effectiveDate = _Undefined,
     Object? obsoleteDate = _Undefined,
     String? status,
+    Object? supersededByVersionId = _Undefined,
+    Object? changeSummary = _Undefined,
   }) {
     return CourseVersion(
       id: id is int? ? id : this.id,
@@ -203,6 +229,12 @@ class _CourseVersionImpl extends CourseVersion {
           ? obsoleteDate
           : this.obsoleteDate,
       status: status ?? this.status,
+      supersededByVersionId: supersededByVersionId is int?
+          ? supersededByVersionId
+          : this.supersededByVersionId,
+      changeSummary: changeSummary is String?
+          ? changeSummary
+          : this.changeSummary,
     );
   }
 }
@@ -236,6 +268,18 @@ class CourseVersionUpdateTable extends _i1.UpdateTable<CourseVersionTable> {
     table.status,
     value,
   );
+
+  _i1.ColumnValue<int, int> supersededByVersionId(int? value) =>
+      _i1.ColumnValue(
+        table.supersededByVersionId,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> changeSummary(String? value) =>
+      _i1.ColumnValue(
+        table.changeSummary,
+        value,
+      );
 }
 
 class CourseVersionTable extends _i1.Table<int?> {
@@ -263,6 +307,14 @@ class CourseVersionTable extends _i1.Table<int?> {
       this,
       hasDefault: true,
     );
+    supersededByVersionId = _i1.ColumnInt(
+      'supersededByVersionId',
+      this,
+    );
+    changeSummary = _i1.ColumnString(
+      'changeSummary',
+      this,
+    );
   }
 
   late final CourseVersionUpdateTable updateTable;
@@ -283,6 +335,12 @@ class CourseVersionTable extends _i1.Table<int?> {
 
   /// Status: draft, approved, effective, obsolete.
   late final _i1.ColumnString status;
+
+  /// Version that supersedes this one (when obsolete).
+  late final _i1.ColumnInt supersededByVersionId;
+
+  /// Change summary when creating new version from existing (TRN-05).
+  late final _i1.ColumnString changeSummary;
 
   _i2.CourseTable get course {
     if (_course != null) return _course!;
@@ -305,6 +363,8 @@ class CourseVersionTable extends _i1.Table<int?> {
     effectiveDate,
     obsoleteDate,
     status,
+    supersededByVersionId,
+    changeSummary,
   ];
 
   @override

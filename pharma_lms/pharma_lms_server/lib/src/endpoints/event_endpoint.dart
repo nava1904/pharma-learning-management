@@ -32,4 +32,23 @@ class EventEndpoint extends Endpoint {
       roleId: roleId,
     );
   }
+
+  /// Trigger employee transferred event - assigns delta training for new role/dept.
+  Future<void> triggerEmployeeTransferred(
+    Session session, {
+    required String userId,
+    required String oldDepartmentId,
+    required String newDepartmentId,
+    required String oldRoleId,
+    required String newRoleId,
+  }) async {
+    await session.serverpod.endpoints.futureCalls!.callWithDelay(Duration.zero).kafkaEventProcessor
+        .processEmployeeTransferred(
+      userId: userId,
+      oldDepartmentId: oldDepartmentId,
+      newDepartmentId: newDepartmentId,
+      oldRoleId: oldRoleId,
+      newRoleId: newRoleId,
+    );
+  }
 }

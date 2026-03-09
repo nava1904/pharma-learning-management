@@ -1,0 +1,14 @@
+### Configurable e-signature meaning for 21 CFR Part 11 compliance.
+class: SignatureMeaning
+
+table: signature_meaning
+
+fields:
+  ### The meaning text (e.g., "I have read, understood, and agree to comply").
+  meaning: String
+  ### Whether this meaning is available for selection.
+  isActive: bool, default=true
+  ### Display order (lower = first).
+  orderIndex: int, default=0
+  ### Applicable to: training_completion, course_approval, capa_closure, document_acknowledgement.
+  applicableTo: String?

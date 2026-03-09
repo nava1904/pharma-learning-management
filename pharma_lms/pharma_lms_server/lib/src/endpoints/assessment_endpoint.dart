@@ -31,6 +31,17 @@ class AssessmentEndpoint extends Endpoint {
     required int assessmentId,
     int? enrollmentId,
   }) async {
+    if (enrollmentId != null) {
+      final enrollment = await Enrollment.db.findById(session, enrollmentId);
+      if (enrollment != null &&
+          enrollment.retrainingChangeSummary != null &&
+          enrollment.retrainingChangeSummary!.isNotEmpty &&
+          enrollment.acknowledgedAt == null) {
+        throw Exception(
+          'Retraining change summary must be acknowledged before taking the assessment.',
+        );
+      }
+    }
     final attempt = AssessmentAttempt(
       userId: userId,
       assessmentId: assessmentId,

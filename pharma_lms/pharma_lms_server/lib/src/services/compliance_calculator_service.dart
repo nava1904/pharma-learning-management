@@ -25,7 +25,9 @@ class ComplianceCalculatorService {
     for (final user in users) {
       final certs = await Certificate.db.find(
         session,
-        where: (t) => t.userId.equals(user.id!),
+        where: (t) =>
+            t.userId.equals(user.id!) &
+            t.status.notEquals('obsolete'),
       );
 
       var isCompliant = true;
@@ -65,7 +67,8 @@ class ComplianceCalculatorService {
   }
 
   /// Get compliance status for a single user.
-  /// Returns: compliant, overdueCount, upcomingCount, complianceRate.
+  /// Returns: compliant, overdueCount, upcomingCount, complianceRate, waivedCount.
+  /// ADM-07: Approved waivers count as satisfied for that course requirement.
   static Future<UserComplianceMetrics> getUserCompliance(
     Session session, {
     required int userId,
@@ -75,8 +78,16 @@ class ComplianceCalculatorService {
 
     final certs = await Certificate.db.find(
       session,
-      where: (t) => t.userId.equals(userId),
+      where: (t) =>
+          t.userId.equals(userId) & t.status.notEquals('obsolete'),
     );
+
+    final allWaivers = await TrainingWaiver.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.status.equals('approved'),
+    );
+    final waivers = allWaivers.where((w) =>
+        w.expiresAt == null || !w.expiresAt!.isBefore(cutoff)).toList();
 
     var compliant = true;
     var overdueCount = 0;
@@ -97,6 +108,7 @@ class ComplianceCalculatorService {
     }
 
     final total = certs.length;
+    final waivedCount = waivers.length;
     final rate = total > 0 ? (compliant ? 100.0 : 0.0) : 100.0;
 
     return UserComplianceMetrics(
@@ -105,6 +117,7 @@ class ComplianceCalculatorService {
       upcomingCount: upcomingCount,
       complianceRate: rate,
       totalCertificates: total,
+      waivedCount: waivedCount,
     );
   }
 

@@ -12,3 +12,9 @@ fields:
   documentType: String
   ### Organization for multi-tenant.
   organization: Organization?, relation
+  ### JSON array of department IDs affected by this document (for retraining scope).
+  affectedDepartmentIdsJson: String?
+  ### JSON array of role IDs affected by this document (for retraining scope).
+  affectedRoleIdsJson: String?
+  ### QA gate: training_required, no_training_required. Only trigger retraining when training_required.
+  trainingRequiredByQa: String?

@@ -5,13 +5,16 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/analytics_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/compliance_widget.dart';
+import '../../widgets/course_card.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/progress_ring.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/stat_card.dart';
-import '../../widgets/status_badge.dart';
 
 class EmployeeDashboardScreen extends ConsumerWidget {
   const EmployeeDashboardScreen({super.key});
@@ -23,6 +26,7 @@ class EmployeeDashboardScreen extends ConsumerWidget {
     final enrollmentsAsync = ref.watch(enrollmentsProvider);
     final assignmentsAsync = ref.watch(assignmentsProvider);
     final certificatesAsync = ref.watch(certificatesProvider);
+    final recentActivityAsync = ref.watch(recentActivityProvider);
 
     return AppShell(
       title: 'Employee Portal',
@@ -34,6 +38,7 @@ class EmployeeDashboardScreen extends ConsumerWidget {
           ref.invalidate(enrollmentsProvider);
           ref.invalidate(assignmentsProvider);
           ref.invalidate(certificatesProvider);
+          ref.invalidate(recentActivityProvider);
         },
         child: userAsync.when(
           data: (user) {
@@ -53,6 +58,7 @@ class EmployeeDashboardScreen extends ConsumerWidget {
               enrollmentsAsync: enrollmentsAsync,
               assignmentsAsync: assignmentsAsync,
               certificatesAsync: certificatesAsync,
+              recentActivityAsync: recentActivityAsync,
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -83,6 +89,7 @@ class _EmployeeDashboardContent extends ConsumerWidget {
     required this.enrollmentsAsync,
     required this.assignmentsAsync,
     required this.certificatesAsync,
+    required this.recentActivityAsync,
   });
 
   final PharmaUser user;
@@ -91,12 +98,16 @@ class _EmployeeDashboardContent extends ConsumerWidget {
   final AsyncValue<List<Enrollment>> enrollmentsAsync;
   final AsyncValue<List<TrainingAssignment>> assignmentsAsync;
   final AsyncValue<List<Certificate>> certificatesAsync;
+  final AsyncValue<List<Map<String, dynamic>>> recentActivityAsync;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final assignments = assignmentsAsync.valueOrNull ?? [];
     final enrollments = enrollmentsAsync.valueOrNull ?? [];
-    final certificates = certificatesAsync.valueOrNull ?? [];
+    final allCertificates = certificatesAsync.valueOrNull ?? [];
+    final certificates = allCertificates
+        .where((c) => (c.status ?? 'active') != 'obsolete')
+        .toList();
 
     final completedCount =
         enrollments.where((e) => e.status == 'completed').length;
@@ -104,13 +115,13 @@ class _EmployeeDashboardContent extends ConsumerWidget {
     final activeCount =
         enrollments.where((e) => e.status == 'in_progress').length;
 
-    final dueSoon = assignments.where((a) {
+    final overdue =
+        assignments.where((a) => a.dueDate.isBefore(DateTime.now())).toList();
+    final dueThisWeek = assignments.where((a) {
       final due = a.dueDate;
       return due.isAfter(DateTime.now()) &&
           due.difference(DateTime.now()).inDays <= 7;
     }).toList();
-    final overdue =
-        assignments.where((a) => a.dueDate.isBefore(DateTime.now())).toList();
 
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -118,11 +129,60 @@ class _EmployeeDashboardContent extends ConsumerWidget {
         complianceAsync.when(
           data: (c) {
             if (c == null) return const SizedBox.shrink();
-            return ComplianceWidget(
-              title: 'Compliance Health',
-              subtitle: '${user.departmentId} - ${user.jobRoleId}',
-              percentage: c.complianceRate,
-              completedLabel: '$completedCount of $totalCount completed',
+            return Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                gradient: AppColors.cardGradient,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.slate200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  ProgressRing(
+                    progress: c.complianceRate / 100,
+                    size: 80,
+                    strokeWidth: 6,
+                    showLabel: true,
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, ${user.firstName}',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.slate900,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your learning journey - $completedCount of $totalCount completed',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.slate600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        ComplianceWidget(
+                          title: 'Compliance Health',
+                          subtitle: '${user.departmentId} - ${user.jobRoleId}',
+                          percentage: c.complianceRate,
+                          completedLabel: '$completedCount of $totalCount completed',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           },
           loading: () => const SizedBox.shrink(),
@@ -162,7 +222,7 @@ class _EmployeeDashboardContent extends ConsumerWidget {
             ),
           ],
         ),
-        if (dueSoon.isNotEmpty || overdue.isNotEmpty) ...[
+        if (overdue.isNotEmpty) ...[
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
@@ -171,69 +231,213 @@ class _EmployeeDashboardContent extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFFFECACA)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: AppColors.destructive, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Urgent Training Required',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF991B1B),
-                            ),
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: AppColors.destructive, size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Overdue Training',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF991B1B),
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${overdue.length} overdue assignment(s). Complete them to maintain compliance.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFFB91C1C),
                       ),
-                      Text(
-                        'You have training due within the next 7 days. Complete them to maintain your compliance status.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFFB91C1C),
-                            ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (dueThisWeek.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEFCE8),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFDE047)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.schedule,
+                        color: Color(0xFF854D0E), size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Due This Week',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF854D0E),
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${dueThisWeek.length} assignment(s) due within 7 days.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF854D0E),
                       ),
-                    ],
-                  ),
                 ),
               ],
             ),
           ),
         ],
         const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.slate200),
+        SectionHeader(
+          icon: Icons.school_rounded,
+          title: 'My Learning Path',
+          color: AppColors.teal600,
+          action: TextButton.icon(
+            onPressed: () => context.push('/employee/training-history'),
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('View History'),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'My Training Assignments',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.slate900,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              if (enrollments.isEmpty)
-                const EmptyState(message: 'No assigned trainings')
-              else
-                ...enrollments.map((e) => _EnrollmentTile(
-                      enrollment: e,
-                      assignment: assignments
-                          .where((a) =>
-                              a.courseVersionId == e.courseVersionId &&
-                              a.userId == userId)
-                          .firstOrNull,
-                      certificates: certificates,
-                      onTap: () => _openCourse(context, e, userId),
-                    )),
-            ],
+        ),
+        const SizedBox(height: 16),
+        if (enrollments.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.slate200),
+            ),
+            child: const EmptyState(
+              message: 'No assigned trainings',
+              icon: Icons.menu_book_rounded,
+              headline: 'No Training Assignments',
+              subtext: 'Your assigned courses will appear here.',
+            ),
+          )
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth > 900
+                  ? 4
+                  : (constraints.maxWidth > 600
+                      ? 3
+                      : (constraints.maxWidth > 400 ? 2 : 1));
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.85,
+                children: enrollments.map((e) {
+                  final assignment = assignments
+                      .where((a) =>
+                          a.courseVersionId == e.courseVersionId &&
+                          a.userId == userId)
+                      .firstOrNull;
+                  final progress = e.status == 'completed'
+                      ? 1.0
+                      : e.status == 'in_progress'
+                          ? 0.5
+                          : 0.0;
+                  final title =
+                      e.courseVersion?.course?.title ??
+                      'Course v${e.courseVersion?.version ?? '?'}';
+                  final dueStr = assignment != null
+                      ? 'Due: ${assignment.dueDate.toIso8601String().split('T').first}'
+                      : null;
+                  Certificate? cert;
+                  if (e.status == 'completed') {
+                    for (final c in allCertificates) {
+                      if (c.courseVersionId == e.courseVersionId &&
+                          c.userId == e.userId) {
+                        cert = c;
+                        break;
+                      }
+                    }
+                  }
+                  return CourseCard(
+                    title: title,
+                    subtitle: dueStr,
+                    progress: progress,
+                    status: e.status.replaceAll('_', ' '),
+                    onTap: () {
+                      if (e.status == 'completed' && cert?.id != null) {
+                        context.push('/certificate/${cert!.id}');
+                      } else {
+                        _openCourse(context, e, userId);
+                      }
+                    },
+                    ctaLabel: e.status == 'completed'
+                        ? 'View Certificate'
+                        : (e.status == 'in_progress' ? 'Continue' : 'Start'),
+                  );
+                }).toList(),
+              );
+            },
           ),
+        recentActivityAsync.when(
+          data: (activities) {
+            if (activities.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.slate200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SectionHeader(
+                        icon: Icons.history,
+                        title: 'Recent Activity',
+                        color: AppColors.slate600,
+                      ),
+                      const SizedBox(height: 16),
+                      ...activities.take(5).map((a) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Icon(Icons.history, size: 16, color: AppColors.slate500),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${a['action'] ?? 'Activity'}${a['courseTitle'] != null ? ' - ${a['courseTitle']}' : ''}',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ),
+                                if (a['timestamp'] != null)
+                                  Text(
+                                    _formatActivityTime(a['timestamp']),
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppColors.slate500,
+                                        ),
+                                  ),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
         ),
         const SizedBox(height: 24),
         Container(
@@ -246,12 +450,10 @@ class _EmployeeDashboardContent extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'My Certifications',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.slate900,
-                    ),
+              SectionHeader(
+                icon: Icons.workspace_premium_rounded,
+                title: 'My Certifications',
+                color: const Color(0xFFD97706),
               ),
               const SizedBox(height: 16),
               if (certificates.isEmpty)
@@ -334,6 +536,24 @@ class _EmployeeDashboardContent extends ConsumerWidget {
     );
   }
 
+  String _formatActivityTime(dynamic ts) {
+    if (ts == null) return '';
+    if (ts is String) {
+      try {
+        final dt = DateTime.tryParse(ts);
+        if (dt != null) {
+          final now = DateTime.now();
+          final diff = now.difference(dt);
+          if (diff.inDays > 0) return '${diff.inDays}d ago';
+          if (diff.inHours > 0) return '${diff.inHours}h ago';
+          if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+          return 'Just now';
+        }
+      } catch (_) {}
+    }
+    return ts.toString();
+  }
+
   void _openCourse(BuildContext context, Enrollment enrollment, int userId) {
     if (enrollment.status == 'completed') return;
     final courseVersionId = enrollment.courseVersionId;
@@ -353,121 +573,5 @@ class _EmployeeDashboardContent extends ConsumerWidget {
         },
       );
     });
-  }
-}
-
-class _EnrollmentTile extends StatelessWidget {
-  const _EnrollmentTile({
-    required this.enrollment,
-    required this.assignment,
-    required this.certificates,
-    required this.onTap,
-  });
-
-  final Enrollment enrollment;
-  final TrainingAssignment? assignment;
-  final List<Certificate> certificates;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final status = enrollment.status;
-    final isCompleted = status == 'completed';
-    final title =
-        enrollment.courseVersion?.course?.title ?? 'Course v${enrollment.courseVersion?.version ?? '?'}';
-    final course = enrollment.courseVersion?.course;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.slate50,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.slate900,
-                          ),
-                    ),
-                    const SizedBox(width: 8),
-                    StatusBadge(status: status),
-                    if (assignment?.priority == 'high')
-                      const Icon(Icons.priority_high, color: AppColors.destructive, size: 16),
-                  ],
-                ),
-                if (course?.description != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    course!.description!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.slate600,
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    if (course?.sopNumber != null)
-                      Text(
-                        '${course!.sopNumber} v${enrollment.courseVersion?.version ?? '?'}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.slate500,
-                            ),
-                      ),
-                    if (assignment != null) ...[
-                      const SizedBox(width: 16),
-                      Text(
-                        'Due: ${assignment!.dueDate.toIso8601String().split('T').first}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.slate500,
-                            ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (isCompleted)
-            Builder(
-              builder: (context) {
-                Certificate? cert;
-                for (final c in certificates) {
-                  if (c.courseVersionId == enrollment.courseVersionId &&
-                      c.userId == enrollment.userId) {
-                    cert = c;
-                    break;
-                  }
-                }
-                if (cert == null || cert.id == null) return const SizedBox.shrink();
-                final certId = cert.id!;
-                return TextButton(
-                  onPressed: () => context.push('/certificate/$certId'),
-                  child: const Text('View Certificate'),
-                );
-              },
-            )
-          else
-            ElevatedButton(
-              onPressed: onTap,
-              child: Text(
-                status == 'in_progress' ? 'Continue' : 'Start Training',
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }

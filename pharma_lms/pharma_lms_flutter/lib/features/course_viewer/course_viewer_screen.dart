@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
+import 'package:pharma_lms_client/src/protocol/material/material.dart' as protocol;
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/client.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Course viewer with modules, lessons, minimum read time, and assessment.
+/// Tab-focus pause: timer pauses when tab loses focus (server-enforced min read time).
 class CourseViewerScreen extends StatefulWidget {
   const CourseViewerScreen({
     super.key,
@@ -28,7 +33,8 @@ class CourseViewerScreen extends StatefulWidget {
   State<CourseViewerScreen> createState() => _CourseViewerScreenState();
 }
 
-class _CourseViewerScreenState extends State<CourseViewerScreen> {
+class _CourseViewerScreenState extends State<CourseViewerScreen>
+    with WidgetsBindingObserver {
   List<Module> _modules = [];
   List<Lesson> _lessons = [];
   String? _courseTitle;
@@ -37,25 +43,50 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
   int _currentLessonIndex = 0;
   int _currentLessonElapsedSeconds = 0;
   Timer? _readTimer;
+  bool _timerPaused = false;
   final Set<int> _lessonViewedMaterialIds = {};
   Lesson? _currentLessonWithMaterial;
   String? _materialViewUrl;
   bool _loadingMaterial = false;
   WebViewController? _materialWebController;
 
+  Enrollment? _enrollment;
+  bool _acknowledgementChecked = false;
+  bool _acknowledging = false;
+  String? _acknowledgementError;
+  List<SignatureMeaning> _signatureMeanings = [];
+  String? _selectedSignatureMeaning;
+  final _passwordController = TextEditingController();
+
   int get _effectiveUserId => widget.userId ?? 0;
   int get _effectiveCourseVersionId => widget.courseVersionId ?? 0;
+  bool get _showRetrainingGate =>
+      _enrollment?.retrainingChangeSummary != null &&
+      _enrollment!.retrainingChangeSummary!.isNotEmpty &&
+      _enrollment?.acknowledgedAt == null;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _readTimer?.cancel();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _timerPaused = true;
+    } else if (state == AppLifecycleState.resumed) {
+      _timerPaused = false;
+    }
   }
 
   Future<void> _load() async {
@@ -71,6 +102,24 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
           _loading = false;
         });
         return;
+      }
+
+      Enrollment? enrollment;
+      if (widget.enrollmentId != null) {
+        enrollment = await client.training.getEnrollmentById(widget.enrollmentId!);
+        if (enrollment != null &&
+            enrollment.retrainingChangeSummary != null &&
+            enrollment.acknowledgedAt == null) {
+          final meanings = await client.training.listSignatureMeanings();
+          if (mounted) {
+            setState(() {
+              _signatureMeanings = meanings;
+              _selectedSignatureMeaning = meanings.isNotEmpty
+                  ? meanings.first.meaning
+                  : 'I have read and understood';
+            });
+          }
+        }
       }
 
       final version = await client.course.getCourseVersion(courseVersionId);
@@ -99,6 +148,7 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
       }
 
       setState(() {
+        _enrollment = enrollment;
         _modules = modules;
         _lessons = allLessons;
         _loading = false;
@@ -121,22 +171,42 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
     if (_lessonViewedMaterialIds.contains(lesson.materialId)) return;
 
     _readTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      if (_timerPaused) return;
       _currentLessonElapsedSeconds++;
       setState(() {});
       if (_currentLessonElapsedSeconds >= requiredSeconds && _effectiveUserId > 0) {
         _readTimer?.cancel();
         _lessonViewedMaterialIds.add(lesson.materialId);
         try {
+          final interactionJson = _currentLessonWithMaterial?.material != null
+              ? _buildInteractionJson(_currentLessonWithMaterial!.material!)
+              : null;
           await client.material.updateProgress(
             userId: _effectiveUserId,
             materialId: lesson.materialId,
             progressPct: 100,
             completedAt: DateTime.now(),
+            timeSpentSeconds: _currentLessonElapsedSeconds,
+            readTimeMet: true,
+            lessonId: lesson.id,
+            enrollmentId: widget.enrollmentId,
+            interactionJson: interactionJson,
           );
         } catch (_) {}
         setState(() {});
       }
     });
+  }
+
+  String? _buildInteractionJson(protocol.Material material) {
+    final type = material.materialType.toLowerCase();
+    if (type == 'video') {
+      return '{"videoWatchedPct": 100}';
+    }
+    if (type == 'pdf') {
+      return '{"pdfScrollPct": 100}';
+    }
+    return null;
   }
 
   void _stopReadTimer() {
@@ -162,6 +232,55 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
 
   bool _canProceed(Lesson lesson) =>
       _lessonViewedMaterialIds.contains(lesson.materialId);
+
+  String? _hashPassword(String password) {
+    if (password.isEmpty) return null;
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  Future<void> _performAcknowledgement() async {
+    final enrollmentId = widget.enrollmentId;
+    final userId = _effectiveUserId;
+    if (enrollmentId == null || userId == 0) return;
+
+    final password = _passwordController.text.trim();
+    if (password.isEmpty) {
+      setState(() => _acknowledgementError = 'Password is required for re-authentication.');
+      return;
+    }
+
+    setState(() {
+      _acknowledging = true;
+      _acknowledgementError = null;
+    });
+
+    try {
+      final passwordHash = _hashPassword(password);
+      final updated = await client.training.acknowledgeRetraining(
+        enrollmentId: enrollmentId,
+        userId: userId,
+        signatureMeaning: _selectedSignatureMeaning ?? 'I have read and understood',
+        passwordReauthHash: passwordHash,
+      );
+      if (mounted) {
+        setState(() {
+          _enrollment = updated;
+          _acknowledging = false;
+          _acknowledgementError = null;
+          _passwordController.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _acknowledging = false;
+          _acknowledgementError = e.toString();
+        });
+      }
+    }
+  }
 
   Future<void> _loadLessonMaterial(Lesson lesson) async {
     if (lesson.id == null) return;
@@ -227,9 +346,113 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
       );
     }
 
+    if (_showRetrainingGate) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(_courseTitle ?? 'Course'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Retraining Change Summary',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _enrollment!.retrainingChangeSummary!,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 24),
+                      CheckboxListTile(
+                        value: _acknowledgementChecked,
+                        onChanged: (v) =>
+                            setState(() => _acknowledgementChecked = v ?? false),
+                        title: const Text(
+                          'I have read and understood the changes above.',
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      if (_acknowledgementChecked) ...[
+                        const SizedBox(height: 16),
+                        if (_signatureMeanings.isNotEmpty)
+                          DropdownButtonFormField<String>(
+                            value: _selectedSignatureMeaning,
+                            decoration: const InputDecoration(
+                              labelText: 'Signature meaning',
+                            ),
+                            items: _signatureMeanings
+                                .map((m) => DropdownMenuItem(
+                                      value: m.meaning,
+                                      child: Text(m.meaning),
+                                    ))
+                                .toList(),
+                            onChanged: (v) =>
+                                setState(() => _selectedSignatureMeaning = v),
+                          ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Password (re-authentication)',
+                          ),
+                        ),
+                        if (_acknowledgementError != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _acknowledgementError!,
+                            style: TextStyle(color: Colors.red[700]),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _acknowledging
+                                ? null
+                                : _performAcknowledgement,
+                            icon: _acknowledging
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.draw),
+                            label: Text(_acknowledging ? 'Signing...' : 'E-Sign'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final currentLesson = _lessons.isNotEmpty && _currentLessonIndex < _lessons.length
         ? _lessons[_currentLessonIndex]
         : null;
+
+    final progress = _lessons.isEmpty
+        ? 0.0
+        : _lessonViewedMaterialIds.length / _lessons.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -241,6 +464,42 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Progress',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: AppColors.slate600,
+                          ),
+                    ),
+                    Text(
+                      '${(progress * 100).round()}%',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.teal600,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: AppColors.slate200,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.teal600),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -411,7 +670,8 @@ class _CourseViewerScreenState extends State<CourseViewerScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _allLessonsViewed &&
+                  onPressed: !_showRetrainingGate &&
+                          _allLessonsViewed &&
                           widget.enrollmentId != null &&
                           _effectiveCourseVersionId > 0
                       ? () {

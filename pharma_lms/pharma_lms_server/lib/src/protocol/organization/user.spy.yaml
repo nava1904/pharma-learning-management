@@ -24,3 +24,13 @@ fields:
   createdAt: DateTime, default=now
   ### Optional link to serverpod auth user ID.
   authUserId: int?
+  ### HR system employee ID.
+  employeeId: String?
+  ### Hire date.
+  hireDate: DateTime?
+  ### Manager user ID.
+  managerId: int?
+  ### Preferred language code.
+  preferredLanguage: String?
+  ### User timezone (e.g., America/New_York).
+  timezone: String?, default='UTC'

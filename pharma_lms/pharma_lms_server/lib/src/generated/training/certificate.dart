@@ -34,7 +34,9 @@ abstract class Certificate
     this.qrCode,
     required this.esignatureId,
     this.esignature,
-  }) : issuedAt = issuedAt ?? DateTime.now();
+    String? status,
+  }) : issuedAt = issuedAt ?? DateTime.now(),
+       status = status ?? 'active';
 
   factory Certificate({
     int? id,
@@ -49,6 +51,7 @@ abstract class Certificate
     String? qrCode,
     required int esignatureId,
     _i5.ElectronicSignature? esignature,
+    String? status,
   }) = _CertificateImpl;
 
   factory Certificate.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -85,6 +88,7 @@ abstract class Certificate
           : _i6.Protocol().deserialize<_i5.ElectronicSignature>(
               jsonSerialization['esignature'],
             ),
+      status: jsonSerialization['status'] as String?,
     );
   }
 
@@ -124,6 +128,9 @@ abstract class Certificate
   /// Electronic signature.
   _i5.ElectronicSignature? esignature;
 
+  /// Status: active, obsolete, expired. Obsolete when course version superseded; expired when past expiresAt.
+  String status;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -143,6 +150,7 @@ abstract class Certificate
     String? qrCode,
     int? esignatureId,
     _i5.ElectronicSignature? esignature,
+    String? status,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -160,6 +168,7 @@ abstract class Certificate
       if (qrCode != null) 'qrCode': qrCode,
       'esignatureId': esignatureId,
       if (esignature != null) 'esignature': esignature?.toJson(),
+      'status': status,
     };
   }
 
@@ -181,6 +190,7 @@ abstract class Certificate
       if (qrCode != null) 'qrCode': qrCode,
       'esignatureId': esignatureId,
       if (esignature != null) 'esignature': esignature?.toJsonForProtocol(),
+      'status': status,
     };
   }
 
@@ -240,6 +250,7 @@ class _CertificateImpl extends Certificate {
     String? qrCode,
     required int esignatureId,
     _i5.ElectronicSignature? esignature,
+    String? status,
   }) : super._(
          id: id,
          userId: userId,
@@ -253,6 +264,7 @@ class _CertificateImpl extends Certificate {
          qrCode: qrCode,
          esignatureId: esignatureId,
          esignature: esignature,
+         status: status,
        );
 
   /// Returns a shallow copy of this [Certificate]
@@ -272,6 +284,7 @@ class _CertificateImpl extends Certificate {
     Object? qrCode = _Undefined,
     int? esignatureId,
     Object? esignature = _Undefined,
+    String? status,
   }) {
     return Certificate(
       id: id is int? ? id : this.id,
@@ -292,6 +305,7 @@ class _CertificateImpl extends Certificate {
       esignature: esignature is _i5.ElectronicSignature?
           ? esignature
           : this.esignature?.copyWith(),
+      status: status ?? this.status,
     );
   }
 }
@@ -335,6 +349,11 @@ class CertificateUpdateTable extends _i1.UpdateTable<CertificateTable> {
     table.esignatureId,
     value,
   );
+
+  _i1.ColumnValue<String, String> status(String value) => _i1.ColumnValue(
+    table.status,
+    value,
+  );
 }
 
 class CertificateTable extends _i1.Table<int?> {
@@ -369,6 +388,11 @@ class CertificateTable extends _i1.Table<int?> {
       'esignatureId',
       this,
     );
+    status = _i1.ColumnString(
+      'status',
+      this,
+      hasDefault: true,
+    );
   }
 
   late final CertificateUpdateTable updateTable;
@@ -401,6 +425,9 @@ class CertificateTable extends _i1.Table<int?> {
 
   /// Electronic signature.
   _i5.ElectronicSignatureTable? _esignature;
+
+  /// Status: active, obsolete, expired. Obsolete when course version superseded; expired when past expiresAt.
+  late final _i1.ColumnString status;
 
   _i2.PharmaUserTable get user {
     if (_user != null) return _user!;
@@ -464,6 +491,7 @@ class CertificateTable extends _i1.Table<int?> {
     expiresAt,
     qrCode,
     esignatureId,
+    status,
   ];
 
   @override

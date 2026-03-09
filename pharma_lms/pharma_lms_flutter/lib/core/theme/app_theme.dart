@@ -23,6 +23,7 @@ class AppRadius {
   static const double md = 8;
   static const double lg = 10;
   static const double xl = 12;
+  static const double xxl = 16;
 }
 
 /// Pharma LMS theme matching Figma reference.
@@ -58,10 +59,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColors.background,
-        elevation: 0,
+        elevation: 1,
+        shadowColor: Colors.black.withValues(alpha: 0.06),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: const BorderSide(color: AppColors.slate200),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: const BorderSide(color: AppColors.slate200, width: 0.5),
         ),
         clipBehavior: Clip.antiAlias,
       ),

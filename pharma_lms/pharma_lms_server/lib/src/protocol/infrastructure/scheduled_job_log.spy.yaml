@@ -1,0 +1,20 @@
+### Scheduled job execution log. GMP.
+class: ScheduledJobLog
+
+table: scheduled_job_log
+
+fields:
+  ### Job name: CertExpiryCheck, ComplianceCalc, NotificationWorker, CapaEffectivenessCheck.
+  jobName: String
+  ### When started.
+  startedAt: DateTime, default=now
+  ### When completed.
+  completedAt: DateTime?
+  ### Status: running, completed, failed.
+  status: String, default='running'
+  ### Records processed.
+  recordsProcessed: int?
+  ### Records affected.
+  recordsAffected: int?
+  ### Error details if failed.
+  errorDetails: String?

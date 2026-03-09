@@ -25,6 +25,7 @@ abstract class TrainingExpiration implements _i1.SerializableModel {
     this.reminderSentAt,
     this.renewalAssignmentId,
     this.renewalAssignment,
+    this.expiryStage,
   });
 
   factory TrainingExpiration({
@@ -35,6 +36,7 @@ abstract class TrainingExpiration implements _i1.SerializableModel {
     DateTime? reminderSentAt,
     int? renewalAssignmentId,
     _i3.TrainingAssignment? renewalAssignment,
+    String? expiryStage,
   }) = _TrainingExpirationImpl;
 
   factory TrainingExpiration.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -60,6 +62,7 @@ abstract class TrainingExpiration implements _i1.SerializableModel {
           : _i4.Protocol().deserialize<_i3.TrainingAssignment>(
               jsonSerialization['renewalAssignment'],
             ),
+      expiryStage: jsonSerialization['expiryStage'] as String?,
     );
   }
 
@@ -84,6 +87,9 @@ abstract class TrainingExpiration implements _i1.SerializableModel {
   /// Renewal assignment if created.
   _i3.TrainingAssignment? renewalAssignment;
 
+  /// Expiry ladder stage: 90d, 60d, 30d, 7d, expired (ADM-06).
+  String? expiryStage;
+
   /// Returns a shallow copy of this [TrainingExpiration]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -95,6 +101,7 @@ abstract class TrainingExpiration implements _i1.SerializableModel {
     DateTime? reminderSentAt,
     int? renewalAssignmentId,
     _i3.TrainingAssignment? renewalAssignment,
+    String? expiryStage,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -109,6 +116,7 @@ abstract class TrainingExpiration implements _i1.SerializableModel {
         'renewalAssignmentId': renewalAssignmentId,
       if (renewalAssignment != null)
         'renewalAssignment': renewalAssignment?.toJson(),
+      if (expiryStage != null) 'expiryStage': expiryStage,
     };
   }
 
@@ -129,6 +137,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
     DateTime? reminderSentAt,
     int? renewalAssignmentId,
     _i3.TrainingAssignment? renewalAssignment,
+    String? expiryStage,
   }) : super._(
          id: id,
          certificateId: certificateId,
@@ -137,6 +146,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
          reminderSentAt: reminderSentAt,
          renewalAssignmentId: renewalAssignmentId,
          renewalAssignment: renewalAssignment,
+         expiryStage: expiryStage,
        );
 
   /// Returns a shallow copy of this [TrainingExpiration]
@@ -151,6 +161,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
     Object? reminderSentAt = _Undefined,
     Object? renewalAssignmentId = _Undefined,
     Object? renewalAssignment = _Undefined,
+    Object? expiryStage = _Undefined,
   }) {
     return TrainingExpiration(
       id: id is int? ? id : this.id,
@@ -168,6 +179,7 @@ class _TrainingExpirationImpl extends TrainingExpiration {
       renewalAssignment: renewalAssignment is _i3.TrainingAssignment?
           ? renewalAssignment
           : this.renewalAssignment?.copyWith(),
+      expiryStage: expiryStage is String? ? expiryStage : this.expiryStage,
     );
   }
 }

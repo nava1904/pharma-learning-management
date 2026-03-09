@@ -23,6 +23,9 @@ abstract class Document implements _i1.SerializableModel {
     required this.documentType,
     required this.organizationId,
     this.organization,
+    this.affectedDepartmentIdsJson,
+    this.affectedRoleIdsJson,
+    this.trainingRequiredByQa,
   });
 
   factory Document({
@@ -32,6 +35,9 @@ abstract class Document implements _i1.SerializableModel {
     required String documentType,
     required int organizationId,
     _i2.Organization? organization,
+    String? affectedDepartmentIdsJson,
+    String? affectedRoleIdsJson,
+    String? trainingRequiredByQa,
   }) = _DocumentImpl;
 
   factory Document.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -46,6 +52,11 @@ abstract class Document implements _i1.SerializableModel {
           : _i3.Protocol().deserialize<_i2.Organization>(
               jsonSerialization['organization'],
             ),
+      affectedDepartmentIdsJson:
+          jsonSerialization['affectedDepartmentIdsJson'] as String?,
+      affectedRoleIdsJson: jsonSerialization['affectedRoleIdsJson'] as String?,
+      trainingRequiredByQa:
+          jsonSerialization['trainingRequiredByQa'] as String?,
     );
   }
 
@@ -68,6 +79,15 @@ abstract class Document implements _i1.SerializableModel {
   /// Organization for multi-tenant.
   _i2.Organization? organization;
 
+  /// JSON array of department IDs affected by this document (for retraining scope).
+  String? affectedDepartmentIdsJson;
+
+  /// JSON array of role IDs affected by this document (for retraining scope).
+  String? affectedRoleIdsJson;
+
+  /// QA gate: training_required, no_training_required. Only trigger retraining when training_required.
+  String? trainingRequiredByQa;
+
   /// Returns a shallow copy of this [Document]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -78,6 +98,9 @@ abstract class Document implements _i1.SerializableModel {
     String? documentType,
     int? organizationId,
     _i2.Organization? organization,
+    String? affectedDepartmentIdsJson,
+    String? affectedRoleIdsJson,
+    String? trainingRequiredByQa,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -89,6 +112,12 @@ abstract class Document implements _i1.SerializableModel {
       'documentType': documentType,
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
+      if (affectedDepartmentIdsJson != null)
+        'affectedDepartmentIdsJson': affectedDepartmentIdsJson,
+      if (affectedRoleIdsJson != null)
+        'affectedRoleIdsJson': affectedRoleIdsJson,
+      if (trainingRequiredByQa != null)
+        'trainingRequiredByQa': trainingRequiredByQa,
     };
   }
 
@@ -108,6 +137,9 @@ class _DocumentImpl extends Document {
     required String documentType,
     required int organizationId,
     _i2.Organization? organization,
+    String? affectedDepartmentIdsJson,
+    String? affectedRoleIdsJson,
+    String? trainingRequiredByQa,
   }) : super._(
          id: id,
          title: title,
@@ -115,6 +147,9 @@ class _DocumentImpl extends Document {
          documentType: documentType,
          organizationId: organizationId,
          organization: organization,
+         affectedDepartmentIdsJson: affectedDepartmentIdsJson,
+         affectedRoleIdsJson: affectedRoleIdsJson,
+         trainingRequiredByQa: trainingRequiredByQa,
        );
 
   /// Returns a shallow copy of this [Document]
@@ -128,6 +163,9 @@ class _DocumentImpl extends Document {
     String? documentType,
     int? organizationId,
     Object? organization = _Undefined,
+    Object? affectedDepartmentIdsJson = _Undefined,
+    Object? affectedRoleIdsJson = _Undefined,
+    Object? trainingRequiredByQa = _Undefined,
   }) {
     return Document(
       id: id is int? ? id : this.id,
@@ -138,6 +176,15 @@ class _DocumentImpl extends Document {
       organization: organization is _i2.Organization?
           ? organization
           : this.organization?.copyWith(),
+      affectedDepartmentIdsJson: affectedDepartmentIdsJson is String?
+          ? affectedDepartmentIdsJson
+          : this.affectedDepartmentIdsJson,
+      affectedRoleIdsJson: affectedRoleIdsJson is String?
+          ? affectedRoleIdsJson
+          : this.affectedRoleIdsJson,
+      trainingRequiredByQa: trainingRequiredByQa is String?
+          ? trainingRequiredByQa
+          : this.trainingRequiredByQa,
     );
   }
 }

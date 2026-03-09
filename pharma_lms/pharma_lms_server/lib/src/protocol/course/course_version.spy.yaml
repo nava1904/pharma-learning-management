@@ -14,3 +14,7 @@ fields:
   obsoleteDate: DateTime?
   ### Status: draft, approved, effective, obsolete.
   status: String, default='draft'
+  ### Version that supersedes this one (when obsolete).
+  supersededByVersionId: int?
+  ### Change summary when creating new version from existing (TRN-05).
+  changeSummary: String?

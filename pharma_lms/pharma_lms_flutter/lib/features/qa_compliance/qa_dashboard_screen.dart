@@ -9,6 +9,7 @@ import '../../providers/analytics_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/stat_card.dart';
 
 /// QA Dashboard: Overview, Approvals, Compliance tabs.
@@ -69,6 +70,37 @@ class _QADashboardScreenState extends ConsumerState<QADashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Quick links
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () => context.push('/documents'),
+                  icon: const Icon(Icons.description, size: 18),
+                  label: const Text('Document Control'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => context.push('/quality-events'),
+                  icon: const Icon(Icons.warning_amber, size: 18),
+                  label: const Text('Quality Events'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => context.push('/inspection-management'),
+                  icon: const Icon(Icons.assignment, size: 18),
+                  label: const Text('Inspection Management'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => context.push('/admin/training-waivers'),
+                  icon: const Icon(Icons.verified_user, size: 18),
+                  label: const Text('Training Waivers'),
+                ),
+              ],
+            ),
+          ),
           // Tabs
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -215,6 +247,12 @@ class _OverviewTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             children: [
+              SectionHeader(
+                icon: Icons.dashboard,
+                title: 'Overview',
+                color: AppColors.indigo600,
+              ),
+              const SizedBox(height: 16),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final crossAxisCount = constraints.maxWidth > 600
@@ -366,14 +404,11 @@ class _OverviewTab extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Recent QA Activities',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.slate900,
-                          ),
+                    SectionHeader(
+                      icon: Icons.history,
+                      title: 'Recent QA Activities',
+                      color: AppColors.slate600,
                     ),
-                    const SizedBox(height: 16),
                     const EmptyState(
                       message:
                           'No recent activities. Approve or reject courses to see activity here.',
@@ -440,6 +475,12 @@ class _ApprovalsTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             children: [
+              SectionHeader(
+                icon: Icons.pending_actions,
+                title: 'Pending Course Approvals',
+                color: const Color(0xFFD97706),
+              ),
+              const SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.background,
@@ -564,36 +605,15 @@ class _ComplianceTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Department Compliance Monitoring',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.slate900,
-                            ),
-                      ),
-                      Text(
-                        'Real-time compliance tracking across all departments',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.slate600,
-                            ),
-                      ),
-                    ],
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => context.push('/compliance-report'),
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Export Report'),
-                  ),
-                ],
+              SectionHeader(
+                icon: Icons.trending_up,
+                title: 'Department Compliance Monitoring',
+                color: AppColors.teal600,
+                action: ElevatedButton.icon(
+                  onPressed: () => context.push('/compliance-report'),
+                  icon: const Icon(Icons.download, size: 18),
+                  label: const Text('Export Report'),
+                ),
               ),
               const SizedBox(height: 24),
               if (compliance.isEmpty)

@@ -1,0 +1,24 @@
+### Training matrix - role to course mapping. GMP.
+class: TrainingMatrix
+
+table: training_matrix
+
+fields:
+  ### The job role.
+  jobRole: JobRole?, relation
+  ### The course.
+  course: Course?, relation
+  ### Site (nullable for org-wide).
+  site: Site?, relation(optional)
+  ### Whether mandatory for this role.
+  isMandatory: bool, default=true
+  ### Days from hire to complete (default 60 for onboarding).
+  dueDaysFromHire: int, default=60
+  ### Retraining interval in days (for recurring certs).
+  retrainingIntervalDays: int?
+  ### Who created.
+  createdBy: PharmaUser?, relation(optional)
+  ### QA approval for matrix changes.
+  approvedBy: PharmaUser?, relation(optional)
+  ### When effective.
+  effectiveDate: DateTime?

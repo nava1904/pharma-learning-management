@@ -1,0 +1,8 @@
+### Result of e-signature integrity verification.
+class: SignatureVerificationResult
+
+fields:
+  ### The signature (null if not found).
+  signature: ElectronicSignature?
+  ### True when HMAC mismatch - tampering detected.
+  integrityViolation: bool, default=false

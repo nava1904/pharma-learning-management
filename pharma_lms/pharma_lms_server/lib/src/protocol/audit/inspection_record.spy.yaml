@@ -1,0 +1,34 @@
+### Inspection record for auditor access. FDA 21 CFR Part 11.
+class: InspectionRecord
+
+table: inspection_record
+
+fields:
+  ### Inspection type: fda, ema, internal, customer.
+  inspectionType: String
+  ### Scheduled date.
+  scheduledDate: DateTime?
+  ### Inspector names.
+  inspectorNames: String?
+  ### Scope description.
+  scopeDescription: String?
+  ### Site in scope.
+  site: Site?, relation(optional)
+  ### Status: scheduled, in_progress, completed, follow_up.
+  status: String, default='scheduled'
+  ### Time-limited access token for auditor.
+  inspectionAccessToken: String?
+  ### When token expires.
+  tokenExpiresAt: DateTime?
+  ### Briefing pack hash.
+  briefingPackHash: String?
+  ### When briefing pack was generated.
+  briefingPackGeneratedAt: DateTime?
+  ### Outcome: no_findings, observations, warning_letter.
+  outcome: String?
+  ### Findings count.
+  findingsCount: int?
+  ### Who created this record.
+  createdBy: PharmaUser?, relation(optional)
+  ### When created.
+  createdAt: DateTime, default=now

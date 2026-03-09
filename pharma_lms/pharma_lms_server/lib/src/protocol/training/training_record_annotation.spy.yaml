@@ -1,0 +1,14 @@
+### QA annotation on a training record.
+class: TrainingRecordAnnotation
+
+table: training_record_annotation
+
+fields:
+  ### The training record.
+  trainingRecord: TrainingRecord?, relation
+  ### Author (QA user who added the note).
+  author: PharmaUser?, relation
+  ### Note text.
+  note: String
+  ### When created.
+  createdAt: DateTime, default=now

@@ -1,0 +1,29 @@
+### Training waiver - exempt user from course requirement. ADM-07.
+### Request flow: employee/admin requests -> QA approves with evidence.
+class: TrainingWaiver
+
+table: training_waiver
+
+fields:
+  ### The user being waived.
+  user: PharmaUser?, relation
+  ### The course requirement being waived.
+  course: Course?, relation
+  ### Who requested (admin or employee).
+  requestedBy: PharmaUser?, relation
+  ### When requested.
+  requestedAt: DateTime, default=now
+  ### Justification for waiver request.
+  requestReason: String
+  ### Cloud storage path for evidence attachment (e.g. prior cert, justification doc).
+  evidenceStoragePath: String?
+  ### Status: pending, approved, rejected.
+  status: String, default='pending'
+  ### QA user who approved/rejected.
+  approvedBy: PharmaUser?, relation(optional)
+  ### When approved/rejected.
+  approvedAt: DateTime?
+  ### Rejection reason when status is rejected.
+  rejectionReason: String?
+  ### Optional expiry - waiver valid until this date.
+  expiresAt: DateTime?

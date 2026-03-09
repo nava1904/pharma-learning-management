@@ -1,0 +1,22 @@
+### Course review record - QA approval workflow. FDA 21 CFR Part 11.
+class: CourseReview
+
+table: course_review
+
+fields:
+  ### The course version reviewed.
+  courseVersion: CourseVersion?, relation
+  ### QA reviewer.
+  reviewer: PharmaUser?, relation
+  ### Review type: initial, re_review_after_changes.
+  reviewType: String, default='initial'
+  ### Decision: approved, rejected, returned_for_changes.
+  decision: String
+  ### Review comments.
+  comments: String?
+  ### Review checklist as JSON.
+  reviewChecklistJson: String?
+  ### When reviewed.
+  reviewedAt: DateTime, default=now
+  ### E-signature for approval.
+  esignature: ElectronicSignature?, relation(optional)

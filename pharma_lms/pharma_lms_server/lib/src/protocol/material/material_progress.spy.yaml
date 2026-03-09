@@ -14,3 +14,11 @@ fields:
   completedAt: DateTime?
   ### Interaction data as JSON (watch/pause, scroll depth).
   interactionJson: String?
+  ### Material version for retraining tracking.
+  materialVersionId: int?
+  ### Enrollment this progress belongs to.
+  enrollmentId: int?
+  ### Active engagement time in seconds.
+  timeSpentSeconds: int?
+  ### Whether minimum read time was met.
+  readTimeMet: bool?

@@ -3,11 +3,73 @@ import 'dart:convert';
 import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart';
 
+import '../audit_event_types.dart';
 import '../generated/protocol.dart';
+import '../services/audit_service.dart';
 import '../services/training_assignment_service.dart';
 
 /// Training Administrator domain endpoint.
 class AdminEndpoint extends Endpoint {
+  /// List all signature meanings (admin - includes inactive).
+  Future<List<SignatureMeaning>> listSignatureMeanings(Session session) async {
+    return await SignatureMeaning.db.find(
+      session,
+      orderBy: (t) => t.orderIndex,
+    );
+  }
+
+  /// Create a signature meaning.
+  Future<SignatureMeaning> createSignatureMeaning(
+    Session session, {
+    required String meaning,
+    bool isActive = true,
+    int orderIndex = 0,
+  }) async {
+    final result = await SignatureMeaning.db.insertRow(
+      session,
+      SignatureMeaning(
+        meaning: meaning,
+        isActive: isActive,
+        orderIndex: orderIndex,
+      ),
+    );
+    await AuditService.log(
+      session,
+      entityType: 'signature_meaning',
+      entityId: (result.id ?? 0).toString(),
+      action: AuditEventType.configChanged,
+      newValueJson: '{"meaning":"$meaning","isActive":$isActive,"orderIndex":$orderIndex}',
+    );
+    return result;
+  }
+
+  /// Update a signature meaning.
+  Future<SignatureMeaning> updateSignatureMeaning(
+    Session session, {
+    required int id,
+    String? meaning,
+    bool? isActive,
+    int? orderIndex,
+  }) async {
+    final existing = await SignatureMeaning.db.findById(session, id);
+    if (existing == null) throw Exception('Signature meaning not found');
+    final updated = existing.copyWith(
+      meaning: meaning ?? existing.meaning,
+      isActive: isActive ?? existing.isActive,
+      orderIndex: orderIndex ?? existing.orderIndex,
+    );
+    final result = await SignatureMeaning.db.updateRow(session, updated);
+    await AuditService.log(
+      session,
+      entityType: 'signature_meaning',
+      entityId: id.toString(),
+      action: AuditEventType.configChanged,
+      oldValueJson: '{"meaning":"${existing.meaning}","isActive":${existing.isActive}}',
+      newValueJson: '{"meaning":"${result.meaning}","isActive":${result.isActive}}',
+    );
+    return result;
+  }
+
   /// Assign training to all users in a department.
   Future<List<TrainingAssignment>> assignTrainingToDepartment(
     Session session, {
@@ -144,7 +206,15 @@ class AdminEndpoint extends Endpoint {
     final role = await JobRole.db.findById(session, jobRoleId);
     if (role == null) throw Exception('Job role not found');
     final updated = role.copyWith(trainingMatrixJson: trainingMatrixJson);
-    return await JobRole.db.updateRow(session, updated);
+    final result = await JobRole.db.updateRow(session, updated);
+    await AuditService.log(
+      session,
+      entityType: 'job_role',
+      entityId: jobRoleId.toString(),
+      action: AuditEventType.configChanged,
+      newValueJson: '{"jobRoleId":$jobRoleId,"trainingMatrixJson":"$trainingMatrixJson"}',
+    );
+    return result;
   }
 
   /// Get course version IDs from JobRole training matrix (course IDs -> latest approved version).
@@ -163,7 +233,7 @@ class AdminEndpoint extends Endpoint {
       for (final courseId in courseIds) {
         final vers = await CourseVersion.db.find(
           session,
-          where: (t) => t.courseId.equals(courseId) & (t.status.equals('approved') | t.status.equals('effective')),
+          where: (t) => t.courseId.equals(courseId) & t.status.equals('effective'),
           orderBy: (t) => t.id,
           orderDescending: true,
           limit: 1,
@@ -188,6 +258,13 @@ class AdminEndpoint extends Endpoint {
     final assignments = <TrainingAssignment>[];
 
     for (final courseVersionId in curriculum) {
+      final hasActive = await TrainingAssignmentService.hasActiveEnrollment(
+        session,
+        userId: userId,
+        courseVersionId: courseVersionId,
+      );
+      if (hasActive) continue;
+
       final assignment = await TrainingAssignmentService.assign(
         session,
         userId: userId,
@@ -222,7 +299,144 @@ class AdminEndpoint extends Endpoint {
       authUserId: authUserId,
       blocked: true,
     );
+    await AuditService.log(
+      session,
+      entityType: 'auth_user',
+      entityId: authUserId.toString(),
+      action: 'UserLocked',
+      newValueJson: '{"email":"$email"}',
+    );
     return true;
+  }
+
+  /// ADM-07: Request a training waiver (admin creates request for user).
+  Future<TrainingWaiver> requestTrainingWaiver(
+    Session session, {
+    required int userId,
+    required int courseId,
+    required int requestedById,
+    required String requestReason,
+    String? evidenceStoragePath,
+    DateTime? expiresAt,
+  }) async {
+    final existing = await TrainingWaiver.db.findFirstRow(
+      session,
+      where: (t) =>
+          t.userId.equals(userId) &
+          t.courseId.equals(courseId) &
+          t.status.equals('approved'),
+    );
+    if (existing != null) {
+      throw Exception('User already has an approved waiver for this course');
+    }
+    final waiver = await TrainingWaiver.db.insertRow(
+      session,
+      TrainingWaiver(
+        userId: userId,
+        courseId: courseId,
+        requestedById: requestedById,
+        requestReason: requestReason,
+        evidenceStoragePath: evidenceStoragePath,
+        expiresAt: expiresAt,
+      ),
+    );
+    await AuditService.log(
+      session,
+      entityType: 'training_waiver',
+      entityId: waiver.id.toString(),
+      action: 'WaiverRequested',
+      newValueJson: '{"userId":$userId,"courseId":$courseId}',
+    );
+    return waiver;
+  }
+
+  /// ADM-07: List training waivers with optional filters.
+  Future<List<TrainingWaiver>> listTrainingWaivers(
+    Session session, {
+    int? userId,
+    String? status,
+    int? courseId,
+    int limit = 100,
+  }) async {
+    return await TrainingWaiver.db.find(
+      session,
+      where: (t) {
+        var w = t.id.notEquals(0);
+        if (userId != null) w = w & t.userId.equals(userId);
+        if (status != null) w = w & t.status.equals(status);
+        if (courseId != null) w = w & t.courseId.equals(courseId);
+        return w;
+      },
+      orderBy: (t) => t.requestedAt,
+      orderDescending: true,
+      limit: limit,
+      include: TrainingWaiver.include(
+        user: PharmaUser.include(),
+        course: Course.include(),
+        requestedBy: PharmaUser.include(),
+        approvedBy: PharmaUser.include(),
+      ),
+    );
+  }
+
+  /// ADM-07: QA approve a training waiver.
+  Future<TrainingWaiver> approveTrainingWaiver(
+    Session session, {
+    required int waiverId,
+    required int approvedById,
+  }) async {
+    final waiver = await TrainingWaiver.db.findById(session, waiverId);
+    if (waiver == null) throw Exception('Waiver not found');
+    if (waiver.status != 'pending') {
+      throw Exception('Waiver is not pending (status: ${waiver.status})');
+    }
+    final updated = await TrainingWaiver.db.updateRow(
+      session,
+      waiver.copyWith(
+        status: 'approved',
+        approvedById: approvedById,
+        approvedAt: DateTime.now(),
+      ),
+    );
+    await AuditService.log(
+      session,
+      entityType: 'training_waiver',
+      entityId: waiverId.toString(),
+      action: 'WaiverApproved',
+      newValueJson: '{"approvedById":$approvedById}',
+    );
+    return updated;
+  }
+
+  /// ADM-07: QA reject a training waiver.
+  Future<TrainingWaiver> rejectTrainingWaiver(
+    Session session, {
+    required int waiverId,
+    required int approvedById,
+    required String rejectionReason,
+  }) async {
+    final waiver = await TrainingWaiver.db.findById(session, waiverId);
+    if (waiver == null) throw Exception('Waiver not found');
+    if (waiver.status != 'pending') {
+      throw Exception('Waiver is not pending (status: ${waiver.status})');
+    }
+    final updated = await TrainingWaiver.db.updateRow(
+      session,
+      waiver.copyWith(
+        status: 'rejected',
+        approvedById: approvedById,
+        approvedAt: DateTime.now(),
+        rejectionReason: rejectionReason,
+      ),
+    );
+    await AuditService.log(
+      session,
+      entityType: 'training_waiver',
+      entityId: waiverId.toString(),
+      action: 'WaiverRejected',
+      newValueJson: '{"rejectionReason":"$rejectionReason"}',
+    );
+    return updated;
   }
 
   /// Unlock (unblock) a user by email.
@@ -239,6 +453,13 @@ class AdminEndpoint extends Endpoint {
       session,
       authUserId: authUserId,
       blocked: false,
+    );
+    await AuditService.log(
+      session,
+      entityType: 'auth_user',
+      entityId: authUserId.toString(),
+      action: 'UserUnlocked',
+      newValueJson: '{"email":"$email"}',
     );
     return true;
   }

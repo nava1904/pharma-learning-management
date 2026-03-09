@@ -15,7 +15,8 @@ import 'package:serverpod/serverpod.dart' as _i1;
 import '../organization/user.dart' as _i2;
 import '../course/course_version.dart' as _i3;
 import '../training/training_assignment.dart' as _i4;
-import 'package:pharma_lms_server/src/generated/protocol.dart' as _i5;
+import '../shared/electronic_signature.dart' as _i5;
+import 'package:pharma_lms_server/src/generated/protocol.dart' as _i6;
 
 /// Enrollment - user's progress in a course version.
 abstract class Enrollment
@@ -31,6 +32,10 @@ abstract class Enrollment
     String? status,
     this.startedAt,
     this.completedAt,
+    this.retrainingChangeSummary,
+    this.acknowledgedAt,
+    this.acknowledgementEsignatureId,
+    this.acknowledgementEsignature,
   }) : status = status ?? 'not_started';
 
   factory Enrollment({
@@ -44,6 +49,10 @@ abstract class Enrollment
     String? status,
     DateTime? startedAt,
     DateTime? completedAt,
+    String? retrainingChangeSummary,
+    DateTime? acknowledgedAt,
+    int? acknowledgementEsignatureId,
+    _i5.ElectronicSignature? acknowledgementEsignature,
   }) = _EnrollmentImpl;
 
   factory Enrollment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -52,19 +61,19 @@ abstract class Enrollment
       userId: jsonSerialization['userId'] as int,
       user: jsonSerialization['user'] == null
           ? null
-          : _i5.Protocol().deserialize<_i2.PharmaUser>(
+          : _i6.Protocol().deserialize<_i2.PharmaUser>(
               jsonSerialization['user'],
             ),
       courseVersionId: jsonSerialization['courseVersionId'] as int,
       courseVersion: jsonSerialization['courseVersion'] == null
           ? null
-          : _i5.Protocol().deserialize<_i3.CourseVersion>(
+          : _i6.Protocol().deserialize<_i3.CourseVersion>(
               jsonSerialization['courseVersion'],
             ),
       assignmentId: jsonSerialization['assignmentId'] as int?,
       assignment: jsonSerialization['assignment'] == null
           ? null
-          : _i5.Protocol().deserialize<_i4.TrainingAssignment>(
+          : _i6.Protocol().deserialize<_i4.TrainingAssignment>(
               jsonSerialization['assignment'],
             ),
       status: jsonSerialization['status'] as String?,
@@ -75,6 +84,21 @@ abstract class Enrollment
           ? null
           : _i1.DateTimeJsonExtension.fromJson(
               jsonSerialization['completedAt'],
+            ),
+      retrainingChangeSummary:
+          jsonSerialization['retrainingChangeSummary'] as String?,
+      acknowledgedAt: jsonSerialization['acknowledgedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['acknowledgedAt'],
+            ),
+      acknowledgementEsignatureId:
+          jsonSerialization['acknowledgementEsignatureId'] as int?,
+      acknowledgementEsignature:
+          jsonSerialization['acknowledgementEsignature'] == null
+          ? null
+          : _i6.Protocol().deserialize<_i5.ElectronicSignature>(
+              jsonSerialization['acknowledgementEsignature'],
             ),
     );
   }
@@ -110,6 +134,17 @@ abstract class Enrollment
   /// When completed.
   DateTime? completedAt;
 
+  /// For retraining: change summary from document/course version (EMP-10).
+  String? retrainingChangeSummary;
+
+  /// When user acknowledged retraining change summary.
+  DateTime? acknowledgedAt;
+
+  int? acknowledgementEsignatureId;
+
+  /// E-signature for retraining acknowledgement.
+  _i5.ElectronicSignature? acknowledgementEsignature;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -127,6 +162,10 @@ abstract class Enrollment
     String? status,
     DateTime? startedAt,
     DateTime? completedAt,
+    String? retrainingChangeSummary,
+    DateTime? acknowledgedAt,
+    int? acknowledgementEsignatureId,
+    _i5.ElectronicSignature? acknowledgementEsignature,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -142,6 +181,13 @@ abstract class Enrollment
       'status': status,
       if (startedAt != null) 'startedAt': startedAt?.toJson(),
       if (completedAt != null) 'completedAt': completedAt?.toJson(),
+      if (retrainingChangeSummary != null)
+        'retrainingChangeSummary': retrainingChangeSummary,
+      if (acknowledgedAt != null) 'acknowledgedAt': acknowledgedAt?.toJson(),
+      if (acknowledgementEsignatureId != null)
+        'acknowledgementEsignatureId': acknowledgementEsignatureId,
+      if (acknowledgementEsignature != null)
+        'acknowledgementEsignature': acknowledgementEsignature?.toJson(),
     };
   }
 
@@ -160,6 +206,14 @@ abstract class Enrollment
       'status': status,
       if (startedAt != null) 'startedAt': startedAt?.toJson(),
       if (completedAt != null) 'completedAt': completedAt?.toJson(),
+      if (retrainingChangeSummary != null)
+        'retrainingChangeSummary': retrainingChangeSummary,
+      if (acknowledgedAt != null) 'acknowledgedAt': acknowledgedAt?.toJson(),
+      if (acknowledgementEsignatureId != null)
+        'acknowledgementEsignatureId': acknowledgementEsignatureId,
+      if (acknowledgementEsignature != null)
+        'acknowledgementEsignature': acknowledgementEsignature
+            ?.toJsonForProtocol(),
     };
   }
 
@@ -167,11 +221,13 @@ abstract class Enrollment
     _i2.PharmaUserInclude? user,
     _i3.CourseVersionInclude? courseVersion,
     _i4.TrainingAssignmentInclude? assignment,
+    _i5.ElectronicSignatureInclude? acknowledgementEsignature,
   }) {
     return EnrollmentInclude._(
       user: user,
       courseVersion: courseVersion,
       assignment: assignment,
+      acknowledgementEsignature: acknowledgementEsignature,
     );
   }
 
@@ -215,6 +271,10 @@ class _EnrollmentImpl extends Enrollment {
     String? status,
     DateTime? startedAt,
     DateTime? completedAt,
+    String? retrainingChangeSummary,
+    DateTime? acknowledgedAt,
+    int? acknowledgementEsignatureId,
+    _i5.ElectronicSignature? acknowledgementEsignature,
   }) : super._(
          id: id,
          userId: userId,
@@ -226,6 +286,10 @@ class _EnrollmentImpl extends Enrollment {
          status: status,
          startedAt: startedAt,
          completedAt: completedAt,
+         retrainingChangeSummary: retrainingChangeSummary,
+         acknowledgedAt: acknowledgedAt,
+         acknowledgementEsignatureId: acknowledgementEsignatureId,
+         acknowledgementEsignature: acknowledgementEsignature,
        );
 
   /// Returns a shallow copy of this [Enrollment]
@@ -243,6 +307,10 @@ class _EnrollmentImpl extends Enrollment {
     String? status,
     Object? startedAt = _Undefined,
     Object? completedAt = _Undefined,
+    Object? retrainingChangeSummary = _Undefined,
+    Object? acknowledgedAt = _Undefined,
+    Object? acknowledgementEsignatureId = _Undefined,
+    Object? acknowledgementEsignature = _Undefined,
   }) {
     return Enrollment(
       id: id is int? ? id : this.id,
@@ -259,6 +327,19 @@ class _EnrollmentImpl extends Enrollment {
       status: status ?? this.status,
       startedAt: startedAt is DateTime? ? startedAt : this.startedAt,
       completedAt: completedAt is DateTime? ? completedAt : this.completedAt,
+      retrainingChangeSummary: retrainingChangeSummary is String?
+          ? retrainingChangeSummary
+          : this.retrainingChangeSummary,
+      acknowledgedAt: acknowledgedAt is DateTime?
+          ? acknowledgedAt
+          : this.acknowledgedAt,
+      acknowledgementEsignatureId: acknowledgementEsignatureId is int?
+          ? acknowledgementEsignatureId
+          : this.acknowledgementEsignatureId,
+      acknowledgementEsignature:
+          acknowledgementEsignature is _i5.ElectronicSignature?
+          ? acknowledgementEsignature
+          : this.acknowledgementEsignature?.copyWith(),
     );
   }
 }
@@ -297,6 +378,24 @@ class EnrollmentUpdateTable extends _i1.UpdateTable<EnrollmentTable> {
         table.completedAt,
         value,
       );
+
+  _i1.ColumnValue<String, String> retrainingChangeSummary(String? value) =>
+      _i1.ColumnValue(
+        table.retrainingChangeSummary,
+        value,
+      );
+
+  _i1.ColumnValue<DateTime, DateTime> acknowledgedAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.acknowledgedAt,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> acknowledgementEsignatureId(int? value) =>
+      _i1.ColumnValue(
+        table.acknowledgementEsignatureId,
+        value,
+      );
 }
 
 class EnrollmentTable extends _i1.Table<int?> {
@@ -327,6 +426,18 @@ class EnrollmentTable extends _i1.Table<int?> {
       'completedAt',
       this,
     );
+    retrainingChangeSummary = _i1.ColumnString(
+      'retrainingChangeSummary',
+      this,
+    );
+    acknowledgedAt = _i1.ColumnDateTime(
+      'acknowledgedAt',
+      this,
+    );
+    acknowledgementEsignatureId = _i1.ColumnInt(
+      'acknowledgementEsignatureId',
+      this,
+    );
   }
 
   late final EnrollmentUpdateTable updateTable;
@@ -354,6 +465,17 @@ class EnrollmentTable extends _i1.Table<int?> {
 
   /// When completed.
   late final _i1.ColumnDateTime completedAt;
+
+  /// For retraining: change summary from document/course version (EMP-10).
+  late final _i1.ColumnString retrainingChangeSummary;
+
+  /// When user acknowledged retraining change summary.
+  late final _i1.ColumnDateTime acknowledgedAt;
+
+  late final _i1.ColumnInt acknowledgementEsignatureId;
+
+  /// E-signature for retraining acknowledgement.
+  _i5.ElectronicSignatureTable? _acknowledgementEsignature;
 
   _i2.PharmaUserTable get user {
     if (_user != null) return _user!;
@@ -394,6 +516,19 @@ class EnrollmentTable extends _i1.Table<int?> {
     return _assignment!;
   }
 
+  _i5.ElectronicSignatureTable get acknowledgementEsignature {
+    if (_acknowledgementEsignature != null) return _acknowledgementEsignature!;
+    _acknowledgementEsignature = _i1.createRelationTable(
+      relationFieldName: 'acknowledgementEsignature',
+      field: Enrollment.t.acknowledgementEsignatureId,
+      foreignField: _i5.ElectronicSignature.t.id,
+      tableRelation: tableRelation,
+      createTable: (foreignTableRelation) =>
+          _i5.ElectronicSignatureTable(tableRelation: foreignTableRelation),
+    );
+    return _acknowledgementEsignature!;
+  }
+
   @override
   List<_i1.Column> get columns => [
     id,
@@ -403,6 +538,9 @@ class EnrollmentTable extends _i1.Table<int?> {
     status,
     startedAt,
     completedAt,
+    retrainingChangeSummary,
+    acknowledgedAt,
+    acknowledgementEsignatureId,
   ];
 
   @override
@@ -416,6 +554,9 @@ class EnrollmentTable extends _i1.Table<int?> {
     if (relationField == 'assignment') {
       return assignment;
     }
+    if (relationField == 'acknowledgementEsignature') {
+      return acknowledgementEsignature;
+    }
     return null;
   }
 }
@@ -425,10 +566,12 @@ class EnrollmentInclude extends _i1.IncludeObject {
     _i2.PharmaUserInclude? user,
     _i3.CourseVersionInclude? courseVersion,
     _i4.TrainingAssignmentInclude? assignment,
+    _i5.ElectronicSignatureInclude? acknowledgementEsignature,
   }) {
     _user = user;
     _courseVersion = courseVersion;
     _assignment = assignment;
+    _acknowledgementEsignature = acknowledgementEsignature;
   }
 
   _i2.PharmaUserInclude? _user;
@@ -437,11 +580,14 @@ class EnrollmentInclude extends _i1.IncludeObject {
 
   _i4.TrainingAssignmentInclude? _assignment;
 
+  _i5.ElectronicSignatureInclude? _acknowledgementEsignature;
+
   @override
   Map<String, _i1.Include?> get includes => {
     'user': _user,
     'courseVersion': _courseVersion,
     'assignment': _assignment,
+    'acknowledgementEsignature': _acknowledgementEsignature,
   };
 
   @override
@@ -836,6 +982,31 @@ class EnrollmentAttachRowRepository {
       transaction: transaction,
     );
   }
+
+  /// Creates a relation between the given [Enrollment] and [ElectronicSignature]
+  /// by setting the [Enrollment]'s foreign key `acknowledgementEsignatureId` to refer to the [ElectronicSignature].
+  Future<void> acknowledgementEsignature(
+    _i1.Session session,
+    Enrollment enrollment,
+    _i5.ElectronicSignature acknowledgementEsignature, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (enrollment.id == null) {
+      throw ArgumentError.notNull('enrollment.id');
+    }
+    if (acknowledgementEsignature.id == null) {
+      throw ArgumentError.notNull('acknowledgementEsignature.id');
+    }
+
+    var $enrollment = enrollment.copyWith(
+      acknowledgementEsignatureId: acknowledgementEsignature.id,
+    );
+    await session.db.updateRow<Enrollment>(
+      $enrollment,
+      columns: [Enrollment.t.acknowledgementEsignatureId],
+      transaction: transaction,
+    );
+  }
 }
 
 class EnrollmentDetachRowRepository {
@@ -859,6 +1030,28 @@ class EnrollmentDetachRowRepository {
     await session.db.updateRow<Enrollment>(
       $enrollment,
       columns: [Enrollment.t.assignmentId],
+      transaction: transaction,
+    );
+  }
+
+  /// Detaches the relation between this [Enrollment] and the [ElectronicSignature] set in `acknowledgementEsignature`
+  /// by setting the [Enrollment]'s foreign key `acknowledgementEsignatureId` to `null`.
+  ///
+  /// This removes the association between the two models without deleting
+  /// the related record.
+  Future<void> acknowledgementEsignature(
+    _i1.Session session,
+    Enrollment enrollment, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (enrollment.id == null) {
+      throw ArgumentError.notNull('enrollment.id');
+    }
+
+    var $enrollment = enrollment.copyWith(acknowledgementEsignatureId: null);
+    await session.db.updateRow<Enrollment>(
+      $enrollment,
+      columns: [Enrollment.t.acknowledgementEsignatureId],
       transaction: transaction,
     );
   }

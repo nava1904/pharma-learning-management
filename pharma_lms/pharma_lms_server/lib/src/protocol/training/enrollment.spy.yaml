@@ -16,3 +16,9 @@ fields:
   startedAt: DateTime?
   ### When completed.
   completedAt: DateTime?
+  ### For retraining: change summary from document/course version (EMP-10).
+  retrainingChangeSummary: String?
+  ### When user acknowledged retraining change summary.
+  acknowledgedAt: DateTime?
+  ### E-signature for retraining acknowledgement.
+  acknowledgementEsignature: ElectronicSignature?, relation(optional)

@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../services/audit_service.dart';
 
 /// Course & Curriculum domain endpoint.
 class CourseEndpoint extends Endpoint {
@@ -66,7 +67,16 @@ class CourseEndpoint extends Endpoint {
       description: description,
       createdById: createdById,
     );
-    return await Course.db.insertRow(session, course);
+    final result = await Course.db.insertRow(session, course);
+    await AuditService.log(
+      session,
+      entityType: 'course',
+      entityId: result.id.toString(),
+      action: 'CourseCreated',
+      newValueJson: '{"title":"$title","organizationId":$organizationId}',
+      userId: createdById,
+    );
+    return result;
   }
 
   Future<List<Module>> getModulesForCourseVersion(

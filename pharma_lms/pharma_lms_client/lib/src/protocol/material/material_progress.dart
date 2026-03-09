@@ -26,6 +26,10 @@ abstract class MaterialProgress implements _i1.SerializableModel {
     int? progressPct,
     this.completedAt,
     this.interactionJson,
+    this.materialVersionId,
+    this.enrollmentId,
+    this.timeSpentSeconds,
+    this.readTimeMet,
   }) : progressPct = progressPct ?? 0;
 
   factory MaterialProgress({
@@ -37,6 +41,10 @@ abstract class MaterialProgress implements _i1.SerializableModel {
     int? progressPct,
     DateTime? completedAt,
     String? interactionJson,
+    int? materialVersionId,
+    int? enrollmentId,
+    int? timeSpentSeconds,
+    bool? readTimeMet,
   }) = _MaterialProgressImpl;
 
   factory MaterialProgress.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -61,6 +69,12 @@ abstract class MaterialProgress implements _i1.SerializableModel {
               jsonSerialization['completedAt'],
             ),
       interactionJson: jsonSerialization['interactionJson'] as String?,
+      materialVersionId: jsonSerialization['materialVersionId'] as int?,
+      enrollmentId: jsonSerialization['enrollmentId'] as int?,
+      timeSpentSeconds: jsonSerialization['timeSpentSeconds'] as int?,
+      readTimeMet: jsonSerialization['readTimeMet'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['readTimeMet']),
     );
   }
 
@@ -88,6 +102,18 @@ abstract class MaterialProgress implements _i1.SerializableModel {
   /// Interaction data as JSON (watch/pause, scroll depth).
   String? interactionJson;
 
+  /// Material version for retraining tracking.
+  int? materialVersionId;
+
+  /// Enrollment this progress belongs to.
+  int? enrollmentId;
+
+  /// Active engagement time in seconds.
+  int? timeSpentSeconds;
+
+  /// Whether minimum read time was met.
+  bool? readTimeMet;
+
   /// Returns a shallow copy of this [MaterialProgress]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -100,6 +126,10 @@ abstract class MaterialProgress implements _i1.SerializableModel {
     int? progressPct,
     DateTime? completedAt,
     String? interactionJson,
+    int? materialVersionId,
+    int? enrollmentId,
+    int? timeSpentSeconds,
+    bool? readTimeMet,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -113,6 +143,10 @@ abstract class MaterialProgress implements _i1.SerializableModel {
       'progressPct': progressPct,
       if (completedAt != null) 'completedAt': completedAt?.toJson(),
       if (interactionJson != null) 'interactionJson': interactionJson,
+      if (materialVersionId != null) 'materialVersionId': materialVersionId,
+      if (enrollmentId != null) 'enrollmentId': enrollmentId,
+      if (timeSpentSeconds != null) 'timeSpentSeconds': timeSpentSeconds,
+      if (readTimeMet != null) 'readTimeMet': readTimeMet,
     };
   }
 
@@ -134,6 +168,10 @@ class _MaterialProgressImpl extends MaterialProgress {
     int? progressPct,
     DateTime? completedAt,
     String? interactionJson,
+    int? materialVersionId,
+    int? enrollmentId,
+    int? timeSpentSeconds,
+    bool? readTimeMet,
   }) : super._(
          id: id,
          userId: userId,
@@ -143,6 +181,10 @@ class _MaterialProgressImpl extends MaterialProgress {
          progressPct: progressPct,
          completedAt: completedAt,
          interactionJson: interactionJson,
+         materialVersionId: materialVersionId,
+         enrollmentId: enrollmentId,
+         timeSpentSeconds: timeSpentSeconds,
+         readTimeMet: readTimeMet,
        );
 
   /// Returns a shallow copy of this [MaterialProgress]
@@ -158,6 +200,10 @@ class _MaterialProgressImpl extends MaterialProgress {
     int? progressPct,
     Object? completedAt = _Undefined,
     Object? interactionJson = _Undefined,
+    Object? materialVersionId = _Undefined,
+    Object? enrollmentId = _Undefined,
+    Object? timeSpentSeconds = _Undefined,
+    Object? readTimeMet = _Undefined,
   }) {
     return MaterialProgress(
       id: id is int? ? id : this.id,
@@ -172,6 +218,14 @@ class _MaterialProgressImpl extends MaterialProgress {
       interactionJson: interactionJson is String?
           ? interactionJson
           : this.interactionJson,
+      materialVersionId: materialVersionId is int?
+          ? materialVersionId
+          : this.materialVersionId,
+      enrollmentId: enrollmentId is int? ? enrollmentId : this.enrollmentId,
+      timeSpentSeconds: timeSpentSeconds is int?
+          ? timeSpentSeconds
+          : this.timeSpentSeconds,
+      readTimeMet: readTimeMet is bool? ? readTimeMet : this.readTimeMet,
     );
   }
 }

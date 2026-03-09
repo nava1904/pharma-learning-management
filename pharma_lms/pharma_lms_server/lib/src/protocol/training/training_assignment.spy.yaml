@@ -20,3 +20,19 @@ fields:
   reason: String?
   ### Source: manual, sop_update, capa, onboarding.
   source: String, default='manual'
+  ### Assignment type: role, department, individual, capa.
+  assignmentType: String, default='individual'
+  ### Target role ID when assigning by role.
+  targetRoleId: int?
+  ### Target department ID when assigning by department.
+  targetDepartmentId: int?
+  ### Target user ID when assigning to individual.
+  targetUserId: int?
+  ### Status: active, cancelled.
+  status: String, default='active'
+  ### When cancelled.
+  cancelledAt: DateTime?
+  ### Who cancelled.
+  cancelledById: int?
+  ### Cancellation reason.
+  cancellationReason: String?

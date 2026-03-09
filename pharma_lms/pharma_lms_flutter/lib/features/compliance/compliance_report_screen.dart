@@ -1,3 +1,4 @@
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
@@ -82,7 +83,25 @@ class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
       ),
     );
     try {
-      final bytes = await pdf.save();
+      var bytes = await pdf.save();
+      final hash = sha256.convert(bytes).toString();
+      pdf.addPage(
+        pw.Page(
+          build: (ctx) => pw.Center(
+            child: pw.Text(
+              'Report Hash: $hash',
+              style: pw.TextStyle(fontSize: 10),
+            ),
+          ),
+        ),
+      );
+      bytes = await pdf.save();
+      try {
+        await client.audit.logReportExport(
+          reportType: 'compliance_report',
+          hashSha256: hash,
+        );
+      } catch (_) {}
       final result = await FilePicker.platform.saveFile(
         fileName:
             'compliance-report-${DateTime.now().toIso8601String().split('T')[0]}.pdf',

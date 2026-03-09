@@ -32,9 +32,19 @@ abstract class TrainingAssignment
     String? priority,
     this.reason,
     String? source,
+    String? assignmentType,
+    this.targetRoleId,
+    this.targetDepartmentId,
+    this.targetUserId,
+    String? status,
+    this.cancelledAt,
+    this.cancelledById,
+    this.cancellationReason,
   }) : assignedAt = assignedAt ?? DateTime.now(),
        priority = priority ?? 'medium',
-       source = source ?? 'manual';
+       source = source ?? 'manual',
+       assignmentType = assignmentType ?? 'individual',
+       status = status ?? 'active';
 
   factory TrainingAssignment({
     int? id,
@@ -49,6 +59,14 @@ abstract class TrainingAssignment
     String? priority,
     String? reason,
     String? source,
+    String? assignmentType,
+    int? targetRoleId,
+    int? targetDepartmentId,
+    int? targetUserId,
+    String? status,
+    DateTime? cancelledAt,
+    int? cancelledById,
+    String? cancellationReason,
   }) = _TrainingAssignmentImpl;
 
   factory TrainingAssignment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -79,6 +97,18 @@ abstract class TrainingAssignment
       priority: jsonSerialization['priority'] as String?,
       reason: jsonSerialization['reason'] as String?,
       source: jsonSerialization['source'] as String?,
+      assignmentType: jsonSerialization['assignmentType'] as String?,
+      targetRoleId: jsonSerialization['targetRoleId'] as int?,
+      targetDepartmentId: jsonSerialization['targetDepartmentId'] as int?,
+      targetUserId: jsonSerialization['targetUserId'] as int?,
+      status: jsonSerialization['status'] as String?,
+      cancelledAt: jsonSerialization['cancelledAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['cancelledAt'],
+            ),
+      cancelledById: jsonSerialization['cancelledById'] as int?,
+      cancellationReason: jsonSerialization['cancellationReason'] as String?,
     );
   }
 
@@ -119,6 +149,30 @@ abstract class TrainingAssignment
   /// Source: manual, sop_update, capa, onboarding.
   String source;
 
+  /// Assignment type: role, department, individual, capa.
+  String assignmentType;
+
+  /// Target role ID when assigning by role.
+  int? targetRoleId;
+
+  /// Target department ID when assigning by department.
+  int? targetDepartmentId;
+
+  /// Target user ID when assigning to individual.
+  int? targetUserId;
+
+  /// Status: active, cancelled.
+  String status;
+
+  /// When cancelled.
+  DateTime? cancelledAt;
+
+  /// Who cancelled.
+  int? cancelledById;
+
+  /// Cancellation reason.
+  String? cancellationReason;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -138,6 +192,14 @@ abstract class TrainingAssignment
     String? priority,
     String? reason,
     String? source,
+    String? assignmentType,
+    int? targetRoleId,
+    int? targetDepartmentId,
+    int? targetUserId,
+    String? status,
+    DateTime? cancelledAt,
+    int? cancelledById,
+    String? cancellationReason,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -155,6 +217,14 @@ abstract class TrainingAssignment
       'priority': priority,
       if (reason != null) 'reason': reason,
       'source': source,
+      'assignmentType': assignmentType,
+      if (targetRoleId != null) 'targetRoleId': targetRoleId,
+      if (targetDepartmentId != null) 'targetDepartmentId': targetDepartmentId,
+      if (targetUserId != null) 'targetUserId': targetUserId,
+      'status': status,
+      if (cancelledAt != null) 'cancelledAt': cancelledAt?.toJson(),
+      if (cancelledById != null) 'cancelledById': cancelledById,
+      if (cancellationReason != null) 'cancellationReason': cancellationReason,
     };
   }
 
@@ -175,6 +245,14 @@ abstract class TrainingAssignment
       'priority': priority,
       if (reason != null) 'reason': reason,
       'source': source,
+      'assignmentType': assignmentType,
+      if (targetRoleId != null) 'targetRoleId': targetRoleId,
+      if (targetDepartmentId != null) 'targetDepartmentId': targetDepartmentId,
+      if (targetUserId != null) 'targetUserId': targetUserId,
+      'status': status,
+      if (cancelledAt != null) 'cancelledAt': cancelledAt?.toJson(),
+      if (cancelledById != null) 'cancelledById': cancelledById,
+      if (cancellationReason != null) 'cancellationReason': cancellationReason,
     };
   }
 
@@ -232,6 +310,14 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
     String? priority,
     String? reason,
     String? source,
+    String? assignmentType,
+    int? targetRoleId,
+    int? targetDepartmentId,
+    int? targetUserId,
+    String? status,
+    DateTime? cancelledAt,
+    int? cancelledById,
+    String? cancellationReason,
   }) : super._(
          id: id,
          userId: userId,
@@ -245,6 +331,14 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
          priority: priority,
          reason: reason,
          source: source,
+         assignmentType: assignmentType,
+         targetRoleId: targetRoleId,
+         targetDepartmentId: targetDepartmentId,
+         targetUserId: targetUserId,
+         status: status,
+         cancelledAt: cancelledAt,
+         cancelledById: cancelledById,
+         cancellationReason: cancellationReason,
        );
 
   /// Returns a shallow copy of this [TrainingAssignment]
@@ -264,6 +358,14 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
     String? priority,
     Object? reason = _Undefined,
     String? source,
+    String? assignmentType,
+    Object? targetRoleId = _Undefined,
+    Object? targetDepartmentId = _Undefined,
+    Object? targetUserId = _Undefined,
+    String? status,
+    Object? cancelledAt = _Undefined,
+    Object? cancelledById = _Undefined,
+    Object? cancellationReason = _Undefined,
   }) {
     return TrainingAssignment(
       id: id is int? ? id : this.id,
@@ -282,6 +384,18 @@ class _TrainingAssignmentImpl extends TrainingAssignment {
       priority: priority ?? this.priority,
       reason: reason is String? ? reason : this.reason,
       source: source ?? this.source,
+      assignmentType: assignmentType ?? this.assignmentType,
+      targetRoleId: targetRoleId is int? ? targetRoleId : this.targetRoleId,
+      targetDepartmentId: targetDepartmentId is int?
+          ? targetDepartmentId
+          : this.targetDepartmentId,
+      targetUserId: targetUserId is int? ? targetUserId : this.targetUserId,
+      status: status ?? this.status,
+      cancelledAt: cancelledAt is DateTime? ? cancelledAt : this.cancelledAt,
+      cancelledById: cancelledById is int? ? cancelledById : this.cancelledById,
+      cancellationReason: cancellationReason is String?
+          ? cancellationReason
+          : this.cancellationReason,
     );
   }
 }
@@ -331,6 +445,49 @@ class TrainingAssignmentUpdateTable
     table.source,
     value,
   );
+
+  _i1.ColumnValue<String, String> assignmentType(String value) =>
+      _i1.ColumnValue(
+        table.assignmentType,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> targetRoleId(int? value) => _i1.ColumnValue(
+    table.targetRoleId,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> targetDepartmentId(int? value) => _i1.ColumnValue(
+    table.targetDepartmentId,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> targetUserId(int? value) => _i1.ColumnValue(
+    table.targetUserId,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> status(String value) => _i1.ColumnValue(
+    table.status,
+    value,
+  );
+
+  _i1.ColumnValue<DateTime, DateTime> cancelledAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.cancelledAt,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> cancelledById(int? value) => _i1.ColumnValue(
+    table.cancelledById,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> cancellationReason(String? value) =>
+      _i1.ColumnValue(
+        table.cancellationReason,
+        value,
+      );
 }
 
 class TrainingAssignmentTable extends _i1.Table<int?> {
@@ -372,6 +529,40 @@ class TrainingAssignmentTable extends _i1.Table<int?> {
       this,
       hasDefault: true,
     );
+    assignmentType = _i1.ColumnString(
+      'assignmentType',
+      this,
+      hasDefault: true,
+    );
+    targetRoleId = _i1.ColumnInt(
+      'targetRoleId',
+      this,
+    );
+    targetDepartmentId = _i1.ColumnInt(
+      'targetDepartmentId',
+      this,
+    );
+    targetUserId = _i1.ColumnInt(
+      'targetUserId',
+      this,
+    );
+    status = _i1.ColumnString(
+      'status',
+      this,
+      hasDefault: true,
+    );
+    cancelledAt = _i1.ColumnDateTime(
+      'cancelledAt',
+      this,
+    );
+    cancelledById = _i1.ColumnInt(
+      'cancelledById',
+      this,
+    );
+    cancellationReason = _i1.ColumnString(
+      'cancellationReason',
+      this,
+    );
   }
 
   late final TrainingAssignmentUpdateTable updateTable;
@@ -405,6 +596,30 @@ class TrainingAssignmentTable extends _i1.Table<int?> {
 
   /// Source: manual, sop_update, capa, onboarding.
   late final _i1.ColumnString source;
+
+  /// Assignment type: role, department, individual, capa.
+  late final _i1.ColumnString assignmentType;
+
+  /// Target role ID when assigning by role.
+  late final _i1.ColumnInt targetRoleId;
+
+  /// Target department ID when assigning by department.
+  late final _i1.ColumnInt targetDepartmentId;
+
+  /// Target user ID when assigning to individual.
+  late final _i1.ColumnInt targetUserId;
+
+  /// Status: active, cancelled.
+  late final _i1.ColumnString status;
+
+  /// When cancelled.
+  late final _i1.ColumnDateTime cancelledAt;
+
+  /// Who cancelled.
+  late final _i1.ColumnInt cancelledById;
+
+  /// Cancellation reason.
+  late final _i1.ColumnString cancellationReason;
 
   _i2.PharmaUserTable get user {
     if (_user != null) return _user!;
@@ -456,6 +671,14 @@ class TrainingAssignmentTable extends _i1.Table<int?> {
     priority,
     reason,
     source,
+    assignmentType,
+    targetRoleId,
+    targetDepartmentId,
+    targetUserId,
+    status,
+    cancelledAt,
+    cancelledById,
+    cancellationReason,
   ];
 
   @override

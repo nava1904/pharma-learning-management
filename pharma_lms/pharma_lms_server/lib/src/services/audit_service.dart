@@ -1,11 +1,14 @@
 import 'package:serverpod/serverpod.dart';
 
+import '../audit_event_types.dart';
 import '../generated/protocol.dart';
 
 /// Central audit logging service for FDA 21 CFR Part 11 compliance.
 /// Every mutation must log to the immutable audit trail.
+/// Use [AuditEventType] constants for action values.
 class AuditService {
   /// Log an audit trail entry. Append-only - no updates or deletes.
+  /// [action] should be from [AuditEventType] for full coverage.
   static Future<void> log(
     Session session, {
     required String entityType,
@@ -17,6 +20,9 @@ class AuditService {
     String? reason,
     String? ipAddress,
   }) async {
+    if (!AuditEventType.isKnown(action)) {
+      session.log('Audit: unknown action "$action" - consider adding to AuditEventType');
+    }
     final audit = AuditTrail(
       entityType: entityType,
       entityId: entityId,

@@ -6,10 +6,93 @@ import '../generated/protocol.dart';
 /// Call runSeed() to populate organizations, sites, departments, users, courses.
 class SeedEndpoint extends Endpoint {
   /// Seeds the database with sample data if empty. Idempotent - skips if org exists.
+  /// Signature meanings are always seeded if empty (for existing DBs).
   Future<String> runSeed(Session session) async {
+    // Always ensure RBAC roles exist (for existing DBs)
+    var roles = await Role.db.find(session);
+    if (roles.isEmpty) {
+      await Role.db.insertRow(session, Role(name: 'Admin', code: 'admin'));
+      await Role.db.insertRow(
+        session,
+        Role(name: 'QA Director', code: 'qa_director'),
+      );
+      await Role.db.insertRow(session, Role(name: 'QA', code: 'qa'));
+      roles = await Role.db.find(session);
+    }
+    // Ensure admin user has QA Director role when seeding roles
+    final adminUser = await PharmaUser.db.findFirstRow(
+      session,
+      where: (t) => t.email.equals('admin@pharmacorp.demo'),
+    );
+    if (adminUser?.id != null) {
+      Role? adminRole;
+      Role? qaDirRole;
+      for (final r in roles) {
+        if (r.code == 'admin') adminRole = r;
+        if (r.code == 'qa_director') qaDirRole = r;
+      }
+      final existing = await UserRole.db.find(
+        session,
+        where: (t) => t.userId.equals(adminUser!.id!),
+      );
+      if (existing.isEmpty && adminRole != null && adminRole.id != null) {
+        await UserRole.db.insertRow(
+          session,
+          UserRole(userId: adminUser!.id!, roleId: adminRole.id!),
+        );
+      }
+      if (qaDirRole != null &&
+          qaDirRole.id != null &&
+          !existing.any((ur) => ur.roleId == qaDirRole!.id)) {
+        await UserRole.db.insertRow(
+          session,
+          UserRole(userId: adminUser!.id!, roleId: qaDirRole.id!),
+        );
+      }
+    }
+
+    // Always ensure signature meanings exist (for existing DBs upgrading)
+    final existingMeanings = await SignatureMeaning.db.find(session);
+    if (existingMeanings.isEmpty) {
+      await SignatureMeaning.db.insertRow(
+        session,
+        SignatureMeaning(
+          meaning: 'I have reviewed and approve',
+          isActive: true,
+          orderIndex: 0,
+        ),
+      );
+      await SignatureMeaning.db.insertRow(
+        session,
+        SignatureMeaning(
+          meaning: 'I have performed and verified',
+          isActive: true,
+          orderIndex: 1,
+        ),
+      );
+      await SignatureMeaning.db.insertRow(
+        session,
+        SignatureMeaning(
+          meaning: 'I have read, understood, and agree to comply',
+          isActive: true,
+          orderIndex: 2,
+        ),
+      );
+      await SignatureMeaning.db.insertRow(
+        session,
+        SignatureMeaning(
+          meaning: 'I have read and understood',
+          isActive: true,
+          orderIndex: 3,
+        ),
+      );
+    }
+
     final existing = await Organization.db.find(session);
     if (existing.isNotEmpty) {
-      return 'Database already has data, skipping seed. (${existing.length} orgs)';
+      return existingMeanings.isEmpty
+          ? 'Signature meanings seeded. Database already has org data, skipping full seed.'
+          : 'Database already has data, skipping seed. (${existing.length} orgs)';
     }
 
     // Organization
@@ -37,6 +120,20 @@ class SeedEndpoint extends Endpoint {
     final deptProd = await Department.db.insertRow(
       session,
       Department(siteId: site.id!, name: 'Production', code: 'PROD'),
+    );
+
+    // RBAC roles (for UserRole - QA Director, Admin)
+    final roleAdmin = await Role.db.insertRow(
+      session,
+      Role(name: 'Admin', code: 'admin'),
+    );
+    final roleQaDirector = await Role.db.insertRow(
+      session,
+      Role(name: 'QA Director', code: 'qa_director'),
+    );
+    final roleQa = await Role.db.insertRow(
+      session,
+      Role(name: 'QA', code: 'qa'),
     );
 
     // Job roles
@@ -69,6 +166,14 @@ class SeedEndpoint extends Endpoint {
         siteId: site.id!,
         organizationId: org.id!,
       ),
+    );
+    await UserRole.db.insertRow(
+      session,
+      UserRole(userId: user1.id!, roleId: roleAdmin.id!),
+    );
+    await UserRole.db.insertRow(
+      session,
+      UserRole(userId: user1.id!, roleId: roleQaDirector.id!),
     );
     final user2 = await PharmaUser.db.insertRow(
       session,
@@ -103,7 +208,7 @@ class SeedEndpoint extends Endpoint {
       CourseVersion(
         courseId: course.id!,
         version: '1.0',
-        status: 'approved',
+        status: 'effective',
       ),
     );
 
@@ -227,6 +332,6 @@ class SeedEndpoint extends Endpoint {
       );
     }
 
-    return 'Seed completed: 1 org, 1 site, 2 depts, 2 job roles, 2 users, 1 course, modules, lessons, assessment, assignment.';
+    return 'Seed completed: 1 org, 1 site, 2 depts, 2 job roles, 2 users, 1 course, modules, lessons, assessment, signature meanings, assignment.';
   }
 }

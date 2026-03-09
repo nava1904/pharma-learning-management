@@ -28,6 +28,7 @@ abstract class ElectronicSignature
     required this.entityType,
     required this.entityId,
     this.ipAddress,
+    this.integrityHash,
   }) : timestamp = timestamp ?? DateTime.now();
 
   factory ElectronicSignature({
@@ -40,6 +41,7 @@ abstract class ElectronicSignature
     required String entityType,
     required String entityId,
     String? ipAddress,
+    String? integrityHash,
   }) = _ElectronicSignatureImpl;
 
   factory ElectronicSignature.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -59,6 +61,7 @@ abstract class ElectronicSignature
       entityType: jsonSerialization['entityType'] as String,
       entityId: jsonSerialization['entityId'] as String,
       ipAddress: jsonSerialization['ipAddress'] as String?,
+      integrityHash: jsonSerialization['integrityHash'] as String?,
     );
   }
 
@@ -92,6 +95,9 @@ abstract class ElectronicSignature
   /// IP address at time of signature.
   String? ipAddress;
 
+  /// HMAC for integrity verification (userId, entityType, entityId, timestamp, meaning).
+  String? integrityHash;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -108,6 +114,7 @@ abstract class ElectronicSignature
     String? entityType,
     String? entityId,
     String? ipAddress,
+    String? integrityHash,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -122,6 +129,7 @@ abstract class ElectronicSignature
       'entityType': entityType,
       'entityId': entityId,
       if (ipAddress != null) 'ipAddress': ipAddress,
+      if (integrityHash != null) 'integrityHash': integrityHash,
     };
   }
 
@@ -138,6 +146,7 @@ abstract class ElectronicSignature
       'entityType': entityType,
       'entityId': entityId,
       if (ipAddress != null) 'ipAddress': ipAddress,
+      if (integrityHash != null) 'integrityHash': integrityHash,
     };
   }
 
@@ -184,6 +193,7 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
     required String entityType,
     required String entityId,
     String? ipAddress,
+    String? integrityHash,
   }) : super._(
          id: id,
          userId: userId,
@@ -194,6 +204,7 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
          entityType: entityType,
          entityId: entityId,
          ipAddress: ipAddress,
+         integrityHash: integrityHash,
        );
 
   /// Returns a shallow copy of this [ElectronicSignature]
@@ -210,6 +221,7 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
     String? entityType,
     String? entityId,
     Object? ipAddress = _Undefined,
+    Object? integrityHash = _Undefined,
   }) {
     return ElectronicSignature(
       id: id is int? ? id : this.id,
@@ -223,6 +235,9 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
       entityType: entityType ?? this.entityType,
       entityId: entityId ?? this.entityId,
       ipAddress: ipAddress is String? ? ipAddress : this.ipAddress,
+      integrityHash: integrityHash is String?
+          ? integrityHash
+          : this.integrityHash,
     );
   }
 }
@@ -268,6 +283,12 @@ class ElectronicSignatureUpdateTable
     table.ipAddress,
     value,
   );
+
+  _i1.ColumnValue<String, String> integrityHash(String? value) =>
+      _i1.ColumnValue(
+        table.integrityHash,
+        value,
+      );
 }
 
 class ElectronicSignatureTable extends _i1.Table<int?> {
@@ -303,6 +324,10 @@ class ElectronicSignatureTable extends _i1.Table<int?> {
       'ipAddress',
       this,
     );
+    integrityHash = _i1.ColumnString(
+      'integrityHash',
+      this,
+    );
   }
 
   late final ElectronicSignatureUpdateTable updateTable;
@@ -330,6 +355,9 @@ class ElectronicSignatureTable extends _i1.Table<int?> {
   /// IP address at time of signature.
   late final _i1.ColumnString ipAddress;
 
+  /// HMAC for integrity verification (userId, entityType, entityId, timestamp, meaning).
+  late final _i1.ColumnString integrityHash;
+
   _i2.PharmaUserTable get user {
     if (_user != null) return _user!;
     _user = _i1.createRelationTable(
@@ -353,6 +381,7 @@ class ElectronicSignatureTable extends _i1.Table<int?> {
     entityType,
     entityId,
     ipAddress,
+    integrityHash,
   ];
 
   @override

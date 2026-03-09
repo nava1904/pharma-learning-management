@@ -12,3 +12,5 @@ fields:
   reminderSentAt: DateTime?
   ### Renewal assignment if created.
   renewalAssignment: TrainingAssignment?, relation(optional)
+  ### Expiry ladder stage: 90d, 60d, 30d, 7d, expired (ADM-06).
+  expiryStage: String?

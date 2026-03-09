@@ -11,11 +11,15 @@ class AuditTrailScreen extends StatefulWidget {
   State<AuditTrailScreen> createState() => _AuditTrailScreenState();
 }
 
+enum _AuditTab { auditTrail, accessLogs }
+
 class _AuditTrailScreenState extends State<AuditTrailScreen> {
   List<AuditTrail> _trail = [];
+  List<AccessLog> _accessLogs = [];
   bool _loading = true;
   String? _error;
   String? _entityTypeFilter;
+  _AuditTab _selectedTab = _AuditTab.auditTrail;
 
   @override
   void initState() {
@@ -29,16 +33,28 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
       _error = null;
     });
     try {
-      final results = await client.audit.getAuditTrail(
-        entityType: _entityTypeFilter,
-        from: _from,
-        to: _to,
-        limit: 100,
-      );
-      setState(() {
-        _trail = results;
-        _loading = false;
-      });
+      if (_selectedTab == _AuditTab.auditTrail) {
+        final results = await client.audit.getAuditTrail(
+          entityType: _entityTypeFilter,
+          from: _from,
+          to: _to,
+          limit: 100,
+        );
+        setState(() {
+          _trail = results;
+          _loading = false;
+        });
+      } else {
+        final results = await client.audit.getAccessLogs(
+          from: _from,
+          to: _to,
+          limit: 100,
+        );
+        setState(() {
+          _accessLogs = results;
+          _loading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -59,6 +75,43 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
       appBar: AppBar(
         title: const Text('Audit Trail'),
         actions: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedTab = _AuditTab.auditTrail;
+                    _load();
+                  });
+                },
+                child: Text(
+                  'Audit Trail',
+                  style: TextStyle(
+                    fontWeight: _selectedTab == _AuditTab.auditTrail
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedTab = _AuditTab.accessLogs;
+                    _load();
+                  });
+                },
+                child: Text(
+                  'Access Logs',
+                  style: TextStyle(
+                    fontWeight: _selectedTab == _AuditTab.accessLogs
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loading ? null : _load,
@@ -90,25 +143,26 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          DropdownButton<String?>(
-                            value: _entityTypeFilter,
-                            hint: const Text('Entity type'),
-                            items: [
-                              const DropdownMenuItem(
-                                value: null,
-                                child: Text('All'),
-                              ),
-                              ...['training_record', 'course', 'course_version', 'enrollment', 'certificate']
-                                  .map((e) => DropdownMenuItem(
-                                        value: e,
-                                        child: Text(e),
-                                      )),
-                            ],
-                            onChanged: (v) {
-                              setState(() => _entityTypeFilter = v);
-                              _load();
-                            },
-                          ),
+                          if (_selectedTab == _AuditTab.auditTrail)
+                            DropdownButton<String?>(
+                              value: _entityTypeFilter,
+                              hint: const Text('Entity type'),
+                              items: [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('All'),
+                                ),
+                                ...['training_record', 'course', 'course_version', 'enrollment', 'certificate']
+                                    .map((e) => DropdownMenuItem(
+                                          value: e,
+                                          child: Text(e),
+                                        )),
+                              ],
+                              onChanged: (v) {
+                                setState(() => _entityTypeFilter = v);
+                                _load();
+                              },
+                            ),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.calendar_today, size: 18),
                             label: Text(
@@ -179,13 +233,14 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      if (_trail.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Text('No audit records'),
-                        )
-                      else
-                        ..._trail.map((a) => Card(
+                      if (_selectedTab == _AuditTab.auditTrail) ...[
+                        if (_trail.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('No audit records'),
+                          )
+                        else
+                          ..._trail.map((a) => Card(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
                                 title: Text(
@@ -216,6 +271,65 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
                                 isThreeLine: true,
                               ),
                             )),
+                      ] else ...[
+                        if (_accessLogs.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('No access logs'),
+                          )
+                        else
+                          ..._accessLogs.map((log) => Card(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  title: Text(
+                                    log.action,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        log.timestamp.toIso8601String(),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                      if (log.user != null)
+                                        Text(
+                                          'User: ${log.user!.firstName} ${log.user!.lastName} (${log.user!.email})',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
+                                        ),
+                                      if (log.ipAddress != null)
+                                        Text(
+                                          'IP: ${log.ipAddress}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
+                                        ),
+                                      Text(
+                                        'Success: ${log.success}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                  leading: Icon(
+                                    log.success
+                                        ? Icons.check_circle
+                                        : Icons.cancel,
+                                    color: log.success
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                  isThreeLine: true,
+                                ),
+                              )),
+                      ],
                     ],
                   ),
                 ),

@@ -1,0 +1,36 @@
+### Auditor session for time-limited read-only access. FDA 21 CFR Part 11.
+class: AuditorSession
+
+table: auditor_session
+
+fields:
+  ### The inspection record.
+  inspectionRecord: InspectionRecord?, relation
+  ### Auditor user.
+  auditorUser: PharmaUser?, relation(optional)
+  ### Access type: internal, external_fda, external_ema, customer.
+  accessType: String
+  ### Hashed access token.
+  accessToken: String?
+  ### When token was issued.
+  tokenIssuedAt: DateTime?
+  ### When token expires.
+  tokenExpiresAt: DateTime?
+  ### Scope start date.
+  scopeStartDate: DateTime?
+  ### Scope end date.
+  scopeEndDate: DateTime?
+  ### Scope sites as JSON array.
+  scopeSitesJson: String?
+  ### Scope departments as JSON array.
+  scopeDepartmentsJson: String?
+  ### Whether session is active.
+  isActive: bool, default=true
+  ### When session ended.
+  endedAt: DateTime?
+  ### End reason: expired, manual_revoke, completed.
+  endedReason: String?
+  ### Pages viewed count.
+  pagesViewedCount: int, default=0
+  ### Last activity timestamp.
+  lastActivityAt: DateTime?

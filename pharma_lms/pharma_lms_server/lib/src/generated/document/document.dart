@@ -25,6 +25,9 @@ abstract class Document
     required this.documentType,
     required this.organizationId,
     this.organization,
+    this.affectedDepartmentIdsJson,
+    this.affectedRoleIdsJson,
+    this.trainingRequiredByQa,
   });
 
   factory Document({
@@ -34,6 +37,9 @@ abstract class Document
     required String documentType,
     required int organizationId,
     _i2.Organization? organization,
+    String? affectedDepartmentIdsJson,
+    String? affectedRoleIdsJson,
+    String? trainingRequiredByQa,
   }) = _DocumentImpl;
 
   factory Document.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -48,6 +54,11 @@ abstract class Document
           : _i3.Protocol().deserialize<_i2.Organization>(
               jsonSerialization['organization'],
             ),
+      affectedDepartmentIdsJson:
+          jsonSerialization['affectedDepartmentIdsJson'] as String?,
+      affectedRoleIdsJson: jsonSerialization['affectedRoleIdsJson'] as String?,
+      trainingRequiredByQa:
+          jsonSerialization['trainingRequiredByQa'] as String?,
     );
   }
 
@@ -72,6 +83,15 @@ abstract class Document
   /// Organization for multi-tenant.
   _i2.Organization? organization;
 
+  /// JSON array of department IDs affected by this document (for retraining scope).
+  String? affectedDepartmentIdsJson;
+
+  /// JSON array of role IDs affected by this document (for retraining scope).
+  String? affectedRoleIdsJson;
+
+  /// QA gate: training_required, no_training_required. Only trigger retraining when training_required.
+  String? trainingRequiredByQa;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -85,6 +105,9 @@ abstract class Document
     String? documentType,
     int? organizationId,
     _i2.Organization? organization,
+    String? affectedDepartmentIdsJson,
+    String? affectedRoleIdsJson,
+    String? trainingRequiredByQa,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -96,6 +119,12 @@ abstract class Document
       'documentType': documentType,
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
+      if (affectedDepartmentIdsJson != null)
+        'affectedDepartmentIdsJson': affectedDepartmentIdsJson,
+      if (affectedRoleIdsJson != null)
+        'affectedRoleIdsJson': affectedRoleIdsJson,
+      if (trainingRequiredByQa != null)
+        'trainingRequiredByQa': trainingRequiredByQa,
     };
   }
 
@@ -110,6 +139,12 @@ abstract class Document
       'organizationId': organizationId,
       if (organization != null)
         'organization': organization?.toJsonForProtocol(),
+      if (affectedDepartmentIdsJson != null)
+        'affectedDepartmentIdsJson': affectedDepartmentIdsJson,
+      if (affectedRoleIdsJson != null)
+        'affectedRoleIdsJson': affectedRoleIdsJson,
+      if (trainingRequiredByQa != null)
+        'trainingRequiredByQa': trainingRequiredByQa,
     };
   }
 
@@ -153,6 +188,9 @@ class _DocumentImpl extends Document {
     required String documentType,
     required int organizationId,
     _i2.Organization? organization,
+    String? affectedDepartmentIdsJson,
+    String? affectedRoleIdsJson,
+    String? trainingRequiredByQa,
   }) : super._(
          id: id,
          title: title,
@@ -160,6 +198,9 @@ class _DocumentImpl extends Document {
          documentType: documentType,
          organizationId: organizationId,
          organization: organization,
+         affectedDepartmentIdsJson: affectedDepartmentIdsJson,
+         affectedRoleIdsJson: affectedRoleIdsJson,
+         trainingRequiredByQa: trainingRequiredByQa,
        );
 
   /// Returns a shallow copy of this [Document]
@@ -173,6 +214,9 @@ class _DocumentImpl extends Document {
     String? documentType,
     int? organizationId,
     Object? organization = _Undefined,
+    Object? affectedDepartmentIdsJson = _Undefined,
+    Object? affectedRoleIdsJson = _Undefined,
+    Object? trainingRequiredByQa = _Undefined,
   }) {
     return Document(
       id: id is int? ? id : this.id,
@@ -183,6 +227,15 @@ class _DocumentImpl extends Document {
       organization: organization is _i2.Organization?
           ? organization
           : this.organization?.copyWith(),
+      affectedDepartmentIdsJson: affectedDepartmentIdsJson is String?
+          ? affectedDepartmentIdsJson
+          : this.affectedDepartmentIdsJson,
+      affectedRoleIdsJson: affectedRoleIdsJson is String?
+          ? affectedRoleIdsJson
+          : this.affectedRoleIdsJson,
+      trainingRequiredByQa: trainingRequiredByQa is String?
+          ? trainingRequiredByQa
+          : this.trainingRequiredByQa,
     );
   }
 }
@@ -210,6 +263,24 @@ class DocumentUpdateTable extends _i1.UpdateTable<DocumentTable> {
     table.organizationId,
     value,
   );
+
+  _i1.ColumnValue<String, String> affectedDepartmentIdsJson(String? value) =>
+      _i1.ColumnValue(
+        table.affectedDepartmentIdsJson,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> affectedRoleIdsJson(String? value) =>
+      _i1.ColumnValue(
+        table.affectedRoleIdsJson,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> trainingRequiredByQa(String? value) =>
+      _i1.ColumnValue(
+        table.trainingRequiredByQa,
+        value,
+      );
 }
 
 class DocumentTable extends _i1.Table<int?> {
@@ -231,6 +302,18 @@ class DocumentTable extends _i1.Table<int?> {
       'organizationId',
       this,
     );
+    affectedDepartmentIdsJson = _i1.ColumnString(
+      'affectedDepartmentIdsJson',
+      this,
+    );
+    affectedRoleIdsJson = _i1.ColumnString(
+      'affectedRoleIdsJson',
+      this,
+    );
+    trainingRequiredByQa = _i1.ColumnString(
+      'trainingRequiredByQa',
+      this,
+    );
   }
 
   late final DocumentUpdateTable updateTable;
@@ -248,6 +331,15 @@ class DocumentTable extends _i1.Table<int?> {
 
   /// Organization for multi-tenant.
   _i2.OrganizationTable? _organization;
+
+  /// JSON array of department IDs affected by this document (for retraining scope).
+  late final _i1.ColumnString affectedDepartmentIdsJson;
+
+  /// JSON array of role IDs affected by this document (for retraining scope).
+  late final _i1.ColumnString affectedRoleIdsJson;
+
+  /// QA gate: training_required, no_training_required. Only trigger retraining when training_required.
+  late final _i1.ColumnString trainingRequiredByQa;
 
   _i2.OrganizationTable get organization {
     if (_organization != null) return _organization!;
@@ -269,6 +361,9 @@ class DocumentTable extends _i1.Table<int?> {
     documentNumber,
     documentType,
     organizationId,
+    affectedDepartmentIdsJson,
+    affectedRoleIdsJson,
+    trainingRequiredByQa,
   ];
 
   @override

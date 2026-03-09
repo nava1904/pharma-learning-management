@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
@@ -153,7 +154,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 color: AppColors.slate600,
               ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        Text(
+          'Keep your learners compliant',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.slate600,
+                fontWeight: FontWeight.w500,
+              ),
+        ),
+        const SizedBox(height: 4),
         Text(
           AppConstants.complianceBanner,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -176,11 +185,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           },
         ),
         const SizedBox(height: 24),
-        TextButton(
-          onPressed: () => setState(() => _demoMode = true),
-          child: const Text('Use demo mode (role selection)'),
-        ),
-        const SizedBox(height: 16),
+        if (!kReleaseMode)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: TextButton(
+              onPressed: () => setState(() => _demoMode = true),
+              child: const Text('Use demo mode (role selection)'),
+            ),
+          ),
+        if (kReleaseMode) const SizedBox(height: 16),
         TextButton(
           onPressed: () => _runSeed(context),
           child: const Text('Seed sample data'),
@@ -219,44 +232,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 color: AppColors.slate600,
               ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        Text(
+          'Keep your learners compliant',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.slate600,
+                fontWeight: FontWeight.w500,
+              ),
+        ),
+        const SizedBox(height: 4),
         Text(
           AppConstants.complianceBanner,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.slate500,
               ),
         ),
-        const SizedBox(height: 32),
-        DropdownButtonFormField<AppRole>(
-          value: _selectedRole,
-          decoration: const InputDecoration(
-            labelText: 'Select Role to Continue',
-          ),
-          items: const [
-            DropdownMenuItem(
-              value: AppRole.employee,
-              child: Text('Employee / Trainee'),
+        const SizedBox(height: 24),
+        Text(
+          'Select Role to Continue',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.slate700,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _RoleChip(
+              label: 'Employee',
+              icon: Icons.person,
+              isSelected: _selectedRole == AppRole.employee,
+              onTap: () => setState(() => _selectedRole = AppRole.employee),
             ),
-            DropdownMenuItem(
-              value: AppRole.admin,
-              child: Text('Training Administrator'),
+            _RoleChip(
+              label: 'Admin',
+              icon: Icons.admin_panel_settings,
+              isSelected: _selectedRole == AppRole.admin,
+              onTap: () => setState(() => _selectedRole = AppRole.admin),
             ),
-            DropdownMenuItem(
-              value: AppRole.qa,
-              child: Text('Quality Assurance (QA)'),
+            _RoleChip(
+              label: 'QA',
+              icon: Icons.verified,
+              isSelected: _selectedRole == AppRole.qa,
+              onTap: () => setState(() => _selectedRole = AppRole.qa),
             ),
-            DropdownMenuItem(
-              value: AppRole.trainer,
-              child: Text('Subject Matter Expert (SME)'),
+            _RoleChip(
+              label: 'SME',
+              icon: Icons.school,
+              isSelected: _selectedRole == AppRole.trainer,
+              onTap: () => setState(() => _selectedRole = AppRole.trainer),
             ),
-            DropdownMenuItem(
-              value: AppRole.auditor,
-              child: Text('Auditor Portal'),
+            _RoleChip(
+              label: 'Auditor',
+              icon: Icons.search,
+              isSelected: _selectedRole == AppRole.auditor,
+              onTap: () => setState(() => _selectedRole = AppRole.auditor),
+            ),
+            _RoleChip(
+              label: 'Analytics',
+              icon: Icons.analytics,
+              isSelected: _selectedRole == AppRole.analytics,
+              onTap: () => setState(() => _selectedRole = AppRole.analytics),
             ),
           ],
-          onChanged: (role) {
-            setState(() => _selectedRole = role);
-          },
         ),
         const SizedBox(height: 24),
         SizedBox(
@@ -284,6 +324,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: const Text('Seed sample data'),
         ),
       ],
+    );
+  }
+}
+
+class _RoleChip extends StatelessWidget {
+  const _RoleChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.indigo50 : AppColors.slate100,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? AppColors.indigo600 : AppColors.slate300,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? AppColors.indigo600 : AppColors.slate600,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? AppColors.indigo700 : AppColors.slate700,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

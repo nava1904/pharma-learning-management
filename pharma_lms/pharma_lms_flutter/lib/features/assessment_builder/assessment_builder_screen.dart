@@ -57,6 +57,25 @@ class _AssessmentBuilderScreenState extends State<AssessmentBuilderScreen> {
     }
   }
 
+  void _showGenerateQuestionsPlaceholder() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Generate Questions'),
+        content: const Text(
+          'AI-assisted question generation coming soon. '
+          'Integrate with OpenAI/LLM API for question generation from course content.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _addQuestion() async {
     if (_selectedBank == null) return;
     final textController = TextEditingController();
@@ -248,10 +267,16 @@ class _AssessmentBuilderScreenState extends State<AssessmentBuilderScreen> {
                 : ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Row(
+                        Row(
                         children: [
                           Text('Questions (${_selectedBank!.name})', style: Theme.of(context).textTheme.titleMedium),
                           const Spacer(),
+                          OutlinedButton.icon(
+                            onPressed: _showGenerateQuestionsPlaceholder,
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('Generate questions'),
+                          ),
+                          const SizedBox(width: 8),
                           ElevatedButton.icon(
                             onPressed: _addQuestion,
                             icon: const Icon(Icons.add),
