@@ -1,0 +1,13 @@
+### OIDC client config for Flutter (authorization endpoint, client ID, redirect URI).
+### Returned when SSO is configured. Null/empty when not configured.
+class: OidcClientConfig
+
+fields:
+  ### Whether OIDC SSO is enabled.
+  enabled: bool
+  ### OIDC authorization endpoint URL (from discovery).
+  authorizationEndpoint: String?
+  ### OAuth client ID (public, safe to send to client).
+  clientId: String?
+  ### Redirect URI for OAuth callback.
+  redirectUri: String?

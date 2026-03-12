@@ -21,25 +21,20 @@ pharma_lms/
 
 ## Quick Start
 
-### 1. Start Infrastructure
+See **[docs/LOCAL_DEVELOPMENT_SETUP.md](../../docs/LOCAL_DEVELOPMENT_SETUP.md)** for the full step-by-step guide.
+
+### TL;DR
 
 ```bash
-cd pharma_lms_server
-docker compose up -d
-```
+# 1. Start PostgreSQL
+cd pharma_lms_server && docker compose up -d postgres
 
-### 2. Run Server
+# 2. Run server
+serverpod run
 
-```bash
-cd pharma_lms_server
-dart bin/main.dart --apply-migrations
-```
-
-### 3. Run Flutter App
-
-```bash
-cd pharma_lms_flutter
-flutter run -d chrome
+# 3. Build Flutter app (in another terminal)
+serverpod run flutter_build
+# Then open http://localhost:8082/app
 ```
 
 ## Domains

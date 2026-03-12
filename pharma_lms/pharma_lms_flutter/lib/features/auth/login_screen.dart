@@ -7,6 +7,7 @@ import '../../core/client.dart';
 import '../../core/constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import 'oidc_sign_in_widget.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -45,16 +46,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _runMvpSeed(BuildContext context) async {
+    try {
+      final msg = await client.seed.runMvpSeed();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('MVP seed failed: $e'),
+            backgroundColor: AppColors.destructive,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _onAuthenticated() async {
     try {
       final profile =
           await client.modules.serverpod_auth_core.userProfileInfo.get();
       final email = profile.email;
-      if (email != null && email.isNotEmpty && mounted) {
-        loginWithAuthEmail(ref, context, email);
-      } else if (mounted) {
-        loginWithAuthEmail(ref, context, 'employee@pharmacorp.demo');
+      if (email == null || email.isEmpty) {
+        if (mounted) loginWithAuthEmail(ref, context, 'employee@pharmacorp.demo');
+        return;
       }
+      final mfaStatus = await client.mfa.getMfaStatus();
+      if (mounted && mfaStatus.mfaEnabled) {
+        final verified = await _showMfaVerifyDialog(context);
+        if (!verified) {
+          try { client.auth.signOutDevice(); } catch (_) {}
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('MFA verification required. Please sign in again.'),
+                backgroundColor: AppColors.destructive,
+              ),
+            );
+          }
+          return;
+        }
+      }
+      if (mounted) loginWithAuthEmail(ref, context, email);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,6 +100,89 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       }
     }
+  }
+
+  Future<bool> _showMfaVerifyDialog(BuildContext context) async {
+    String code = '';
+    String? error;
+    var verifying = false;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: const Text('Two-Factor Authentication'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Enter the 6-digit code from your authenticator app.',
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(error!, style: TextStyle(color: AppColors.destructive)),
+                ],
+                const SizedBox(height: 16),
+                TextField(
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  autofocus: true,
+                  enabled: !verifying,
+                  decoration: const InputDecoration(
+                    labelText: 'Verification code',
+                    hintText: '000000',
+                    counterText: '',
+                  ),
+                  onChanged: (v) => setState(() => code = v),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: verifying ? null : () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: verifying
+                    ? null
+                    : () async {
+                        if (code.length != 6) {
+                          setState(() => error = 'Enter a 6-digit code');
+                          return;
+                        }
+                        setState(() {
+                          verifying = true;
+                          error = null;
+                        });
+                        try {
+                          final ok = await client.mfa.verifyMfa(code);
+                          if (ctx.mounted) Navigator.of(ctx).pop(ok);
+                        } catch (_) {
+                          if (ctx.mounted) {
+                            setState(() {
+                              verifying = false;
+                              error = 'Invalid code. Try again.';
+                            });
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.indigo600),
+                child: verifying
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Verify'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    return result ?? false;
   }
 
   @override
@@ -184,6 +302,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             }
           },
         ),
+        const SizedBox(height: 16),
+        OidcSignInWidget(
+          onAuthenticated: _onAuthenticated,
+          onError: (error) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('SSO sign-in failed: $error'),
+                  backgroundColor: AppColors.destructive,
+                ),
+              );
+            }
+          },
+        ),
         const SizedBox(height: 24),
         if (!kReleaseMode)
           Padding(
@@ -198,6 +330,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           onPressed: () => _runSeed(context),
           child: const Text('Seed sample data'),
         ),
+        if (!kReleaseMode)
+          TextButton(
+            onPressed: () => _runMvpSeed(context),
+            child: const Text('Seed MVP data'),
+          ),
       ],
     );
   }
@@ -323,6 +460,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           onPressed: () => _runSeed(context),
           child: const Text('Seed sample data'),
         ),
+        if (!kReleaseMode)
+          TextButton(
+            onPressed: () => _runMvpSeed(context),
+            child: const Text('Seed MVP data'),
+          ),
       ],
     );
   }

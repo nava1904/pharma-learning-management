@@ -1,0 +1,6 @@
+### Result of enrollMfa - secret and otpauth URL for QR.
+class: MfaEnrollResult
+
+fields:
+  secretBase32: String
+  otpauthUrl: String

@@ -1,0 +1,6 @@
+### Result of getMfaStatus.
+class: MfaStatusResult
+
+fields:
+  mfaEnabled: bool
+  enrolledAt: DateTime?

@@ -1,9 +1,14 @@
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
+
+import '../../core/file_io.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
+import '../../features/esignature/esignature_screen.dart' show showEsignatureModal;
 import '../../widgets/app_shell.dart';
 
 /// Admin screen for role-based curriculum (training matrix).
@@ -24,6 +29,7 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
   JobRole? _selectedRole;
   List<int> _curriculumCourseIds = [];
   List<int> _curriculumVersionIds = [];
+  List<int> _lastSavedCourseIds = [];
   bool _loading = true;
   String? _error;
 
@@ -87,6 +93,7 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
       setState(() {
         _curriculumVersionIds = versionIds;
         _curriculumCourseIds = courseIds;
+        _lastSavedCourseIds = List.from(courseIds);
       });
     } catch (_) {
       setState(() {
@@ -94,6 +101,13 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
         _curriculumCourseIds = [];
       });
     }
+  }
+
+  bool get _hasChanges {
+    if (_curriculumCourseIds.length != _lastSavedCourseIds.length) return true;
+    final a = Set<int>.from(_curriculumCourseIds);
+    final b = Set<int>.from(_lastSavedCourseIds);
+    return !a.containsAll(b) || !b.containsAll(a);
   }
 
   Future<void> _saveMatrix() async {
@@ -105,6 +119,7 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
         trainingMatrixJson: json,
       );
       if (mounted) {
+        setState(() => _lastSavedCourseIds = List.from(_curriculumCourseIds));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Training matrix saved')),
         );
@@ -117,6 +132,126 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
         );
       }
     }
+  }
+
+  Future<void> _submitToQa() async {
+    if (_selectedRole?.id == null || !_hasChanges) return;
+    final added = _curriculumCourseIds
+        .where((id) => !_lastSavedCourseIds.contains(id))
+        .toList();
+    final removed = _lastSavedCourseIds
+        .where((id) => !_curriculumCourseIds.contains(id))
+        .toList();
+    final addedTitles = added
+        .map((id) => _courses.where((c) => c.id == id).map((c) => c.title).firstOrNull ?? 'ID $id')
+        .toList();
+    final removedTitles = removed
+        .map((id) => _courses.where((c) => c.id == id).map((c) => c.title).firstOrNull ?? 'ID $id')
+        .toList();
+
+    if (!mounted) return;
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Submit to QA for Approval'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Matrix changes require QA e-signature before taking effect.',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              if (addedTitles.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('Added: ${addedTitles.join(', ')}', style: TextStyle(color: Colors.green[700])),
+              ],
+              if (removedTitles.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('Removed: ${removedTitles.join(', ')}', style: TextStyle(color: Colors.red[700])),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Proceed to E-Sign'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+
+    int? qaUserId;
+    try {
+      final qaUser = await client.user.getUserByEmail('qa@pharmacorp.demo');
+      qaUserId = qaUser?.id;
+    } catch (_) {}
+    if (qaUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('QA user not found. Configure QA role.')),
+      );
+      return;
+    }
+
+    final esignatureId = await showEsignatureModal(
+      context,
+      userId: qaUserId,
+      entityType: 'training_matrix',
+      entityId: 'job_role-${_selectedRole?.id}',
+      signatureMeaning: 'I have reviewed and approved this training matrix change as compliant',
+    );
+    if (!mounted) return;
+    if (esignatureId == null) return;
+    await _saveMatrix();
+  }
+
+  Future<void> _showBulkImport() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+    if (result == null || result.files.isEmpty || !mounted) return;
+    List<int> bytes;
+    final file = result.files.single;
+    if (file.bytes != null) {
+      bytes = file.bytes!.toList();
+    } else if (file.path != null) {
+      bytes = await _readFileBytes(file.path!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not read file')),
+      );
+      return;
+    }
+    try {
+      final csvBase64 = base64Encode(bytes);
+      final bulkResult = await client.admin.bulkImportTrainingMatrix(
+        csvBase64: csvBase64,
+      );
+      if (!mounted) return;
+      final msg = bulkResult.errors.isEmpty
+          ? 'Imported ${bulkResult.imported} role(s)'
+          : 'Imported ${bulkResult.imported}. Errors: ${bulkResult.errors.take(3).join('; ')}${bulkResult.errors.length > 3 ? '...' : ''}';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      if (_selectedRole?.id != null) _loadCurriculum(_selectedRole!.id!);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Import failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<List<int>> _readFileBytes(String path) async {
+    return readFileBytes(path);
   }
 
   Future<void> _assignToUser() async {
@@ -290,16 +425,28 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      ElevatedButton(
-                        onPressed: _saveMatrix,
-                        child: const Text('Save matrix'),
-                      ),
+                      if (_hasChanges)
+                        ElevatedButton(
+                          onPressed: _submitToQa,
+                          child: const Text('Submit to QA'),
+                        )
+                      else
+                        ElevatedButton(
+                          onPressed: _saveMatrix,
+                          child: const Text('Save matrix'),
+                        ),
                       const SizedBox(width: 16),
                       ElevatedButton(
                         onPressed: _curriculumVersionIds.isEmpty
                             ? null
                             : _assignToUser,
                         child: const Text('Assign to user'),
+                      ),
+                      const SizedBox(width: 16),
+                      OutlinedButton.icon(
+                        onPressed: _showBulkImport,
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('Bulk import'),
                       ),
                     ],
                   ),

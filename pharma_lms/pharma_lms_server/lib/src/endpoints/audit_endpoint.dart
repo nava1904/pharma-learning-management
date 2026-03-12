@@ -2,21 +2,41 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Audit & Validation domain endpoint - for QA and auditor access.
 class AuditEndpoint extends Endpoint {
-  /// Log report export with integrity hash (21 CFR Part 11).
+  /// Log report export with integrity hash (21 CFR Part 11). Creates ReportExport record.
   Future<void> logReportExport(
     Session session, {
     required String reportType,
     required String hashSha256,
+    int? exportedById,
+    String? filterParamsJson,
+    int? recordCount,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'audit', action: 'read');
+    final userId = exportedById;
+    if (userId != null) {
+      await ReportExport.db.insertRow(
+        session,
+        ReportExport(
+          exportedById: userId,
+          reportType: reportType,
+          filterParamsJson: filterParamsJson,
+          recordCount: recordCount,
+          fileHash: hashSha256,
+          exportedAt: DateTime.now(),
+        ),
+      );
+    }
     await AuditService.log(
       session,
       entityType: 'report_export',
       entityId: DateTime.now().toIso8601String(),
-      action: 'ReportExport',
+      action: 'ReportExported',
       newValueJson: '{"reportType":"$reportType","hashSha256":"$hashSha256"}',
+      userId: userId,
     );
   }
   Future<List<AuditTrail>> getAuditTrail(
@@ -28,6 +48,8 @@ class AuditEndpoint extends Endpoint {
     DateTime? to,
     int limit = 100,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'audit', action: 'read');
     var results = await AuditTrail.db.find(
       session,
       orderBy: (t) => t.timestamp,
@@ -65,6 +87,8 @@ class AuditEndpoint extends Endpoint {
     DateTime? from,
     DateTime? to,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'audit', action: 'read');
     const configEntityTypes = {
       'system_configuration',
       'signature_meaning',

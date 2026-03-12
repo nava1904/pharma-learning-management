@@ -1,0 +1,12 @@
+### Tracks MFA verification for a session. Used to allow access after TOTP verification.
+class: MfaVerifiedSession
+
+table: mfa_verified_session
+
+fields:
+  ### Serverpod auth user ID (UUID).
+  authUserId: String
+  ### Session identifier (e.g. JWT jti or device fingerprint).
+  sessionId: String
+  ### When TOTP was verified.
+  verifiedAt: DateTime, default=now

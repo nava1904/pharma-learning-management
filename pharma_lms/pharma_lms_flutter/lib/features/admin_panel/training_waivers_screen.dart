@@ -1,13 +1,15 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
+import 'package:pluto_grid/pluto_grid.dart';
 
 import '../../core/client.dart';
+import '../../features/esignature/esignature_screen.dart' show showEsignatureModal;
 import '../../core/theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/status_badge.dart';
 
 /// ADM-07: Training waivers - request, QA approval, waived status.
 class TrainingWaiversScreen extends ConsumerStatefulWidget {
@@ -24,6 +26,9 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
   String? _error;
   String _filterStatus = 'all';
   final _rejectReasonController = TextEditingController();
+  List<PlutoColumn> _waiverColumns = [];
+  List<PlutoRow> _waiverRows = [];
+  PlutoGridStateManager? _waiverStateManager;
 
   @override
   void dispose() {
@@ -47,6 +52,7 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
         status: _filterStatus == 'all' ? null : _filterStatus,
         limit: 200,
       );
+      _buildWaiverGrid(waivers);
       setState(() {
         _waivers = waivers;
         _loading = false;
@@ -63,6 +69,7 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
     PharmaUser? selectedUser;
     Course? selectedCourse;
     String? reason;
+    String? evidencePath;
     final reasonController = TextEditingController();
     List<PharmaUser> users = [];
     List<Course> courses = [];
@@ -126,6 +133,22 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
                     ),
                     maxLines: 3,
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: ['pdf'],
+                      );
+                      if (result != null && result.files.single.path != null) {
+                        setState(() => evidencePath = result.files.single.path);
+                      }
+                    },
+                    icon: const Icon(Icons.upload_file),
+                    label: Text(evidencePath != null
+                        ? 'Evidence: ${evidencePath!.split('/').last}'
+                        : 'Attach Evidence PDF (required)'),
+                  ),
                 ],
               ),
             ),
@@ -146,10 +169,19 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
                     );
                     return;
                   }
+                  if (evidencePath == null || evidencePath!.isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Evidence PDF attachment is required')),
+                    );
+                    return;
+                  }
                   Navigator.pop(ctx, {
                     'user': selectedUser,
                     'course': selectedCourse,
                     'reason': reasonController.text.trim(),
+                    'evidencePath': evidencePath,
                   });
                 },
                 child: const Text('Submit'),
@@ -163,16 +195,19 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
     if (result != null &&
         result['user'] != null &&
         result['course'] != null &&
-        result['reason'] != null) {
+        result['reason'] != null &&
+        result['evidencePath'] != null) {
       final selectedUser = result['user'] as PharmaUser;
       final selectedCourse = result['course'] as Course;
       reason = result['reason'] as String;
+      final evPath = result['evidencePath'] as String;
       try {
         await client.admin.requestTrainingWaiver(
           userId: selectedUser.id!,
           courseId: selectedCourse.id!,
           requestedById: currentUser!.id!,
           requestReason: reason!,
+          evidenceStoragePath: evPath,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -193,10 +228,29 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
   Future<void> _approveWaiver(TrainingWaiver w) async {
     final currentUser = await ref.read(currentUserProvider.future);
     if (currentUser?.id == null || w.id == null) return;
+    if (w.requestedById == currentUser!.id) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Requester cannot approve (separation of duties)'),
+          ),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    final esignatureId = await showEsignatureModal(
+      context,
+      entityType: 'training_waiver',
+      entityId: w.id.toString(),
+      signatureMeaning: 'I approve this training waiver as compliant',
+      userId: currentUser.id,
+    );
+    if (esignatureId == null) return;
     try {
       await client.admin.approveTrainingWaiver(
         waiverId: w.id!,
-        approvedById: currentUser!.id!,
+        approvedById: currentUser.id!,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -211,6 +265,95 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
         );
       }
     }
+  }
+
+  void _buildWaiverGrid(List<TrainingWaiver> waivers) {
+    _waiverColumns = [
+      PlutoColumn(
+        title: 'User',
+        field: 'user',
+        type: PlutoColumnType.text(),
+        width: 180,
+        enableSorting: true,
+      ),
+      PlutoColumn(
+        title: 'Course',
+        field: 'course',
+        type: PlutoColumnType.text(),
+        width: 180,
+        enableSorting: true,
+      ),
+      PlutoColumn(
+        title: 'Status',
+        field: 'status',
+        type: PlutoColumnType.text(),
+        width: 100,
+        enableSorting: true,
+      ),
+      PlutoColumn(
+        title: 'Requested',
+        field: 'requested',
+        type: PlutoColumnType.text(),
+        width: 120,
+      ),
+      PlutoColumn(
+        title: 'Actions',
+        field: 'actions',
+        type: PlutoColumnType.text(),
+        width: 160,
+        readOnly: true,
+        renderer: (ctx) {
+          final id = ctx.row.cells['_id']?.value as int?;
+          if (id == null) return const SizedBox.shrink();
+          final w = _waivers.cast<TrainingWaiver?>().firstWhere(
+                (e) => e?.id == id,
+                orElse: () => null,
+              );
+          if (w == null || w.status != 'pending') return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () => _approveWaiver(w),
+                  child: const Text('Approve'),
+                ),
+                TextButton(
+                  onPressed: () => _rejectWaiver(w),
+                  child: const Text('Reject'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      PlutoColumn(
+        title: '_id',
+        field: '_id',
+        type: PlutoColumnType.text(),
+        width: 0,
+        hide: true,
+      ),
+    ];
+    _waiverRows = waivers.map((w) {
+      final userName = w.user != null
+          ? '${w.user!.firstName} ${w.user!.lastName}'
+          : 'User #${w.userId}';
+      final courseTitle = w.course?.title ?? 'Course #${w.courseId}';
+      final requested =
+          w.requestedAt?.toIso8601String().split('T').first ?? '-';
+      return PlutoRow(
+        cells: {
+          'user': PlutoCell(value: userName),
+          'course': PlutoCell(value: courseTitle),
+          'status': PlutoCell(value: w.status ?? 'pending'),
+          'requested': PlutoCell(value: requested),
+          'actions': PlutoCell(value: ''),
+          '_id': PlutoCell(value: w.id),
+        },
+      );
+    }).toList();
   }
 
   Future<void> _rejectWaiver(TrainingWaiver w) async {
@@ -327,120 +470,32 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
                   icon: Icons.verified_user_outlined,
                 )
               else
-                ..._waivers.map((w) => _WaiverTile(
-                      waiver: w,
-                      onApprove: w.status == 'pending' ? _approveWaiver : null,
-                      onReject: w.status == 'pending' ? _rejectWaiver : null,
-                    )),
+                SizedBox(
+                  height: 400,
+                  child: PlutoGrid(
+                    columns: _waiverColumns,
+                    rows: _waiverRows,
+                    onLoaded: (e) => _waiverStateManager = e.stateManager,
+                    configuration: PlutoGridConfiguration(
+                      columnFilter: const PlutoGridColumnFilterConfig(
+                        filters: [
+                          PlutoFilterTypeContains(),
+                          PlutoFilterTypeEquals(),
+                        ],
+                      ),
+                      style: PlutoGridStyleConfig(
+                        gridBorderColor: AppColors.slate200,
+                        cellTextStyle: Theme.of(context).textTheme.bodySmall ?? const TextStyle(),
+                      ),
+                    ),
+                    noRowsWidget: const Center(
+                      child: Text('No waivers'),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _WaiverTile extends StatelessWidget {
-  const _WaiverTile({
-    required this.waiver,
-    this.onApprove,
-    this.onReject,
-  });
-
-  final TrainingWaiver waiver;
-  final void Function(TrainingWaiver)? onApprove;
-  final void Function(TrainingWaiver)? onReject;
-
-  @override
-  Widget build(BuildContext context) {
-    final userName =
-        waiver.user != null
-            ? '${waiver.user!.firstName} ${waiver.user!.lastName}'
-            : 'User #${waiver.userId}';
-    final courseTitle = waiver.course?.title ?? 'Course #${waiver.courseId}';
-    final requestedBy =
-        waiver.requestedBy != null
-            ? '${waiver.requestedBy!.firstName} ${waiver.requestedBy!.lastName}'
-            : '';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.slate50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.slate200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$userName → $courseTitle',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.slate900,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      waiver.requestReason,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.slate600,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Requested by $requestedBy on '
-                      '${waiver.requestedAt?.toIso8601String().split('T').first ?? '-'}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.slate500,
-                          ),
-                    ),
-                    if (waiver.approvedAt != null)
-                      Text(
-                        '${waiver.status} on '
-                        '${waiver.approvedAt?.toIso8601String().split('T').first ?? '-'}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.slate500,
-                            ),
-                      ),
-                    if (waiver.rejectionReason != null &&
-                        waiver.rejectionReason!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          'Reason: ${waiver.rejectionReason}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.destructive,
-                              ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              StatusBadge(status: waiver.status ?? 'pending'),
-              if (onApprove != null) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () => onApprove!(waiver),
-                  child: const Text('Approve'),
-                ),
-                TextButton(
-                  onPressed: () => onReject!(waiver),
-                  child: const Text('Reject'),
-                ),
-              ],
-            ],
-          ),
-        ],
       ),
     );
   }

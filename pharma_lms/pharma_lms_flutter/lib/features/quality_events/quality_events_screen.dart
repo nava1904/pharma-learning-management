@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/repository_providers.dart';
 
 /// Quality Events and CAPA management - QA role.
-class QualityEventsScreen extends StatefulWidget {
+class QualityEventsScreen extends ConsumerStatefulWidget {
   const QualityEventsScreen({super.key});
 
   @override
-  State<QualityEventsScreen> createState() => _QualityEventsScreenState();
+  ConsumerState<QualityEventsScreen> createState() => _QualityEventsScreenState();
 }
 
-class _QualityEventsScreenState extends State<QualityEventsScreen> {
+class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
   List<QualityEvent> _events = [];
   List<Capa> _capas = [];
   bool _loading = true;
@@ -33,9 +35,10 @@ class _QualityEventsScreenState extends State<QualityEventsScreen> {
       _loading = true;
       _error = null;
     });
+    final repo = ref.read(qualityEventRepositoryProvider);
     try {
       if (_selectedTab == 0) {
-        final events = await client.qualityEvent.listQualityEvents(
+        final events = await repo.listQualityEvents(
           eventType: _eventTypeFilter,
           status: _statusFilter,
         );
@@ -44,7 +47,7 @@ class _QualityEventsScreenState extends State<QualityEventsScreen> {
           _loading = false;
         });
       } else {
-        final capas = await client.qualityEvent.listCapas(
+        final capas = await repo.listCapas(
           status: _statusFilter,
         );
         setState(() {
@@ -141,8 +144,9 @@ class _QualityEventsScreenState extends State<QualityEventsScreen> {
       }
       return;
     }
+    final repo = ref.read(qualityEventRepositoryProvider);
     try {
-      await client.qualityEvent.createQualityEvent(
+      await repo.createQualityEvent(
         eventType: eventType,
         title: titleController.text.trim(),
         status: status,
@@ -222,8 +226,9 @@ class _QualityEventsScreenState extends State<QualityEventsScreen> {
       ),
     );
     if (ok != true || !mounted) return;
+    final repo = ref.read(qualityEventRepositoryProvider);
     try {
-      await client.qualityEvent.createCapa(
+      await repo.createCapa(
         qualityEventId: event.id!,
         description: descController.text.trim().isEmpty
             ? null
@@ -284,8 +289,9 @@ class _QualityEventsScreenState extends State<QualityEventsScreen> {
                   ),
                 );
                 if (newStatus != null && mounted) {
+                  final repo = ref.read(qualityEventRepositoryProvider);
                   try {
-                    await client.qualityEvent.updateCapaStatus(
+                    await repo.updateCapaStatus(
                       capaId: capa.id!,
                       status: newStatus,
                     );
@@ -320,8 +326,9 @@ class _QualityEventsScreenState extends State<QualityEventsScreen> {
                     }
                     return;
                   }
+                  final repo = ref.read(qualityEventRepositoryProvider);
                   try {
-                    await client.qualityEvent.closeCapa(
+                    await repo.closeCapa(
                       capaId: capa.id!,
                       closedById: user!.id!,
                     );

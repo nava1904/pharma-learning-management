@@ -1,21 +1,27 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/analytics_providers.dart';
 import '../../widgets/section_header.dart';
 
-/// Analytics dashboard with fl_chart and real API calls.
-class AnalyticsDashboardScreen extends StatefulWidget {
+/// Analytics dashboard with fl_chart, real API calls, and real-time stream.
+class AnalyticsDashboardScreen extends ConsumerStatefulWidget {
   const AnalyticsDashboardScreen({super.key});
 
   @override
-  State<AnalyticsDashboardScreen> createState() =>
+  ConsumerState<AnalyticsDashboardScreen> createState() =>
       _AnalyticsDashboardScreenState();
 }
 
-class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
+class _AnalyticsDashboardScreenState
+    extends ConsumerState<AnalyticsDashboardScreen> {
   Map<String, double> _completionRates = {};
   List<DepartmentComplianceSummary> _complianceSummary = [];
   int _certExpiryRisk = 0;
@@ -24,13 +30,46 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   Map<String, dynamic>? _trainingDeviationCorrelation;
   Map<String, dynamic>? _slaSummary;
   Map<String, dynamic>? _complianceDeviationOverlay;
+  List<Map<String, dynamic>> _complianceTrend = [];
+  double _sopRetrainingVelocity = 0;
   bool _loading = true;
   String? _error;
+  DateTime? _lastUpdated;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  void _applyStreamUpdate(AnalyticsEvent event) {
+    if (!mounted) return;
+    try {
+      final payload = jsonDecode(event.payloadJson) as Map<String, dynamic>?;
+      if (payload == null) return;
+      setState(() {
+        if (payload['completionRates'] != null) {
+          _completionRates = Map<String, double>.from(
+            (payload['completionRates'] as Map).map(
+              (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+            ),
+          );
+        }
+        if (payload['certExpiryRiskCount'] != null) {
+          _certExpiryRisk = payload['certExpiryRiskCount'] as int;
+        }
+        _lastUpdated = event.occurredAt;
+      });
+    } catch (_) {}
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${dt.month}/${dt.day} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _load() async {
@@ -47,6 +86,14 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       final correlation = await client.analytics.getTrainingVsDeviationCorrelation();
       final slaSummary = await client.analytics.getSlaSummary();
       final overlay = await client.analytics.getComplianceDeviationOverlay();
+      List<Map<String, dynamic>> trend = [];
+      var sopVelocity = 0.0;
+      try {
+        trend = await client.analytics.getComplianceTrend(months: 12);
+      } catch (_) {}
+      try {
+        sopVelocity = await client.analytics.getSopRetrainingVelocity();
+      } catch (_) {}
 
       setState(() {
         _completionRates = completion;
@@ -57,6 +104,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         _trainingDeviationCorrelation = correlation;
         _slaSummary = slaSummary;
         _complianceDeviationOverlay = overlay;
+        _complianceTrend = trend;
+        _sopRetrainingVelocity = sopVelocity;
+        _lastUpdated = DateTime.now();
         _loading = false;
       });
     } catch (e) {
@@ -91,8 +141,33 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       );
     }
 
+    ref.listen<AsyncValue<AnalyticsEvent>>(
+      analyticsStreamProvider('compliance'),
+      (prev, next) {
+        next.whenData(_applyStreamUpdate);
+      },
+    );
+    final streamAsync = ref.watch(analyticsStreamProvider('compliance'));
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Analytics')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('Analytics'),
+            streamAsync.when(
+              data: (_) => Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Chip(
+                  label: const Text('Live', style: TextStyle(fontSize: 10)),
+                  backgroundColor: Colors.green.shade100,
+                ),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -112,14 +187,24 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Audit Readiness Score',
+                        'Inspection Readiness Score',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${_auditReadiness!.overallScore.toStringAsFixed(1)}%',
+                        '${(_auditReadiness!.overallScore * 100).toStringAsFixed(0)}/100',
                         style: Theme.of(context).textTheme.headlineMedium,
                       ),
+                      if (_lastUpdated != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Last updated: ${_formatTime(_lastUpdated!)}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.slate500,
+                                ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -233,33 +318,174 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     if (_complianceSummary.isEmpty)
                       const Text('No data')
                     else
-                      ..._complianceSummary.map((m) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    m.departmentName ?? '',
+                      ..._complianceSummary.map((m) => InkWell(
+                            onTap: () {
+                              if (m.departmentId != null) {
+                                context.push(
+                                  '/compliance-report?departmentId=${m.departmentId}',
+                                );
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      m.departmentName ?? '',
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  '${m.complianceRate.toStringAsFixed(1)}%',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: (m.complianceRate >= 0.9
+                                              ? AppColors.success
+                                              : m.complianceRate >= 0.7
+                                                  ? AppColors.warning
+                                                  : AppColors.destructive)
+                                          .withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '${(m.complianceRate * 100).toStringAsFixed(1)}%',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: m.complianceRate >= 0.9
+                                            ? AppColors.success
+                                            : m.complianceRate >= 0.7
+                                                ? AppColors.warning
+                                                : AppColors.destructive,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 16),
-                                Text(
-                                  'Overdue: ${m.overdue}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    'Overdue: ${m.overdue}',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                  if (m.departmentId != null)
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 12,
+                                      color: AppColors.slate500,
+                                    ),
+                                ],
+                              ),
                             ),
                           )),
                   ],
                 ),
               ),
             ),
+            if (_complianceTrend.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '12-Month Compliance Trend',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 180,
+                        child: LineChart(
+                          LineChartData(
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: _complianceTrend
+                                    .asMap()
+                                    .entries
+                                    .map((e) => FlSpot(
+                                          e.key.toDouble(),
+                                          ((e.value['complianceRate'] as num?) ?? 0) * 100,
+                                        ))
+                                    .toList(),
+                                isCurved: true,
+                                color: AppColors.indigo600,
+                                barWidth: 2,
+                                dotData: const FlDotData(show: true),
+                                belowBarData: BarAreaData(
+                                  show: true,
+                                  color: AppColors.indigo600.withValues(alpha: 0.1),
+                                ),
+                              ),
+                            ],
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 32,
+                                  getTitlesWidget: (v, meta) => Text(
+                                    '${v.toInt()}%',
+                                    style: const TextStyle(fontSize: 10),
+                                  ),
+                                ),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 24,
+                                  getTitlesWidget: (v, meta) {
+                                    final entries = _complianceTrend;
+                                    if (v.toInt() >= 0 && v.toInt() < entries.length) {
+                                      final m = entries[v.toInt()]['month'] as String? ?? '';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Text(
+                                          m.length > 7 ? m.substring(5) : m,
+                                          style: const TextStyle(fontSize: 9),
+                                        ),
+                                      );
+                                    }
+                                    return const SizedBox();
+                                  },
+                                ),
+                              ),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: const FlGridData(show: true),
+                            borderData: FlBorderData(show: true),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_sopRetrainingVelocity > 0 || _complianceSummary.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SOP Retraining Velocity',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${(_sopRetrainingVelocity * 100).toStringAsFixed(1)}% employees retrained within 30 days of SOP update',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Card(
               child: Padding(

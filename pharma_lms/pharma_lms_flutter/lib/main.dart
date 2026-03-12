@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
@@ -10,14 +13,27 @@ import 'widgets/session_timeout_wrapper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final serverUrl = await getServerUrl();
-  await initClient(serverUrl);
+  // Ignore clipboard paste_fail on web (browser blocks clipboard without user gesture).
+  final onError = (Object error, StackTrace stack) {
+    if (error.toString().contains('paste_fail') &&
+        error.toString().contains('Clipboard.getData')) {
+      return; // ignore
+    }
+    FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stack));
+  };
+  runZonedGuarded(() async {
+    // Prevent "flutter/lifecycle channel was discarded" warnings on web.
+    ui.channelBuffers.resize('flutter/lifecycle', 8);
 
-  runApp(
-    const ProviderScope(
-      child: PharmaLmsApp(),
-    ),
-  );
+    final serverUrl = await getServerUrl();
+    await initClient(serverUrl);
+
+    runApp(
+      const ProviderScope(
+        child: PharmaLmsApp(),
+      ),
+    );
+  }, onError);
 }
 
 class PharmaLmsApp extends ConsumerWidget {

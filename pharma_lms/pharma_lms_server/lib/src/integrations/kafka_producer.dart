@@ -1,17 +1,52 @@
 import 'dart:convert';
+import 'dart:io';
 
-/// Kafka producer integration stub.
+import 'package:http/http.dart' as http;
+
+/// Kafka producer integration.
 ///
-/// For production, integrate with:
-/// - Option A: kafka_dart (librdkafka FFI) in a separate Dart isolate
-/// - Option B: Node.js/Java Kafka consumer microservice calling Serverpod REST
+/// When KAFKA_REST_URL is set (e.g. http://localhost:8082), publishes to
+/// Confluent Kafka REST Proxy. When not set, no-op (events remain in outbox).
 ///
-/// Topics: pharma.sop.updated, pharma.employee.created, pharma.capa.opened,
-///         pharma.certification.expiring, pharma.compliance.breach
+/// Topics: pharma.training.enrollment, pharma.training.assessment,
+///         pharma.training.assignment, pharma.training.certificate,
+///         pharma.training.progress, pharma.sop.updated, pharma.quality.capa,
+///         pharma.analytics.compliance, pharma.course.lifecycle
 class KafkaProducer {
+  static String? _restUrl;
+  static String? get _baseUrl {
+    _restUrl ??= Platform.environment['KAFKA_REST_URL'];
+    return _restUrl;
+  }
+
+  static bool get isEnabled => _baseUrl != null && _baseUrl!.isNotEmpty;
+
+  /// Publish a message to Kafka via REST Proxy.
+  /// No-op when KAFKA_REST_URL is not set.
   static Future<void> publish(String topic, String payloadJson) async {
-    // TODO: Implement Kafka publish via kafka_dart or HTTP gateway
-    // Payload is JSON string from outbox_message
-    final _ = jsonDecode(payloadJson);
+    final base = _baseUrl;
+    if (base == null || base.isEmpty) return;
+
+    try {
+      final uri = Uri.parse('$base/topics/$topic');
+      final body = jsonEncode({
+        'records': [
+          {'value': jsonDecode(payloadJson)},
+        ],
+      });
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/vnd.kafka.json.v2+json',
+          'Accept': 'application/vnd.kafka.v2+json',
+        },
+        body: body,
+      );
+      if (response.statusCode >= 400) {
+        throw Exception('Kafka REST error ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 }

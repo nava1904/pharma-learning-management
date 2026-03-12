@@ -81,6 +81,7 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
 
     final dbOk = _health!['databaseConnected'] as bool? ?? false;
     final dlqCount = _health!['dlqCount'] as int? ?? 0;
+    final kafkaLag = _health!['kafkaConsumerLag'] as int? ?? 0;
     final recentJobs = _health!['recentJobs'] as List<dynamic>? ?? [];
 
     return Scaffold(
@@ -102,6 +103,44 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (dlqCount > 0)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.red.shade700, size: 32),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DLQ Alert: $dlqCount unresolved failures',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade900,
+                            ),
+                          ),
+                          Text(
+                            'Review and resolve dead letter queue items.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Card(
               child: ListTile(
                 leading: Icon(
@@ -125,6 +164,25 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
                 subtitle: Text('$dlqCount unresolved failures'),
               ),
             ),
+            if (kafkaLag > 0) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: kafkaLag > 1000 ? Colors.orange.shade50 : null,
+                child: ListTile(
+                  leading: Icon(
+                    kafkaLag > 1000 ? Icons.warning_amber : Icons.sync,
+                    color: kafkaLag > 1000 ? Colors.orange : Colors.grey,
+                    size: 32,
+                  ),
+                  title: const Text('Kafka Consumer Lag'),
+                  subtitle: Text(
+                    kafkaLag > 1000
+                        ? 'Lag: $kafkaLag (alert threshold exceeded)'
+                        : 'Lag: $kafkaLag',
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Card(
               child: Padding(
@@ -142,15 +200,43 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
                     else
                       ...recentJobs.map((j) {
                         final m = j as Map<String, dynamic>;
+                        final recs = m['recordsProcessed'];
                         return ListTile(
                           dense: true,
                           title: Text(m['jobName'] as String? ?? 'Unknown'),
                           subtitle: Text(
-                            '${m['status'] ?? '?'} • ${m['startedAt'] ?? ''}',
+                            '${m['status'] ?? '?'} • ${m['startedAt'] ?? ''}'
+                            '${recs != null ? ' • $recs processed' : ''}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         );
                       }),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await client.analytics.triggerManualJob(
+                            jobName: 'ComplianceCalc',
+                          );
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Job triggered'),
+                              ),
+                            );
+                            _load();
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Trigger ComplianceCalc Job'),
+                    ),
                   ],
                 ),
               ),

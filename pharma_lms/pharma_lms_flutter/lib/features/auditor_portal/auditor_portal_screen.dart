@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:pharma_lms_client/pharma_lms_client.dart' hide AuditorSession, Material;
+
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auditor_session_provider.dart';
@@ -24,6 +26,7 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
   AuditorSession? _session;
   bool _validating = true;
   String? _error;
+  Timer? _expiryTimer;
 
   @override
   void initState() {
@@ -61,8 +64,10 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
                 scopeDescription: result['scopeDescription'] as String?,
                 expiresAt: result['expiresAt'] as String?,
                 siteName: result['siteName'] as String?,
+                inspectorNames: result['inspectorNames'] as String?,
               );
             });
+            _startExpiryTimer();
             _logPageView('/auditor', 'Auditor Portal');
           }
         }
@@ -92,6 +97,85 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
     final tokenParam = _token != null ? '?token=$_token' : '';
     context.push('$path$tokenParam');
     _logPageView(path, pageTitle);
+  }
+
+  @override
+  void dispose() {
+    _expiryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startExpiryTimer() {
+    _expiryTimer?.cancel();
+    final expiresAt = _session?.expiresAt;
+    if (expiresAt == null) return;
+    DateTime? expiry;
+    try {
+      expiry = DateTime.parse(expiresAt);
+    } catch (_) {
+      return;
+    }
+    void check() {
+      if (!mounted) return;
+      final now = DateTime.now();
+      if (now.isAfter(expiry!)) {
+        setState(() {
+          _error = 'Session expired';
+          _session = null;
+        });
+        _expiryTimer?.cancel();
+        return;
+      }
+      final remaining = expiry.difference(now);
+      if (remaining.inHours < 2) {
+        setState(() {});
+      }
+      _expiryTimer = Timer(const Duration(minutes: 1), check);
+    }
+    check();
+  }
+
+  Future<void> _generateEvidencePackage() async {
+    if (_token == null) return;
+    try {
+      final result = await client.inspection.generateEvidencePackageForAuditor(
+        token: _token!,
+      );
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Evidence Package Generated'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Records included: ${result['includedRecordsCount'] ?? 'N/A'}',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'SHA-256: ${(result['fileHash'] as String? ?? '').substring(0, 32)}...',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -148,31 +232,38 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showWatermark && _session!.scopeDescription != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      color: AppColors.info.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.info.withValues(alpha: 0.4),
+                if (showWatermark) ...[
+                  if (_session!.scopeDescription != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.info.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AppColors.info),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Scope: ${_session!.scopeDescription}',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, color: AppColors.info),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Scope: ${_session!.scopeDescription}',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                        ),
-                      ],
-                    ),
+                  _SessionExpiryBanner(expiresAt: _session!.expiresAt),
+                  _PagesViewedWidget(
+                    inspectionRecordId: _session!.inspectionRecordId,
                   ),
+                  const SizedBox(height: 24),
+                ],
                 _SectionHeader(
                   icon: Icons.people_alt_outlined,
                   title: 'Training Records',
@@ -267,12 +358,10 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
                         _AuditorCard(
                           icon: Icons.download,
                           iconColor: AppColors.slate700,
-                          title: 'Export for Inspection',
-                          subtitle: 'Generate inspection-ready PDF reports',
-                          onTap: () => _navigateWithToken(
-                            '/compliance-report',
-                            'Compliance Report',
-                          ),
+                          title: 'One-Click Evidence Package',
+                          subtitle:
+                              'Generate compliance summary with SHA-256 hash',
+                          onTap: _generateEvidencePackage,
                         ),
                       ],
                     );
@@ -318,18 +407,18 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    'AUDIT COPY',
+                    'AUDIT COPY — ${_session!.inspectorNames ?? 'Auditor'} — ${DateTime.now().toIso8601String().split('T').first}',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade600,
-                      letterSpacing: 6,
+                      letterSpacing: 4,
                     ),
                   ),
                 ),
               ),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -360,6 +449,161 @@ class _SectionHeader extends StatelessWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+class _SessionExpiryBanner extends StatelessWidget {
+  const _SessionExpiryBanner({this.expiresAt});
+
+  final String? expiresAt;
+
+  @override
+  Widget build(BuildContext context) {
+    if (expiresAt == null) return const SizedBox.shrink();
+    DateTime? expiry;
+    try {
+      expiry = DateTime.parse(expiresAt!);
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+    final now = DateTime.now();
+    if (now.isAfter(expiry)) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppColors.destructive.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.destructive.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber, color: AppColors.destructive),
+            const SizedBox(width: 12),
+            Text(
+              'Session expired',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.destructive,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
+      );
+    }
+    final remaining = expiry.difference(now);
+    final isWarning = remaining.inHours < 2;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isWarning
+            ? AppColors.warning.withValues(alpha: 0.12)
+            : AppColors.info.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isWarning
+              ? AppColors.warning.withValues(alpha: 0.5)
+              : AppColors.info.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isWarning ? Icons.schedule : Icons.access_time,
+            color: isWarning ? AppColors.warning : AppColors.info,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              isWarning
+                  ? 'Session expires in ${remaining.inHours}h ${remaining.inMinutes % 60}m'
+                  : 'Session valid for ${remaining.inHours}h ${remaining.inMinutes % 60}m',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isWarning ? AppColors.warning : AppColors.slate700,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PagesViewedWidget extends StatelessWidget {
+  const _PagesViewedWidget({required this.inspectionRecordId});
+
+  final int inspectionRecordId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<AuditorPageLog>>(
+      future: client.inspection.listAuditorPageLogs(
+        inspectionRecordId: inspectionRecordId,
+        limit: 20,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final logs = snapshot.data!;
+        if (logs.isEmpty) return const SizedBox.shrink();
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: AppColors.slate100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.slate200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.visibility, size: 18, color: AppColors.slate600),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Pages Viewed (${logs.length})',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.slate800,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...logs.take(5).map(
+                    (log) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '${log.pageTitle ?? log.pageUrl}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.slate600,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+              if (logs.length > 5)
+                Text(
+                  '+ ${logs.length - 5} more',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.slate500,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

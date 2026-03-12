@@ -477,7 +477,7 @@ class _FilterBar extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onExportPdf,
                 icon: const Icon(Icons.download, size: 18),
-                label: const Text('Export PDF'),
+                label: const Text('Export my training history'),
               ),
             ],
           ),

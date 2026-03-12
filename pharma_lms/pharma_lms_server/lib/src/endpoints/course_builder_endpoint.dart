@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Course builder endpoint for SME/trainers (TC-07: restricted editing).
 class CourseBuilderEndpoint extends Endpoint {
@@ -11,6 +12,7 @@ class CourseBuilderEndpoint extends Endpoint {
     required String title,
     int orderIndex = 0,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     await _ensureVersionEditable(session, courseVersionId);
     return await Module.db.insertRow(
       session,
@@ -28,6 +30,7 @@ class CourseBuilderEndpoint extends Endpoint {
     String? title,
     int? orderIndex,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final module = await Module.db.findById(session, moduleId);
     if (module == null) throw Exception('Module not found');
     await _ensureVersionEditable(session, module.courseVersionId);
@@ -46,6 +49,7 @@ class CourseBuilderEndpoint extends Endpoint {
     int orderIndex = 0,
     int? durationMinutes,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final module = await Module.db.findById(session, moduleId);
     if (module == null) throw Exception('Module not found');
     await _ensureVersionEditable(session, module.courseVersionId);
@@ -69,6 +73,7 @@ class CourseBuilderEndpoint extends Endpoint {
     int? orderIndex,
     int? durationMinutes,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final lesson = await Lesson.db.findById(session, lessonId);
     if (lesson == null) throw Exception('Lesson not found');
     final module = await Module.db.findById(session, lesson.moduleId);
@@ -92,6 +97,7 @@ class CourseBuilderEndpoint extends Endpoint {
     String status = 'draft',
     String? changeSummary,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final versions = await CourseVersion.db.find(
       session,
       where: (t) => t.courseId.equals(courseId),
@@ -124,6 +130,7 @@ class CourseBuilderEndpoint extends Endpoint {
     required String status,
     int? approverId,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final version = await CourseVersion.db.findById(session, courseVersionId);
     if (version == null) throw Exception('Course version not found');
     if (version.status == 'approved' || version.status == 'effective') {

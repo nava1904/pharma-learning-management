@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../services/rbac_helper.dart';
 
 /// Notification domain endpoint (in-app; no email/push in stub).
 class NotificationEndpoint extends Endpoint {
@@ -9,6 +10,8 @@ class NotificationEndpoint extends Endpoint {
     Session session,
     int userId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     final assignments = await TrainingAssignment.db.find(
       session,
       where: (t) => t.userId.equals(userId),

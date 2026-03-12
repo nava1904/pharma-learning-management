@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:serverpod/serverpod.dart';
 
+import 'metrics_route.dart';
+
 /// Proxies API requests from the web server to the API server.
 /// Enables same-origin requests when the Flutter app is served from the web server.
 /// Expects requests at /api/* and forwards to the API server at the same path without /api.
@@ -35,6 +37,7 @@ class ApiProxyRoute extends Route {
     }
 
     try {
+      final stopwatch = Stopwatch()..start();
       final authHeader = request.getAuthorizationHeaderValue(false);
       final headers = <String, String>{
         'Content-Type': 'application/json',
@@ -49,6 +52,9 @@ class ApiProxyRoute extends Route {
           : await http
               .get(uri, headers: headers)
               .timeout(const Duration(seconds: 30));
+
+      stopwatch.stop();
+      MetricsStore.recordRequest(stopwatch.elapsed);
 
       return Response(
         response.statusCode,

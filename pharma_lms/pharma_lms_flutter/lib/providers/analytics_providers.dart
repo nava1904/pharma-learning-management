@@ -61,3 +61,9 @@ final recentActivityProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
   if (user?.id == null) return [];
   return client.analytics.getRecentActivity(user!.id!);
 });
+
+/// Real-time analytics stream. Use with StreamBuilder for live dashboard updates.
+/// Channel: 'compliance', 'dept:{deptId}', 'course:{courseVersionId}', 'audit_readiness'.
+final analyticsStreamProvider = StreamProvider.family<AnalyticsEvent, String>((ref, channel) {
+  return client.analytics.streamAnalytics(channel);
+});

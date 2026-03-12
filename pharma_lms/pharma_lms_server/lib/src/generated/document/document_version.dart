@@ -16,6 +16,8 @@ import '../document/document.dart' as _i2;
 import 'package:pharma_lms_server/src/generated/protocol.dart' as _i3;
 
 /// Versioned document for lifecycle control.
+/// Plan 3B: versionMajor/versionMinor for major/minor versioning; isMajorVersion
+/// controls whether transition to effective emits SOP_UPDATED (retraining).
 abstract class DocumentVersion
     implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
   DocumentVersion._({
@@ -23,6 +25,9 @@ abstract class DocumentVersion
     required this.documentId,
     this.document,
     required this.version,
+    this.versionMajor,
+    this.versionMinor,
+    this.isMajorVersion,
     required this.storageKey,
     this.effectiveDate,
     this.obsoleteDate,
@@ -33,6 +38,9 @@ abstract class DocumentVersion
     required int documentId,
     _i2.Document? document,
     required String version,
+    int? versionMajor,
+    int? versionMinor,
+    bool? isMajorVersion,
     required String storageKey,
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
@@ -48,6 +56,11 @@ abstract class DocumentVersion
               jsonSerialization['document'],
             ),
       version: jsonSerialization['version'] as String,
+      versionMajor: jsonSerialization['versionMajor'] as int?,
+      versionMinor: jsonSerialization['versionMinor'] as int?,
+      isMajorVersion: jsonSerialization['isMajorVersion'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['isMajorVersion']),
       storageKey: jsonSerialization['storageKey'] as String,
       effectiveDate: jsonSerialization['effectiveDate'] == null
           ? null
@@ -74,8 +87,17 @@ abstract class DocumentVersion
   /// The document.
   _i2.Document? document;
 
-  /// Version string.
+  /// Version string (e.g. "1.0" or "2.3").
   String version;
+
+  /// Major version number (1, 2, ...). Parsed from version or set on create.
+  int? versionMajor;
+
+  /// Minor version number (0, 1, ...). Parsed from version or set on create.
+  int? versionMinor;
+
+  /// If true, transition to effective emits SOP_UPDATED for retraining.
+  bool? isMajorVersion;
 
   /// S3/MinIO storage key.
   String storageKey;
@@ -97,6 +119,9 @@ abstract class DocumentVersion
     int? documentId,
     _i2.Document? document,
     String? version,
+    int? versionMajor,
+    int? versionMinor,
+    bool? isMajorVersion,
     String? storageKey,
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
@@ -109,6 +134,9 @@ abstract class DocumentVersion
       'documentId': documentId,
       if (document != null) 'document': document?.toJson(),
       'version': version,
+      if (versionMajor != null) 'versionMajor': versionMajor,
+      if (versionMinor != null) 'versionMinor': versionMinor,
+      if (isMajorVersion != null) 'isMajorVersion': isMajorVersion,
       'storageKey': storageKey,
       if (effectiveDate != null) 'effectiveDate': effectiveDate?.toJson(),
       if (obsoleteDate != null) 'obsoleteDate': obsoleteDate?.toJson(),
@@ -123,6 +151,9 @@ abstract class DocumentVersion
       'documentId': documentId,
       if (document != null) 'document': document?.toJsonForProtocol(),
       'version': version,
+      if (versionMajor != null) 'versionMajor': versionMajor,
+      if (versionMinor != null) 'versionMinor': versionMinor,
+      if (isMajorVersion != null) 'isMajorVersion': isMajorVersion,
       'storageKey': storageKey,
       if (effectiveDate != null) 'effectiveDate': effectiveDate?.toJson(),
       if (obsoleteDate != null) 'obsoleteDate': obsoleteDate?.toJson(),
@@ -167,6 +198,9 @@ class _DocumentVersionImpl extends DocumentVersion {
     required int documentId,
     _i2.Document? document,
     required String version,
+    int? versionMajor,
+    int? versionMinor,
+    bool? isMajorVersion,
     required String storageKey,
     DateTime? effectiveDate,
     DateTime? obsoleteDate,
@@ -175,6 +209,9 @@ class _DocumentVersionImpl extends DocumentVersion {
          documentId: documentId,
          document: document,
          version: version,
+         versionMajor: versionMajor,
+         versionMinor: versionMinor,
+         isMajorVersion: isMajorVersion,
          storageKey: storageKey,
          effectiveDate: effectiveDate,
          obsoleteDate: obsoleteDate,
@@ -189,6 +226,9 @@ class _DocumentVersionImpl extends DocumentVersion {
     int? documentId,
     Object? document = _Undefined,
     String? version,
+    Object? versionMajor = _Undefined,
+    Object? versionMinor = _Undefined,
+    Object? isMajorVersion = _Undefined,
     String? storageKey,
     Object? effectiveDate = _Undefined,
     Object? obsoleteDate = _Undefined,
@@ -200,6 +240,11 @@ class _DocumentVersionImpl extends DocumentVersion {
           ? document
           : this.document?.copyWith(),
       version: version ?? this.version,
+      versionMajor: versionMajor is int? ? versionMajor : this.versionMajor,
+      versionMinor: versionMinor is int? ? versionMinor : this.versionMinor,
+      isMajorVersion: isMajorVersion is bool?
+          ? isMajorVersion
+          : this.isMajorVersion,
       storageKey: storageKey ?? this.storageKey,
       effectiveDate: effectiveDate is DateTime?
           ? effectiveDate
@@ -221,6 +266,21 @@ class DocumentVersionUpdateTable extends _i1.UpdateTable<DocumentVersionTable> {
 
   _i1.ColumnValue<String, String> version(String value) => _i1.ColumnValue(
     table.version,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> versionMajor(int? value) => _i1.ColumnValue(
+    table.versionMajor,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> versionMinor(int? value) => _i1.ColumnValue(
+    table.versionMinor,
+    value,
+  );
+
+  _i1.ColumnValue<bool, bool> isMajorVersion(bool? value) => _i1.ColumnValue(
+    table.isMajorVersion,
     value,
   );
 
@@ -254,6 +314,18 @@ class DocumentVersionTable extends _i1.Table<int?> {
       'version',
       this,
     );
+    versionMajor = _i1.ColumnInt(
+      'versionMajor',
+      this,
+    );
+    versionMinor = _i1.ColumnInt(
+      'versionMinor',
+      this,
+    );
+    isMajorVersion = _i1.ColumnBool(
+      'isMajorVersion',
+      this,
+    );
     storageKey = _i1.ColumnString(
       'storageKey',
       this,
@@ -275,8 +347,17 @@ class DocumentVersionTable extends _i1.Table<int?> {
   /// The document.
   _i2.DocumentTable? _document;
 
-  /// Version string.
+  /// Version string (e.g. "1.0" or "2.3").
   late final _i1.ColumnString version;
+
+  /// Major version number (1, 2, ...). Parsed from version or set on create.
+  late final _i1.ColumnInt versionMajor;
+
+  /// Minor version number (0, 1, ...). Parsed from version or set on create.
+  late final _i1.ColumnInt versionMinor;
+
+  /// If true, transition to effective emits SOP_UPDATED for retraining.
+  late final _i1.ColumnBool isMajorVersion;
 
   /// S3/MinIO storage key.
   late final _i1.ColumnString storageKey;
@@ -305,6 +386,9 @@ class DocumentVersionTable extends _i1.Table<int?> {
     id,
     documentId,
     version,
+    versionMajor,
+    versionMinor,
+    isMajorVersion,
     storageKey,
     effectiveDate,
     obsoleteDate,

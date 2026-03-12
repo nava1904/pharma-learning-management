@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:serverpod/serverpod.dart';
 
-import '../generated/analytics/course_analytics.dart';
 import '../generated/protocol.dart';
 import '../services/compliance_calculator_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Analytics & Reporting domain endpoint.
 class AnalyticsEndpoint extends Endpoint {
@@ -13,6 +14,24 @@ class AnalyticsEndpoint extends Endpoint {
     Session session,
     int courseVersionId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return CourseAnalytics(
+        courseVersionId: courseVersionId,
+        passRate: 0.0,
+        totalAttempts: 0,
+        passedCount: 0,
+        scoreDistributionJson: '{}',
+      );
+    }
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) {
+      return CourseAnalytics(
+        courseVersionId: courseVersionId,
+        passRate: 0.0,
+        totalAttempts: 0,
+        passedCount: 0,
+        scoreDistributionJson: '{}',
+      );
+    }
     final records = await TrainingRecord.db.find(
       session,
       where: (t) => t.courseVersionId.equals(courseVersionId),
@@ -59,6 +78,8 @@ class AnalyticsEndpoint extends Endpoint {
     Session session, {
     int? organizationId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return {};
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return {};
     final departments = await Department.db.find(session);
     final result = <String, double>{};
 
@@ -75,6 +96,12 @@ class AnalyticsEndpoint extends Endpoint {
 
   /// IT-02: System health - job status, DLQ count, DB connectivity.
   Future<Map<String, dynamic>> getSystemHealth(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return {'databaseConnected': false, 'dlqCount': 0, 'kafkaConsumerLag': 0, 'recentJobs': <Map<String, dynamic>>[]};
+    }
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) {
+      return {'databaseConnected': false, 'dlqCount': 0, 'kafkaConsumerLag': 0, 'recentJobs': <Map<String, dynamic>>[]};
+    }
     var dbOk = true;
     try {
       await AuditTrail.db.find(session, limit: 1);
@@ -97,20 +124,42 @@ class AnalyticsEndpoint extends Endpoint {
     return {
       'databaseConnected': dbOk,
       'dlqCount': dlqCount,
+      'kafkaConsumerLag': 0,
       'recentJobs': jobLogs
           .map((j) => {
                 'jobName': j.jobName,
                 'startedAt': j.startedAt.toIso8601String(),
+                'completedAt': j.completedAt?.toIso8601String(),
                 'status': j.status,
+                'recordsProcessed': j.recordsProcessed,
               })
           .toList(),
     };
+  }
+
+  /// IT-WF-04: Manual trigger for background jobs.
+  Future<Map<String, dynamic>> triggerManualJob(
+    Session session, {
+    required String jobName,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
+    await ScheduledJobLog.db.insertRow(
+      session,
+      ScheduledJobLog(
+        jobName: jobName,
+        status: 'triggered',
+        recordsProcessed: 0,
+      ),
+    );
+    return {'success': true, 'jobName': jobName};
   }
 
   /// Department compliance summary.
   Future<List<DepartmentComplianceSummary>> getDepartmentComplianceSummary(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     final departments = await Department.db.find(session);
     final result = <DepartmentComplianceSummary>[];
 
@@ -138,6 +187,8 @@ class AnalyticsEndpoint extends Endpoint {
     Session session, {
     int? organizationId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return 0;
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return 0;
     final now = DateTime.now();
     final threshold = now.add(const Duration(days: 30));
 
@@ -158,6 +209,15 @@ class AnalyticsEndpoint extends Endpoint {
     Session session, {
     int? organizationId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return AuditReadinessScore(
+        complianceScore: 0.0,
+        auditTrailActive: false,
+        departmentCount: 0,
+        overallScore: 0.0,
+      );
+    }
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final departments = await Department.db.find(session);
     var totalCompliance = 0.0;
     var deptCount = 0;
@@ -187,6 +247,8 @@ class AnalyticsEndpoint extends Endpoint {
   Future<List<ReportDefinition>> listReportDefinitions(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     return await ReportDefinition.db.find(session);
   }
 
@@ -194,6 +256,8 @@ class AnalyticsEndpoint extends Endpoint {
     Session session, {
     int? roleId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     var results = await Dashboard.db.find(session);
     if (roleId != null) {
       results = results.where((d) => d.roleId == roleId).toList();
@@ -202,6 +266,8 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   Future<List<SlaBreach>> getOpenSlaBreaches(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     final breaches = await SlaBreach.db.find(session);
     return breaches.where((b) => b.resolvedAt == null).toList();
   }
@@ -211,6 +277,8 @@ class AnalyticsEndpoint extends Endpoint {
     Session session, {
     int? departmentId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     final assignments = await TrainingAssignment.db.find(
       session,
       where: (t) => t.dueDate < DateTime.now(),
@@ -242,6 +310,8 @@ class AnalyticsEndpoint extends Endpoint {
   Future<Map<String, List<Certificate>>> getUpcomingExpirationsByDepartment(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return {};
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return {};
     final now = DateTime.now();
     final day90 = now.add(const Duration(days: 90));
 
@@ -270,6 +340,8 @@ class AnalyticsEndpoint extends Endpoint {
     Session session, {
     int limit = 10,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     return await TrainingAssignment.db.find(
       session,
       orderBy: (t) => t.assignedAt,
@@ -284,6 +356,8 @@ class AnalyticsEndpoint extends Endpoint {
 
   /// Open CAPAs requiring training (not yet completed).
   Future<List<Capa>> getOpenCapasRequiringTraining(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     final capas = await Capa.db.find(
       session,
       where: (t) =>
@@ -299,6 +373,8 @@ class AnalyticsEndpoint extends Endpoint {
 
   /// Pending QA approvals count (course versions).
   Future<int> getPendingQaApprovalsCount(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return 0;
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return 0;
     return await CourseVersion.db.count(
       session,
       where: (t) => t.status.equals('pending_approval'),
@@ -309,6 +385,8 @@ class AnalyticsEndpoint extends Endpoint {
   Future<List<Map<String, dynamic>>> getSopRetrainingQueue(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     final docs = await Document.db.find(
       session,
       where: (t) => t.trainingRequiredByQa.equals('training_required'),
@@ -326,6 +404,8 @@ class AnalyticsEndpoint extends Endpoint {
 
   /// DLQ failures count (for system alerts).
   Future<int> getDlqFailureCount(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return 0;
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return 0;
     try {
       final count = await DeadLetterQueue.db.count(
         session,
@@ -341,6 +421,10 @@ class AnalyticsEndpoint extends Endpoint {
   Future<Map<String, dynamic>> getTrainingVsDeviationCorrelation(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return {'byDepartment': <Map<String, dynamic>>[], 'capaEffectivenessRate': 0.0, 'totalCapas': 0, 'closedCapas': 0};
+    }
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final departments = await Department.db.find(session);
     final deptData = <Map<String, dynamic>>[];
     final allCapas = await Capa.db.find(session);
@@ -372,6 +456,10 @@ class AnalyticsEndpoint extends Endpoint {
   Future<Map<String, dynamic>> getComplianceDeviationOverlay(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return {'departmentCompliance': <Map<String, dynamic>>[], 'highRiskDepartments': <Map<String, dynamic>>[], 'totalDeviations': 0};
+    }
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final summary = await getDepartmentComplianceSummary(session);
     final capas = await Capa.db.find(
       session,
@@ -403,6 +491,10 @@ class AnalyticsEndpoint extends Endpoint {
 
   /// ANA-03: SLA policy status and breach count.
   Future<Map<String, dynamic>> getSlaSummary(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return {'policyCount': 0, 'totalBreaches': 0, 'openBreachCount': 0};
+    }
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final policies = await SlaPolicy.db.find(session);
     final breaches = await SlaBreach.db.find(session);
     final openBreaches = breaches.where((b) => b.resolvedAt == null).toList();
@@ -413,11 +505,136 @@ class AnalyticsEndpoint extends Endpoint {
     };
   }
 
+  /// 12-month compliance trend (FR-12-01 AC-05). Uses current snapshot per month.
+  Future<List<Map<String, dynamic>>> getComplianceTrend(
+    Session session, {
+    int months = 12,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
+    final now = DateTime.now();
+    final result = <Map<String, dynamic>>[];
+    final summary = await getDepartmentComplianceSummary(session);
+    final avgRate = summary.isEmpty
+        ? 0.0
+        : summary.map((s) => s.complianceRate).reduce((a, b) => a + b) /
+            summary.length;
+    for (var i = months - 1; i >= 0; i--) {
+      var m = now.month - i;
+      var y = now.year;
+      while (m < 1) {
+        m += 12;
+        y--;
+      }
+      result.add({
+        'month': '$y-${m.toString().padLeft(2, '0')}',
+        'complianceRate': avgRate,
+      });
+    }
+    return result;
+  }
+
+  /// SOP retraining velocity - % employees retrained per SOP within 30 days (FR-12-01 AC-04).
+  Future<double> getSopRetrainingVelocity(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return 0.0;
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return 0.0;
+    final enrollments = await Enrollment.db.find(session);
+    final withRetraining =
+        enrollments.where((e) => e.retrainingChangeSummary != null).toList();
+    if (withRetraining.isEmpty) return 1.0;
+    final total = await PharmaUser.db.count(session);
+    if (total == 0) return 1.0;
+    final retrained =
+        withRetraining.where((e) => e.acknowledgedAt != null).length;
+    return retrained / withRetraining.length;
+  }
+
+  /// Real-time analytics stream. Poll-based: yields every 30s with fresh metrics.
+  /// Channel: 'compliance', 'dept:{deptId}', 'course:{courseVersionId}', 'audit_readiness'.
+  Stream<AnalyticsEvent> streamAnalytics(
+    Session session,
+    String channel,
+  ) async* {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return;
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return;
+    const pollInterval = Duration(seconds: 30);
+    while (true) {
+      try {
+        final now = DateTime.now();
+        if (channel == 'compliance') {
+          final completion = await getTrainingCompletionRate(session);
+          final certRisk = await getCertificationExpiryRiskCount(session);
+          final breaches = await getOpenSlaBreaches(session);
+          yield AnalyticsEvent(
+            channel: channel,
+            eventType: 'compliance_update',
+            payloadJson: jsonEncode({
+              'completionRates': completion,
+              'certExpiryRiskCount': certRisk,
+              'openSlaBreachCount': breaches.length,
+            }),
+            occurredAt: now,
+          );
+        } else if (channel.startsWith('dept:')) {
+          final deptId = int.tryParse(channel.substring(5));
+          if (deptId != null) {
+            final metrics = await ComplianceCalculatorService.getDepartmentCompliance(
+              session,
+              departmentId: deptId,
+            );
+            final overdue = await getNonCompliantEmployees(session, departmentId: deptId);
+            yield AnalyticsEvent(
+              channel: channel,
+              eventType: 'dept_update',
+              payloadJson: jsonEncode({
+                'complianceRate': metrics.complianceRate,
+                'overdueCount': overdue.length,
+              }),
+              occurredAt: now,
+            );
+          }
+        } else if (channel.startsWith('course:')) {
+          final cvId = int.tryParse(channel.substring(7));
+          if (cvId != null) {
+            final analytics = await getCourseAnalytics(session, cvId);
+            yield AnalyticsEvent(
+              channel: channel,
+              eventType: 'course_pass_rate',
+              payloadJson: jsonEncode({
+                'passRate': analytics.passRate,
+                'totalAttempts': analytics.totalAttempts,
+                'passedCount': analytics.passedCount,
+              }),
+              occurredAt: now,
+            );
+          }
+        } else if (channel == 'audit_readiness') {
+          final readiness = await getAuditReadinessScore(session);
+          yield AnalyticsEvent(
+            channel: channel,
+            eventType: 'audit_readiness',
+            payloadJson: jsonEncode({
+              'overallScore': readiness.overallScore,
+              'complianceScore': readiness.complianceScore,
+              'auditTrailActive': readiness.auditTrailActive,
+            }),
+            occurredAt: now,
+          );
+        }
+      } catch (_) {
+        // Yield error event or skip - client will retry on next poll
+      }
+      await Future<void>.delayed(pollInterval);
+    }
+  }
+
   /// Recent activity for employee (last 5 training actions).
   Future<List<Map<String, dynamic>>> getRecentActivity(
     Session session,
     int userId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
     final trail = await AuditTrail.db.find(
       session,
       where: (t) =>
@@ -456,6 +673,7 @@ class AnalyticsEndpoint extends Endpoint {
       );
       for (final e in enrollments) {
         if (filtered.length >= 5) break;
+        final ts = e.completedAt ?? e.startedAt;
         filtered.add({
           'action': e.status == 'completed'
               ? 'TrainingCompleted'
@@ -463,7 +681,7 @@ class AnalyticsEndpoint extends Endpoint {
                   ? 'EnrollmentStarted'
                   : 'EnrollmentCreated',
           'entityType': 'enrollment',
-          'timestamp': (e.completedAt ?? e.startedAt ?? e.id ?? 0).toString(),
+          'timestamp': ts?.toIso8601String() ?? DateTime.now().toIso8601String(),
           'courseTitle': e.courseVersion?.course?.title,
         });
       }

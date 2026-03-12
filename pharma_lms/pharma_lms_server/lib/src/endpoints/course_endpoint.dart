@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Course & Curriculum domain endpoint.
 class CourseEndpoint extends Endpoint {
@@ -10,6 +11,8 @@ class CourseEndpoint extends Endpoint {
     int? organizationId,
     String? status,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return [];
     if (organizationId != null) {
       var results = await Course.db.find(
         session,
@@ -28,6 +31,8 @@ class CourseEndpoint extends Endpoint {
   }
 
   Future<Course?> getCourse(Session session, int id) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return null;
     return await Course.db.findById(session, id);
   }
 
@@ -35,6 +40,8 @@ class CourseEndpoint extends Endpoint {
     Session session,
     int courseId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return [];
     return await CourseVersion.db.find(
       session,
       where: (t) => t.courseId.equals(courseId),
@@ -45,6 +52,8 @@ class CourseEndpoint extends Endpoint {
     Session session,
     int courseVersionId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return null;
     return await CourseVersion.db.findById(
       session,
       courseVersionId,
@@ -60,6 +69,7 @@ class CourseEndpoint extends Endpoint {
     String? description,
     int? createdById,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final course = Course(
       title: title,
       organizationId: organizationId,
@@ -83,6 +93,8 @@ class CourseEndpoint extends Endpoint {
     Session session,
     int courseVersionId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return [];
     return await Module.db.find(
       session,
       where: (t) => t.courseVersionId.equals(courseVersionId),
@@ -94,6 +106,8 @@ class CourseEndpoint extends Endpoint {
     Session session,
     int moduleId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return [];
     return await Lesson.db.find(
       session,
       where: (t) => t.moduleId.equals(moduleId),
@@ -105,6 +119,8 @@ class CourseEndpoint extends Endpoint {
     Session session,
     int lessonId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return null;
     return await Lesson.db.findById(
       session,
       lessonId,

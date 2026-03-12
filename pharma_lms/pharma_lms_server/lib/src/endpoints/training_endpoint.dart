@@ -3,14 +3,19 @@ import 'dart:math';
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import 'course_endpoint.dart';
 import '../services/audit_service.dart';
 import '../services/esignature_service.dart';
+import '../services/event_service.dart';
+import '../services/rbac_helper.dart';
 import '../services/training_assignment_service.dart';
 
 /// Training Assignment domain endpoint.
 class TrainingEndpoint extends Endpoint {
   /// List active signature meanings for e-signature dropdown (21 CFR Part 11).
   Future<List<SignatureMeaning>> listSignatureMeanings(Session session) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await SignatureMeaning.db.find(
       session,
       where: (t) => t.isActive.equals(true),
@@ -22,6 +27,8 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int userId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await TrainingAssignment.db.find(
       session,
       where: (t) => t.userId.equals(userId),
@@ -39,6 +46,7 @@ class TrainingEndpoint extends Endpoint {
     String source = 'manual',
     bool forceReassign = false,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     int? oldAssignmentId;
     if (forceReassign) {
       final oldEnrollments = await Enrollment.db.find(
@@ -109,6 +117,7 @@ class TrainingEndpoint extends Endpoint {
     String? priority,
     required int updatedById,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     return TrainingAssignmentService.updateAssignment(
       session,
       assignmentId: assignmentId,
@@ -125,6 +134,7 @@ class TrainingEndpoint extends Endpoint {
     required int cancelledById,
     String? reason,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     return TrainingAssignmentService.cancelAssignment(
       session,
       assignmentId: assignmentId,
@@ -137,6 +147,8 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int userId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await Enrollment.db.find(
       session,
       where: (t) => t.userId.equals(userId),
@@ -146,11 +158,53 @@ class TrainingEndpoint extends Endpoint {
     );
   }
 
+  /// Resume position for in-progress enrollment (e.g. "Module 2, Lesson 3").
+  Future<String?> getEnrollmentResumePosition(
+    Session session,
+    int enrollmentId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return null;
+    final enrollment = await Enrollment.db.findById(session, enrollmentId);
+    if (enrollment == null || enrollment.status == 'completed') return null;
+
+    final courseEndpoint = CourseEndpoint();
+    final modules = await courseEndpoint.getModulesForCourseVersion(
+      session,
+      enrollment.courseVersionId,
+    );
+    for (var mi = 0; mi < modules.length; mi++) {
+      final m = modules[mi];
+      if (m.id == null) continue;
+      final lessons = await courseEndpoint.getLessonsForModule(session, m.id!);
+      for (var li = 0; li < lessons.length; li++) {
+        final lesson = lessons[li];
+        final progress = await MaterialProgress.db.findFirstRow(
+          session,
+          where: (t) =>
+              t.userId.equals(enrollment.userId) &
+              t.materialId.equals(lesson.materialId) &
+              t.enrollmentId.equals(enrollmentId),
+        );
+        final completed = progress != null &&
+            (progress.readTimeMet == true ||
+                progress.progressPct >= 100 ||
+                progress.completedAt != null);
+        if (!completed) {
+          return '${m.title}, ${lesson.title}';
+        }
+      }
+    }
+    return null;
+  }
+
   /// Get enrollment by ID for course viewer (e.g. to check retraining gate).
   Future<Enrollment?> getEnrollmentById(
     Session session,
     int enrollmentId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return null;
     return await Enrollment.db.findById(
       session,
       enrollmentId,
@@ -167,8 +221,9 @@ class TrainingEndpoint extends Endpoint {
     required int enrollmentId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauthHash,
+    String? passwordReauth,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     final enrollment = await Enrollment.db.findById(session, enrollmentId);
     if (enrollment == null) throw Exception('Enrollment not found');
     if (enrollment.userId != userId) {
@@ -188,7 +243,8 @@ class TrainingEndpoint extends Endpoint {
       signatureMeaning: signatureMeaning,
       entityType: 'enrollment_retraining_ack',
       entityId: enrollmentId.toString(),
-      passwordReauthHash: passwordReauthHash,
+      passwordReauth: passwordReauth,
+      ipAddress: null,
     );
 
     final now = DateTime.now();
@@ -203,6 +259,8 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int userId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await Certificate.db.find(
       session,
       where: (t) => t.userId.equals(userId),
@@ -214,6 +272,8 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int userId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await TrainingRecord.db.find(
       session,
       where: (t) => t.userId.equals(userId),
@@ -225,6 +285,8 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int certificateId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return null;
     return await Certificate.db.findById(
       session,
       certificateId,
@@ -241,6 +303,10 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int signatureId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return SignatureVerificationResult(signature: null, integrityViolation: false);
+    }
+    await RbacHelper.requirePermission(session, resource: 'audit', action: 'read');
     final sig = await ElectronicSignature.db.findById(
       session,
       signatureId,
@@ -265,6 +331,8 @@ class TrainingEndpoint extends Endpoint {
     int? userId,
     int limit = 100,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'audit', action: 'read');
     var results = await ElectronicSignature.db.find(
       session,
       orderBy: (t) => t.timestamp,
@@ -291,23 +359,42 @@ class TrainingEndpoint extends Endpoint {
     return results.take(limit).toList();
   }
 
+  /// Issue a short-lived biometric token after password verification (plan 6B).
+  Future<String> issueBiometricToken(
+    Session session, {
+    required int userId,
+    required String passwordReauth,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
+    return EsignatureService.issueBiometricToken(
+      session,
+      userId: userId,
+      passwordReauth: passwordReauth,
+    );
+  }
+
   /// Create electronic signature for training completion (called after e-sign UI).
+  /// passwordReauth: plaintext password for re-authentication (sent over HTTPS).
+  /// biometricToken: short-lived token from issueBiometricToken (plan 6B).
   Future<int> createTrainingSignature(
     Session session, {
     required int userId,
     required String signatureMeaning,
     required String entityType,
     required String entityId,
-    String? passwordReauthHash,
+    String? passwordReauth,
+    String? biometricToken,
     String? ipAddress,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     final signature = await EsignatureService.sign(
       session,
       userId: userId,
       signatureMeaning: signatureMeaning,
       entityType: entityType,
       entityId: entityId,
-      passwordReauthHash: passwordReauthHash,
+      passwordReauth: passwordReauth,
+      biometricToken: biometricToken,
       ipAddress: ipAddress,
     );
     return signature.id!;
@@ -324,6 +411,7 @@ class TrainingEndpoint extends Endpoint {
     required int esignatureId,
     int? score,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     final enrollment = await Enrollment.db.findById(session, enrollmentId);
     if (enrollment == null) throw Exception('Enrollment not found');
 
@@ -408,6 +496,21 @@ class TrainingEndpoint extends Endpoint {
       userId: userId,
     );
 
+    await EventService.emitEnrollmentCompleted(
+      session,
+      enrollmentId: enrollmentId,
+      userId: userId,
+      courseVersionId: courseVersionId,
+      completedAt: now,
+      score: score,
+    );
+    await EventService.emitCertificateIssued(
+      session,
+      certificateId: certificate.id!,
+      userId: userId,
+      courseVersionId: courseVersionId,
+    );
+
     if (enrollment.assignmentId != null) {
       final capas = await Capa.db.find(
         session,
@@ -432,6 +535,8 @@ class TrainingEndpoint extends Endpoint {
     Session session,
     int trainingRecordId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await TrainingRecordAnnotation.db.find(
       session,
       where: (t) => t.trainingRecordId.equals(trainingRecordId),
@@ -450,6 +555,7 @@ class TrainingEndpoint extends Endpoint {
     required int authorId,
     required String note,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final record =
         await TrainingRecord.db.findById(session, trainingRecordId);
     if (record == null) throw Exception('Training record not found');

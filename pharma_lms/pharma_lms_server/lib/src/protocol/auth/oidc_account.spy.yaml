@@ -1,0 +1,20 @@
+### OIDC provider account. Links to serverpod auth user by UUID.
+### Supports Auth0, Okta, Azure AD via OIDC discovery.
+class: OidcAccount
+
+table: oidc_account
+
+fields:
+  ### Serverpod auth user ID (UUID).
+  authUserId: String
+  ### OIDC provider subject (sub claim).
+  providerId: String
+  ### User email from OIDC userinfo.
+  email: String?
+  ### Creation timestamp.
+  createdAt: DateTime, default=now
+
+indexes:
+  oidc_account_provider_id:
+    fields: providerId
+    unique: true

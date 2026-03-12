@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
@@ -22,13 +22,33 @@ class QADashboardScreen extends ConsumerStatefulWidget {
 
 enum _QATab { overview, approvals, compliance }
 
+/// QA-WF-01 checklist keys (shared by dialog and split-pane).
+const _qaChecklistKeys = [
+  'Content accuracy verified',
+  'Regulatory coverage adequate',
+  'Correct answers validated',
+  'Pass mark appropriate',
+  'Question clarity acceptable',
+];
+
+Map<String, bool> _initialChecklist() =>
+    {for (final k in _qaChecklistKeys) k: false};
+
 class _QADashboardScreenState extends ConsumerState<QADashboardScreen> {
   _QATab _selectedTab = _QATab.overview;
 
-  Future<void> _approve(CourseVersion v) async {
-    if (v.id == null) return;
+  Future<void> _doApproveApi(CourseVersion v, Map<String, bool> checklist) async {
+    if (v.id == null || !mounted) return;
+    final checklistJson =
+        checklist.entries.map((e) => '"${e.key}":${e.value}').join(',');
+    final jsonStr = '{$checklistJson}';
     try {
-      await client.qa.approveCourseVersion(courseVersionId: v.id!);
+      final user = await client.user.getUserByEmail('qa@pharmacorp.demo');
+      await client.qa.approveCourseVersion(
+        courseVersionId: v.id!,
+        approverId: user?.id,
+        reviewChecklistJson: jsonStr,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Course version approved')),
@@ -44,10 +64,89 @@ class _QADashboardScreenState extends ConsumerState<QADashboardScreen> {
     }
   }
 
+  Future<void> _approve(CourseVersion v) async {
+    if (v.id == null) return;
+    final checklist = _initialChecklist();
+    final width = MediaQuery.sizeOf(context).width;
+    if (width > 900) {
+      await showGeneralDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black54,
+        pageBuilder: (_, __, ___) => _QAReviewSplitPane(
+          version: v,
+          checklist: checklist,
+          onApprove: (c) async {
+            Navigator.pop(context);
+            await _doApproveApi(v, c);
+          },
+          onReject: () async {
+            Navigator.pop(context);
+            await _reject(v);
+          },
+          onCancel: () => Navigator.pop(context),
+        ),
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setState) => AlertDialog(
+          title: const Text('QA Review Checklist (QA-WF-01)'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${v.course?.title ?? 'Course'} v${v.version}',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 16),
+                ...checklist.entries.map((e) => CheckboxListTile(
+                      value: e.value,
+                      onChanged: (val) {
+                        setState(() {
+                          checklist[e.key] = val ?? false;
+                        });
+                      },
+                      title: Text(e.key),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    )),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (checklist.values.any((x) => !x)) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                        content: Text('All checklist items must be verified')),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Approve'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _doApproveApi(v, checklist);
+  }
+
   Future<void> _reject(CourseVersion v) async {
     if (v.id == null) return;
     try {
-      await client.qa.rejectCourseVersion(courseVersionId: v.id!);
+      await client.qa.rejectCourseVersion(courseVersionId: v.id!, returnForChanges: false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Course version rejected')),
@@ -780,6 +879,175 @@ class _ComplianceStat extends StatelessWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+/// Fullscreen split-pane for QA review on desktop (width > 900): left = course preview, right = checklist + actions.
+class _QAReviewSplitPane extends StatefulWidget {
+  const _QAReviewSplitPane({
+    required this.version,
+    required this.checklist,
+    required this.onApprove,
+    required this.onReject,
+    required this.onCancel,
+  });
+
+  final CourseVersion version;
+  final Map<String, bool> checklist;
+  final void Function(Map<String, bool> checklist) onApprove;
+  final VoidCallback onReject;
+  final VoidCallback onCancel;
+
+  @override
+  State<_QAReviewSplitPane> createState() => _QAReviewSplitPaneState();
+}
+
+class _QAReviewSplitPaneState extends State<_QAReviewSplitPane> {
+  Map<String, bool> get _checklist => widget.checklist;
+
+  @override
+  Widget build(BuildContext context) {
+    final course = widget.version.course;
+    final title = course?.title ?? 'Course';
+    final description = course?.description;
+    return Material(
+      color: AppColors.background,
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Left: course preview
+            Expanded(
+              flex: 1,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.slate50,
+                  border: Border(
+                    right: BorderSide(color: AppColors.slate200),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Course preview',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: AppColors.slate600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '$title v${widget.version.version}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.slate900,
+                          ),
+                    ),
+                    if (description != null && description.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.slate600,
+                            ),
+                        maxLines: 10,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        // Placeholder: could navigate to full course preview
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: const Text('Open full preview'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Right: QA-WF-01 checklist + actions
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'QA Review Checklist (QA-WF-01)',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.slate900,
+                          ),
+                    ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _checklist.entries
+                              .map(
+                                (e) => CheckboxListTile(
+                                  value: e.value,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _checklist[e.key] = val ?? false;
+                                    });
+                                  },
+                                  title: Text(e.key),
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: widget.onCancel,
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () {
+                            widget.onReject();
+                          },
+                          child: const Text('Reject'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () {
+                            if (_checklist.values.any((v) => !v)) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'All checklist items must be verified'),
+                                ),
+                              );
+                              return;
+                            }
+                            widget.onApprove(Map<String, bool>.from(_checklist));
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                          ),
+                          child: const Text('Approve'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

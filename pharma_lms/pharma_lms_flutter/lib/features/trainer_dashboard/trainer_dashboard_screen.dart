@@ -77,6 +77,14 @@ class TrainerDashboardScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
+                  Text(
+                    'Create & Measure',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.slate600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
                   // 4 stat cards
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -151,9 +159,9 @@ class TrainerDashboardScreen extends ConsumerWidget {
                             icon: Icons.add,
                             onPressed: () =>
                                 context.push('/trainer/course-builder'),
-                            backgroundColor: AppColors.indigo50,
-                            borderColor: AppColors.indigo200,
-                            iconColor: AppColors.indigo600,
+                            backgroundColor: AppColors.teal50,
+                            borderColor: AppColors.teal100,
+                            iconColor: AppColors.teal600,
                           ),
                           QuickActionButton(
                             label: 'Upload Materials',
@@ -179,6 +187,40 @@ class TrainerDashboardScreen extends ConsumerWidget {
                       );
                     },
                   ),
+                  if (pendingCount > 0) ...[
+                    const SizedBox(height: 24),
+                    SectionHeader(
+                      icon: Icons.schedule,
+                      title: 'Courses Awaiting QA',
+                      color: AppColors.warning,
+                    ),
+                    const SizedBox(height: 16),
+                    ...myCourses
+                        .where((c) => c.status == 'pending_qa')
+                        .map((course) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: const Icon(Icons.pending_actions,
+                                    color: AppColors.warning),
+                                title: Text(course.title),
+                                subtitle: const Text('Submitted for review'),
+                                trailing: TextButton(
+                                  onPressed: () => context.push(
+                                    '/trainer/course-builder',
+                                    extra: course,
+                                  ),
+                                  child: const Text('View'),
+                                ),
+                                tileColor: AppColors.warning.withValues(alpha: 0.08),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: AppColors.warning.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                              ),
+                            )),
+                  ],
                   const SizedBox(height: 24),
 
                   // My Courses - Odoo-inspired card grid

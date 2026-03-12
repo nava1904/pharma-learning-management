@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,9 +38,21 @@ class EmployeeDashboardScreen extends ConsumerWidget {
           ref.invalidate(currentUserProvider);
           ref.invalidate(userComplianceProvider);
           ref.invalidate(enrollmentsProvider);
+          ref.invalidate(enrollmentResumeLabelsProvider);
           ref.invalidate(assignmentsProvider);
           ref.invalidate(certificatesProvider);
           ref.invalidate(recentActivityProvider);
+          await Future.wait([
+            ref.refresh(currentUserProvider.future),
+            ref.refresh(userComplianceProvider.future),
+            ref.refresh(enrollmentsProvider.future),
+            ref.refresh(enrollmentResumeLabelsProvider.future),
+            ref.refresh(assignmentsProvider.future),
+            ref.refresh(certificatesProvider.future),
+            ref.refresh(recentActivityProvider.future),
+          ]);
+          ref.read(employeeDashboardLastUpdatedProvider.notifier).state =
+              DateTime.now();
         },
         child: userAsync.when(
           data: (user) {
@@ -56,6 +70,7 @@ class EmployeeDashboardScreen extends ConsumerWidget {
               userId: user.id!,
               complianceAsync: complianceAsync,
               enrollmentsAsync: enrollmentsAsync,
+              resumeLabelsAsync: ref.watch(enrollmentResumeLabelsProvider),
               assignmentsAsync: assignmentsAsync,
               certificatesAsync: certificatesAsync,
               recentActivityAsync: recentActivityAsync,
@@ -87,6 +102,7 @@ class _EmployeeDashboardContent extends ConsumerWidget {
     required this.userId,
     required this.complianceAsync,
     required this.enrollmentsAsync,
+    required this.resumeLabelsAsync,
     required this.assignmentsAsync,
     required this.certificatesAsync,
     required this.recentActivityAsync,
@@ -96,6 +112,7 @@ class _EmployeeDashboardContent extends ConsumerWidget {
   final int userId;
   final AsyncValue<UserComplianceMetrics?> complianceAsync;
   final AsyncValue<List<Enrollment>> enrollmentsAsync;
+  final AsyncValue<Map<int, String>> resumeLabelsAsync;
   final AsyncValue<List<TrainingAssignment>> assignmentsAsync;
   final AsyncValue<List<Certificate>> certificatesAsync;
   final AsyncValue<List<Map<String, dynamic>>> recentActivityAsync;
@@ -104,6 +121,7 @@ class _EmployeeDashboardContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assignments = assignmentsAsync.valueOrNull ?? [];
     final enrollments = enrollmentsAsync.valueOrNull ?? [];
+    final resumeLabels = resumeLabelsAsync.valueOrNull ?? {};
     final allCertificates = certificatesAsync.valueOrNull ?? [];
     final certificates = allCertificates
         .where((c) => (c.status ?? 'active') != 'obsolete')
@@ -123,12 +141,50 @@ class _EmployeeDashboardContent extends ConsumerWidget {
           due.difference(DateTime.now()).inDays <= 7;
     }).toList();
 
+    final expiringCerts = allCertificates.where((c) {
+      if (c.expiresAt == null) return false;
+      final days = c.expiresAt!.difference(DateTime.now()).inDays;
+      return days >= 0 && days <= 90;
+    }).toList();
+
+    final retrainingEnrollments = enrollments.where((e) =>
+        e.retrainingChangeSummary != null &&
+        e.retrainingChangeSummary!.isNotEmpty &&
+        e.acknowledgedAt == null).toList();
+
+    final sortedEnrollments = List<Enrollment>.from(enrollments)
+      ..sort((a, b) {
+        final aAssign = assignments
+            .where((x) =>
+                x.courseVersionId == a.courseVersionId && x.userId == userId)
+            .firstOrNull;
+        final bAssign = assignments
+            .where((x) =>
+                x.courseVersionId == b.courseVersionId && x.userId == userId)
+            .firstOrNull;
+        final aDue = aAssign?.dueDate ?? DateTime.now().add(const Duration(days: 365));
+        final bDue = bAssign?.dueDate ?? DateTime.now().add(const Duration(days: 365));
+        final aOverdue = aDue.isBefore(DateTime.now());
+        final bOverdue = bDue.isBefore(DateTime.now());
+        if (aOverdue != bOverdue) return aOverdue ? -1 : 1;
+        final aDueSoon = aDue.difference(DateTime.now()).inDays <= 7;
+        final bDueSoon = bDue.difference(DateTime.now()).inDays <= 7;
+        if (aDueSoon != bDueSoon) return aDueSoon ? -1 : 1;
+        return aDue.compareTo(bDue);
+      });
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         complianceAsync.when(
           data: (c) {
             if (c == null) return const SizedBox.shrink();
+            final rate = c.complianceRate;
+            final ringColor = rate >= 95
+                ? AppColors.success
+                : rate >= 80
+                    ? AppColors.warning
+                    : AppColors.destructive;
             return Container(
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.only(bottom: 24),
@@ -147,10 +203,11 @@ class _EmployeeDashboardContent extends ConsumerWidget {
               child: Row(
                 children: [
                   ProgressRing(
-                    progress: c.complianceRate / 100,
-                    size: 80,
+                    progress: rate / 100,
+                    size: 90,
                     strokeWidth: 6,
                     showLabel: true,
+                    progressColor: ringColor,
                   ),
                   const SizedBox(width: 24),
                   Expanded(
@@ -158,15 +215,23 @@ class _EmployeeDashboardContent extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome, ${user.firstName}',
+                          'Your Learning Journey',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.slate900,
                               ),
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Learning is a journey — track your progress',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.slate500,
+                                fontStyle: FontStyle.italic,
+                              ),
+                        ),
                         const SizedBox(height: 4),
                         Text(
-                          'Your learning journey - $completedCount of $totalCount completed',
+                          '$completedCount of $totalCount completed',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppColors.slate600,
                               ),
@@ -175,9 +240,33 @@ class _EmployeeDashboardContent extends ConsumerWidget {
                         ComplianceWidget(
                           title: 'Compliance Health',
                           subtitle: '${user.departmentId} - ${user.jobRoleId}',
-                          percentage: c.complianceRate,
+                          percentage: rate,
                           completedLabel: '$completedCount of $totalCount completed',
                         ),
+                        if (totalCount > 0 && completedCount < totalCount)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: TextButton.icon(
+                              onPressed: () {
+                                final next = enrollments
+                                    .where((e) => e.status != 'completed')
+                                    .firstOrNull;
+                                if (next != null) {
+                                  final needsAck = next.retrainingChangeSummary != null &&
+                                      next.retrainingChangeSummary!.isNotEmpty &&
+                                      next.acknowledgedAt == null;
+                                  if (needsAck) {
+                                    _showRetrainingAcknowledgementDialog(
+                                        context, ref, next, userId);
+                                  } else {
+                                    _openCourse(context, next, userId);
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                              label: const Text('Continue'),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -220,86 +309,51 @@ class _EmployeeDashboardContent extends ConsumerWidget {
                 iconColor: const Color(0xFFD97706),
               ),
             ),
+            if (overdue.isNotEmpty) ...[
+              const SizedBox(width: 16),
+              Expanded(
+                child: StatCard(
+                  label: 'Overdue',
+                  value: '${overdue.length}',
+                  icon: Icons.warning_amber_rounded,
+                  iconBackgroundColor: const Color(0xFFFEE2E2),
+                  iconColor: AppColors.destructive,
+                ),
+              ),
+            ],
           ],
         ),
-        if (overdue.isNotEmpty) ...[
+        if (overdue.isNotEmpty || dueThisWeek.isNotEmpty) ...[
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFECACA)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: AppColors.destructive, size: 24),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Overdue Training',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF991B1B),
-                          ),
-                    ),
-                  ],
+          Row(
+            children: [
+              if (overdue.isNotEmpty)
+                Expanded(
+                  child: _UrgencyCard(
+                    icon: Icons.warning_amber_rounded,
+                    count: overdue.length,
+                    message: '${overdue.length} overdue',
+                    color: AppColors.destructive,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '${overdue.length} overdue assignment(s). Complete them to maintain compliance.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFB91C1C),
-                      ),
+              if (overdue.isNotEmpty && dueThisWeek.isNotEmpty)
+                const SizedBox(width: 16),
+              if (dueThisWeek.isNotEmpty)
+                Expanded(
+                  child: _UrgencyCard(
+                    icon: Icons.schedule,
+                    count: dueThisWeek.length,
+                    message: '${dueThisWeek.length} due this week',
+                    color: AppColors.warning,
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ],
-        if (dueThisWeek.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEFCE8),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFDE047)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.schedule,
-                        color: Color(0xFF854D0E), size: 24),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Due This Week',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF854D0E),
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${dueThisWeek.length} assignment(s) due within 7 days.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF854D0E),
-                      ),
-                ),
-              ],
-            ),
+            ],
           ),
         ],
         const SizedBox(height: 24),
         SectionHeader(
           icon: Icons.school_rounded,
-          title: 'My Learning Path',
+          title: 'Your path to compliance',
           color: AppColors.teal600,
           action: TextButton.icon(
             onPressed: () => context.push('/employee/training-history'),
@@ -338,7 +392,7 @@ class _EmployeeDashboardContent extends ConsumerWidget {
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 childAspectRatio: 0.85,
-                children: enrollments.map((e) {
+                children: sortedEnrollments.map((e) {
                   final assignment = assignments
                       .where((a) =>
                           a.courseVersionId == e.courseVersionId &&
@@ -370,11 +424,20 @@ class _EmployeeDashboardContent extends ConsumerWidget {
                     subtitle: dueStr,
                     progress: progress,
                     status: e.status.replaceAll('_', ' '),
+                    resumeLabel: e.id != null ? resumeLabels[e.id!] : null,
                     onTap: () {
                       if (e.status == 'completed' && cert?.id != null) {
                         context.push('/certificate/${cert!.id}');
                       } else {
-                        _openCourse(context, e, userId);
+                        final needsAck = e.retrainingChangeSummary != null &&
+                            e.retrainingChangeSummary!.isNotEmpty &&
+                            e.acknowledgedAt == null;
+                        if (needsAck) {
+                          _showRetrainingAcknowledgementDialog(
+                              context, ref, e, userId);
+                        } else {
+                          _openCourse(context, e, userId);
+                        }
                       }
                     },
                     ctaLabel: e.status == 'completed'
@@ -385,6 +448,116 @@ class _EmployeeDashboardContent extends ConsumerWidget {
               );
             },
           ),
+        if (expiringCerts.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          SectionHeader(
+            icon: Icons.schedule_rounded,
+            title: 'Certifications Expiring Soon',
+            color: AppColors.warning,
+          ),
+          const SizedBox(height: 16),
+          ...expiringCerts.take(5).map((cert) {
+            final days = cert.expiresAt?.difference(DateTime.now()).inDays ?? 0;
+            final bucket = days <= 30 ? '30d' : (days <= 60 ? '60d' : '90d');
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.slate200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.workspace_premium_rounded,
+                        color: AppColors.warning, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            cert.courseVersion?.course?.title ?? 'Course',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          Text(
+                            'Expires in $days days ($bucket)',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: AppColors.warning,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/certificate/${cert.id}'),
+                      child: const Text('Renew'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+        if (retrainingEnrollments.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          SectionHeader(
+            icon: Icons.update_rounded,
+            title: 'Retraining Required',
+            color: AppColors.warning,
+          ),
+          const SizedBox(height: 16),
+          ...retrainingEnrollments.map((e) {
+            final title = e.courseVersion?.course?.title ?? 'Course';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.warning),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded,
+                        color: AppColors.warning, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          Text(
+                            e.retrainingChangeSummary ?? 'SOP updated',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.slate600,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _showRetrainingAcknowledgementDialog(
+                        context,
+                        ref,
+                        e,
+                        userId,
+                      ),
+                      child: const Text('Acknowledge & Begin'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
         recentActivityAsync.when(
           data: (activities) {
             if (activities.isEmpty) return const SizedBox.shrink();
@@ -532,8 +705,31 @@ class _EmployeeDashboardContent extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              ref.watch(employeeDashboardLastUpdatedProvider) != null
+                  ? 'Last updated: ${_formatLastUpdated(ref.watch(employeeDashboardLastUpdatedProvider)!)}'
+                  : 'Pull to refresh',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.mutedForeground,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
       ],
     );
+  }
+
+  String _formatLastUpdated(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.day == now.day && dt.month == now.month && dt.year == now.year) {
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    }
+    return dt.toIso8601String().split('T').first;
   }
 
   String _formatActivityTime(dynamic ts) {
@@ -552,6 +748,42 @@ class _EmployeeDashboardContent extends ConsumerWidget {
       } catch (_) {}
     }
     return ts.toString();
+  }
+
+  void _showRetrainingAcknowledgementDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Enrollment enrollment,
+    int userId,
+  ) {
+    final courseVersionId = enrollment.courseVersionId;
+    final enrollmentId = enrollment.id;
+    if (enrollmentId == null) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _RetrainingAcknowledgementDialog(
+        enrollment: enrollment,
+        userId: userId,
+        onSuccess: () {
+          Navigator.of(ctx).pop();
+          ref.invalidate(enrollmentsProvider);
+          client.course.getCourseVersion(courseVersionId).then((v) {
+            final courseId = v?.courseId;
+            if (courseId == null) return;
+            if (!context.mounted) return;
+            context.push(
+              '/course/$courseId',
+              extra: {
+                'courseVersionId': courseVersionId,
+                'enrollmentId': enrollmentId,
+                'userId': userId,
+              },
+            );
+          });
+        },
+      ),
+    );
   }
 
   void _openCourse(BuildContext context, Enrollment enrollment, int userId) {
@@ -573,5 +805,230 @@ class _EmployeeDashboardContent extends ConsumerWidget {
         },
       );
     });
+  }
+}
+
+/// EMP-WF-08: Modal to acknowledge SOP retraining before opening course.
+class _RetrainingAcknowledgementDialog extends StatefulWidget {
+  const _RetrainingAcknowledgementDialog({
+    required this.enrollment,
+    required this.userId,
+    required this.onSuccess,
+  });
+
+  final Enrollment enrollment;
+  final int userId;
+  final VoidCallback onSuccess;
+
+  @override
+  State<_RetrainingAcknowledgementDialog> createState() =>
+      _RetrainingAcknowledgementDialogState();
+}
+
+class _RetrainingAcknowledgementDialogState
+    extends State<_RetrainingAcknowledgementDialog> {
+  List<SignatureMeaning> _meanings = [];
+  String? _selectedMeaning;
+  final _passwordController = TextEditingController();
+  bool _loading = true;
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMeanings();
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMeanings() async {
+    try {
+      final meanings = await client.training.listSignatureMeanings();
+      if (mounted) {
+        setState(() {
+          _meanings = meanings;
+          _selectedMeaning = meanings.isNotEmpty
+              ? meanings.first.meaning
+              : 'I have read and understood';
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _meanings = [];
+          _selectedMeaning = 'I have read and understood';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    final password = _passwordController.text.trim();
+    if (password.isEmpty) {
+      setState(() => _error = 'Password is required for re-authentication.');
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await client.training.acknowledgeRetraining(
+        enrollmentId: widget.enrollment.id!,
+        userId: widget.userId,
+        signatureMeaning: _selectedMeaning ?? 'I have read and understood',
+        passwordReauth: password,
+      );
+      if (mounted) widget.onSuccess();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final summary =
+        widget.enrollment.retrainingChangeSummary ?? 'SOP has been updated.';
+    return AlertDialog(
+      title: const Text('Acknowledge Retraining'),
+      content: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Change summary',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.slate50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.slate200),
+                    ),
+                    child: Text(summary),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_meanings.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      value: _selectedMeaning,
+                      decoration: const InputDecoration(
+                        labelText: 'Signature meaning',
+                      ),
+                      items: _meanings
+                          .map((m) => DropdownMenuItem(
+                                value: m.meaning,
+                                child: Text(m.meaning),
+                              ))
+                          .toList(),
+                      onChanged: (v) =>
+                          setState(() => _selectedMeaning = v),
+                    ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password (re-authentication)',
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _error!,
+                      style: TextStyle(color: AppColors.destructive),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          onPressed: _submitting || _loading ? null : _submit,
+          icon: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.check, size: 18),
+          label: Text(_submitting ? 'Signing...' : 'Acknowledge & Begin'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact Odoo-style urgency card for overdue/due soon.
+class _UrgencyCard extends StatelessWidget {
+  const _UrgencyCard({
+    required this.icon,
+    required this.count,
+    required this.message,
+    required this.color,
+  });
+
+  final IconData icon;
+  final int count;
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$count',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                ),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

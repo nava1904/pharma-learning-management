@@ -3,6 +3,7 @@ import 'package:serverpod/serverpod.dart';
 import '../audit_event_types.dart';
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Assessment builder endpoint for SME/trainers.
 class AssessmentBuilderEndpoint extends Endpoint {
@@ -15,6 +16,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     required String correctAnswer,
     String? difficulty,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     return await Question.db.insertRow(
       session,
       Question(
@@ -37,6 +39,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     String? correctAnswer,
     String? difficulty,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     final question = await Question.db.findById(session, questionId);
     if (question == null) throw Exception('Question not found');
     final updated = question.copyWith(
@@ -57,6 +60,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     bool randomize = true,
     int? timeLimitMinutes,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     final result = await Assessment.db.insertRow(
       session,
       Assessment(
@@ -84,6 +88,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     bool? randomize,
     int? timeLimitMinutes,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     final assessment = await Assessment.db.findById(session, assessmentId);
     if (assessment == null) throw Exception('Assessment not found');
     final updated = assessment.copyWith(

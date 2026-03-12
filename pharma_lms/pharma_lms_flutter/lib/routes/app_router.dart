@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../features/admin_panel/admin_dashboard_screen.dart';
+import '../features/admin_panel/bulk_import_screen.dart';
 import '../features/admin_panel/health_dashboard_screen.dart';
 import '../features/admin_panel/training_waivers_screen.dart';
 import '../features/analytics/analytics_dashboard_screen.dart';
@@ -16,6 +17,7 @@ import '../features/auditor_portal/esignature_verification_screen.dart';
 import '../features/auditor_portal/config_change_history_screen.dart';
 import '../features/auditor_portal/sop_coverage_screen.dart';
 import '../features/auth/login_screen.dart';
+import '../features/auth/mfa_enrollment_screen.dart';
 import '../features/compliance/compliance_report_screen.dart';
 import '../features/certificate/certificate_screen.dart';
 import '../features/course_builder/course_builder_screen.dart';
@@ -33,58 +35,15 @@ import '../features/qa_compliance/qa_dashboard_screen.dart';
 import '../features/trainer_dashboard/course_analytics_screen.dart';
 import '../features/trainer_dashboard/trainer_dashboard_screen.dart';
 import '../features/training_matrix/training_matrix_screen.dart';
+import '../features/course_catalog/course_catalog_screen.dart';
+import '../features/my_learning/my_learning_screen.dart';
+import '../features/training_timeline/training_timeline_screen.dart';
+import '../layout/app_layout.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auditor_watermark_wrapper.dart';
+import '../widgets/breadcrumb.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
-
-/// Routes allowed per role. Paths not listed are allowed for all logged-in roles.
-bool _pathAllowedForRole(String path, AppRole role) {
-  if (path == '/' || path.isEmpty) return true;
-  if (path.startsWith('/employee')) return role == AppRole.employee;
-  if (path.startsWith('/admin')) {
-    if (path.contains('training-waivers')) {
-      return role == AppRole.admin || role == AppRole.qa;
-    }
-    return role == AppRole.admin;
-  }
-  if (path.startsWith('/qa')) return role == AppRole.qa;
-  if (path.startsWith('/trainer')) return role == AppRole.trainer;
-  if (path.startsWith('/auditor')) return role == AppRole.auditor || role == AppRole.qa;
-  if (path.startsWith('/training-matrix')) return role == AppRole.admin;
-  if (path.startsWith('/audit-trail')) {
-    return role == AppRole.admin || role == AppRole.qa || role == AppRole.auditor;
-  }
-  if (path.startsWith('/compliance-report')) {
-    return role == AppRole.admin || role == AppRole.qa || role == AppRole.auditor;
-  }
-  if (path.startsWith('/esignature-verification')) {
-    return role == AppRole.admin || role == AppRole.qa || role == AppRole.auditor;
-  }
-  if (path.startsWith('/analytics')) {
-    return role == AppRole.admin || role == AppRole.qa || role == AppRole.analytics;
-  }
-  if (path.startsWith('/documents')) {
-    return role == AppRole.admin || role == AppRole.qa;
-  }
-  if (path.startsWith('/quality-events')) {
-    return role == AppRole.qa;
-  }
-  if (path.startsWith('/event-triggers')) {
-    return role == AppRole.admin || role == AppRole.qa;
-  }
-  if (path.startsWith('/inspection-management')) {
-    return role == AppRole.admin || role == AppRole.qa;
-  }
-  // /course, /assessment, /certificate, /esignature - employee, admin, trainer
-  if (path.startsWith('/course') || path.startsWith('/assessment') ||
-      path.startsWith('/certificate') || path.startsWith('/esignature')) {
-    return role == AppRole.employee ||
-        role == AppRole.admin ||
-        role == AppRole.trainer;
-  }
-  return true;
-}
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -113,7 +72,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
         return '/';
       }
-      if (!_pathAllowedForRole(path, currentRole)) {
+      if (!pathAllowedForRole(path, currentRole)) {
         return pathForRole(currentRole);
       }
       return null;
@@ -134,16 +93,72 @@ List<RouteBase> get _buildRoutes => [
       path: '/',
       builder: (context, state) => const LoginScreen(),
     ),
+    // Assessment: full-screen NTA-style test window (no sidebar/layout)
     GoRoute(
-      path: '/employee',
-      builder: (context, state) => const EmployeeDashboardScreen(),
+      path: '/assessment/:courseId',
+      builder: (context, state) {
+        final courseId = state.pathParameters['courseId'] ?? '';
+        final extra = state.extra;
+        int? courseVersionId;
+        int? enrollmentId;
+        int? userId;
+        String? courseTitle;
+        if (extra is Map<String, dynamic>) {
+          courseVersionId = extra['courseVersionId'] as int?;
+          enrollmentId = extra['enrollmentId'] as int?;
+          userId = extra['userId'] as int?;
+          courseTitle = extra['courseTitle'] as String?;
+        }
+        return AssessmentScreen(
+          courseId: courseId,
+          courseTitle: courseTitle,
+          courseVersionId: courseVersionId,
+          enrollmentId: enrollmentId,
+          userId: userId,
+        );
+      },
+    ),
+    ShellRoute(
+      builder: (context, state, child) => AppLayout(
+        child: child,
+        currentPath: state.uri.path,
+        breadcrumbItems: breadcrumbFromPath(state.uri.path),
+      ),
       routes: [
         GoRoute(
-          path: 'training-history',
-          builder: (context, state) => const TrainingHistoryScreen(),
+          path: '/courses',
+          builder: (context, state) => const CourseCatalogScreen(),
         ),
-      ],
-    ),
+        GoRoute(
+          path: '/learning',
+          builder: (context, state) => const MyLearningScreen(),
+        ),
+        GoRoute(
+          path: '/training-timeline',
+          builder: (context, state) => const TrainingTimelineScreen(),
+        ),
+        GoRoute(
+          path: '/assessments',
+          redirect: (_, __) => '/learning',
+        ),
+        GoRoute(
+          path: '/certificates',
+          redirect: (_, __) => '/employee',
+        ),
+        GoRoute(
+          path: '/employee',
+          builder: (context, state) => const EmployeeDashboardScreen(),
+          routes: [
+            GoRoute(
+              path: 'training-history',
+              builder: (context, state) => const TrainingHistoryScreen(),
+            ),
+            GoRoute(
+              path: 'mfa',
+              builder: (context, state) => const MfaEnrollmentScreen(),
+            ),
+          ],
+        ),
     GoRoute(
       path: '/admin',
       builder: (context, state) => const AdminDashboardScreen(),
@@ -155,6 +170,14 @@ List<RouteBase> get _buildRoutes => [
         GoRoute(
           path: 'health',
           builder: (context, state) => const HealthDashboardScreen(),
+        ),
+        GoRoute(
+          path: 'bulk-import',
+          builder: (context, state) => const BulkImportScreen(),
+        ),
+        GoRoute(
+          path: 'sop-coverage',
+          builder: (context, state) => const SopCoverageScreen(),
         ),
       ],
     ),
@@ -265,11 +288,12 @@ List<RouteBase> get _buildRoutes => [
       path: '/compliance-report',
       builder: (context, state) {
         final token = state.uri.queryParameters['token'];
+        final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
         return AuditorWatermarkWrapper(
           auditorToken: token,
           pageUrl: '/compliance-report',
           pageTitle: 'Compliance Report',
-          child: const ComplianceReportScreen(),
+          child: ComplianceReportScreen(departmentId: (deptId ?? 0) > 0 ? deptId : null),
         );
       },
     ),
@@ -340,27 +364,6 @@ List<RouteBase> get _buildRoutes => [
       },
     ),
     GoRoute(
-      path: '/assessment/:courseId',
-      builder: (context, state) {
-        final courseId = state.pathParameters['courseId'] ?? '';
-        final extra = state.extra;
-        int? courseVersionId;
-        int? enrollmentId;
-        int? userId;
-        if (extra is Map<String, dynamic>) {
-          courseVersionId = extra['courseVersionId'] as int?;
-          enrollmentId = extra['enrollmentId'] as int?;
-          userId = extra['userId'] as int?;
-        }
-        return AssessmentScreen(
-          courseId: courseId,
-          courseVersionId: courseVersionId,
-          enrollmentId: enrollmentId,
-          userId: userId,
-        );
-      },
-    ),
-    GoRoute(
       path: '/certificate/:id',
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
@@ -388,5 +391,7 @@ List<RouteBase> get _buildRoutes => [
           entityId: '',
         );
       },
+    ),
+      ],
     ),
   ];

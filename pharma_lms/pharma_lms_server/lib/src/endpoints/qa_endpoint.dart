@@ -2,6 +2,8 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/event_service.dart';
+import '../services/rbac_helper.dart';
 
 /// QA & Course Approval domain endpoint.
 class QaEndpoint extends Endpoint {
@@ -9,6 +11,8 @@ class QaEndpoint extends Endpoint {
   Future<List<CourseVersion>> listPendingCourseVersions(
     Session session,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'read');
     return await CourseVersion.db.find(
       session,
       where: (t) => t.status.equals('pending_approval'),
@@ -19,11 +23,14 @@ class QaEndpoint extends Endpoint {
 
   /// Approve and publish a course version (QA sign-off). Sets status to effective.
   /// Marks previous effective versions obsolete and their certificates obsolete.
+  /// reviewChecklistJson: QA-WF-01 structured checklist (content accuracy, etc.)
   Future<CourseVersion> approveCourseVersion(
     Session session, {
     required int courseVersionId,
     int? approverId,
+    String? reviewChecklistJson,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final version = await CourseVersion.db.findById(
       session,
       courseVersionId,
@@ -74,6 +81,17 @@ class QaEndpoint extends Endpoint {
 
     final updated = version.copyWith(status: 'effective');
     final result = await CourseVersion.db.updateRow(session, updated);
+    if (approverId != null) {
+      await CourseReview.db.insertRow(
+        session,
+        CourseReview(
+          courseVersionId: courseVersionId,
+          reviewerId: approverId,
+          decision: 'approved',
+          reviewChecklistJson: reviewChecklistJson,
+        ),
+      );
+    }
     await AuditService.log(
       session,
       entityType: 'course_version',
@@ -83,21 +101,33 @@ class QaEndpoint extends Endpoint {
       newValueJson: '{"status":"effective"}',
       userId: approverId,
     );
+    await EventService.emitCourseVersionApproved(
+      session,
+      courseVersionId: courseVersionId,
+      courseId: version.courseId!,
+    );
+    await EventService.emitCourseVersionEffective(
+      session,
+      courseVersionId: courseVersionId,
+    );
     return result;
   }
 
-  /// Reject a course version (return to draft).
+  /// Reject a course version (return to draft). Optionally return for changes.
   Future<CourseVersion> rejectCourseVersion(
     Session session, {
     required int courseVersionId,
     String? reason,
+    bool returnForChanges = false,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final version = await CourseVersion.db.findById(session, courseVersionId);
     if (version == null) throw Exception('Course version not found');
     if (version.status != 'pending_approval') {
       throw Exception('Only pending_approval versions can be rejected');
     }
-    final updated = version.copyWith(status: 'draft');
+    final status = returnForChanges ? 'draft' : 'draft';
+    final updated = version.copyWith(status: status);
     return await CourseVersion.db.updateRow(session, updated);
   }
 }

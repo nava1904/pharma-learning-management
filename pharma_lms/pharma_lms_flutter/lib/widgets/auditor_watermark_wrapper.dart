@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/client.dart';
+import 'auditor_diagonal_watermark.dart';
 
 /// Wraps a child with "AUDIT COPY" watermark and logs page view when token is valid.
 class AuditorWatermarkWrapper extends StatefulWidget {
@@ -25,6 +26,7 @@ class AuditorWatermarkWrapper extends StatefulWidget {
 
 class _AuditorWatermarkWrapperState extends State<AuditorWatermarkWrapper> {
   int? _inspectionRecordId;
+  String? _inspectorNames;
 
   @override
   void initState() {
@@ -42,7 +44,10 @@ class _AuditorWatermarkWrapperState extends State<AuditorWatermarkWrapper> {
       if (result != null && mounted) {
         final id = result['inspectionRecordId'] as int?;
         if (id != null) {
-          setState(() => _inspectionRecordId = id);
+          setState(() {
+            _inspectionRecordId = id;
+            _inspectorNames = result['inspectorNames'] as String?;
+          });
           unawaited(client.inspection.logAuditorPageView(
             inspectionRecordId: id,
             pageUrl: widget.pageUrl,
@@ -61,25 +66,45 @@ class _AuditorWatermarkWrapperState extends State<AuditorWatermarkWrapper> {
       return widget.child;
     }
 
+    // Plan 6C: diagonal repeating "AUDIT COPY" across entire background
     return Stack(
       children: [
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: LayoutBuilder(
+              builder: (_, constraints) {
+                return CustomPaint(
+                  painter: AuditorDiagonalWatermarkPainter(
+                    text: 'AUDIT COPY',
+                    angle: -0.35,
+                    spacing: 180,
+                    fontSize: 14,
+                    color: Colors.grey.withValues(alpha: 0.12),
+                  ),
+                  size: Size(constraints.maxWidth, constraints.maxHeight),
+                );
+              },
+            ),
+          ),
+        ),
         widget.child,
+        // Keep a small bottom bar with context
         Positioned(
           left: 0,
           right: 0,
           bottom: 0,
           child: IgnorePointer(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              color: Colors.black.withValues(alpha: 0.05),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              color: Colors.black.withValues(alpha: 0.04),
               child: Center(
                 child: Text(
-                  'AUDIT COPY',
+                  '${_inspectorNames ?? 'Auditor'} — ${DateTime.now().toIso8601String().split('T').first}',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
-                    letterSpacing: 4,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                    letterSpacing: 1,
                   ),
                 ),
               ),

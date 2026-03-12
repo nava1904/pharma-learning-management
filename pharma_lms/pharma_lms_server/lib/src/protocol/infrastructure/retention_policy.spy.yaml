@@ -1,0 +1,15 @@
+### Retention policy configuration for data archival.
+### Defines how long to retain data before archiving to cold storage.
+class: RetentionPolicy
+
+table: retention_policy
+
+fields:
+  ### Entity type (e.g., audit_trail, access_log, notification).
+  entityType: String
+  ### Retention period in years before archival.
+  retentionYears: int, default=7
+  ### Whether to archive (move to cold storage) or only enforce retention.
+  archiveEnabled: bool, default=true
+  ### Last run timestamp.
+  lastArchivedAt: DateTime?

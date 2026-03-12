@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -143,13 +142,6 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     }
   }
 
-  String? _hashPassword(String password) {
-    if (password.isEmpty) return null;
-    final bytes = utf8.encode(password);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
   static const _validTransitions = <String, List<String>>{
     'draft': ['review'],
     'review': ['approved'],
@@ -174,19 +166,16 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     }
 
     final needsEsign = newState == 'approved' || newState == 'effective';
-    String? passwordHash;
+    String? passwordReauth;
     String signatureMeaning = 'Document lifecycle approval';
 
     if (needsEsign) {
       final result = await showDialog<Map<String, String>>(
         context: context,
-        builder: (ctx) => _LifecycleSignDialog(
-          newState: newState,
-          hashPassword: _hashPassword,
-        ),
+        builder: (ctx) => _LifecycleSignDialog(newState: newState),
       );
-      if (result == null || result['hash']?.isEmpty == true) return;
-      passwordHash = result['hash'];
+      if (result == null || result['password']?.isEmpty == true) return;
+      passwordReauth = result['password'];
       signatureMeaning = result['meaning'] ?? signatureMeaning;
     } else if (newState == 'obsolete' && (obsoleteReason == null || obsoleteReason.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -203,7 +192,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         obsoleteReason: newState == 'obsolete' ? obsoleteReason : null,
         userId: user!.id!,
         signatureMeaning: signatureMeaning,
-        passwordReauthHash: passwordHash,
+        passwordReauth: passwordReauth,
       );
       if (mounted) {
         setState(() {
@@ -612,13 +601,9 @@ class _DocumentVersionsSection extends StatelessWidget {
 
 /// E-sign dialog for document lifecycle transitions (Approved, Effective).
 class _LifecycleSignDialog extends StatefulWidget {
-  const _LifecycleSignDialog({
-    required this.newState,
-    required this.hashPassword,
-  });
+  const _LifecycleSignDialog({required this.newState});
 
   final String newState;
-  final String? Function(String) hashPassword;
 
   @override
   State<_LifecycleSignDialog> createState() => _LifecycleSignDialogState();
@@ -654,16 +639,8 @@ class _LifecycleSignDialogState extends State<_LifecycleSignDialog> {
       _signing = true;
       _error = null;
     });
-    final hash = widget.hashPassword(password);
-    if (hash != null && hash.isNotEmpty) {
-      if (mounted) {
-        Navigator.pop(context, {'hash': hash, 'meaning': meaning});
-      }
-    } else {
-      setState(() {
-        _signing = false;
-        _error = 'Could not hash password';
-      });
+    if (mounted) {
+      Navigator.pop(context, {'password': password, 'meaning': meaning});
     }
   }
 

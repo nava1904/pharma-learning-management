@@ -1,4 +1,6 @@
 ### Versioned document for lifecycle control.
+### Plan 3B: versionMajor/versionMinor for major/minor versioning; isMajorVersion
+### controls whether transition to effective emits SOP_UPDATED (retraining).
 class: DocumentVersion
 
 table: document_version
@@ -6,8 +8,14 @@ table: document_version
 fields:
   ### The document.
   document: Document?, relation
-  ### Version string.
+  ### Version string (e.g. "1.0" or "2.3").
   version: String
+  ### Major version number (1, 2, ...). Parsed from version or set on create.
+  versionMajor: int?
+  ### Minor version number (0, 1, ...). Parsed from version or set on create.
+  versionMinor: int?
+  ### If true, transition to effective emits SOP_UPDATED for retraining.
+  isMajorVersion: bool?
   ### S3/MinIO storage key.
   storageKey: String
   ### When effective.

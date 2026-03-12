@@ -6,7 +6,11 @@ import 'user_provider.dart';
 
 /// In-app notifications for current user.
 final notificationsProvider = FutureProvider<List<InAppNotification>>((ref) async {
-  final user = await ref.watch(currentUserProvider.future);
-  if (user?.id == null) return [];
-  return client.notification.getInAppNotifications(user!.id!);
+  try {
+    final user = await ref.watch(currentUserProvider.future);
+    if (user?.id == null) return [];
+    return await client.notification.getInAppNotifications(user!.id!);
+  } catch (_) {
+    return [];
+  }
 });

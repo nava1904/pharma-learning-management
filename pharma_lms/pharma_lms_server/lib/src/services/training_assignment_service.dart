@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import 'audit_service.dart';
+import 'event_service.dart';
 
 /// Training assignment service for creating and managing assignments.
 class TrainingAssignmentService {
@@ -52,6 +53,17 @@ class TrainingAssignmentService {
           '{"courseVersionId":$courseVersionId,"userId":$userId,"dueDate":"${dueDate.toIso8601String()}","assignedById":$assignedById}',
       userId: assignedById,
     );
+
+    if (inserted.id != null) {
+      await EventService.emitAssignmentCreated(
+        session,
+        assignmentId: inserted.id!,
+        userId: userId,
+        courseVersionId: courseVersionId,
+        dueDate: dueDate,
+        source: source,
+      );
+    }
 
     return inserted;
   }

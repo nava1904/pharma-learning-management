@@ -5,6 +5,10 @@ import 'package:crypto/crypto.dart';
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import 'password_verification_service.dart';
+
+/// Biometric token validity (plan 6B).
+const Duration _biometricTokenLifetime = Duration(minutes: 5);
 
 /// Electronic signature service for FDA 21 CFR Part 11 compliance.
 /// Every training completion requires electronic signature.
@@ -12,6 +16,54 @@ class EsignatureService {
   static String _getHmacSecret() {
     return Platform.environment['ESIGNATURE_HMAC_SECRET'] ??
         'pharma-lms-esig-secret-change-in-production';
+  }
+
+  static String _getBiometricSecret() {
+    return Platform.environment['BIOMETRIC_TOKEN_SECRET'] ??
+        Platform.environment['ESIGNATURE_HMAC_SECRET'] ??
+        'pharma-lms-biometric-change-in-production';
+  }
+
+  /// Issue a short-lived biometric token after password verification (plan 6B).
+  static Future<String> issueBiometricToken(
+    Session session, {
+    required int userId,
+    required String passwordReauth,
+  }) async {
+    final valid = await PasswordVerificationService.verifyPassword(
+      session,
+      userId: userId,
+      password: passwordReauth,
+    );
+    if (!valid) throw Exception('Password re-authentication failed');
+    final expiry = DateTime.now().add(_biometricTokenLifetime).millisecondsSinceEpoch;
+    final payload = '$userId|$expiry';
+    final key = utf8.encode(_getBiometricSecret());
+    final hmac = Hmac(sha256, key).convert(utf8.encode(payload));
+    final token = base64Url.encode(hmac.bytes) + '.' + base64Url.encode(utf8.encode(payload));
+    return token;
+  }
+
+  /// Verify biometric token and return userId if valid.
+  static int? verifyBiometricToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 2) return null;
+      final payloadBytes = base64Url.decode(parts[1]);
+      final payload = utf8.decode(payloadBytes);
+      final split = payload.split('|');
+      if (split.length != 2) return null;
+      final userId = int.tryParse(split[0]);
+      final expiryMs = int.tryParse(split[1]);
+      if (userId == null || expiryMs == null) return null;
+      if (DateTime.now().millisecondsSinceEpoch > expiryMs) return null;
+      final key = utf8.encode(_getBiometricSecret());
+      final expectedHmac = base64Url.encode(Hmac(sha256, key).convert(utf8.encode(payload)).bytes);
+      if (parts[0] != expectedHmac) return null;
+      return userId;
+    } catch (_) {
+      return null;
+    }
   }
 
   static String _computeIntegrityHash(
@@ -50,29 +102,48 @@ class EsignatureService {
   static const String meaningApproval = 'Approval';
 
   /// Create and store an electronic signature.
+  /// When [passwordReauth] is provided, verifies it server-side (Argon2id) and does not store it.
+  /// When [biometricToken] is provided, verifies the short-lived token and uses its userId (plan 6B).
   static Future<ElectronicSignature> sign(
     Session session, {
     required int userId,
     required String signatureMeaning,
     required String entityType,
     required String entityId,
-    String? passwordReauthHash,
+    String? passwordReauth,
+    String? biometricToken,
     String? ipAddress,
   }) async {
+    int effectiveUserId = userId;
+    if (biometricToken != null && biometricToken.isNotEmpty) {
+      final tokenUserId = verifyBiometricToken(biometricToken);
+      if (tokenUserId == null) throw Exception('Biometric token invalid or expired');
+      effectiveUserId = tokenUserId;
+    } else if (passwordReauth != null && passwordReauth.isNotEmpty) {
+      final valid = await PasswordVerificationService.verifyPassword(
+        session,
+        userId: userId,
+        password: passwordReauth,
+      );
+      if (!valid) {
+        throw Exception('Password re-authentication failed');
+      }
+    }
+
     final now = DateTime.now();
     final integrityHash = _computeIntegrityHash(
-      userId,
+      effectiveUserId,
       entityType,
       entityId,
       now,
       signatureMeaning,
     );
     final signature = ElectronicSignature(
-      userId: userId,
+      userId: effectiveUserId,
       signatureMeaning: signatureMeaning,
       entityType: entityType,
       entityId: entityId,
-      passwordReauthHash: passwordReauthHash,
+      passwordReauthHash: null,
       ipAddress: ipAddress,
       integrityHash: integrityHash,
     );

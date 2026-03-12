@@ -17,10 +17,13 @@ class CourseCard extends StatelessWidget {
     this.lastUpdated,
     this.isCreateCard = false,
     this.ctaLabel,
+    this.resumeLabel,
   });
 
   final String title;
   final String? subtitle;
+  /// Resume position for in-progress (e.g. "Module 2, Lesson 3").
+  final String? resumeLabel;
   final double? progress;
   final String? status;
   final VoidCallback? onTap;
@@ -109,6 +112,18 @@ class CourseCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    if (resumeLabel != null && resumeLabel!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Resume: $resumeLabel',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.teal600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     if (versionCount != null || lastUpdated != null) ...[
                       const SizedBox(height: 8),
                       Row(
@@ -152,7 +167,9 @@ class CourseCard extends StatelessWidget {
                           ),
                           child: Text(
                             ctaLabel ??
-                                (progress != null && progress! > 0 ? 'Continue' : 'Start'),
+                                (progress != null && progress! > 0
+                                    ? 'Continue'
+                                    : 'Start'),
                           ),
                         ),
                       ),

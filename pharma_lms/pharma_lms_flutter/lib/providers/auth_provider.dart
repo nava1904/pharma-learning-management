@@ -34,22 +34,36 @@ String emailForRole(AppRole role) {
 }
 
 /// Maps email to role for real auth (known demo emails or default employee).
+/// Includes MVP seed users: alice, bob, carol, dave, emma, sme, sme2, etc.
 AppRole roleForEmail(String email) {
   final lower = email.toLowerCase();
   switch (lower) {
     case 'admin@pharmacorp.demo':
+    case 'it@pharmacorp.demo':
       return AppRole.admin;
     case 'employee@pharmacorp.demo':
+    case 'alice@pharmacorp.demo':
+    case 'bob@pharmacorp.demo':
+    case 'carol@pharmacorp.demo':
+    case 'dave@pharmacorp.demo':
+    case 'emma@pharmacorp.demo':
+    case 'locked@pharmacorp.demo':
+    case 'ex.employee@pharmacorp.demo':
       return AppRole.employee;
     case 'qa@pharmacorp.demo':
+    case 'qa.director@pharmacorp.demo':
       return AppRole.qa;
-    case 'trainer@pharmacorp.demo':
+    case 'sme@pharmacorp.demo':
+    case 'sme2@pharmacorp.demo':
       return AppRole.trainer;
     case 'auditor@pharmacorp.demo':
       return AppRole.auditor;
     case 'analytics@pharmacorp.demo':
       return AppRole.analytics;
     default:
+      if (lower.startsWith('employee') && lower.endsWith('@pharmacorp.demo')) {
+        return AppRole.employee;
+      }
       return AppRole.employee;
   }
 }
@@ -70,6 +84,65 @@ String pathForRole(AppRole role) {
     case AppRole.analytics:
       return '/analytics';
   }
+}
+
+/// Routes allowed per role. Used for sidebar filtering and route guards.
+bool pathAllowedForRole(String path, AppRole role) {
+  if (path == '/' || path.isEmpty) return true;
+  if (path.startsWith('/employee') ||
+      path.startsWith('/courses') ||
+      path.startsWith('/learning') ||
+      path.startsWith('/training-timeline')) {
+    return role == AppRole.employee ||
+        role == AppRole.admin ||
+        role == AppRole.trainer;
+  }
+  if (path.startsWith('/admin')) {
+    if (path.contains('training-waivers')) {
+      return role == AppRole.admin || role == AppRole.qa;
+    }
+    return role == AppRole.admin;
+  }
+  if (path.startsWith('/qa')) return role == AppRole.qa;
+  if (path.startsWith('/trainer')) return role == AppRole.trainer;
+  if (path.startsWith('/auditor')) return role == AppRole.auditor || role == AppRole.qa;
+  if (path.startsWith('/training-matrix')) return role == AppRole.admin;
+  if (path.startsWith('/audit-trail')) {
+    return role == AppRole.admin || role == AppRole.qa || role == AppRole.auditor;
+  }
+  if (path.startsWith('/compliance-report')) {
+    return role == AppRole.admin || role == AppRole.qa || role == AppRole.auditor;
+  }
+  if (path.startsWith('/esignature-verification')) {
+    return role == AppRole.admin || role == AppRole.qa || role == AppRole.auditor;
+  }
+  if (path.startsWith('/analytics')) {
+    return role == AppRole.admin || role == AppRole.qa || role == AppRole.analytics;
+  }
+  if (path.startsWith('/documents')) {
+    return role == AppRole.admin || role == AppRole.qa;
+  }
+  if (path.startsWith('/quality-events')) {
+    return role == AppRole.qa;
+  }
+  if (path.startsWith('/event-triggers')) {
+    return role == AppRole.admin || role == AppRole.qa;
+  }
+  if (path.startsWith('/inspection-management')) {
+    return role == AppRole.admin || role == AppRole.qa;
+  }
+  if (path.startsWith('/course') || path.startsWith('/assessment') ||
+      path.startsWith('/certificate') || path.startsWith('/esignature')) {
+    return role == AppRole.employee ||
+        role == AppRole.admin ||
+        role == AppRole.trainer;
+  }
+  if (path.startsWith('/assessments') || path.startsWith('/certificates')) {
+    return role == AppRole.employee ||
+        role == AppRole.admin ||
+        role == AppRole.trainer;
+  }
+  return true;
 }
 
 /// Current selected role (for demo login or real auth). Null = not logged in.

@@ -5,6 +5,7 @@ import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../integrations/kafka_producer.dart';
 import '../services/training_assignment_service.dart';
+import '../workers/analytics_event_processor.dart';
 
 /// Processes domain events from Kafka (or outbox) for workflow automation.
 /// Handles: SOP update retraining, employee onboarding, CAPA training, cert expiry.
@@ -249,7 +250,16 @@ class KafkaEventProcessor extends FutureCall {
   }
 
   /// Process outbox messages - publish to Kafka. Moves to DLQ after 3 retries.
+  /// Self-reschedules every 45 seconds for continuous processing.
+  static const Duration _rescheduleInterval = Duration(seconds: 45);
+
   Future<void> processOutbox(Session session) async {
+    // Schedule next run before doing work (recurring pattern)
+    await session.serverpod.endpoints.futureCalls!
+        .callWithDelay(_rescheduleInterval)
+        .kafkaEventProcessor
+        .processOutbox();
+
     final all = await OutboxMessage.db.find(session);
     final pending = all.where((m) =>
         (m.status == 'pending' || m.status == 'failed') &&
@@ -257,7 +267,14 @@ class KafkaEventProcessor extends FutureCall {
 
     for (final msg in pending) {
       try {
-        await KafkaProducer.publish(msg.topic, msg.payloadJson);
+        if (KafkaProducer.isEnabled) {
+          await KafkaProducer.publish(msg.topic, msg.payloadJson);
+        }
+        await AnalyticsEventProcessor.processPayload(
+          session,
+          msg.topic,
+          msg.payloadJson,
+        );
         await OutboxMessage.db.updateRow(
           session,
           msg.copyWith(

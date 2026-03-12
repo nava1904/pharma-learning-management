@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -120,6 +121,16 @@ class _CertificateScreenState extends State<CertificateScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    SizedBox(
+                      height: 100,
+                      width: 100,
+                      child: Lottie.asset(
+                        'assets/lottie/certificate.json',
+                        fit: BoxFit.contain,
+                        repeat: false,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

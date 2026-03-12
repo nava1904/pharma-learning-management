@@ -21,7 +21,9 @@ import 'dart:async' as _i5;
 import '../workers/capa_effectiveness_worker.dart' as _i6;
 import '../workers/certification_expiry_worker.dart' as _i7;
 import '../workers/compliance_monitor_worker.dart' as _i8;
-import '../workers/kafka_event_processor.dart' as _i9;
+import '../workers/failed_login_lockout_worker.dart' as _i9;
+import '../workers/kafka_event_processor.dart' as _i10;
+import '../workers/retention_archival_worker.dart' as _i11;
 
 /// Invokes a future call.
 typedef _InvokeFutureCall =
@@ -71,6 +73,8 @@ class FutureCalls extends _i1.FutureCallDispatch<_FutureCallRef> {
           CertificationExpiryWorkerRunFutureCall(),
       'ComplianceMonitorWorkerRunFutureCall':
           ComplianceMonitorWorkerRunFutureCall(),
+      'FailedLoginLockoutWorkerRunFutureCall':
+          FailedLoginLockoutWorkerRunFutureCall(),
       'KafkaEventProcessorProcessSopUpdatedFutureCall':
           KafkaEventProcessorProcessSopUpdatedFutureCall(),
       'KafkaEventProcessorProcessEmployeeCreatedFutureCall':
@@ -79,6 +83,8 @@ class FutureCalls extends _i1.FutureCallDispatch<_FutureCallRef> {
           KafkaEventProcessorProcessEmployeeTransferredFutureCall(),
       'KafkaEventProcessorProcessOutboxFutureCall':
           KafkaEventProcessorProcessOutboxFutureCall(),
+      'RetentionArchivalWorkerRunFutureCall':
+          RetentionArchivalWorkerRunFutureCall(),
     };
     _futureCallManager = futureCallManager;
     _serverId = serverId;
@@ -143,9 +149,15 @@ class _FutureCallRef {
   late final complianceMonitorWorker =
       _ComplianceMonitorWorkerFutureCallDispatcher(_invokeFutureCall);
 
+  late final failedLoginLockoutWorker =
+      _FailedLoginLockoutWorkerFutureCallDispatcher(_invokeFutureCall);
+
   late final kafkaEventProcessor = _KafkaEventProcessorFutureCallDispatcher(
     _invokeFutureCall,
   );
+
+  late final retentionArchivalWorker =
+      _RetentionArchivalWorkerFutureCallDispatcher(_invokeFutureCall);
 }
 
 class _CapaEffectivenessWorkerFutureCallDispatcher {
@@ -182,6 +194,19 @@ class _ComplianceMonitorWorkerFutureCallDispatcher {
   Future<void> run() {
     return _invokeFutureCall(
       'ComplianceMonitorWorkerRunFutureCall',
+      null,
+    );
+  }
+}
+
+class _FailedLoginLockoutWorkerFutureCallDispatcher {
+  _FailedLoginLockoutWorkerFutureCallDispatcher(this._invokeFutureCall);
+
+  final _InvokeFutureCall _invokeFutureCall;
+
+  Future<void> run() {
+    return _invokeFutureCall(
+      'FailedLoginLockoutWorkerRunFutureCall',
       null,
     );
   }
@@ -252,6 +277,19 @@ class _KafkaEventProcessorFutureCallDispatcher {
   }
 }
 
+class _RetentionArchivalWorkerFutureCallDispatcher {
+  _RetentionArchivalWorkerFutureCallDispatcher(this._invokeFutureCall);
+
+  final _InvokeFutureCall _invokeFutureCall;
+
+  Future<void> run() {
+    return _invokeFutureCall(
+      'RetentionArchivalWorkerRunFutureCall',
+      null,
+    );
+  }
+}
+
 class CapaEffectivenessWorkerRunFutureCall extends _i1.FutureCall {
   @override
   _i5.Future<void> invoke(
@@ -282,6 +320,16 @@ class ComplianceMonitorWorkerRunFutureCall extends _i1.FutureCall {
   }
 }
 
+class FailedLoginLockoutWorkerRunFutureCall extends _i1.FutureCall {
+  @override
+  _i5.Future<void> invoke(
+    _i1.Session session,
+    _i1.SerializableModel? object,
+  ) async {
+    await _i9.FailedLoginLockoutWorker().run(session);
+  }
+}
+
 /// Process SOP updated event - assign retraining to affected employees.
 /// QA gate: only assigns when document.trainingRequiredByQa == 'training_required'.
 /// Scoping: uses affectedDepartmentIdsJson and affectedRoleIdsJson when set.
@@ -293,7 +341,7 @@ class KafkaEventProcessorProcessSopUpdatedFutureCall
     _i2.KafkaEventProcessorProcessSopUpdatedModel? object,
   ) async {
     if (object != null) {
-      await _i9.KafkaEventProcessor().processSopUpdated(
+      await _i10.KafkaEventProcessor().processSopUpdated(
         session,
         documentId: object.documentId,
         courseVersionId: object.courseVersionId,
@@ -313,7 +361,7 @@ class KafkaEventProcessorProcessEmployeeCreatedFutureCall
     _i3.KafkaEventProcessorProcessEmployeeCreatedModel? object,
   ) async {
     if (object != null) {
-      await _i9.KafkaEventProcessor().processEmployeeCreated(
+      await _i10.KafkaEventProcessor().processEmployeeCreated(
         session,
         userId: object.userId,
         departmentId: object.departmentId,
@@ -333,7 +381,7 @@ class KafkaEventProcessorProcessEmployeeTransferredFutureCall
     _i4.KafkaEventProcessorProcessEmployeeTransferredModel? object,
   ) async {
     if (object != null) {
-      await _i9.KafkaEventProcessor().processEmployeeTransferred(
+      await _i10.KafkaEventProcessor().processEmployeeTransferred(
         session,
         userId: object.userId,
         oldDepartmentId: object.oldDepartmentId,
@@ -345,13 +393,22 @@ class KafkaEventProcessorProcessEmployeeTransferredFutureCall
   }
 }
 
-/// Process outbox messages - publish to Kafka. Moves to DLQ after 3 retries.
 class KafkaEventProcessorProcessOutboxFutureCall extends _i1.FutureCall {
   @override
   _i5.Future<void> invoke(
     _i1.Session session,
     _i1.SerializableModel? object,
   ) async {
-    await _i9.KafkaEventProcessor().processOutbox(session);
+    await _i10.KafkaEventProcessor().processOutbox(session);
+  }
+}
+
+class RetentionArchivalWorkerRunFutureCall extends _i1.FutureCall {
+  @override
+  _i5.Future<void> invoke(
+    _i1.Session session,
+    _i1.SerializableModel? object,
+  ) async {
+    await _i11.RetentionArchivalWorker().run(session);
   }
 }

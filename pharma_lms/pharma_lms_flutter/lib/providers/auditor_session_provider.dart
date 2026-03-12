@@ -9,11 +9,13 @@ class AuditorSession {
     this.scopeDescription,
     this.expiresAt,
     this.siteName,
+    this.inspectorNames,
   });
   final int inspectionRecordId;
   final String? scopeDescription;
   final String? expiresAt;
   final String? siteName;
+  final String? inspectorNames;
 }
 
 /// Validates auditor token and provides session for page logging.
@@ -31,6 +33,7 @@ final auditorSessionProvider =
       scopeDescription: result['scopeDescription'] as String?,
       expiresAt: result['expiresAt'] as String?,
       siteName: result['siteName'] as String?,
+      inspectorNames: result['inspectorNames'] as String?,
     );
   } catch (_) {
     return null;

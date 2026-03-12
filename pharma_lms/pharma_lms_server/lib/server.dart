@@ -4,17 +4,22 @@ import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 import 'package:serverpod_auth_idp_server/providers/email.dart';
 
+import 'src/auth/oidc_idp_config.dart';
 import 'src/generated/endpoints.dart';
 import 'src/generated/protocol.dart';
+import 'src/services/email_service.dart';
+import 'src/services/password_policy_service.dart';
 import 'src/web/routes/api_proxy_route.dart';
 import 'src/web/routes/app_config_route.dart';
+import 'src/web/routes/metrics_route.dart';
 import 'src/web/routes/root.dart';
 
 const _apiEndpointPaths = [
-  'emailIdp', 'jwtRefresh', 'admin', 'analytics', 'assessmentBuilder',
+  'emailIdp', 'jwtRefresh', 'oidcIdp', 'admin', 'analytics', 'assessmentBuilder',
   'assessment', 'audit', 'compliance', 'courseBuilder', 'course',
-  'document', 'event', 'material', 'notification', 'organization',
+  'document', 'event', 'material', 'mfa', 'notification', 'organization',
   'qa', 'qualityEvent', 'seed', 'training', 'user', 'greeting',
+  'validation',
 ];
 
 /// The starting point of the Serverpod server.
@@ -28,18 +33,24 @@ void run(List<String> args) async {
   pod.initializeAuthServices(
     tokenManagerBuilders: [
       // Use JWT for authentication keys towards the server.
-      // Session timeout: access token 30 min, refresh 7 days.
+      // Session timeout: access token 15 min (21 CFR Part 11), refresh 7 days.
       JwtConfigFromPasswords(
-        accessTokenLifetime: Duration(minutes: 30),
+        accessTokenLifetime: Duration(minutes: 15),
         refreshTokenLifetime: Duration(days: 7),
       ),
     ],
     identityProviderBuilders: [
       // Configure the email identity provider for email/password authentication.
+      // Password policy: min 12 chars, uppercase, lowercase, digit, special (21 CFR Part 11).
+      // Serverpod uses Argon2id for hashing (OWASP-recommended).
       EmailIdpConfigFromPasswords(
         sendRegistrationVerificationCode: _sendRegistrationCode,
         sendPasswordResetVerificationCode: _sendPasswordResetCode,
+        passwordValidationFunction: PasswordPolicyService.passwordValidationFunction,
       ),
+      // OIDC SSO (Auth0, Okta, Azure AD). Add when oidcDiscoveryUrl etc. in passwords.yaml.
+      // See docs/SSO_OIDC.md for integration instructions.
+      ..._buildOidcProvider(pod),
     ],
   );
 
@@ -47,6 +58,9 @@ void run(List<String> args) async {
   // These are used by the default page.
   pod.webServer.addRoute(RootRoute(), '/');
   pod.webServer.addRoute(RootRoute(), '/index.html');
+
+  // Prometheus /metrics for request_count and request_latency_seconds
+  pod.webServer.addRoute(MetricsRoute(), '/metrics');
 
   // Serve all files in the web/static relative directory under /.
   // These are used by the default web page.
@@ -99,6 +113,52 @@ void run(List<String> args) async {
 
   // Start the server.
   await pod.start();
+
+  // Schedule failed-login lockout worker (21 CFR Part 11: lock after 5 attempts).
+  // Self-reschedules every minute.
+  pod.endpoints.futureCalls
+      ?.callWithDelay(Duration.zero)
+      .failedLoginLockoutWorker
+      .run();
+
+  // Schedule retention archival worker (audit_trail 7 years, etc.).
+  // Self-reschedules daily.
+  pod.endpoints.futureCalls
+      ?.callWithDelay(Duration.zero)
+      .retentionArchivalWorker
+      .run();
+
+  // Schedule outbox processor (transactional outbox -> Kafka).
+  // Self-reschedules every 45 seconds.
+  pod.endpoints.futureCalls
+      ?.callWithDelay(Duration.zero)
+      .kafkaEventProcessor
+      .processOutbox();
+}
+
+List<IdentityProviderBuilder> _buildOidcProvider(Serverpod pod) {
+  final discoveryUrl = pod.getPassword('oidcDiscoveryUrl');
+  final clientId = pod.getPassword('oidcClientId');
+  final clientSecret = pod.getPassword('oidcClientSecret');
+  final redirectUri = pod.getPassword('oidcRedirectUri');
+  if (discoveryUrl == null ||
+      discoveryUrl.isEmpty ||
+      clientId == null ||
+      clientId.isEmpty ||
+      clientSecret == null ||
+      clientSecret.isEmpty ||
+      redirectUri == null ||
+      redirectUri.isEmpty) {
+    return [];
+  }
+  return [
+    OidcIdpConfig(
+      clientId: clientId,
+      clientSecret: clientSecret,
+      discoveryUrl: discoveryUrl,
+      redirectUri: redirectUri,
+    ),
+  ];
 }
 
 void _sendRegistrationCode(
@@ -108,9 +168,11 @@ void _sendRegistrationCode(
   required String verificationCode,
   required Transaction? transaction,
 }) {
-  // NOTE: Here you call your mail service to send the verification code to
-  // the user. For testing, we will just log the verification code.
-  session.log('[EmailIdp] Registration code ($email): $verificationCode');
+  EmailService.sendRegistrationCode(
+    session,
+    email: email,
+    verificationCode: verificationCode,
+  );
 }
 
 void _sendPasswordResetCode(
@@ -120,7 +182,9 @@ void _sendPasswordResetCode(
   required String verificationCode,
   required Transaction? transaction,
 }) {
-  // NOTE: Here you call your mail service to send the verification code to
-  // the user. For testing, we will just log the verification code.
-  session.log('[EmailIdp] Password reset code ($email): $verificationCode');
+  EmailService.sendPasswordResetCode(
+    session,
+    email: email,
+    verificationCode: verificationCode,
+  );
 }

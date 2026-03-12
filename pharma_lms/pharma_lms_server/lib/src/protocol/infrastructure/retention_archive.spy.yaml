@@ -1,0 +1,15 @@
+### Archived records moved from hot tables per retention policy.
+### Stores snapshot of record at archival time for compliance.
+class: RetentionArchive
+
+table: retention_archive
+
+fields:
+  ### Source entity type (e.g., audit_trail).
+  entityType: String
+  ### Original entity ID.
+  entityId: String
+  ### Full row data as JSON snapshot.
+  rowJson: String
+  ### When archived.
+  archivedAt: DateTime, default=now

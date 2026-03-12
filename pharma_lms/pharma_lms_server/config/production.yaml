@@ -61,3 +61,31 @@ sessionLogs:
 #futureCall:
 #  concurrencyLimit: 1 # Defaults to 1, a negative or null value removes the limit
 #  scanInterval: 5000 # Unit in milliseconds, defaults to 5000
+
+# S3/MinIO object storage for documents, materials, and uploads.
+# Use MinIO for on-prem or dev; AWS S3 for production.
+# See docs/STORAGE_S3.md for setup instructions.
+#storage:
+  #s3:
+    #enabled: true
+    # For AWS S3: use endpoint null and set region.
+    # For MinIO: use endpoint (e.g. http://minio:9000) and region optional.
+    #endpoint: https://s3.amazonaws.com
+    #region: us-east-1
+    #bucket: pharma-lms-storage
+    # Access key and secret - set via environment or config override. Do not commit secrets.
+    #accessKey: ""
+    #secretKey: ""
+    # Optional: use path-style for MinIO compatibility
+    # pathStyle: true
+    # Optional: custom domain for presigned URLs
+    # publicUrl: https://cdn.example.com
+storage:
+  s3:
+    enabled: true
+    endpoint: http://minio:9000   # or http://localhost:9000 if running locally
+    region: us-east-1
+    bucket: pharma-lms-storage
+    accessKey: minioadmin
+    secretKey: minioadmin
+    pathStyle: true   # Required for MinIO

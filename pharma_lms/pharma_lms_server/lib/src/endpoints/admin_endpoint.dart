@@ -6,12 +6,15 @@ import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart';
 import '../audit_event_types.dart';
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/event_service.dart';
+import '../services/rbac_helper.dart';
 import '../services/training_assignment_service.dart';
 
 /// Training Administrator domain endpoint.
 class AdminEndpoint extends Endpoint {
   /// List all signature meanings (admin - includes inactive).
   Future<List<SignatureMeaning>> listSignatureMeanings(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     return await SignatureMeaning.db.find(
       session,
       orderBy: (t) => t.orderIndex,
@@ -25,6 +28,7 @@ class AdminEndpoint extends Endpoint {
     bool isActive = true,
     int orderIndex = 0,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'write');
     final result = await SignatureMeaning.db.insertRow(
       session,
       SignatureMeaning(
@@ -51,6 +55,7 @@ class AdminEndpoint extends Endpoint {
     bool? isActive,
     int? orderIndex,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'write');
     final existing = await SignatureMeaning.db.findById(session, id);
     if (existing == null) throw Exception('Signature meaning not found');
     final updated = existing.copyWith(
@@ -80,6 +85,7 @@ class AdminEndpoint extends Endpoint {
     String? reason,
     String source = 'manual',
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     final assignments = await TrainingAssignmentService.assignToDepartment(
       session,
       departmentId: departmentId,
@@ -99,6 +105,7 @@ class AdminEndpoint extends Endpoint {
     required int assignedById,
     DateTime? dueDate,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     final bytes = base64Decode(csvBase64);
     final csv = utf8.decode(bytes);
     final lines = csv.split('\n').where((l) => l.trim().isNotEmpty).toList();
@@ -197,12 +204,81 @@ class AdminEndpoint extends Endpoint {
     return line.split(',').map((s) => s.trim().replaceAll('"', '')).toList();
   }
 
+  /// Bulk import training matrix from CSV. Columns: job_role_code, course_id.
+  /// One row per role-course pair. Merges with existing matrix per role.
+  Future<BulkImportResult> bulkImportTrainingMatrix(
+    Session session, {
+    required String csvBase64,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
+    final bytes = base64Decode(csvBase64);
+    final csv = utf8.decode(bytes);
+    final lines = csv.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    if (lines.isEmpty) return BulkImportResult(imported: 0, errors: []);
+
+    final headerParts = lines.first.split(',').map((s) => s.trim().toLowerCase()).toList();
+    final codeIdx = _colIndex(headerParts, 'job_role_code') ?? _colIndex(headerParts, 'jobrolecode') ?? _colIndex(headerParts, 'code');
+    final courseIdx = _colIndex(headerParts, 'course_id') ?? _colIndex(headerParts, 'courseid');
+
+    if (codeIdx == null || courseIdx == null) {
+      return BulkImportResult(imported: 0, errors: ['CSV must have job_role_code and course_id columns']);
+    }
+
+    final roleToCourses = <String, Set<int>>{};
+    final errors = <String>[];
+
+    for (var i = 1; i < lines.length; i++) {
+      final cols = _parseCsvLine(lines[i]);
+      if (cols.length <= codeIdx || cols.length <= courseIdx) continue;
+
+      final code = cols[codeIdx].trim();
+      final courseId = int.tryParse(cols[courseIdx].trim());
+      if (code.isEmpty || courseId == null || courseId <= 0) {
+        errors.add('Row ${i + 1}: invalid job_role_code or course_id');
+        continue;
+      }
+
+      roleToCourses.putIfAbsent(code, () => {}).add(courseId);
+    }
+
+    var imported = 0;
+    for (final entry in roleToCourses.entries) {
+      try {
+        final role = await JobRole.db.findFirstRow(
+          session,
+          where: (t) => t.code.equals(entry.key),
+        );
+        if (role == null) {
+          errors.add('Job role "${entry.key}" not found');
+          continue;
+        }
+
+        final existing = role.trainingMatrixJson != null
+            ? (jsonDecode(role.trainingMatrixJson!) as List<dynamic>?)
+                ?.map((e) => (e is int) ? e : int.tryParse(e.toString()) ?? 0)
+                .where((id) => id > 0)
+                .toSet()
+                ?? <int>{}
+            : <int>{};
+        final merged = {...existing, ...entry.value};
+        final json = jsonEncode(merged.toList());
+        await updateJobRoleTrainingMatrix(session, jobRoleId: role.id!, trainingMatrixJson: json);
+        imported++;
+      } catch (e) {
+        errors.add('${entry.key}: $e');
+      }
+    }
+
+    return BulkImportResult(imported: imported, errors: errors);
+  }
+
   /// Update job role training matrix (JSON array of course IDs).
   Future<JobRole> updateJobRoleTrainingMatrix(
     Session session, {
     required int jobRoleId,
     required String trainingMatrixJson,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     final role = await JobRole.db.findById(session, jobRoleId);
     if (role == null) throw Exception('Job role not found');
     final updated = role.copyWith(trainingMatrixJson: trainingMatrixJson);
@@ -222,6 +298,7 @@ class AdminEndpoint extends Endpoint {
     Session session,
     int jobRoleId,
   ) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     final role = await JobRole.db.findById(session, jobRoleId);
     if (role == null || role.trainingMatrixJson == null) return [];
 
@@ -254,6 +331,7 @@ class AdminEndpoint extends Endpoint {
     required int assignedById,
     required DateTime dueDate,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     final curriculum = await getRoleBasedCurriculum(session, jobRoleId);
     final assignments = <TrainingAssignment>[];
 
@@ -286,6 +364,7 @@ class AdminEndpoint extends Endpoint {
 
   /// Lock (block) a user by email - prevents sign-in. Account lockout.
   Future<bool> lockUserByEmail(Session session, String email) async {
+    await RbacHelper.requirePermission(session, resource: 'user', action: 'write');
     final result = await session.db.unsafeQuery(
       r'SELECT "authUserId" FROM serverpod_auth_core_profile WHERE email = @email LIMIT 1',
       parameters: QueryParameters.named({'email': email}),
@@ -319,6 +398,7 @@ class AdminEndpoint extends Endpoint {
     String? evidenceStoragePath,
     DateTime? expiresAt,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'write');
     final existing = await TrainingWaiver.db.findFirstRow(
       session,
       where: (t) =>
@@ -358,6 +438,7 @@ class AdminEndpoint extends Endpoint {
     int? courseId,
     int limit = 100,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     return await TrainingWaiver.db.find(
       session,
       where: (t) {
@@ -379,16 +460,20 @@ class AdminEndpoint extends Endpoint {
     );
   }
 
-  /// ADM-07: QA approve a training waiver.
+  /// ADM-07: QA approve a training waiver. Separation of duties: requester cannot approve.
   Future<TrainingWaiver> approveTrainingWaiver(
     Session session, {
     required int waiverId,
     required int approvedById,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final waiver = await TrainingWaiver.db.findById(session, waiverId);
     if (waiver == null) throw Exception('Waiver not found');
     if (waiver.status != 'pending') {
       throw Exception('Waiver is not pending (status: ${waiver.status})');
+    }
+    if (waiver.requestedById == approvedById) {
+      throw Exception('Requester cannot approve their own waiver (separation of duties)');
     }
     final updated = await TrainingWaiver.db.updateRow(
       session,
@@ -405,6 +490,14 @@ class AdminEndpoint extends Endpoint {
       action: 'WaiverApproved',
       newValueJson: '{"approvedById":$approvedById}',
     );
+    if (waiver.userId != null && waiver.courseId != null) {
+      await EventService.emitWaiverApproved(
+        session,
+        waiverId: waiverId,
+        userId: waiver.userId!,
+        courseId: waiver.courseId!,
+      );
+    }
     return updated;
   }
 
@@ -415,6 +508,7 @@ class AdminEndpoint extends Endpoint {
     required int approvedById,
     required String rejectionReason,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final waiver = await TrainingWaiver.db.findById(session, waiverId);
     if (waiver == null) throw Exception('Waiver not found');
     if (waiver.status != 'pending') {
@@ -441,6 +535,7 @@ class AdminEndpoint extends Endpoint {
 
   /// Unlock (unblock) a user by email.
   Future<bool> unlockUserByEmail(Session session, String email) async {
+    await RbacHelper.requirePermission(session, resource: 'user', action: 'write');
     final result = await session.db.unsafeQuery(
       r'SELECT "authUserId" FROM serverpod_auth_core_profile WHERE email = @email LIMIT 1',
       parameters: QueryParameters.named({'email': email}),

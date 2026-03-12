@@ -7,6 +7,7 @@ import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
 import '../services/esignature_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Inspection and auditor access endpoint.
 class InspectionEndpoint extends Endpoint {
@@ -15,6 +16,8 @@ class InspectionEndpoint extends Endpoint {
     Session session, {
     int limit = 50,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'inspection', action: 'read');
     return InspectionRecord.db.find(
       session,
       orderBy: (t) => t.createdAt,
@@ -35,6 +38,7 @@ class InspectionEndpoint extends Endpoint {
     int tokenHoursValid = 48,
     int? createdById,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'inspection', action: 'write');
     final token = _generateSecureToken();
     final expiresAt = DateTime.now().add(Duration(hours: tokenHoursValid));
 
@@ -87,7 +91,29 @@ class InspectionEndpoint extends Endpoint {
       'scopeDescription': r.scopeDescription,
       'expiresAt': r.tokenExpiresAt?.toIso8601String(),
       'siteName': r.site?.name,
+      'inspectorNames': r.inspectorNames,
     };
+  }
+
+  /// List page logs for an inspection record (for auditor session widget).
+  Future<List<AuditorPageLog>> listAuditorPageLogs(
+    Session session, {
+    required int inspectionRecordId,
+    int limit = 50,
+  }) async {
+    final sessions = await AuditorSession.db.find(
+      session,
+      where: (t) => t.inspectionRecordId.equals(inspectionRecordId),
+    );
+    if (sessions.isEmpty) return [];
+    final sessionIds = sessions.map((s) => s.id).whereType<int>().toList();
+    return AuditorPageLog.db.find(
+      session,
+      where: (t) => t.auditorSessionId.inSet(sessionIds.toSet()),
+      orderBy: (t) => t.viewedAt,
+      orderDescending: true,
+      limit: limit,
+    );
   }
 
   /// Log auditor page view.
@@ -163,6 +189,32 @@ class InspectionEndpoint extends Endpoint {
     );
   }
 
+  /// Generate evidence package for auditor (token-based). One-click from auditor portal.
+  Future<Map<String, dynamic>> generateEvidencePackageForAuditor(
+    Session session, {
+    required String token,
+  }) async {
+    final validation = await validateAuditorToken(session, token: token);
+    if (validation == null) throw Exception('Invalid or expired token');
+    final inspectionRecordId = validation['inspectionRecordId'] as int?;
+    if (inspectionRecordId == null) throw Exception('Invalid token response');
+    final record = await InspectionRecord.db.findById(session, inspectionRecordId);
+    if (record == null) throw Exception('Inspection record not found');
+    var generatedById = record.createdById;
+    if (generatedById == null || generatedById <= 0) {
+      final users = await PharmaUser.db.find(session, limit: 1);
+      if (users.isEmpty || users.first.id == null) {
+        throw Exception('No user for package attribution');
+      }
+      generatedById = users.first.id!;
+    }
+    return generateInspectionPackage(
+      session,
+      inspectionRecordId: inspectionRecordId,
+      generatedById: generatedById!,
+    );
+  }
+
   /// Generate inspection package (summary of in-scope records).
   /// Creates package with isOfficial: false; QA Director must sign to make official.
   Future<Map<String, dynamic>> generateInspectionPackage(
@@ -219,7 +271,7 @@ class InspectionEndpoint extends Endpoint {
     required int packageId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauthHash,
+    String? passwordReauth,
     String? ipAddress,
   }) async {
     final userRoles = await UserRole.db.find(
@@ -245,7 +297,7 @@ class InspectionEndpoint extends Endpoint {
       signatureMeaning: signatureMeaning,
       entityType: 'inspection_package',
       entityId: packageId.toString(),
-      passwordReauthHash: passwordReauthHash,
+      passwordReauth: passwordReauth,
       ipAddress: ipAddress,
     );
 

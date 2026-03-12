@@ -32,14 +32,16 @@ class ProgressRing extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _ProgressRingPainter(
-          progress: clamped,
-          strokeWidth: strokeWidth,
-          backgroundColor: bg,
-          progressColor: fg,
-        ),
-        child: showLabel
+      child: Semantics(
+        label: 'Progress: ${(clamped * 100).round()}%',
+        child: CustomPaint(
+          painter: _ProgressRingPainter(
+            progress: clamped,
+            strokeWidth: strokeWidth,
+            backgroundColor: bg,
+            progressColor: fg,
+          ),
+          child: showLabel
             ? Center(
                 child: Text(
                   '${(clamped * 100).round()}%',
@@ -50,6 +52,7 @@ class ProgressRing extends StatelessWidget {
                 ),
               )
             : null,
+        ),
       ),
     );
   }

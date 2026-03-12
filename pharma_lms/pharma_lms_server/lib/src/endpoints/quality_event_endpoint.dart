@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/rbac_helper.dart';
 import '../services/training_assignment_service.dart';
 
 /// Quality Event Integration domain endpoint.
@@ -12,6 +13,8 @@ class QualityEventEndpoint extends Endpoint {
     String? eventType,
     String? status,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'read');
     var results = await QualityEvent.db.find(session);
     if (siteId != null) {
       results = results.where((e) => e.siteId == siteId).toList();
@@ -26,6 +29,8 @@ class QualityEventEndpoint extends Endpoint {
   }
 
   Future<QualityEvent?> getQualityEvent(Session session, int id) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'read');
     return await QualityEvent.db.findById(session, id);
   }
 
@@ -34,6 +39,8 @@ class QualityEventEndpoint extends Endpoint {
     int? qualityEventId,
     String? status,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'read');
     var results = await Capa.db.find(
       session,
       include: Capa.include(qualityEvent: QualityEvent.include()),
@@ -55,6 +62,7 @@ class QualityEventEndpoint extends Endpoint {
     String? referenceId,
     int? siteId,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final event = QualityEvent(
       eventType: eventType,
       referenceId: referenceId,
@@ -83,6 +91,7 @@ class QualityEventEndpoint extends Endpoint {
     String? rootCause,
     DateTime? rcaCompletedAt,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final capa = await Capa.db.findById(session, capaId);
     if (capa == null) throw Exception('CAPA not found');
     if (capa.status == 'Closed') throw Exception('Cannot update closed CAPA');
@@ -119,6 +128,7 @@ class QualityEventEndpoint extends Endpoint {
     required int capaId,
     required int closedById,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final capa = await Capa.db.findById(session, capaId);
     if (capa == null) throw Exception('CAPA not found');
     if (capa.status == 'Closed') throw Exception('CAPA already closed');
@@ -156,6 +166,7 @@ class QualityEventEndpoint extends Endpoint {
     String? rootCause,
     bool trainingRequired = false,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final capa = Capa(
       qualityEventId: qualityEventId,
       description: description,
@@ -181,6 +192,7 @@ class QualityEventEndpoint extends Endpoint {
     required int assignedById,
     required DateTime dueDate,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final capa = await Capa.db.findById(session, capaId);
     if (capa == null) return null;
 
@@ -223,6 +235,7 @@ class QualityEventEndpoint extends Endpoint {
     int? organizationId,
     int? siteId,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'inspection', action: 'read');
     if (organizationId != null) {
       var results = await InspectionReport.db.find(
         session,
@@ -245,6 +258,7 @@ class QualityEventEndpoint extends Endpoint {
     DateTime? inspectionDate,
     String? findingsJson,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'inspection', action: 'write');
     final report = InspectionReport(
       organizationId: organizationId,
       siteId: siteId ?? 0,

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +12,7 @@ import '../../providers/analytics_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/app_shell.dart';
+import '../../widgets/compliance_heatmap.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/quick_action_button.dart';
 import '../../widgets/stat_card.dart';
@@ -77,10 +76,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         version = versions.isNotEmpty ? versions.first : null;
       }
     } catch (_) {}
+    if (dept == null && user == null && departments.isNotEmpty) {
+      dept = departments.first;
+      user = null;
+    }
 
     final dueController = TextEditingController(
       text: DateTime.now().add(const Duration(days: 30)).toString().split(' ')[0],
     );
+    final reasonController = TextEditingController();
+    String assignmentCategory = 'ad_hoc';
 
     if (!mounted) return;
     final ok = await showDialog<bool>(
@@ -93,34 +98,63 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  DropdownButtonFormField<Department>(
-                    value: dept,
+                  DropdownButtonFormField<String>(
+                    value: user != null
+                        ? 'individual'
+                        : 'department',
                     decoration: const InputDecoration(
-                        labelText: 'Department',
+                        labelText: 'Target type',
                         border: OutlineInputBorder()),
-                    items: departments
-                        .map((d) =>
-                            DropdownMenuItem(value: d, child: Text(d.name)))
-                        .toList(),
-                    onChanged: (d) => setState(() => dept = d),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'individual', child: Text('Individual')),
+                      DropdownMenuItem(
+                          value: 'department', child: Text('Department')),
+                    ],
+                    onChanged: (v) {
+                      if (v == 'individual') {
+                        setState(() {
+                          dept = null;
+                          user = users.isNotEmpty ? users.first : null;
+                        });
+                      } else {
+                        setState(() {
+                          user = null;
+                          dept = departments.isNotEmpty ? departments.first : null;
+                        });
+                      }
+                    },
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<PharmaUser>(
-                    value: user,
-                    decoration: const InputDecoration(
-                        labelText: 'User (optional)',
-                        border: OutlineInputBorder()),
-                    items: users
-                        .map((u) => DropdownMenuItem(
-                            value: u,
-                            child: Text(
-                                '${u.firstName} ${u.lastName} (${u.email})')))
-                        .toList(),
-                    onChanged: (u) => setState(() => user = u),
-                  ),
+                  if (user != null)
+                    DropdownButtonFormField<PharmaUser>(
+                      value: user,
+                      decoration: const InputDecoration(
+                          labelText: 'User',
+                          border: OutlineInputBorder()),
+                      items: users
+                          .map((u) => DropdownMenuItem(
+                              value: u,
+                              child: Text(
+                                  '${u.firstName} ${u.lastName} (${u.email})')))
+                          .toList(),
+                      onChanged: (u) => setState(() => user = u),
+                    )
+                  else
+                    DropdownButtonFormField<Department>(
+                      value: dept,
+                      decoration: const InputDecoration(
+                          labelText: 'Department',
+                          border: OutlineInputBorder()),
+                      items: departments
+                          .map((d) => DropdownMenuItem(
+                              value: d, child: Text(d.name)))
+                          .toList(),
+                      onChanged: (d) => setState(() => dept = d),
+                    ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<Course>(
-                    initialValue: course,
+                    value: course,
                     decoration: const InputDecoration(
                         labelText: 'Course',
                         border: OutlineInputBorder()),
@@ -129,15 +163,19 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                             DropdownMenuItem(value: c, child: Text(c.title)))
                         .toList(),
                     onChanged: (c) async {
-                      course = c;
-                      version = null;
+                      setState(() {
+                        course = c;
+                        version = null;
+                      });
                       if (c?.id != null) {
                         final v =
                             await client.course.getCourseVersions(c!.id!);
-                        setState(() {
-                          versions = v;
-                          version = v.isNotEmpty ? v.first : null;
-                        });
+                        if (ctx2.mounted) {
+                          setState(() {
+                            versions = v;
+                            version = v.isNotEmpty ? v.first : null;
+                          });
+                        }
                       }
                     },
                   ),
@@ -160,6 +198,38 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         labelText: 'Due date (YYYY-MM-DD)',
                         border: OutlineInputBorder()),
                   ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: assignmentCategory,
+                    decoration: const InputDecoration(
+                        labelText: 'Category (FR-06-04)',
+                        border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'ad_hoc', child: Text('Ad hoc')),
+                      DropdownMenuItem(
+                          value: 'regulatory_change',
+                          child: Text('Regulatory change')),
+                      DropdownMenuItem(
+                          value: 'incident_related',
+                          child: Text('Incident related')),
+                      DropdownMenuItem(
+                          value: 'new_hire_supplement',
+                          child: Text('New hire supplement')),
+                      DropdownMenuItem(
+                          value: 'other', child: Text('Other')),
+                    ],
+                    onChanged: (v) => setState(() => assignmentCategory = v ?? 'ad_hoc'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                        labelText: 'Reason (required)',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter assignment reason'),
+                    maxLines: 2,
+                  ),
                 ],
               ),
             ),
@@ -168,8 +238,17 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   onPressed: () => Navigator.pop(ctx, false),
                   child: const Text('Cancel')),
               ElevatedButton(
-                onPressed: () => Navigator.pop(ctx,
-                    (dept != null || user != null) && version != null),
+                onPressed: () {
+                  final reason = reasonController.text.trim();
+                  if (reason.isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                            content: Text('Reason is required')));
+                    return;
+                  }
+                  Navigator.pop(ctx,
+                      (dept != null || user != null) && version != null);
+                },
                 child: const Text('Assign'),
               ),
             ],
@@ -183,6 +262,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final due =
         DateTime.tryParse(dueController.text) ??
         DateTime.now().add(const Duration(days: 30));
+    final reasonText = reasonController.text.trim();
+    final reason = reasonText.isNotEmpty
+        ? '[$assignmentCategory] $reasonText'
+        : '[$assignmentCategory]';
 
     try {
       if (dept?.id != null && version?.id != null) {
@@ -191,6 +274,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           courseVersionId: version!.id!,
           assignedById: _assignedById,
           dueDate: due,
+          reason: reason,
           source: 'manual',
         );
         if (mounted) {
@@ -205,6 +289,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             assignedById: _assignedById,
             dueDate: due,
             priority: 'medium',
+            reason: reason,
             source: 'manual',
             forceReassign: false,
           );
@@ -240,6 +325,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 assignedById: _assignedById,
                 dueDate: due,
                 priority: 'medium',
+                reason: reason,
                 source: 'manual',
                 forceReassign: true,
               );
@@ -265,42 +351,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     }
   }
 
-  Future<void> _bulkImport() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
-    );
-    if (result == null || result.files.isEmpty || !mounted) return;
-
-    final bytes = result.files.first.bytes;
-    if (bytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not read file')));
-      return;
-    }
-
-    final csvBase64 = base64Encode(bytes);
-    try {
-      final res = await client.admin.bulkImportUsers(
-        csvBase64: csvBase64,
-        assignedById: _assignedById,
-        dueDate: DateTime.now().add(const Duration(days: 30)),
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Imported ${res.imported} users. Errors: ${res.errors}')),
-        );
-        ref.invalidate(departmentComplianceSummaryProvider);
-        ref.invalidate(usersProvider);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Import failed: $e')));
-      }
-    }
+  void _bulkImport() {
+    context.push('/admin/bulk-import');
   }
 
   Future<void> _showUserManagementDialog() async {
@@ -530,6 +582,132 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   String _errorDisplay(Object e) => e.toString();
 }
 
+Future<void> _showCancelAssignmentDialog(
+  BuildContext context,
+  WidgetRef ref,
+  TrainingAssignment assignment,
+) async {
+  final reasonController = TextEditingController();
+  final cancelled = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Cancel Assignment'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Cancel assignment for ${assignment.user?.firstName ?? ''} ${assignment.user?.lastName ?? ''} - '
+            '${assignment.courseVersion?.course?.title ?? 'Course'}?',
+            style: Theme.of(ctx).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: reasonController,
+            decoration: const InputDecoration(
+              labelText: 'Cancellation reason (required)',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 2,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (reasonController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('Reason is required')));
+              return;
+            }
+            Navigator.pop(ctx, true);
+          },
+          child: const Text('Confirm Cancel'),
+        ),
+      ],
+    ),
+  );
+  if (cancelled != true || !context.mounted || assignment.id == null) return;
+
+  final user = await client.user.getUserByEmail('admin@pharmacorp.demo');
+  final cancelledById = user?.id ?? 1;
+
+  try {
+    await client.training.cancelAssignment(
+      assignmentId: assignment.id!,
+      cancelledById: cancelledById,
+      reason: reasonController.text.trim(),
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assignment cancelled')));
+      ref.invalidate(recentAssignmentsProvider);
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e')));
+    }
+  }
+}
+
+class _AssignmentRow extends StatelessWidget {
+  const _AssignmentRow({
+    required this.assignment,
+    required this.onCancel,
+  });
+
+  final TrainingAssignment assignment;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = assignment.courseVersion?.course?.title ?? 'Course';
+    final user = assignment.user;
+    final userName = user != null
+        ? '${user.firstName} ${user.lastName}'
+        : 'User #${assignment.userId}';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  userName,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.slate600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onCancel,
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AdminDashboardContent extends ConsumerWidget {
   const _AdminDashboardContent({
     required this.searchController,
@@ -711,7 +889,20 @@ class _AdminDashboardContent extends ConsumerWidget {
                 error: (_, __) => const SizedBox.shrink(),
               ),
               sopQueueAsync.when(
-                data: (list) => SizedBox(width: 160, child: StatCard(label: 'SOP Retraining', value: '${list.length}', icon: Icons.update, iconBackgroundColor: const Color(0xFFE0E7FF), iconColor: const Color(0xFF4F46E5))),
+                data: (list) => SizedBox(
+                  width: 160,
+                  child: InkWell(
+                    onTap: () => context.push('/admin/sop-coverage'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: StatCard(
+                      label: 'SOP Retraining',
+                      value: '${list.length}',
+                      icon: Icons.update,
+                      iconBackgroundColor: const Color(0xFFE0E7FF),
+                      iconColor: const Color(0xFF4F46E5),
+                    ),
+                  ),
+                ),
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
@@ -722,7 +913,36 @@ class _AdminDashboardContent extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          recentAssignAsync.when(
+            data: (assignments) {
+              final active = assignments
+                  .where((a) => (a.status ?? 'active') == 'active')
+                  .toList();
+              if (active.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  Text(
+                    'Recent Assignments (ADM-WF-02: Cancel)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.slate900,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...active.take(5).map((a) => _AssignmentRow(
+                        assignment: a,
+                        onCancel: () => _showCancelAssignmentDialog(
+                            context, ref, a),
+                      )),
+                  const SizedBox(height: 24),
+                ],
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
 
           // Quick Actions
           Text(
@@ -753,6 +973,15 @@ class _AdminDashboardContent extends ConsumerWidget {
                     backgroundColor: AppColors.indigo50,
                     borderColor: AppColors.indigo200,
                     iconColor: AppColors.indigo600,
+                  ),
+                  QuickActionButton(
+                    label: 'Bulk Import',
+                    subtitle: 'CSV with column mapping',
+                    icon: Icons.upload_file,
+                    onPressed: onBulkImport,
+                    backgroundColor: const Color(0xFFE0F2FE),
+                    borderColor: const Color(0xFF7DD3FC),
+                    iconColor: const Color(0xFF0284C7),
                   ),
                   QuickActionButton(
                     label: 'Training Matrix',
@@ -871,87 +1100,36 @@ class _AdminDashboardContent extends ConsumerWidget {
                 if (summary.isEmpty) {
                   return const EmptyState(message: 'No compliance data');
                 }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: summary.map((dept) {
-                    final rate = dept.complianceRate;
-                    final color = rate >= 95
-                        ? AppColors.success
-                        : rate >= 90
-                            ? AppColors.warning
-                            : AppColors.destructive;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ComplianceHeatmap(
+                        departments: summary,
+                        height: 200,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      dept.departmentName ?? 'Unknown',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.slate900,
-                                          ),
-                                    ),
-                                    Text(
-                                      '${dept.compliant} / ${dept.totalEmployees} compliant',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.slate600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (dept.overdue > 0)
-                                Text(
-                                  '${dept.overdue} overdue',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: AppColors.destructive,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${rate.toStringAsFixed(1)}%',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: color,
-                                    ),
-                              ),
-                            ],
+                          _HeatmapLegendItem(
+                            color: AppColors.success,
+                            label: '≥95%',
                           ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: rate / 100,
-                              minHeight: 8,
-                              backgroundColor: AppColors.slate200,
-                              valueColor: AlwaysStoppedAnimation<Color>(color),
-                            ),
+                          const SizedBox(width: 16),
+                          _HeatmapLegendItem(
+                            color: AppColors.warning,
+                            label: '90–95%',
+                          ),
+                          const SizedBox(width: 16),
+                          _HeatmapLegendItem(
+                            color: AppColors.destructive,
+                            label: '<90%',
                           ),
                         ],
                       ),
-                    );
-                  }).toList(),
+                    ],
+                  ),
                 );
               },
               loading: () =>
@@ -1273,6 +1451,37 @@ class _SignatureMeaningsDialogState extends State<_SignatureMeaningsDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeatmapLegendItem extends StatelessWidget {
+  const _HeatmapLegendItem({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.slate600,
+              ),
         ),
       ],
     );

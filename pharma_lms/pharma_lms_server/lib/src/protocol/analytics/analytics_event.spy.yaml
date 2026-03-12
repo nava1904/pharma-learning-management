@@ -1,0 +1,13 @@
+### Real-time analytics event for streaming to dashboards.
+### Not persisted - used for Serverpod Stream push.
+class: AnalyticsEvent
+
+fields:
+  ### Channel this event is for.
+  channel: String
+  ### Event type: compliance_update, overdue_count, cert_expiry, course_pass_rate, audit_readiness.
+  eventType: String
+  ### Payload as JSON (flexible for different metric types).
+  payloadJson: String
+  ### When the event occurred.
+  occurredAt: DateTime

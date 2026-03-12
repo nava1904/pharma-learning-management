@@ -9,12 +9,17 @@ emailIdp:
   - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
+oidcIdp:
+  - hasAccount:
+  - getClientConfig:
+  - login:
 admin:
   - listSignatureMeanings:
   - createSignatureMeaning:
   - updateSignatureMeaning:
   - assignTrainingToDepartment:
   - bulkImportUsers:
+  - bulkImportTrainingMatrix:
   - updateJobRoleTrainingMatrix:
   - getRoleBasedCurriculum:
   - assignRoleBasedTraining:
@@ -28,6 +33,7 @@ analytics:
   - getCourseAnalytics:
   - getTrainingCompletionRate:
   - getSystemHealth:
+  - triggerManualJob:
   - getDepartmentComplianceSummary:
   - getCertificationExpiryRiskCount:
   - getAuditReadinessScore:
@@ -44,6 +50,9 @@ analytics:
   - getTrainingVsDeviationCorrelation:
   - getComplianceDeviationOverlay:
   - getSlaSummary:
+  - getComplianceTrend:
+  - getSopRetrainingVelocity:
+  - streamAnalytics:
   - getRecentActivity:
 assessmentBuilder:
   - createQuestion:
@@ -54,6 +63,7 @@ assessment:
   - getAssessmentForCourse:
   - getQuestions:
   - startAttempt:
+  - getAttemptCount:
   - submitAttempt:
   - recordAnswer:
   - listQuestionBanks:
@@ -101,8 +111,10 @@ inspection:
   - listInspectionRecords:
   - createInspectionRecord:
   - validateAuditorToken:
+  - listAuditorPageLogs:
   - logAuditorPageView:
   - listInspectionPackages:
+  - generateEvidencePackageForAuditor:
   - generateInspectionPackage:
   - signInspectionPackageAsOfficial:
   - searchEmployeesForAudit:
@@ -118,6 +130,14 @@ material:
   - listMaterials:
   - updateProgress:
   - getProgress:
+  - recordEngagement:
+mfa:
+  - getMfaStatus:
+  - enrollMfa:
+  - verifyMfaEnrollment:
+  - verifyMfa:
+  - disableMfa:
+  - isMfaVerified:
 notification:
   - getInAppNotifications:
 organization:
@@ -145,6 +165,7 @@ qualityEvent:
   - createInspectionReport:
 seed:
   - runSeed:
+  - runMvpSeed:
 training:
   - listSignatureMeanings:
   - getAssignmentsForUser:
@@ -152,6 +173,7 @@ training:
   - updateAssignment:
   - cancelAssignment:
   - getEnrollmentsForUser:
+  - getEnrollmentResumePosition:
   - getEnrollmentById:
   - acknowledgeRetraining:
   - getCertificatesForUser:
@@ -159,6 +181,7 @@ training:
   - getCertificateById:
   - getSignatureWithIntegrityCheck:
   - listElectronicSignatures:
+  - issueBiometricToken:
   - createTrainingSignature:
   - completeTraining:
   - listAnnotations:
@@ -166,5 +189,13 @@ training:
 user:
   - getUser:
   - getUserByEmail:
+validation:
+  - generateUrs:
+  - generateFs:
+  - generateDs:
+  - generateIq:
+  - generateOq:
+  - generatePq:
+  - generateTraceabilityMatrix:
 greeting:
   - hello:

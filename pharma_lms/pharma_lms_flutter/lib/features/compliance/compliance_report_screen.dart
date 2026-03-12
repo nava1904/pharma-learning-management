@@ -7,8 +7,11 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../core/client.dart';
 
 /// Compliance report screen - department compliance summary.
+/// When [departmentId] is provided (from analytics drill-down), shows non-compliant employees.
 class ComplianceReportScreen extends StatefulWidget {
-  const ComplianceReportScreen({super.key});
+  const ComplianceReportScreen({super.key, this.departmentId});
+
+  final int? departmentId;
 
   @override
   State<ComplianceReportScreen> createState() => _ComplianceReportScreenState();
@@ -16,6 +19,7 @@ class ComplianceReportScreen extends StatefulWidget {
 
 class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
   List<DepartmentComplianceSummary> _summary = [];
+  List<PharmaUser> _nonCompliantUsers = [];
   AuditReadinessScore? _auditReadiness;
   bool _loading = true;
   String? _error;
@@ -34,9 +38,16 @@ class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
     try {
       final summary = await client.analytics.getDepartmentComplianceSummary();
       final readiness = await client.analytics.getAuditReadinessScore();
+      List<PharmaUser> nonCompliant = [];
+      if (widget.departmentId != null) {
+        nonCompliant = await client.analytics.getNonCompliantEmployees(
+          departmentId: widget.departmentId,
+        );
+      }
       setState(() {
         _summary = summary;
         _auditReadiness = readiness;
+        _nonCompliantUsers = nonCompliant;
         _loading = false;
       });
     } catch (e) {
@@ -48,7 +59,9 @@ class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
   }
 
   Future<void> _exportPdf() async {
+    try {
     final pdf = pw.Document();
+    final nowUtc = DateTime.now().toUtc();
     pdf.addPage(
       pw.Page(
         build: (ctx) => pw.Column(
@@ -60,13 +73,13 @@ class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
             ),
             pw.SizedBox(height: 16),
             if (_auditReadiness != null)
-              pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 12),
-                child: pw.Text(
-                  'Audit Readiness: ${_auditReadiness!.overallScore.toStringAsFixed(1)}%',
-                  style: pw.TextStyle(fontSize: 14),
-                ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 12),
+              child: pw.Text(
+                'Audit Readiness: ${(_auditReadiness!.overallScore * 100).toStringAsFixed(1)}%',
+                style: pw.TextStyle(fontSize: 14),
               ),
+            ),
             pw.Text(
               'Department Compliance',
               style: pw.TextStyle(fontSize: 16),
@@ -75,31 +88,37 @@ class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
             ..._summary.map((m) => pw.Padding(
                   padding: const pw.EdgeInsets.all(4),
                   child: pw.Text(
-                    '${m.departmentName}: ${m.complianceRate.toStringAsFixed(1)}% (Overdue: ${m.overdue})',
+                    '${m.departmentName}: ${(m.complianceRate * 100).toStringAsFixed(1)}% (Overdue: ${m.overdue})',
                   ),
                 )),
           ],
         ),
       ),
     );
-    try {
-      var bytes = await pdf.save();
-      final hash = sha256.convert(bytes).toString();
-      pdf.addPage(
-        pw.Page(
-          build: (ctx) => pw.Center(
-            child: pw.Text(
-              'Report Hash: $hash',
-              style: pw.TextStyle(fontSize: 10),
+    var bytes = await pdf.save();
+    final hash = sha256.convert(bytes).toString();
+    pdf.addPage(
+      pw.Page(
+        build: (ctx) => pw.Column(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Spacer(),
+            pw.Center(
+              child: pw.Text(
+                'Generated on ${nowUtc.toIso8601String().split('.').first}Z — Hash: $hash',
+                style: pw.TextStyle(fontSize: 9),
+              ),
             ),
-          ),
+          ],
         ),
-      );
-      bytes = await pdf.save();
+      ),
+    );
+    bytes = await pdf.save();
       try {
         await client.audit.logReportExport(
           reportType: 'compliance_report',
           hashSha256: hash,
+          recordCount: _summary.length,
         );
       } catch (_) {}
       final result = await FilePicker.platform.saveFile(
@@ -192,6 +211,28 @@ class _ComplianceReportScreenState extends State<ComplianceReportScreen> {
                   ),
                 ),
               ),
+            if (widget.departmentId != null && _nonCompliantUsers.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Non-Compliant Employees (Department Drill-Down)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Card(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _nonCompliantUsers.length,
+                  itemBuilder: (context, i) {
+                    final u = _nonCompliantUsers[i];
+                    return ListTile(
+                      title: Text('${u.firstName} ${u.lastName}'.trim().isEmpty ? u.email : '${u.firstName} ${u.lastName}'.trim()),
+                      subtitle: Text(u.email ?? ''),
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Text(
               'By Department',

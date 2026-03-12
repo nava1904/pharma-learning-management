@@ -1,6 +1,8 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../services/event_service.dart';
+import '../services/rbac_helper.dart';
 
 /// Assessment Engine domain endpoint.
 class AssessmentEndpoint extends Endpoint {
@@ -8,6 +10,8 @@ class AssessmentEndpoint extends Endpoint {
     Session session,
     int courseVersionId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
     final results = await Assessment.db.find(
       session,
       where: (t) => t.courseVersionId.equals(courseVersionId),
@@ -19,11 +23,15 @@ class AssessmentEndpoint extends Endpoint {
     Session session,
     int questionBankId,
   ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
     return await Question.db.find(
       session,
       where: (t) => t.questionBankId.equals(questionBankId),
     );
   }
+
+  static const int _cooldownMinutes = 1440; // 24 hours
 
   Future<AssessmentAttempt> startAttempt(
     Session session, {
@@ -31,6 +39,10 @@ class AssessmentEndpoint extends Endpoint {
     required int assessmentId,
     int? enrollmentId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      throw Exception('Authentication required');
+    }
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
     if (enrollmentId != null) {
       final enrollment = await Enrollment.db.findById(session, enrollmentId);
       if (enrollment != null &&
@@ -42,26 +54,107 @@ class AssessmentEndpoint extends Endpoint {
         );
       }
     }
+
+    final lastAttempt = await AssessmentAttempt.db.findFirstRow(
+      session,
+      where: (t) =>
+          t.userId.equals(userId) &
+          t.assessmentId.equals(assessmentId) &
+          t.completedAt.notEquals(null),
+      orderBy: (t) => t.startedAt,
+      orderDescending: true,
+    );
+    if (lastAttempt?.completedAt != null) {
+      final elapsed = DateTime.now().difference(lastAttempt!.completedAt!);
+      if (elapsed.inMinutes < _cooldownMinutes) {
+        final remaining = _cooldownMinutes - elapsed.inMinutes;
+        throw Exception(
+          'Cooldown: retry in ${remaining ~/ 60}h ${remaining % 60}m',
+        );
+      }
+    }
+
     final attempt = AssessmentAttempt(
       userId: userId,
       assessmentId: assessmentId,
       enrollmentId: enrollmentId,
     );
-    return await AssessmentAttempt.db.insertRow(session, attempt);
+    final inserted = await AssessmentAttempt.db.insertRow(session, attempt);
+    if (inserted.id != null) {
+      await EventService.emitAssessmentStarted(
+        session,
+        userId: userId,
+        attemptId: inserted.id!,
+        assessmentId: assessmentId,
+      );
+    }
+    return inserted;
+  }
+
+  /// Get attempt count for user+assessment+enrollment (for "Attempt X of Y" display).
+  Future<int> getAttemptCount(
+    Session session, {
+    required int userId,
+    required int assessmentId,
+    int? enrollmentId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return 0;
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
+    final attempts = await AssessmentAttempt.db.find(
+      session,
+      where: (t) =>
+          t.userId.equals(userId) & t.assessmentId.equals(assessmentId),
+    );
+    final filtered = enrollmentId != null
+        ? attempts.where((a) => a.enrollmentId == enrollmentId).toList()
+        : attempts.where((a) => a.enrollmentId == null).toList();
+    return filtered.length;
   }
 
   Future<AssessmentAttempt> submitAttempt(
     Session session, {
     required int attemptId,
-    required int score,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      throw Exception('Authentication required');
+    }
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
     final attempt = await AssessmentAttempt.db.findById(session, attemptId);
     if (attempt == null) throw Exception('Attempt not found');
+    if (attempt.completedAt != null) {
+      throw Exception('Attempt already submitted');
+    }
+
+    final results = await AssessmentResult.db.find(
+      session,
+      where: (t) => t.attemptId.equals(attemptId),
+    );
+    final total = results.length;
+    final correct = results.where((r) => r.correct).length;
+    final score = total > 0 ? (correct * 100 / total).round() : 0;
+
+    final assessment = await Assessment.db.findById(
+      session,
+      attempt.assessmentId ?? 0,
+    );
+    final passMark = assessment?.passingScore ?? 80;
+    final passed = score >= passMark;
+
     final updated = attempt.copyWith(
       completedAt: DateTime.now(),
       score: score,
     );
-    return await AssessmentAttempt.db.updateRow(session, updated);
+    final result = await AssessmentAttempt.db.updateRow(session, updated);
+
+    await EventService.emitAssessmentCompleted(
+      session,
+      userId: attempt.userId ?? 0,
+      attemptId: attemptId,
+      passed: passed,
+      score: score,
+    );
+
+    return result;
   }
 
   Future<AssessmentResult> recordAnswer(
@@ -69,15 +162,20 @@ class AssessmentEndpoint extends Endpoint {
     required int attemptId,
     required int questionId,
     required String answer,
-    required bool correct,
-    int? points,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      throw Exception('Authentication required');
+    }
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
+    final question = await Question.db.findById(session, questionId);
+    if (question == null) throw Exception('Question not found');
+    final correct = answer == question.correctAnswer;
+
     final result = AssessmentResult(
       attemptId: attemptId,
       questionId: questionId,
       answer: answer,
       correct: correct,
-      points: points,
     );
     return await AssessmentResult.db.insertRow(session, result);
   }
@@ -86,6 +184,8 @@ class AssessmentEndpoint extends Endpoint {
     Session session, {
     int? organizationId,
   }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
     if (organizationId != null) {
       return await QuestionBank.db.find(
         session,
@@ -101,6 +201,7 @@ class AssessmentEndpoint extends Endpoint {
     required int organizationId,
     String? tagsJson,
   }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     final bank = QuestionBank(
       name: name,
       organizationId: organizationId,

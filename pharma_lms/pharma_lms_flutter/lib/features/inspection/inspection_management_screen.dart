@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
@@ -608,14 +607,6 @@ class _SignPackageDialogState extends State<_SignPackageDialog> {
     super.dispose();
   }
 
-  String? _hashPassword(String password) {
-    if (password.isEmpty) return null;
-    // ignore: depend_on_referenced_packages
-    final bytes = utf8.encode(password);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
   Future<void> _sign() async {
     final password = _passwordController.text.trim();
     final meaning = _meaningController.text.trim();
@@ -636,7 +627,7 @@ class _SignPackageDialogState extends State<_SignPackageDialog> {
         packageId: widget.packageId,
         userId: widget.userId,
         signatureMeaning: meaning,
-        passwordReauthHash: _hashPassword(password),
+        passwordReauth: password,
       );
       if (mounted) {
         Navigator.pop(context, true);

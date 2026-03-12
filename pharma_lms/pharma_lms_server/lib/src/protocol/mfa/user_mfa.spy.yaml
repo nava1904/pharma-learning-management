@@ -1,0 +1,14 @@
+### MFA settings for a user. Links to serverpod auth user by UUID.
+class: UserMfa
+
+table: user_mfa
+
+fields:
+  ### Serverpod auth user ID (UUID).
+  authUserId: String
+  ### Base32-encoded TOTP secret.
+  mfaSecretBase32: String
+  ### Whether MFA is enabled for this user.
+  mfaEnabled: bool, default=false
+  ### When MFA was enrolled.
+  enrolledAt: DateTime?, default=now

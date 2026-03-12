@@ -5,11 +5,12 @@ import 'package:pharma_lms_client/src/protocol/material/material.dart' as protoc
 
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/breadcrumb.dart';
 import '../../widgets/course_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/section_header.dart';
 
-/// Course builder - Odoo-inspired: card grid, editor with module tree.
+/// Course builder - Odoo eLearning style: Content tab, Add Section, Add Content.
 class CourseBuilderScreen extends StatefulWidget {
   const CourseBuilderScreen({
     super.key,
@@ -135,6 +136,58 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
       _selectedVersion!.status != 'approved' &&
       _selectedVersion!.status != 'effective';
 
+  int get _totalLessons =>
+      _lessonsByModule.values.fold<int>(0, (sum, list) => sum + list.length);
+
+  bool get _canSubmitForQa {
+    if (_selectedVersion?.status != 'draft') return false;
+    if (_modules.isEmpty) return false;
+    if (_totalLessons == 0) return false;
+    return true;
+  }
+
+  Future<Map<String, bool>> _getSubmitChecklist() async {
+    final checks = <String, bool>{};
+    checks['All modules have ≥1 lesson'] = true;
+    for (final m in _modules) {
+      if (m.id != null) {
+        if (!_lessonsByModule.containsKey(m.id)) {
+          await _loadLessonsForModule(m.id!);
+        }
+        final count = _lessonsByModule[m.id]?.length ?? 0;
+        if (count < 1) checks['All modules have ≥1 lesson'] = false;
+      }
+    }
+    checks['Assessment exists'] = false;
+    if (_selectedVersion?.id != null) {
+      try {
+        final a = await client.assessment.getAssessmentForCourse(_selectedVersion!.id!);
+        checks['Assessment exists'] = a != null;
+      } catch (_) {}
+    }
+    return checks;
+  }
+
+  String get _submitForQaSummary {
+    final modCount = _modules.length;
+    final lessonCount = _totalLessons;
+    return 'Submit for Review ($modCount modules, $lessonCount lessons)';
+  }
+
+  void _previewAsLearner() {
+    final courseId = _selectedCourse?.id;
+    final versionId = _selectedVersion?.id;
+    if (courseId == null || versionId == null) return;
+    context.push(
+      '/course/$courseId',
+      extra: {
+        'courseVersionId': versionId,
+        'userId': 0,
+        'preview': true,
+      },
+    );
+  }
+
   List<Course> get _filteredCourses {
     if (_searchQuery.trim().isEmpty) return _courses;
     final q = _searchQuery.toLowerCase();
@@ -146,8 +199,8 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
     final controller = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Module'),
+        builder: (ctx) => AlertDialog(
+        title: const Text('Add Section'),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
@@ -197,7 +250,7 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx2, setState) {
           return AlertDialog(
-            title: const Text('Add Lesson'),
+            title: const Text('Add Content'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -205,7 +258,7 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
                   TextField(
                     controller: titleController,
                     decoration: const InputDecoration(
-                      labelText: 'Lesson title',
+                      labelText: 'Content title',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -273,6 +326,42 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
 
   Future<void> _submitForQa() async {
     if (_selectedVersion?.id == null) return;
+    final checklist = await _getSubmitChecklist();
+    final allPass = checklist.values.every((v) => v);
+    if (!mounted) return;
+    if (!allPass) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Submit for Review Checklist (TRN-WF-04)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: checklist.entries.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    e.value ? Icons.check_circle : Icons.cancel,
+                    size: 20,
+                    color: e.value ? AppColors.success : AppColors.destructive,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(e.key)),
+                ],
+              ),
+            )).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     try {
       await client.courseBuilder.updateCourseVersionStatus(
         courseVersionId: _selectedVersion!.id!,
@@ -480,7 +569,7 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
           children: [
             SectionHeader(
               icon: Icons.menu_book,
-              title: 'My Courses',
+              title: 'Courses',
               color: AppColors.indigo600,
               action: TextButton.icon(
                 onPressed: _createCourse,
@@ -558,11 +647,22 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
           onPressed: _backToGrid,
         ),
         actions: [
-          if (_selectedVersion?.status == 'draft')
+          if (_selectedVersion?.id != null)
             TextButton.icon(
-              onPressed: _submitForQa,
-              icon: const Icon(Icons.send, size: 18),
-              label: const Text('Submit for QA'),
+              onPressed: () => _previewAsLearner(),
+              icon: const Icon(Icons.visibility, size: 18),
+              label: const Text('Preview as learner'),
+            ),
+          if (_selectedVersion?.status == 'draft')
+            Tooltip(
+              message: _canSubmitForQa
+                  ? 'Submit for QA approval'
+                  : 'Add at least one module and lesson',
+              child: TextButton.icon(
+                onPressed: _canSubmitForQa ? _submitForQa : null,
+                icon: const Icon(Icons.send, size: 18),
+                label: Text(_submitForQaSummary),
+              ),
             ),
           TextButton.icon(
             onPressed: _createNewVersion,
@@ -592,6 +692,26 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen> {
                       _selectedVersion != null ? 'v${_selectedVersion!.version}' : '',
                     ],
                   ),
+                  if (_versions.length > 1) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _versions.map((v) {
+                        final isActive = _selectedVersion?.id == v.id;
+                        return FilterChip(
+                          label: Text('v${v.version} (${v.status})'),
+                          selected: isActive,
+                          onSelected: (_) {
+                            setState(() => _selectedVersion = v);
+                            _loadModules();
+                          },
+                          selectedColor: AppColors.teal100,
+                          checkmarkColor: AppColors.teal600,
+                        );
+                      }).toList(),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   SectionHeader(
                     icon: Icons.folder_open,
@@ -993,36 +1113,6 @@ class _CreateCourseWizardState extends State<_CreateCourseWizard> {
       default:
         return const SizedBox.shrink();
     }
-  }
-}
-
-class Breadcrumb extends StatelessWidget {
-  const Breadcrumb({super.key, required this.items});
-
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final valid = items.where((x) => x.isNotEmpty).toList();
-    if (valid.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        for (var i = 0; i < valid.length; i++) ...[
-          if (i > 0)
-            Icon(Icons.chevron_right, size: 18, color: AppColors.slate400),
-          Text(
-            valid[i],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: i < valid.length - 1 ? AppColors.slate600 : AppColors.slate900,
-                  fontWeight: i == valid.length - 1 ? FontWeight.w600 : FontWeight.w400,
-                ),
-          ),
-        ],
-      ],
-    );
   }
 }
 
