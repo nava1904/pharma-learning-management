@@ -20,5 +20,7 @@ fields:
   enrollmentId: int?
   ### Active engagement time in seconds.
   timeSpentSeconds: int?
-  ### Whether minimum read time was met.
+  ### When the server last received a heartbeat (for server-side minimum read time).
+  lastHeartbeat: DateTime?
+  ### Whether minimum read time was met (server-set only).
   readTimeMet: bool?

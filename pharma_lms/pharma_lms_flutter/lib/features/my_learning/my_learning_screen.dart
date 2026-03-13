@@ -113,10 +113,9 @@ Future<List<_LearningItem>> _buildLearningItems(
   final seen = <int>{};
 
   for (final a in assignments) {
-    if (a.courseVersionId == null) continue;
     if (seen.contains(a.courseVersionId)) continue;
-    seen.add(a.courseVersionId!);
-    final version = await client.course.getCourseVersion(a.courseVersionId!);
+    seen.add(a.courseVersionId);
+    final version = await client.course.getCourseVersion(a.courseVersionId);
     final courseId = version?.courseId;
     if (courseId == null) continue;
     final title = version?.course?.title ?? 'Course';
@@ -127,12 +126,12 @@ Future<List<_LearningItem>> _buildLearningItems(
     if (enrollment != null) {
       final records = await client.training.getTrainingRecordsForUser(a.userId ?? 0);
       final completed = records.any((r) =>
-          r.courseVersionId == a.courseVersionId && r.completedAt != null);
+          r.courseVersionId == a.courseVersionId);
       progress = completed ? 1.0 : 0.0;
     }
     items.add(_LearningItem(
       courseId: courseId.toString(),
-      courseVersionId: a.courseVersionId!,
+      courseVersionId: a.courseVersionId,
       enrollmentId: enrollment?.id,
       title: title,
       subtitle: 'Assigned',
@@ -142,15 +141,14 @@ Future<List<_LearningItem>> _buildLearningItems(
   }
 
   for (final e in enrollments) {
-    if (e.courseVersionId == null) continue;
     if (seen.contains(e.courseVersionId)) continue;
-    seen.add(e.courseVersionId!);
-    final version = await client.course.getCourseVersion(e.courseVersionId!);
+    seen.add(e.courseVersionId);
+    final version = await client.course.getCourseVersion(e.courseVersionId);
     final courseId = version?.courseId;
     if (courseId == null) continue;
     items.add(_LearningItem(
       courseId: courseId.toString(),
-      courseVersionId: e.courseVersionId!,
+      courseVersionId: e.courseVersionId,
       enrollmentId: e.id,
       title: version?.course?.title ?? 'Course',
       subtitle: 'In progress',

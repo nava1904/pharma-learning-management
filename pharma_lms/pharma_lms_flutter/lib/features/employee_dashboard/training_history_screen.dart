@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
@@ -12,9 +13,9 @@ import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/status_badge.dart';
 
-/// EMP-08: Training history page - lists all enrollments with filters and self-export PDF.
+/// EMP-08: Digital Credentials Wallet (Odoo eLearning / LinkedIn Certifications style).
+/// Uses enrollmentsProvider, certificatesProvider, trainingRecordsProvider; PDF export logs via client.audit.logReportExport.
 class TrainingHistoryScreen extends ConsumerStatefulWidget {
   const TrainingHistoryScreen({super.key});
 
@@ -26,7 +27,7 @@ class TrainingHistoryScreen extends ConsumerStatefulWidget {
 class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
   DateTime? _filterFrom;
   DateTime? _filterTo;
-  String? _filterStatus; // completed, in_progress, not_started, overdue, obsolete
+  String? _filterStatus;
   bool _exporting = false;
 
   @override
@@ -37,8 +38,8 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
     final trainingRecordsAsync = ref.watch(trainingRecordsProvider);
 
     return AppShell(
-      title: 'My Training History',
-      icon: Icons.history_rounded,
+      title: 'Digital Credentials Wallet',
+      icon: Icons.workspace_premium_rounded,
       child: userAsync.when(
         data: (user) {
           if (user == null || user.id == null) {
@@ -53,7 +54,7 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
               ref.invalidate(certificatesProvider);
               ref.invalidate(trainingRecordsProvider);
             },
-            child: _TrainingHistoryContent(
+            child: _WalletContent(
               userId: user.id!,
               enrollmentsAsync: enrollmentsAsync,
               certificatesAsync: certificatesAsync,
@@ -61,6 +62,7 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
               filterFrom: _filterFrom,
               filterTo: _filterTo,
               filterStatus: _filterStatus,
+              isExporting: _exporting,
               onFilterChanged: (from, to, status) {
                 setState(() {
                   _filterFrom = from;
@@ -70,7 +72,7 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
               },
               onExportPdf: _exporting
                   ? null
-                  : () => _exportPdf(
+                  : () => _exportOfficialPdf(
                         context,
                         user.id!,
                         enrollmentsAsync.valueOrNull ?? [],
@@ -98,7 +100,8 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
     );
   }
 
-  Future<void> _exportPdf(
+  /// Builds official PDF with SHA-256 hash and logs export to backend (GxP).
+  Future<void> _exportOfficialPdf(
     BuildContext context,
     int userId,
     List<Enrollment> enrollments,
@@ -108,13 +111,14 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
     setState(() => _exporting = true);
     final filtered = _applyFilters(enrollments, certificates);
     final pdf = pw.Document();
+
     pdf.addPage(
       pw.Page(
         build: (ctx) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text(
-              'My Training History',
+              'Official Training Record & Credentials',
               style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 8),
@@ -124,21 +128,15 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
             ),
             pw.SizedBox(height: 16),
             pw.Text(
-              'Total records: ${filtered.length}',
+              'Total valid records: ${filtered.where((e) => e.certificate?.status != 'obsolete').length}',
               style: const pw.TextStyle(fontSize: 12),
             ),
             pw.SizedBox(height: 12),
+            pw.Divider(),
             ...filtered.map((e) {
-              final cert = certificates.cast<Certificate?>().firstWhere(
-                    (c) =>
-                        c != null &&
-                        c.courseVersionId == e.enrollment.courseVersionId &&
-                        c.userId == userId,
-                    orElse: () => null,
-                  );
+              final cert = _certificateForEnrollment(certificates, userId, e.enrollment);
               final rec = trainingRecords.cast<TrainingRecord?>().firstWhere(
-                    (r) =>
-                        r != null && r.enrollmentId == e.enrollment.id,
+                    (r) => r != null && r.enrollmentId == e.enrollment.id,
                     orElse: () => null,
                   );
               final courseTitle =
@@ -146,15 +144,51 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
               final version = e.enrollment.courseVersion?.version ?? '?';
               final sopNum =
                   e.enrollment.courseVersion?.course?.sopNumber ?? '';
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 8),
-                child: pw.Text(
-                  '$courseTitle v$version${sopNum.isNotEmpty ? ' ($sopNum)' : ''} | '
-                  '${e.enrollment.startedAt?.toIso8601String().split('T').first ?? '-'} | '
-                  '${e.enrollment.completedAt?.toIso8601String().split('T').first ?? '-'} | '
-                  'Score: ${rec?.score ?? '-'} | '
-                  '${cert != null ? (cert.status == 'obsolete' ? 'Obsolete' : 'Certificate') : e.enrollment.status}',
-                  style: const pw.TextStyle(fontSize: 10),
+              final isObsolete = cert?.status == 'obsolete';
+
+              return pw.Container(
+                margin: const pw.EdgeInsets.only(bottom: 8),
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: isObsolete
+                      ? const PdfColor(0.95, 0.95, 0.95)
+                      : const PdfColor(1, 1, 1),
+                  border: pw.Border.all(color: const PdfColor(0.8, 0.8, 0.8)),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          '$courseTitle v$version${sopNum.isNotEmpty ? ' ($sopNum)' : ''}',
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                        pw.Text(
+                          'Completed: ${e.enrollment.completedAt?.toIso8601String().split('T').first ?? '-'} | Score: ${rec?.score ?? '-'}',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                    pw.Text(
+                      isObsolete
+                          ? 'OBSOLETE'
+                          : (cert != null
+                              ? 'VALID CERTIFICATE'
+                              : e.enrollment.status.toUpperCase()),
+                      style: pw.TextStyle(
+                        fontSize: 10,
+                        fontWeight: pw.FontWeight.bold,
+                        color: isObsolete
+                            ? const PdfColor(0.8, 0.2, 0.2)
+                            : const PdfColor(0.1, 0.5, 0.1),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }),
@@ -162,6 +196,7 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
         ),
       ),
     );
+
     try {
       var bytes = await pdf.save();
       final hash = sha256.convert(bytes).toString();
@@ -169,7 +204,8 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
         pw.Page(
           build: (ctx) => pw.Center(
             child: pw.Text(
-              'Report Hash: $hash',
+              'End of Report.\nCryptographic Hash (SHA-256): $hash',
+              textAlign: pw.TextAlign.center,
               style: const pw.TextStyle(fontSize: 10),
             ),
           ),
@@ -182,7 +218,7 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
       );
       final result = await FilePicker.platform.saveFile(
         fileName:
-            'training-history-${DateTime.now().toIso8601String().split('T')[0]}.pdf',
+            'training-credentials-${DateTime.now().toIso8601String().split('T')[0]}.pdf',
         bytes: bytes,
         type: FileType.custom,
         allowedExtensions: ['pdf'],
@@ -191,18 +227,32 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result != null ? 'Report saved' : 'Export cancelled',
+            result != null ? 'Credentials saved securely' : 'Export cancelled',
           ),
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: $e')),
+        SnackBar(
+          content: Text('Export failed: $e'),
+          backgroundColor: AppColors.destructive,
+        ),
       );
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
+  }
+
+  Certificate? _certificateForEnrollment(
+    List<Certificate> certificates,
+    int userId,
+    Enrollment enrollment,
+  ) {
+    return certificates
+        .where((c) => c.courseVersionId == enrollment.courseVersionId && c.userId == userId)
+        .firstOrNull;
   }
 
   List<_EnrollmentWithCert> _applyFilters(
@@ -212,13 +262,7 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
     var list = enrollments
         .map((e) => _EnrollmentWithCert(
               enrollment: e,
-              certificate: certificates.cast<Certificate?>().firstWhere(
-                    (c) =>
-                        c != null &&
-                        c.courseVersionId == e.courseVersionId &&
-                        c.userId == e.userId,
-                    orElse: () => null,
-                  ),
+              certificate: _certificateForEnrollment(certificates, e.userId, e),
             ))
         .toList();
     if (_filterFrom != null) {
@@ -237,18 +281,27 @@ class _TrainingHistoryScreenState extends ConsumerState<TrainingHistoryScreen> {
       if (_filterStatus == 'obsolete') {
         list = list.where((e) => e.certificate?.status == 'obsolete').toList();
       } else {
-        list = list
-            .where((e) => e.enrollment.status == _filterStatus)
-            .toList();
+        list =
+            list.where((e) => e.enrollment.status == _filterStatus).toList();
       }
     }
     list.sort((a, b) {
-      final da = a.enrollment.completedAt ?? a.enrollment.startedAt ?? DateTime(1970);
-      final db = b.enrollment.completedAt ?? b.enrollment.startedAt ?? DateTime(1970);
+      final da = a.enrollment.completedAt ?? a.enrollment.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final db = b.enrollment.completedAt ?? b.enrollment.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return db.compareTo(da);
     });
     return list;
   }
+}
+
+Certificate? _certificateForEnrollment(
+  List<Certificate> certificates,
+  int userId,
+  Enrollment enrollment,
+) {
+  return certificates
+      .where((c) => c.courseVersionId == enrollment.courseVersionId && c.userId == userId)
+      .firstOrNull;
 }
 
 class _EnrollmentWithCert {
@@ -257,8 +310,8 @@ class _EnrollmentWithCert {
   final Certificate? certificate;
 }
 
-class _TrainingHistoryContent extends ConsumerWidget {
-  const _TrainingHistoryContent({
+class _WalletContent extends ConsumerWidget {
+  const _WalletContent({
     required this.userId,
     required this.enrollmentsAsync,
     required this.certificatesAsync,
@@ -266,6 +319,7 @@ class _TrainingHistoryContent extends ConsumerWidget {
     required this.filterFrom,
     required this.filterTo,
     required this.filterStatus,
+    required this.isExporting,
     required this.onFilterChanged,
     required this.onExportPdf,
   });
@@ -277,6 +331,7 @@ class _TrainingHistoryContent extends ConsumerWidget {
   final DateTime? filterFrom;
   final DateTime? filterTo;
   final String? filterStatus;
+  final bool isExporting;
   final void Function(DateTime?, DateTime?, String?) onFilterChanged;
   final VoidCallback? onExportPdf;
 
@@ -291,24 +346,21 @@ class _TrainingHistoryContent extends ConsumerWidget {
                 var items = enrollments
                     .map((e) => _EnrollmentWithCert(
                           enrollment: e,
-                          certificate: certificates.cast<Certificate?>().firstWhere(
-                                (c) =>
-                                    c != null &&
-                                    c.courseVersionId == e.courseVersionId &&
-                                    c.userId == userId,
-                                orElse: () => null,
-                              ),
+                          certificate: _certificateForEnrollment(
+                              certificates, userId, e),
                         ))
                     .toList();
                 if (filterFrom != null) {
                   items = items.where((e) {
-                    final d = e.enrollment.completedAt ?? e.enrollment.startedAt;
+                    final d =
+                        e.enrollment.completedAt ?? e.enrollment.startedAt;
                     return d != null && !d.isBefore(filterFrom!);
                   }).toList();
                 }
                 if (filterTo != null) {
                   items = items.where((e) {
-                    final d = e.enrollment.completedAt ?? e.enrollment.startedAt;
+                    final d =
+                        e.enrollment.completedAt ?? e.enrollment.startedAt;
                     return d != null && !d.isAfter(filterTo!);
                   }).toList();
                 }
@@ -319,55 +371,141 @@ class _TrainingHistoryContent extends ConsumerWidget {
                         .toList();
                   } else {
                     items = items
-                        .where((e) => e.enrollment.status == filterStatus)
+                        .where((e) =>
+                            e.enrollment.status == filterStatus)
                         .toList();
                   }
                 }
                 items.sort((a, b) {
                   final da = a.enrollment.completedAt ??
                       a.enrollment.startedAt ??
-                      DateTime(1970);
+                      DateTime.fromMillisecondsSinceEpoch(0);
                   final db = b.enrollment.completedAt ??
                       b.enrollment.startedAt ??
-                      DateTime(1970);
+                      DateTime.fromMillisecondsSinceEpoch(0);
                   return db.compareTo(da);
                 });
 
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _FilterBar(
-                        filterFrom: filterFrom,
-                        filterTo: filterTo,
-                        filterStatus: filterStatus,
-                        onFilterChanged: onFilterChanged,
-                        onExportPdf: onExportPdf,
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Digital Credentials Wallet',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            color: AppColors.slate900,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Your official, verified compliance records.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            color: AppColors.slate600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                                FilledButton.icon(
+                                  onPressed: onExportPdf,
+                                  icon: isExporting
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.picture_as_pdf_rounded,
+                                        ),
+                                  label: Text(isExporting
+                                      ? 'Generating...'
+                                      : 'Export Official PDF'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.indigo600,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            _WalletFilterBar(
+                              filterFrom: filterFrom,
+                              filterTo: filterTo,
+                              filterStatus: filterStatus,
+                              onFilterChanged: onFilterChanged,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      if (items.isEmpty)
-                        const EmptyState(
-                          message: 'No training records match your filters',
+                    ),
+                    if (items.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: EmptyState(
+                          message: 'No credentials match your filters.',
                           icon: Icons.filter_list_off_rounded,
-                        )
-                      else
-                        ...items.map((e) => _HistoryTile(
-                              enrollment: e.enrollment,
-                              certificate: e.certificate,
-                              trainingRecords: trainingRecordsAsync.valueOrNull ?? [],
-                              userId: userId,
-                            )),
-                    ],
-                  ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 8),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 400,
+                            mainAxisExtent: 220,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final e = items[index];
+                              return _CertificateWalletCard(
+                                enrollment: e.enrollment,
+                                certificate: e.certificate,
+                                trainingRecords: trainingRecords,
+                                userId: userId,
+                              );
+                            },
+                            childCount: items.length,
+                          ),
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                  ],
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Error: $e')),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
         );
       },
@@ -377,118 +515,135 @@ class _TrainingHistoryContent extends ConsumerWidget {
   }
 }
 
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({
+/// Inline wrap: From Date, To Date, Status dropdown.
+class _WalletFilterBar extends StatelessWidget {
+  const _WalletFilterBar({
     required this.filterFrom,
     required this.filterTo,
     required this.filterStatus,
     required this.onFilterChanged,
-    required this.onExportPdf,
   });
 
   final DateTime? filterFrom;
   final DateTime? filterTo;
   final String? filterStatus;
   final void Function(DateTime?, DateTime?, String?) onFilterChanged;
-  final VoidCallback? onExportPdf;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.slate200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Filters',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.slate900,
-                ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              SizedBox(
-                width: 140,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    filterFrom != null
-                        ? filterFrom!.toIso8601String().split('T').first
-                        : 'From date',
-                  ),
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: filterFrom ?? DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (d != null) onFilterChanged(d, filterTo, filterStatus);
-                  },
-                ),
+        ],
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Icon(Icons.filter_list, color: AppColors.slate500, size: 20),
+          const SizedBox(width: 4),
+          SizedBox(
+            width: 140,
+            height: 40,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.calendar_today, size: 16),
+              label: Text(
+                filterFrom != null
+                    ? filterFrom!.toIso8601String().split('T').first
+                    : 'From Date',
+                style: const TextStyle(fontSize: 13),
               ),
-              SizedBox(
-                width: 140,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    filterTo != null
-                        ? filterTo!.toIso8601String().split('T').first
-                        : 'To date',
-                  ),
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: filterTo ?? DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (d != null) onFilterChanged(filterFrom, d, filterStatus);
-                  },
-                ),
+              onPressed: () async {
+                final d = await showDatePicker(
+                  context: context,
+                  initialDate: filterFrom ?? DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (d != null) onFilterChanged(d, filterTo, filterStatus);
+              },
+            ),
+          ),
+          SizedBox(
+            width: 140,
+            height: 40,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.calendar_today, size: 16),
+              label: Text(
+                filterTo != null
+                    ? filterTo!.toIso8601String().split('T').first
+                    : 'To Date',
+                style: const TextStyle(fontSize: 13),
               ),
-              DropdownButton<String>(
+              onPressed: () async {
+                final d = await showDatePicker(
+                  context: context,
+                  initialDate: filterTo ?? DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (d != null) onFilterChanged(filterFrom, d, filterStatus);
+              },
+            ),
+          ),
+          Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.slate300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
                 value: filterStatus,
-                hint: const Text('Status'),
+                hint: const Text('Status',
+                    style: TextStyle(fontSize: 13)),
+                icon: const Icon(Icons.arrow_drop_down, size: 20),
+                style: TextStyle(
+                    color: AppColors.slate700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500),
                 items: const [
-                  DropdownMenuItem(value: null, child: Text('All')),
-                  DropdownMenuItem(value: 'completed', child: Text('Completed')),
-                  DropdownMenuItem(value: 'in_progress', child: Text('In Progress')),
-                  DropdownMenuItem(value: 'not_started', child: Text('Not Started')),
-                  DropdownMenuItem(value: 'overdue', child: Text('Overdue')),
-                  DropdownMenuItem(value: 'obsolete', child: Text('Obsolete')),
+                  DropdownMenuItem(value: null, child: Text('All Statuses')),
+                  DropdownMenuItem(
+                      value: 'completed', child: Text('Valid Certificates')),
+                  DropdownMenuItem(
+                      value: 'obsolete', child: Text('Obsolete / Superseded')),
+                  DropdownMenuItem(
+                      value: 'in_progress', child: Text('In Progress')),
+                  DropdownMenuItem(
+                      value: 'not_started', child: Text('Not Started')),
                 ],
                 onChanged: (v) => onFilterChanged(filterFrom, filterTo, v),
               ),
-              TextButton(
-                onPressed: () => onFilterChanged(null, null, null),
-                child: const Text('Clear'),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: onExportPdf,
-                icon: const Icon(Icons.download, size: 18),
-                label: const Text('Export my training history'),
-              ),
-            ],
+            ),
           ),
+          if (filterFrom != null ||
+              filterTo != null ||
+              filterStatus != null)
+            TextButton(
+              onPressed: () => onFilterChanged(null, null, null),
+              child: const Text('Clear Filters'),
+            ),
         ],
       ),
     );
   }
 }
 
-class _HistoryTile extends StatelessWidget {
-  const _HistoryTile({
+/// Premium credential card. Obsolete: grayscale + diagonal SUPERSEDED watermark (GxP).
+class _CertificateWalletCard extends StatelessWidget {
+  const _CertificateWalletCard({
     required this.enrollment,
     required this.certificate,
     required this.trainingRecords,
@@ -507,90 +662,220 @@ class _HistoryTile extends StatelessWidget {
           orElse: () => null,
         );
     final courseTitle =
-        enrollment.courseVersion?.course?.title ?? 'Course';
+        enrollment.courseVersion?.course?.title ?? 'Unknown Course';
     final version = enrollment.courseVersion?.version ?? '?';
     final sopNum = enrollment.courseVersion?.course?.sopNumber ?? '';
-    final certStatus = certificate?.status ?? 'active';
-    final isObsolete = certStatus == 'obsolete';
+    final bool hasCert = certificate != null;
+    final bool isObsolete = certificate?.status == 'obsolete';
+    final bool isInProgress = enrollment.status == 'in_progress' ||
+        enrollment.status == 'not_started';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isObsolete ? AppColors.slate100 : AppColors.slate50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isObsolete ? AppColors.slate300 : AppColors.slate200,
-        ),
-      ),
-      child: Row(
+    final card = ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
         children: [
-          Expanded(
+          Container(
+            decoration: BoxDecoration(
+              color: isObsolete ? AppColors.slate100 : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isObsolete
+                    ? AppColors.slate300
+                    : (hasCert ? AppColors.indigo200 : AppColors.slate200),
+                width: hasCert && !isObsolete ? 2 : 1,
+              ),
+              boxShadow: isObsolete
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: AppColors.indigo900.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      courseTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.slate900,
-                          ),
-                    ),
-                    if (sopNum.isNotEmpty) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isObsolete
+                        ? AppColors.slate200
+                        : (hasCert
+                            ? AppColors.indigo50
+                            : AppColors.slate50),
+                    border: Border(
+                        bottom: BorderSide(color: AppColors.slate200)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        hasCert ? Icons.workspace_premium : Icons.menu_book,
+                        color: isObsolete
+                            ? AppColors.slate400
+                            : (hasCert
+                                ? Colors.amber[700]
+                                : AppColors.slate500),
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
-                      Text(
-                        '$sopNum v$version',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.slate500,
-                            ),
+                      Expanded(
+                        child: Text(
+                          sopNum.isNotEmpty
+                              ? '$sopNum v$version'
+                              : 'Course v$version',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isObsolete
+                                ? AppColors.slate500
+                                : AppColors.slate700,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
+                      if (hasCert && !isObsolete)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'VERIFIED',
+                            style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
                     ],
-                    const SizedBox(width: 8),
-                    StatusBadge(
-                      status: isObsolete ? 'obsolete' : enrollment.status,
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      'Started: ${enrollment.startedAt?.toIso8601String().split('T').first ?? '-'}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.slate600,
-                          ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Completed: ${enrollment.completedAt?.toIso8601String().split('T').first ?? '-'}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.slate600,
-                          ),
-                    ),
-                    if (rec?.score != null) ...[
-                      const SizedBox(width: 16),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Score: ${rec!.score}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.slate600,
-                            ),
+                        courseTitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: isObsolete
+                                      ? AppColors.slate500
+                                      : AppColors.slate900,
+                                ),
                       ),
+                      const SizedBox(height: 12),
+                      if (enrollment.completedAt != null)
+                        Text(
+                          'Completed ${enrollment.completedAt!.toIso8601String().split('T').first}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isObsolete
+                                ? AppColors.slate500
+                                : AppColors.slate700,
+                          ),
+                        )
+                      else
+                        Text(
+                          enrollment.status
+                              .replaceAll('_', ' ')
+                              .toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (rec?.score != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Score: ${rec!.score}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isObsolete
+                                ? AppColors.slate500
+                                : AppColors.slate800,
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      if (hasCert)
+                        OutlinedButton(
+                          onPressed: () => context.push(
+                              '/certificate/${certificate!.id}'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isObsolete
+                                ? AppColors.slate600
+                                : AppColors.indigo600,
+                            side: BorderSide(
+                                color: isObsolete
+                                    ? AppColors.slate300
+                                    : AppColors.indigo200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('View Certificate'),
+                        )
+                      else if (isInProgress)
+                        FilledButton.tonal(
+                          onPressed: () => context.push('/employee'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('Continue'),
+                        ),
                     ],
-                  ],
+                  ),
                 ),
               ],
             ),
           ),
-          if (certificate != null && certificate!.id != null)
-            TextButton(
-              onPressed: () =>
-                  context.push('/certificate/${certificate!.id}'),
-              child: const Text('View Certificate'),
+          if (isObsolete)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.white.withOpacity(0.25),
+                  child: Center(
+                    child: Transform.rotate(
+                      angle: -0.5,
+                      child: Text(
+                        'SUPERSEDED',
+                        style: TextStyle(
+                          color: AppColors.destructive.withOpacity(0.7),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
     );
+
+    if (isObsolete) {
+      return ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0,      0,      0,      1, 0,
+        ]),
+        child: card,
+      );
+    }
+    return card;
   }
 }

@@ -9,6 +9,10 @@ config/firebase_service_account_key.json
 *.pem
 *.key
 
+# Local config overrides (keep config.json tracked for defaults)
+# Don't commit local development config
+pharma_lms/pharma_lms_flutter/assets/config.local.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -37,3 +41,10 @@ dist/
 
 # Build outputs (subprojects have their own)
 *.log
+
+# Vercel
+.vercel
+
+# ngrok
+ngrok.log
+/tmp/ngrok*

@@ -901,6 +901,37 @@ class Endpoints extends _i1.EndpointDispatch {
                     params['email'],
                   ),
         ),
+        'terminateUser': _i1.MethodConnector(
+          name: 'terminateUser',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'terminationDate': _i1.ParameterDescription(
+              name: 'terminationDate',
+              type: _i1.getType<DateTime>(),
+              nullable: false,
+            ),
+            'reason': _i1.ParameterDescription(
+              name: 'reason',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['admin'] as _i5.AdminEndpoint).terminateUser(
+                    session,
+                    userId: params['userId'],
+                    terminationDate: params['terminationDate'],
+                    reason: params['reason'],
+                  ),
+        ),
       },
     );
     connectors['analytics'] = _i1.EndpointConnector(
@@ -973,6 +1004,46 @@ class Endpoints extends _i1.EndpointDispatch {
                     session,
                     jobName: params['jobName'],
                   ),
+        ),
+        'runCertExpiryCheck': _i1.MethodConnector(
+          name: 'runCertExpiryCheck',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['analytics'] as _i6.AnalyticsEndpoint)
+                  .runCertExpiryCheck(session),
+        ),
+        'runNotificationWorker': _i1.MethodConnector(
+          name: 'runNotificationWorker',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['analytics'] as _i6.AnalyticsEndpoint)
+                  .runNotificationWorker(session),
+        ),
+        'runComplianceCalc': _i1.MethodConnector(
+          name: 'runComplianceCalc',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['analytics'] as _i6.AnalyticsEndpoint)
+                  .runComplianceCalc(session),
+        ),
+        'runAuditTrailIntegrityCheck': _i1.MethodConnector(
+          name: 'runAuditTrailIntegrityCheck',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['analytics'] as _i6.AnalyticsEndpoint)
+                  .runAuditTrailIntegrityCheck(session),
         ),
         'getDepartmentComplianceSummary': _i1.MethodConnector(
           name: 'getDepartmentComplianceSummary',
@@ -1227,6 +1298,26 @@ class Endpoints extends _i1.EndpointDispatch {
                     params['userId'],
                   ),
         ),
+        'getOpenQualityEventsCount': _i1.MethodConnector(
+          name: 'getOpenQualityEventsCount',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['analytics'] as _i6.AnalyticsEndpoint)
+                  .getOpenQualityEventsCount(session),
+        ),
+        'getSlaBreaches': _i1.MethodConnector(
+          name: 'getSlaBreaches',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['analytics'] as _i6.AnalyticsEndpoint)
+                  .getSlaBreaches(session),
+        ),
         'streamAnalytics': _i1.MethodStreamConnector(
           name: 'streamAnalytics',
           params: {
@@ -1288,6 +1379,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String?>(),
               nullable: true,
             ),
+            'regulatoryTag': _i1.ParameterDescription(
+              name: 'regulatoryTag',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -1304,6 +1400,7 @@ class Endpoints extends _i1.EndpointDispatch {
                         optionsJson: params['optionsJson'],
                         correctAnswer: params['correctAnswer'],
                         difficulty: params['difficulty'],
+                        regulatoryTag: params['regulatoryTag'],
                       ),
         ),
         'updateQuestion': _i1.MethodConnector(
@@ -1357,6 +1454,114 @@ class Endpoints extends _i1.EndpointDispatch {
                         difficulty: params['difficulty'],
                       ),
         ),
+        'deleteQuestion': _i1.MethodConnector(
+          name: 'deleteQuestion',
+          params: {
+            'questionId': _i1.ParameterDescription(
+              name: 'questionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['assessmentBuilder']
+                          as _i7.AssessmentBuilderEndpoint)
+                      .deleteQuestion(
+                        session,
+                        questionId: params['questionId'],
+                      ),
+        ),
+        'createQuestionBank': _i1.MethodConnector(
+          name: 'createQuestionBank',
+          params: {
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'tagsJson': _i1.ParameterDescription(
+              name: 'tagsJson',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['assessmentBuilder']
+                          as _i7.AssessmentBuilderEndpoint)
+                      .createQuestionBank(
+                        session,
+                        name: params['name'],
+                        organizationId: params['organizationId'],
+                        tagsJson: params['tagsJson'],
+                      ),
+        ),
+        'updateQuestionBank': _i1.MethodConnector(
+          name: 'updateQuestionBank',
+          params: {
+            'questionBankId': _i1.ParameterDescription(
+              name: 'questionBankId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'tagsJson': _i1.ParameterDescription(
+              name: 'tagsJson',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['assessmentBuilder']
+                          as _i7.AssessmentBuilderEndpoint)
+                      .updateQuestionBank(
+                        session,
+                        questionBankId: params['questionBankId'],
+                        name: params['name'],
+                        tagsJson: params['tagsJson'],
+                      ),
+        ),
+        'getQuestionBankDetails': _i1.MethodConnector(
+          name: 'getQuestionBankDetails',
+          params: {
+            'questionBankId': _i1.ParameterDescription(
+              name: 'questionBankId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['assessmentBuilder']
+                          as _i7.AssessmentBuilderEndpoint)
+                      .getQuestionBankDetails(
+                        session,
+                        questionBankId: params['questionBankId'],
+                      ),
+        ),
         'createAssessment': _i1.MethodConnector(
           name: 'createAssessment',
           params: {
@@ -1385,6 +1590,16 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int?>(),
               nullable: true,
             ),
+            'maxAttempts': _i1.ParameterDescription(
+              name: 'maxAttempts',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'questionsToDisplay': _i1.ParameterDescription(
+              name: 'questionsToDisplay',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -1400,6 +1615,8 @@ class Endpoints extends _i1.EndpointDispatch {
                         passingScore: params['passingScore'],
                         randomize: params['randomize'],
                         timeLimitMinutes: params['timeLimitMinutes'],
+                        maxAttempts: params['maxAttempts'],
+                        questionsToDisplay: params['questionsToDisplay'],
                       ),
         ),
         'updateAssessment': _i1.MethodConnector(
@@ -1425,6 +1642,16 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int?>(),
               nullable: true,
             ),
+            'maxAttempts': _i1.ParameterDescription(
+              name: 'maxAttempts',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'questionsToDisplay': _i1.ParameterDescription(
+              name: 'questionsToDisplay',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -1439,6 +1666,29 @@ class Endpoints extends _i1.EndpointDispatch {
                         passingScore: params['passingScore'],
                         randomize: params['randomize'],
                         timeLimitMinutes: params['timeLimitMinutes'],
+                        maxAttempts: params['maxAttempts'],
+                        questionsToDisplay: params['questionsToDisplay'],
+                      ),
+        ),
+        'validateAssessmentForSubmission': _i1.MethodConnector(
+          name: 'validateAssessmentForSubmission',
+          params: {
+            'assessmentId': _i1.ParameterDescription(
+              name: 'assessmentId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['assessmentBuilder']
+                          as _i7.AssessmentBuilderEndpoint)
+                      .validateAssessmentForSubmission(
+                        session,
+                        assessmentId: params['assessmentId'],
                       ),
         ),
       },
@@ -2096,6 +2346,44 @@ class Endpoints extends _i1.EndpointDispatch {
                         changeSummary: params['changeSummary'],
                       ),
         ),
+        'createNewVersionFromExisting': _i1.MethodConnector(
+          name: 'createNewVersionFromExisting',
+          params: {
+            'existingVersionId': _i1.ParameterDescription(
+              name: 'existingVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'changeSummary': _i1.ParameterDescription(
+              name: 'changeSummary',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'isMajorVersion': _i1.ParameterDescription(
+              name: 'isMajorVersion',
+              type: _i1.getType<bool>(),
+              nullable: false,
+            ),
+            'createdById': _i1.ParameterDescription(
+              name: 'createdById',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['courseBuilder'] as _i11.CourseBuilderEndpoint)
+                      .createNewVersionFromExisting(
+                        session,
+                        existingVersionId: params['existingVersionId'],
+                        changeSummary: params['changeSummary'],
+                        isMajorVersion: params['isMajorVersion'],
+                        createdById: params['createdById'],
+                      ),
+        ),
         'updateCourseVersionStatus': _i1.MethodConnector(
           name: 'updateCourseVersionStatus',
           params: {
@@ -2126,6 +2414,52 @@ class Endpoints extends _i1.EndpointDispatch {
                         courseVersionId: params['courseVersionId'],
                         status: params['status'],
                         approverId: params['approverId'],
+                      ),
+        ),
+        'validateForQaSubmission': _i1.MethodConnector(
+          name: 'validateForQaSubmission',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['courseBuilder'] as _i11.CourseBuilderEndpoint)
+                      .validateForQaSubmission(
+                        session,
+                        courseVersionId: params['courseVersionId'],
+                      ),
+        ),
+        'submitForQaReview': _i1.MethodConnector(
+          name: 'submitForQaReview',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'submittedById': _i1.ParameterDescription(
+              name: 'submittedById',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['courseBuilder'] as _i11.CourseBuilderEndpoint)
+                      .submitForQaReview(
+                        session,
+                        courseVersionId: params['courseVersionId'],
+                        submittedById: params['submittedById'],
                       ),
         ),
       },
@@ -2250,6 +2584,49 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['course'] as _i12.CourseEndpoint).createCourse(
+                    session,
+                    title: params['title'],
+                    organizationId: params['organizationId'],
+                    sopNumber: params['sopNumber'],
+                    description: params['description'],
+                    createdById: params['createdById'],
+                  ),
+        ),
+        'createCourseWithVersion': _i1.MethodConnector(
+          name: 'createCourseWithVersion',
+          params: {
+            'title': _i1.ParameterDescription(
+              name: 'title',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'sopNumber': _i1.ParameterDescription(
+              name: 'sopNumber',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'description': _i1.ParameterDescription(
+              name: 'description',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'createdById': _i1.ParameterDescription(
+              name: 'createdById',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['course'] as _i12.CourseEndpoint)
+                  .createCourseWithVersion(
                     session,
                     title: params['title'],
                     organizationId: params['organizationId'],
@@ -2487,6 +2864,21 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<DateTime?>(),
               nullable: true,
             ),
+            'versionMajor': _i1.ParameterDescription(
+              name: 'versionMajor',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'versionMinor': _i1.ParameterDescription(
+              name: 'versionMinor',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'isMajorVersion': _i1.ParameterDescription(
+              name: 'isMajorVersion',
+              type: _i1.getType<bool?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -2500,6 +2892,9 @@ class Endpoints extends _i1.EndpointDispatch {
                     storageKey: params['storageKey'],
                     effectiveDate: params['effectiveDate'],
                     obsoleteDate: params['obsoleteDate'],
+                    versionMajor: params['versionMajor'],
+                    versionMinor: params['versionMinor'],
+                    isMajorVersion: params['isMajorVersion'],
                   ),
         ),
         'getDocumentLifecycle': _i1.MethodConnector(
@@ -2549,8 +2944,8 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String>(),
               nullable: false,
             ),
-            'passwordReauth': _i1.ParameterDescription(
-              name: 'passwordReauth',
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
               type: _i1.getType<String?>(),
               nullable: true,
             ),
@@ -2572,7 +2967,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     obsoleteReason: params['obsoleteReason'],
                     userId: params['userId'],
                     signatureMeaning: params['signatureMeaning'],
-                    passwordReauth: params['passwordReauth'],
+                    passwordPlaintext: params['passwordPlaintext'],
                     ipAddress: params['ipAddress'],
                   ),
         ),
@@ -2728,6 +3123,25 @@ class Endpoints extends _i1.EndpointDispatch {
                     newDepartmentId: params['newDepartmentId'],
                     oldRoleId: params['oldRoleId'],
                     newRoleId: params['newRoleId'],
+                  ),
+        ),
+        'triggerCapaTrainingComplete': _i1.MethodConnector(
+          name: 'triggerCapaTrainingComplete',
+          params: {
+            'capaId': _i1.ParameterDescription(
+              name: 'capaId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['event'] as _i14.EventEndpoint)
+                  .triggerCapaTrainingComplete(
+                    session,
+                    capaId: params['capaId'],
                   ),
         ),
       },
@@ -2990,8 +3404,8 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String>(),
               nullable: false,
             ),
-            'passwordReauth': _i1.ParameterDescription(
-              name: 'passwordReauth',
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
               type: _i1.getType<String?>(),
               nullable: true,
             ),
@@ -3011,7 +3425,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     packageId: params['packageId'],
                     userId: params['userId'],
                     signatureMeaning: params['signatureMeaning'],
-                    passwordReauth: params['passwordReauth'],
+                    passwordPlaintext: params['passwordPlaintext'],
                     ipAddress: params['ipAddress'],
                   ),
         ),
@@ -3197,6 +3611,21 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String>(),
               nullable: false,
             ),
+            'fileHash': _i1.ParameterDescription(
+              name: 'fileHash',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'fileSizeBytes': _i1.ParameterDescription(
+              name: 'fileSizeBytes',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'changeSummary': _i1.ParameterDescription(
+              name: 'changeSummary',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -3207,6 +3636,84 @@ class Endpoints extends _i1.EndpointDispatch {
                     session,
                     materialId: params['materialId'],
                     storageKey: params['storageKey'],
+                    fileHash: params['fileHash'],
+                    fileSizeBytes: params['fileSizeBytes'],
+                    changeSummary: params['changeSummary'],
+                  ),
+        ),
+        'updateMaterial': _i1.MethodConnector(
+          name: 'updateMaterial',
+          params: {
+            'materialId': _i1.ParameterDescription(
+              name: 'materialId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'title': _i1.ParameterDescription(
+              name: 'title',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'materialType': _i1.ParameterDescription(
+              name: 'materialType',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['material'] as _i16.MaterialEndpoint)
+                  .updateMaterial(
+                    session,
+                    materialId: params['materialId'],
+                    title: params['title'],
+                    materialType: params['materialType'],
+                  ),
+        ),
+        'getLatestMaterialVersion': _i1.MethodConnector(
+          name: 'getLatestMaterialVersion',
+          params: {
+            'materialId': _i1.ParameterDescription(
+              name: 'materialId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['material'] as _i16.MaterialEndpoint)
+                  .getLatestMaterialVersion(
+                    session,
+                    params['materialId'],
+                  ),
+        ),
+        'updateVirusScanStatus': _i1.MethodConnector(
+          name: 'updateVirusScanStatus',
+          params: {
+            'materialVersionId': _i1.ParameterDescription(
+              name: 'materialVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'virusScanStatus': _i1.ParameterDescription(
+              name: 'virusScanStatus',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['material'] as _i16.MaterialEndpoint)
+                  .updateVirusScanStatus(
+                    session,
+                    materialVersionId: params['materialVersionId'],
+                    virusScanStatus: params['virusScanStatus'],
                   ),
         ),
         'getMaterialVersions': _i1.MethodConnector(
@@ -3700,6 +4207,16 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int>(),
               nullable: false,
             ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'signatureMeaning': _i1.ParameterDescription(
+              name: 'signatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
             'approverId': _i1.ParameterDescription(
               name: 'approverId',
               type: _i1.getType<int?>(),
@@ -3719,6 +4236,8 @@ class Endpoints extends _i1.EndpointDispatch {
                   (endpoints['qa'] as _i20.QaEndpoint).approveCourseVersion(
                     session,
                     courseVersionId: params['courseVersionId'],
+                    passwordPlaintext: params['passwordPlaintext'],
+                    signatureMeaning: params['signatureMeaning'],
                     approverId: params['approverId'],
                     reviewChecklistJson: params['reviewChecklistJson'],
                   ),
@@ -3753,6 +4272,16 @@ class Endpoints extends _i1.EndpointDispatch {
                     reason: params['reason'],
                     returnForChanges: params['returnForChanges'],
                   ),
+        ),
+        'getPendingDocumentApprovalsCount': _i1.MethodConnector(
+          name: 'getPendingDocumentApprovalsCount',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['qa'] as _i20.QaEndpoint)
+                  .getPendingDocumentApprovalsCount(session),
         ),
       },
     );
@@ -3944,6 +4473,32 @@ class Endpoints extends _i1.EndpointDispatch {
                         session,
                         capaId: params['capaId'],
                         closedById: params['closedById'],
+                      ),
+        ),
+        'closeCapaWithSignature': _i1.MethodConnector(
+          name: 'closeCapaWithSignature',
+          params: {
+            'capaId': _i1.ParameterDescription(
+              name: 'capaId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['qualityEvent'] as _i21.QualityEventEndpoint)
+                      .closeCapaWithSignature(
+                        session,
+                        capaId: params['capaId'],
+                        passwordPlaintext: params['passwordPlaintext'],
                       ),
         ),
         'createCapa': _i1.MethodConnector(
@@ -4278,8 +4833,8 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'reason': _i1.ParameterDescription(
               name: 'reason',
-              type: _i1.getType<String?>(),
-              nullable: true,
+              type: _i1.getType<String>(),
+              nullable: false,
             ),
           },
           call:
@@ -4369,8 +4924,8 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String>(),
               nullable: false,
             ),
-            'passwordReauth': _i1.ParameterDescription(
-              name: 'passwordReauth',
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
               type: _i1.getType<String?>(),
               nullable: true,
             ),
@@ -4385,7 +4940,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     enrollmentId: params['enrollmentId'],
                     userId: params['userId'],
                     signatureMeaning: params['signatureMeaning'],
-                    passwordReauth: params['passwordReauth'],
+                    passwordPlaintext: params['passwordPlaintext'],
                   ),
         ),
         'getCertificatesForUser': _i1.MethodConnector(
@@ -4515,8 +5070,8 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int>(),
               nullable: false,
             ),
-            'passwordReauth': _i1.ParameterDescription(
-              name: 'passwordReauth',
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
               type: _i1.getType<String>(),
               nullable: false,
             ),
@@ -4529,7 +5084,7 @@ class Endpoints extends _i1.EndpointDispatch {
                   .issueBiometricToken(
                     session,
                     userId: params['userId'],
-                    passwordReauth: params['passwordReauth'],
+                    passwordPlaintext: params['passwordPlaintext'],
                   ),
         ),
         'createTrainingSignature': _i1.MethodConnector(
@@ -4555,8 +5110,8 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String>(),
               nullable: false,
             ),
-            'passwordReauth': _i1.ParameterDescription(
-              name: 'passwordReauth',
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
               type: _i1.getType<String?>(),
               nullable: true,
             ),
@@ -4582,7 +5137,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     signatureMeaning: params['signatureMeaning'],
                     entityType: params['entityType'],
                     entityId: params['entityId'],
-                    passwordReauth: params['passwordReauth'],
+                    passwordPlaintext: params['passwordPlaintext'],
                     biometricToken: params['biometricToken'],
                     ipAddress: params['ipAddress'],
                   ),
@@ -4678,6 +5233,37 @@ class Endpoints extends _i1.EndpointDispatch {
                     trainingRecordId: params['trainingRecordId'],
                     authorId: params['authorId'],
                     note: params['note'],
+                  ),
+        ),
+        'revokeSignature': _i1.MethodConnector(
+          name: 'revokeSignature',
+          params: {
+            'signatureId': _i1.ParameterDescription(
+              name: 'signatureId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'reason': _i1.ParameterDescription(
+              name: 'reason',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['training'] as _i23.TrainingEndpoint)
+                  .revokeSignature(
+                    session,
+                    signatureId: params['signatureId'],
+                    reason: params['reason'],
+                    passwordPlaintext: params['passwordPlaintext'],
                   ),
         ),
       },

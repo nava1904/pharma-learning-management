@@ -159,6 +159,21 @@ class QualityEventEndpoint extends Endpoint {
     return result;
   }
 
+  /// Close a CAPA with e-signature.
+  Future<void> closeCapaWithSignature(
+    Session session, {
+    required int capaId,
+    required String passwordPlaintext,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
+
+    final capa = await Capa.db.findById(session, capaId);
+    if (capa == null) throw Exception('CAPA not found');
+
+    capa.status = 'closed';
+    await Capa.db.updateRow(session, capa);
+  }
+
   Future<Capa> createCapa(
     Session session, {
     required int qualityEventId,

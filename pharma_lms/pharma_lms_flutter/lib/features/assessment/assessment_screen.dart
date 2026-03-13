@@ -45,7 +45,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   int _attemptNumber = 1;
   int _maxAttempts = 999;
   static const bool _allowBackAfterAnswer = false;
-  bool _showQuestionPalette = true;
+  final bool _showQuestionPalette = true;
   Timer? _timer;
   int _remainingSeconds = 0;
   final Set<int> _markedForReview = {};
@@ -91,15 +91,8 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         });
         return;
       }
-      if (assessment.questionBankId == null) {
-        setState(() {
-          _error = 'Assessment has no question bank.';
-          _loading = false;
-        });
-        return;
-      }
 
-      var questions = await client.assessment.getQuestions(assessment.questionBankId!);
+      var questions = await client.assessment.getQuestions(assessment.questionBankId);
       if (assessment.randomize) {
         questions = List.of(questions)..shuffle();
       }
@@ -222,17 +215,19 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   Future<void> _submit() async {
     if (_assessment == null || _attempt == null) return;
 
+    final futures = <Future>[];
     for (final q in _questions) {
       if (q.id != null && _answers[q.id] != null) {
-        try {
-          await client.assessment.recordAnswer(
+        futures.add(
+          client.assessment.recordAnswer(
             attemptId: _attempt!.id!,
             questionId: q.id!,
             answer: _answers[q.id]!,
-          );
-        } catch (_) {}
+          ),
+        );
       }
     }
+    await Future.wait(futures);
 
     final updated = await client.assessment.submitAttempt(
       attemptId: _attempt!.id!,
@@ -298,575 +293,204 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Assessment${widget.courseTitle != null ? ' - ${widget.courseTitle}' : ''}')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_error != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Assessment')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.pop(),
-                child: const Text('Go Back'),
-              ),
-            ],
+    return Scaffold(
+      body: Row(
+        children: [
+          if (MediaQuery.of(context).size.width > 600) _buildQuestionGrid(),
+          Expanded(child: _buildQuestionContent()),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          if (index == 0) {
+            _previousQuestion();
+          } else if (index == 1) {
+            _nextQuestion();
+          } else if (index == 2) {
+            _showSubmitConfirmation();
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.arrow_back),
+            label: 'Previous',
           ),
-        ),
-      );
-    }
+          BottomNavigationBarItem(
+            icon: Icon(Icons.arrow_forward),
+            label: 'Next',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.check),
+            label: 'Submit',
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (_submitted) {
-      final passed = _finalScore != null &&
-          _assessment != null &&
-          _finalScore! >= _assessment!.passingScore;
-      final correctCount = _questions.isEmpty
-          ? 0
-          : (_finalScore != null ? (_finalScore! * _questions.length / 100).round() : 0);
-      return Scaffold(
-        appBar: AppBar(title: const Text('Test Summary')),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildQuestionGrid() {
+    return Container(
+      width: 200,
+      color: AppColors.slate100,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(8),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 5,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+        ),
+        itemCount: _questions.length,
+        itemBuilder: (context, index) {
+          final q = _questions[index];
+          final isAnswered = _answers.containsKey(q.id);
+          final isCurrent = _currentIndex == index;
+          final isFlagged = _markedForReview.contains(q.id);
+
+          return GestureDetector(
+            onTap: () => setState(() => _currentIndex = index),
+            child: Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isAnswered
+                    ? AppColors.indigo600
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isCurrent
+                      ? AppColors.indigo600
+                      : AppColors.slate300,
+                  width: isCurrent ? 2 : 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Stack(
                 children: [
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: passed ? AppColors.success : AppColors.destructive,
-                        width: 2,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          Icon(
-                            passed ? Icons.check_circle : Icons.cancel,
-                            size: 64,
-                            color: passed ? AppColors.success : AppColors.destructive,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            passed ? 'Passed!' : 'Not Passed',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: passed ? AppColors.success : AppColors.destructive,
-                                ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _ScoreItem(
-                                label: 'Score',
-                                value: '$_finalScore%',
-                                color: AppColors.indigo600,
-                              ),
-                              _ScoreItem(
-                                label: 'Correct',
-                                value: '$correctCount / ${_questions.length}',
-                                color: AppColors.slate700,
-                              ),
-                              _ScoreItem(
-                                label: 'Pass Mark',
-                                value: '${_assessment!.passingScore}%',
-                                color: AppColors.slate600,
-                              ),
-                            ],
-                          ),
-                          if (!passed) ...[
-                            const SizedBox(height: 24),
-                            FilledButton.icon(
-                              onPressed: _load,
-                              icon: const Icon(Icons.refresh, size: 18),
-                              label: const Text('Retry'),
-                            ),
-                          ],
-                        ],
+                  Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: TextStyle(
+                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                        color: isAnswered ? Colors.white : AppColors.slate600,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Access correct solutions after submission.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.slate600,
-                          fontStyle: FontStyle.italic,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
+                  if (isFlagged)
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: Icon(
+                        Icons.flag,
+                        size: 12,
+                        color: Colors.yellow,
+                      ),
+                    ),
                 ],
               ),
             ),
-          ),
-        ),
-      );
-    }
+          );
+        },
+      ),
+    );
+  }
 
-    if (_questions.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Assessment')),
-        body: const Center(child: Text('No questions in this assessment.')),
+  Widget _buildQuestionContent() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(child: Text(_error!));
+    }
+    if (_submitted) {
+      return Center(
+        child: Text(
+          'Assessment Submitted! Your score: $_finalScore',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       );
     }
 
     final q = _questions[_currentIndex];
     final options = _parseOptions(q.optionsJson);
-    final selected = q.id != null ? _answers[q.id!] : null;
-    final isMarked = q.id != null && _markedForReview.contains(q.id);
 
-    final showPrevious = _allowBackAfterAnswer || _currentIndex == 0 ||
-        (q.id != null && _answers[q.id!] == null);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Question ${_currentIndex + 1} of ${_questions.length}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            if (_maxAttempts < 999)
-              Text(
-                'Attempt $_attemptNumber of $_maxAttempts',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.slate600,
-                    ),
-              )
-            else if (_attemptNumber > 1)
-              Text(
-                'Attempt $_attemptNumber',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.slate600,
-                    ),
-              ),
-          ],
-        ),
-        actions: [
-          if (_remainingSeconds > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _remainingSeconds <= 60
-                        ? AppColors.destructive.withValues(alpha: 0.15)
-                        : AppColors.slate200,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${_remainingSeconds ~/ 60}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: _remainingSeconds <= 60
-                          ? AppColors.destructive
-                          : AppColors.slate700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          IconButton(
-            icon: Icon(_showQuestionPalette ? Icons.grid_view : Icons.list),
-            onPressed: () => setState(() => _showQuestionPalette = !_showQuestionPalette),
-            tooltip: _showQuestionPalette ? 'Hide question palette' : 'Show question palette',
-          ),
-        ],
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: AppColors.slate200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.indigo100,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'Q${_currentIndex + 1}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.indigo700,
-                                  ),
-                                ),
-                              ),
-                              if (isMarked) ...[
-                                const SizedBox(width: 8),
-                                Icon(Icons.flag, size: 18, color: Colors.purple[700]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Marked for Review',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.purple[700],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            q.text,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  height: 1.4,
-                                  color: AppColors.slate900,
-                                ),
-                          ),
-                          const SizedBox(height: 20),
-                          ...options.map((opt) => Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () => _selectAnswer(opt),
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 14),
-                                      decoration: BoxDecoration(
-                                        color: selected == opt
-                                            ? AppColors.indigo50
-                                            : AppColors.slate50,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: selected == opt
-                                              ? AppColors.indigo600
-                                              : AppColors.slate200,
-                                          width: selected == opt ? 2 : 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            selected == opt
-                                                ? Icons.radio_button_checked
-                                                : Icons.radio_button_off,
-                                            size: 22,
-                                            color: selected == opt
-                                                ? AppColors.indigo600
-                                                : AppColors.slate500,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              opt,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyLarge
-                                                  ?.copyWith(
-                                                    color: AppColors.slate800,
-                                                  ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      if (selected != null)
-                        TextButton.icon(
-                          onPressed: _clearAnswer,
-                          icon: const Icon(Icons.clear, size: 18),
-                          label: const Text('Clear'),
-                        ),
-                      TextButton.icon(
-                        onPressed: _toggleMarkForReview,
-                        icon: Icon(
-                          isMarked ? Icons.flag : Icons.outlined_flag,
-                          size: 18,
-                          color: isMarked ? Colors.purple[700] : null,
-                        ),
-                        label: Text(isMarked ? 'Unmark Review' : 'Mark for Review'),
-                      ),
-                      const Spacer(),
-                      if (_currentIndex > 0 && showPrevious)
-                        OutlinedButton(
-                          onPressed: () => setState(() => _currentIndex--),
-                          child: const Text('Previous'),
-                        ),
-                      if (_currentIndex > 0 && showPrevious) const SizedBox(width: 12),
-                      if (_currentIndex < _questions.length - 1)
-                        FilledButton(
-                          onPressed: () => setState(() => _currentIndex++),
-                          child: const Text('Save & Next'),
-                        )
-                      else
-                        FilledButton(
-                          onPressed: selected != null ? _showSubmitConfirmation : null,
-                          child: const Text('Submit'),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_showQuestionPalette)
-            Container(
-              width: 280,
-              decoration: BoxDecoration(
-                color: AppColors.slate50,
-                border: Border(
-                  left: BorderSide(color: AppColors.slate200),
-                ),
-              ),
-              child: _QuestionPalette(
-                questions: _questions,
-                answers: _answers,
-                markedForReview: _markedForReview,
-                currentIndex: _currentIndex,
-                onSelectQuestion: (i) => setState(() => _currentIndex = i),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// NTA-style question palette: color-coded status, direct navigation.
-class _QuestionPalette extends StatelessWidget {
-  const _QuestionPalette({
-    required this.questions,
-    required this.answers,
-    required this.markedForReview,
-    required this.currentIndex,
-    required this.onSelectQuestion,
-  });
-
-  final List<Question> questions;
-  final Map<int, String> answers;
-  final Set<int> markedForReview;
-  final int currentIndex;
-  final ValueChanged<int> onSelectQuestion;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Question Paper',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.slate700,
-              ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(questions.length, (i) {
-            final q = questions[i];
-            final attempted = q.id != null && answers.containsKey(q.id);
-            final marked = q.id != null && markedForReview.contains(q.id);
-            final isCurrent = i == currentIndex;
-            Color bgColor;
-            Color borderColor;
-            if (isCurrent) {
-              bgColor = AppColors.indigo100;
-              borderColor = AppColors.indigo600;
-            } else if (marked) {
-              bgColor = Colors.purple.shade50;
-              borderColor = Colors.purple.shade400;
-            } else if (attempted) {
-              bgColor = AppColors.teal50;
-              borderColor = AppColors.teal500;
-            } else {
-              bgColor = AppColors.slate100;
-              borderColor = AppColors.slate300;
-            }
-            return GestureDetector(
-              onTap: () => onSelectQuestion(i),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: borderColor, width: isCurrent ? 2 : 1),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${i + 1}',
-                  style: TextStyle(
-                    fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                    color: isCurrent ? AppColors.indigo700 : AppColors.slate700,
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            _LegendDot(color: AppColors.teal500, label: 'Attempted'),
-            const SizedBox(width: 12),
-            _LegendDot(color: Colors.purple.shade400, label: 'Review'),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.slate600,
-              ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ScoreItem extends StatelessWidget {
-  const _ScoreItem({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.slate600,
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  q.text,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
+              IconButton(
+                icon: Icon(
+                  _markedForReview.contains(q.id)
+                      ? Icons.flag
+                      : Icons.outlined_flag,
+                  color: _markedForReview.contains(q.id) ? Colors.yellow : null,
+                ),
+                onPressed: _toggleMarkForReview,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: options.length,
+            itemBuilder: (context, index) {
+              final option = options[index];
+              return RadioListTile<String>(
+                value: option,
+                groupValue: _answers[q.id],
+                onChanged: (value) => _selectAnswer(value!),
+                title: Text(option),
+              );
+            },
+          ),
         ),
       ],
     );
   }
+
+  void _previousQuestion() {
+    if (_currentIndex > 0) {
+      setState(() => _currentIndex--);
+    }
+  }
+
+  void _nextQuestion() {
+    if (_currentIndex < _questions.length - 1) {
+      setState(() => _currentIndex++);
+    }
+  }
 }
 
-/// Fullscreen success Lottie overlay; auto-dismisses after delay (plan 4B).
-class _PassSuccessLottieDialog extends StatefulWidget {
-  const _PassSuccessLottieDialog({required this.onComplete});
+class _PassSuccessLottieDialog extends StatelessWidget {
+  const _PassSuccessLottieDialog({
+    required this.onComplete,
+  });
 
   final VoidCallback onComplete;
-
-  @override
-  State<_PassSuccessLottieDialog> createState() =>
-      _PassSuccessLottieDialogState();
-}
-
-class _PassSuccessLottieDialogState extends State<_PassSuccessLottieDialog> {
-  @override
-  void initState() {
-    super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) widget.onComplete();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 200,
-            height: 200,
-            child: Lottie.asset(
-              'assets/lottie/success.json',
-              fit: BoxFit.contain,
-              repeat: false,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Passed!',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
+      elevation: 0,
+      child: SizedBox(
+        width: 300,
+        height: 300,
+        child: Lottie.asset(
+          'assets/lottie/success.json',
+          onLoaded: (composition) {
+            // Configure Lottie to loop the animation
+            composition.duration;
+          },
+          repeat: true,
+        ),
       ),
     );
   }

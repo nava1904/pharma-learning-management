@@ -1,0 +1,45 @@
+name: Run Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.5.0'
+
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      - name: Get dependencies
+        working-directory: pharma_lms/pharma_lms_server
+        run: dart pub get
+
+      - name: Run migrations
+        working-directory: pharma_lms/pharma_lms_server
+        run: |
+          dart bin/main.dart --apply-migrations --role maintenance
+        env:
+          SERVERPOD_DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          SERVERPOD_DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          SERVERPOD_DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          SERVERPOD_DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          SERVERPOD_DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}

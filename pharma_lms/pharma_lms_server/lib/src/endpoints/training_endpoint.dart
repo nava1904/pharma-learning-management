@@ -127,12 +127,13 @@ class TrainingEndpoint extends Endpoint {
     );
   }
 
-  /// Cancel an assignment.
+  /// Cancel an assignment (ADM-WF-02).
+  /// Requires a mandatory reason and cascades cancellation to linked active enrollments.
   Future<TrainingAssignment> cancelAssignment(
     Session session, {
     required int assignmentId,
     required int cancelledById,
-    String? reason,
+    required String reason,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
     return TrainingAssignmentService.cancelAssignment(
@@ -221,7 +222,7 @@ class TrainingEndpoint extends Endpoint {
     required int enrollmentId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     final enrollment = await Enrollment.db.findById(session, enrollmentId);
@@ -243,7 +244,7 @@ class TrainingEndpoint extends Endpoint {
       signatureMeaning: signatureMeaning,
       entityType: 'enrollment_retraining_ack',
       entityId: enrollmentId.toString(),
-      passwordReauth: passwordReauth,
+      passwordPlaintext: passwordPlaintext,
       ipAddress: null,
     );
 
@@ -363,18 +364,18 @@ class TrainingEndpoint extends Endpoint {
   Future<String> issueBiometricToken(
     Session session, {
     required int userId,
-    required String passwordReauth,
+    required String passwordPlaintext,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     return EsignatureService.issueBiometricToken(
       session,
       userId: userId,
-      passwordReauth: passwordReauth,
+      passwordPlaintext: passwordPlaintext,
     );
   }
 
   /// Create electronic signature for training completion (called after e-sign UI).
-  /// passwordReauth: plaintext password for re-authentication (sent over HTTPS).
+  /// passwordPlaintext: plaintext password for re-authentication (sent over HTTPS); verified server-side, never stored.
   /// biometricToken: short-lived token from issueBiometricToken (plan 6B).
   Future<int> createTrainingSignature(
     Session session, {
@@ -382,7 +383,7 @@ class TrainingEndpoint extends Endpoint {
     required String signatureMeaning,
     required String entityType,
     required String entityId,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? biometricToken,
     String? ipAddress,
   }) async {
@@ -393,7 +394,7 @@ class TrainingEndpoint extends Endpoint {
       signatureMeaning: signatureMeaning,
       entityType: entityType,
       entityId: entityId,
-      passwordReauth: passwordReauth,
+      passwordPlaintext: passwordPlaintext,
       biometricToken: biometricToken,
       ipAddress: ipAddress,
     );
@@ -566,6 +567,72 @@ class TrainingEndpoint extends Endpoint {
         authorId: authorId,
         note: note,
       ),
+    );
+  }
+
+  /// QA-WF-06: Revoke an electronic signature (QA role).
+  /// This invalidates the signature and any linked certificates.
+  Future<void> revokeSignature(
+    Session session, {
+    required int signatureId,
+    required String reason,
+    required String passwordPlaintext,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
+
+    final signature = await ElectronicSignature.db.findById(session, signatureId);
+    if (signature == null) throw Exception('Signature not found');
+    if (signature.isValid == false) throw Exception('Signature already revoked');
+
+    // Get the current user for the revoking signature
+    final revoker = await RbacHelper.getCurrentPharmaUser(session);
+    if (revoker == null) throw Exception('User not authenticated');
+
+    // Create the revoking signature
+    final revokingSignature = await EsignatureService.sign(
+      session,
+      userId: revoker.id!,
+      signatureMeaning: 'I am revoking this signature for the stated reason: $reason',
+      entityType: 'electronic_signature',
+      entityId: signatureId.toString(),
+      passwordPlaintext: passwordPlaintext,
+    );
+
+    // Update the original signature
+    final updated = signature.copyWith(
+      isValid: false,
+      revokedReason: reason,
+      revokedBySignatureId: revokingSignature.id,
+    );
+    await ElectronicSignature.db.updateRow(session, updated);
+
+    // Invalidate any linked certificates
+    final certificates = await Certificate.db.find(
+      session,
+      where: (t) => t.esignatureId.equals(signatureId),
+    );
+
+    for (final cert in certificates) {
+      final updatedCert = cert.copyWith(status: 'revoked');
+      await Certificate.db.updateRow(session, updatedCert);
+
+      await AuditService.log(
+        session,
+        entityType: 'certificate',
+        entityId: cert.id.toString(),
+        action: 'CertificateRevoked',
+        newValueJson: '{"reason":"Linked signature revoked","signatureId":$signatureId}',
+        userId: revoker.id,
+      );
+    }
+
+    await AuditService.log(
+      session,
+      entityType: 'electronic_signature',
+      entityId: signatureId.toString(),
+      action: 'SignatureRevoked',
+      newValueJson: '{"reason":"$reason","revokedBySignatureId":${revokingSignature.id}}',
+      userId: revoker.id,
     );
   }
 }

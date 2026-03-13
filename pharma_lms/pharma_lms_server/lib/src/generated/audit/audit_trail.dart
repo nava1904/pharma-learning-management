@@ -30,6 +30,7 @@ abstract class AuditTrail
     this.user,
     this.reason,
     this.ipAddress,
+    this.rowHash,
   }) : timestamp = timestamp ?? DateTime.now();
 
   factory AuditTrail({
@@ -44,6 +45,7 @@ abstract class AuditTrail
     _i2.PharmaUser? user,
     String? reason,
     String? ipAddress,
+    String? rowHash,
   }) = _AuditTrailImpl;
 
   factory AuditTrail.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -65,6 +67,7 @@ abstract class AuditTrail
             ),
       reason: jsonSerialization['reason'] as String?,
       ipAddress: jsonSerialization['ipAddress'] as String?,
+      rowHash: jsonSerialization['rowHash'] as String?,
     );
   }
 
@@ -104,6 +107,9 @@ abstract class AuditTrail
   /// IP address.
   String? ipAddress;
 
+  /// SHA-256 hash of critical fields for integrity verification (21 CFR Part 11).
+  String? rowHash;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -122,6 +128,7 @@ abstract class AuditTrail
     _i2.PharmaUser? user,
     String? reason,
     String? ipAddress,
+    String? rowHash,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -138,6 +145,7 @@ abstract class AuditTrail
       if (user != null) 'user': user?.toJson(),
       if (reason != null) 'reason': reason,
       if (ipAddress != null) 'ipAddress': ipAddress,
+      if (rowHash != null) 'rowHash': rowHash,
     };
   }
 
@@ -156,6 +164,7 @@ abstract class AuditTrail
       if (user != null) 'user': user?.toJsonForProtocol(),
       if (reason != null) 'reason': reason,
       if (ipAddress != null) 'ipAddress': ipAddress,
+      if (rowHash != null) 'rowHash': rowHash,
     };
   }
 
@@ -204,6 +213,7 @@ class _AuditTrailImpl extends AuditTrail {
     _i2.PharmaUser? user,
     String? reason,
     String? ipAddress,
+    String? rowHash,
   }) : super._(
          id: id,
          entityType: entityType,
@@ -216,6 +226,7 @@ class _AuditTrailImpl extends AuditTrail {
          user: user,
          reason: reason,
          ipAddress: ipAddress,
+         rowHash: rowHash,
        );
 
   /// Returns a shallow copy of this [AuditTrail]
@@ -234,6 +245,7 @@ class _AuditTrailImpl extends AuditTrail {
     Object? user = _Undefined,
     Object? reason = _Undefined,
     Object? ipAddress = _Undefined,
+    Object? rowHash = _Undefined,
   }) {
     return AuditTrail(
       id: id is int? ? id : this.id,
@@ -247,6 +259,7 @@ class _AuditTrailImpl extends AuditTrail {
       user: user is _i2.PharmaUser? ? user : this.user?.copyWith(),
       reason: reason is String? ? reason : this.reason,
       ipAddress: ipAddress is String? ? ipAddress : this.ipAddress,
+      rowHash: rowHash is String? ? rowHash : this.rowHash,
     );
   }
 }
@@ -301,6 +314,11 @@ class AuditTrailUpdateTable extends _i1.UpdateTable<AuditTrailTable> {
     table.ipAddress,
     value,
   );
+
+  _i1.ColumnValue<String, String> rowHash(String? value) => _i1.ColumnValue(
+    table.rowHash,
+    value,
+  );
 }
 
 class AuditTrailTable extends _i1.Table<int?> {
@@ -343,6 +361,10 @@ class AuditTrailTable extends _i1.Table<int?> {
       'ipAddress',
       this,
     );
+    rowHash = _i1.ColumnString(
+      'rowHash',
+      this,
+    );
   }
 
   late final AuditTrailUpdateTable updateTable;
@@ -376,6 +398,9 @@ class AuditTrailTable extends _i1.Table<int?> {
   /// IP address.
   late final _i1.ColumnString ipAddress;
 
+  /// SHA-256 hash of critical fields for integrity verification (21 CFR Part 11).
+  late final _i1.ColumnString rowHash;
+
   _i2.PharmaUserTable get user {
     if (_user != null) return _user!;
     _user = _i1.createRelationTable(
@@ -401,6 +426,7 @@ class AuditTrailTable extends _i1.Table<int?> {
     userId,
     reason,
     ipAddress,
+    rowHash,
   ];
 
   @override

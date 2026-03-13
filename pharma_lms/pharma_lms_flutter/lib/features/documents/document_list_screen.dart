@@ -83,7 +83,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     decoration: const InputDecoration(
                       labelText: 'Document Type',
                       border: OutlineInputBorder(),
@@ -95,7 +95,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<Organization>(
-                    value: selectedOrg,
+                    initialValue: selectedOrg,
                     decoration: const InputDecoration(
                       labelText: 'Organization',
                       border: OutlineInputBorder(),

@@ -166,7 +166,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     }
 
     final needsEsign = newState == 'approved' || newState == 'effective';
-    String? passwordReauth;
+    String? passwordPlaintext;
     String signatureMeaning = 'Document lifecycle approval';
 
     if (needsEsign) {
@@ -175,7 +175,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         builder: (ctx) => _LifecycleSignDialog(newState: newState),
       );
       if (result == null || result['password']?.isEmpty == true) return;
-      passwordReauth = result['password'];
+      passwordPlaintext = result['password'];
       signatureMeaning = result['meaning'] ?? signatureMeaning;
     } else if (newState == 'obsolete' && (obsoleteReason == null || obsoleteReason.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -192,7 +192,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         obsoleteReason: newState == 'obsolete' ? obsoleteReason : null,
         userId: user!.id!,
         signatureMeaning: signatureMeaning,
-        passwordReauth: passwordReauth,
+        passwordPlaintext: passwordPlaintext,
       );
       if (mounted) {
         setState(() {
@@ -363,7 +363,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: _selectedQaClassification ?? 'training_required',
+                    initialValue: _selectedQaClassification ?? 'training_required',
                     decoration: const InputDecoration(
                       labelText: 'Training Required by QA',
                       border: OutlineInputBorder(),

@@ -52,8 +52,8 @@ class KafkaEventProcessor extends FutureCall {
     final courseVersion = await CourseVersion.db.findById(session, cvId);
     final changeSummary = courseVersion?.changeSummary;
 
-    if (affectedDeptIds != null && affectedDeptIds!.isNotEmpty) {
-      for (final deptId in affectedDeptIds!) {
+    if (affectedDeptIds != null && affectedDeptIds.isNotEmpty) {
+      for (final deptId in affectedDeptIds) {
         await TrainingAssignmentService.assignToDepartment(
           session,
           departmentId: deptId,
@@ -65,8 +65,8 @@ class KafkaEventProcessor extends FutureCall {
           retrainingChangeSummary: changeSummary,
         );
       }
-    } else if (affectedRoleIds != null && affectedRoleIds!.isNotEmpty) {
-      for (final roleId in affectedRoleIds!) {
+    } else if (affectedRoleIds != null && affectedRoleIds.isNotEmpty) {
+      for (final roleId in affectedRoleIds) {
         final users = await PharmaUser.db.find(
           session,
           where: (t) => t.jobRoleId.equals(roleId),
@@ -136,11 +136,10 @@ class KafkaEventProcessor extends FutureCall {
     );
     if (matrixRows.isNotEmpty) {
       for (final row in matrixRows) {
-        if (row.courseId == null) continue;
         final versions = await CourseVersion.db.find(
           session,
           where: (t) =>
-              t.courseId.equals(row.courseId!) &
+              t.courseId.equals(row.courseId) &
               t.status.equals('effective'),
         );
         for (final v in versions) {
@@ -205,11 +204,9 @@ class KafkaEventProcessor extends FutureCall {
       where: (t) => t.userId.equals(uid) & t.status.equals('active'),
     );
     for (final c in certs) {
-      if (c.courseVersionId != null) {
-        final cv = await CourseVersion.db.findById(session, c.courseVersionId!);
-        if (cv?.courseId != null) completedCourseIds.add(cv!.courseId!);
-      }
-    }
+      final cv = await CourseVersion.db.findById(session, c.courseVersionId!);
+      if (cv?.courseId != null) completedCourseIds.add(cv!.courseId!);
+        }
     final toAssign = requiredCourseIds.difference(completedCourseIds);
     if (toAssign.isEmpty) return;
 

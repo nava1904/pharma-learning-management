@@ -18,9 +18,9 @@ Future<int?> showEsignatureModal(
   return showGeneralDialog<int?>(
     context: context,
     barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.8),
+    barrierColor: Colors.black87,
     transitionDuration: const Duration(milliseconds: 200),
-    pageBuilder: (context, _animation, _secondaryAnimation) => EsignatureModal(
+    pageBuilder: (context, animation, secondaryAnimation) => EsignatureModal(
       entityType: entityType,
       entityId: entityId,
       signatureMeaning: signatureMeaning,
@@ -165,7 +165,7 @@ class _EsignatureModalState extends State<EsignatureModal> {
         signatureMeaning: meaning,
         entityType: widget.entityType,
         entityId: widget.entityId,
-        passwordReauth: password,
+        passwordPlaintext: password,
       );
       if (!mounted) return;
       _pop(esignatureId);
@@ -173,7 +173,7 @@ class _EsignatureModalState extends State<EsignatureModal> {
       try {
         final token = await client.training.issueBiometricToken(
           userId: userId,
-          passwordReauth: password,
+          passwordPlaintext: password,
         );
         await BiometricStorage.storeToken(userId, token);
       } catch (_) {}
@@ -311,7 +311,7 @@ class _EsignatureModalState extends State<EsignatureModal> {
                   )
                 else if (_meanings.isNotEmpty)
                   DropdownButtonFormField<String>(
-                    value: _selectedMeaning,
+                    initialValue: _selectedMeaning,
                     decoration: const InputDecoration(
                       labelText: 'Signature Meaning',
                       border: OutlineInputBorder(),
@@ -517,7 +517,7 @@ class _EsignatureScreenState extends State<EsignatureScreen> {
         signatureMeaning: meaning,
         entityType: widget.entityType,
         entityId: widget.entityId,
-        passwordReauth: password,
+        passwordPlaintext: password,
       );
       if (mounted) {
         Navigator.of(context).pop<int>(esignatureId);
@@ -608,7 +608,7 @@ class _EsignatureScreenState extends State<EsignatureScreen> {
                       ))
                     else if (_meanings.isNotEmpty)
                       DropdownButtonFormField<String>(
-                        value: _selectedMeaning,
+                        initialValue: _selectedMeaning,
                         decoration: const InputDecoration(
                           labelText: 'Signature Meaning',
                           border: OutlineInputBorder(),

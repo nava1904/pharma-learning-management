@@ -23,7 +23,12 @@ abstract class MaterialVersion implements _i1.SerializableModel {
     required this.version,
     required this.storageKey,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    this.fileHash,
+    String? virusScanStatus,
+    this.virusScanAt,
+    this.fileSizeBytes,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       virusScanStatus = virusScanStatus ?? 'pending';
 
   factory MaterialVersion({
     int? id,
@@ -32,6 +37,10 @@ abstract class MaterialVersion implements _i1.SerializableModel {
     required int version,
     required String storageKey,
     DateTime? createdAt,
+    String? fileHash,
+    String? virusScanStatus,
+    DateTime? virusScanAt,
+    int? fileSizeBytes,
   }) = _MaterialVersionImpl;
 
   factory MaterialVersion.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -48,6 +57,14 @@ abstract class MaterialVersion implements _i1.SerializableModel {
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
+      fileHash: jsonSerialization['fileHash'] as String?,
+      virusScanStatus: jsonSerialization['virusScanStatus'] as String?,
+      virusScanAt: jsonSerialization['virusScanAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['virusScanAt'],
+            ),
+      fileSizeBytes: jsonSerialization['fileSizeBytes'] as int?,
     );
   }
 
@@ -70,6 +87,18 @@ abstract class MaterialVersion implements _i1.SerializableModel {
   /// When created.
   DateTime createdAt;
 
+  /// SHA-256 file hash for integrity verification (TRN-WF-02).
+  String? fileHash;
+
+  /// Virus scan status: pending, clean, quarantined (TRN-WF-02).
+  String? virusScanStatus;
+
+  /// When virus scan completed.
+  DateTime? virusScanAt;
+
+  /// File size in bytes.
+  int? fileSizeBytes;
+
   /// Returns a shallow copy of this [MaterialVersion]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -80,6 +109,10 @@ abstract class MaterialVersion implements _i1.SerializableModel {
     int? version,
     String? storageKey,
     DateTime? createdAt,
+    String? fileHash,
+    String? virusScanStatus,
+    DateTime? virusScanAt,
+    int? fileSizeBytes,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -91,6 +124,10 @@ abstract class MaterialVersion implements _i1.SerializableModel {
       'version': version,
       'storageKey': storageKey,
       'createdAt': createdAt.toJson(),
+      if (fileHash != null) 'fileHash': fileHash,
+      if (virusScanStatus != null) 'virusScanStatus': virusScanStatus,
+      if (virusScanAt != null) 'virusScanAt': virusScanAt?.toJson(),
+      if (fileSizeBytes != null) 'fileSizeBytes': fileSizeBytes,
     };
   }
 
@@ -110,6 +147,10 @@ class _MaterialVersionImpl extends MaterialVersion {
     required int version,
     required String storageKey,
     DateTime? createdAt,
+    String? fileHash,
+    String? virusScanStatus,
+    DateTime? virusScanAt,
+    int? fileSizeBytes,
   }) : super._(
          id: id,
          materialId: materialId,
@@ -117,6 +158,10 @@ class _MaterialVersionImpl extends MaterialVersion {
          version: version,
          storageKey: storageKey,
          createdAt: createdAt,
+         fileHash: fileHash,
+         virusScanStatus: virusScanStatus,
+         virusScanAt: virusScanAt,
+         fileSizeBytes: fileSizeBytes,
        );
 
   /// Returns a shallow copy of this [MaterialVersion]
@@ -130,6 +175,10 @@ class _MaterialVersionImpl extends MaterialVersion {
     int? version,
     String? storageKey,
     DateTime? createdAt,
+    Object? fileHash = _Undefined,
+    Object? virusScanStatus = _Undefined,
+    Object? virusScanAt = _Undefined,
+    Object? fileSizeBytes = _Undefined,
   }) {
     return MaterialVersion(
       id: id is int? ? id : this.id,
@@ -140,6 +189,12 @@ class _MaterialVersionImpl extends MaterialVersion {
       version: version ?? this.version,
       storageKey: storageKey ?? this.storageKey,
       createdAt: createdAt ?? this.createdAt,
+      fileHash: fileHash is String? ? fileHash : this.fileHash,
+      virusScanStatus: virusScanStatus is String?
+          ? virusScanStatus
+          : this.virusScanStatus,
+      virusScanAt: virusScanAt is DateTime? ? virusScanAt : this.virusScanAt,
+      fileSizeBytes: fileSizeBytes is int? ? fileSizeBytes : this.fileSizeBytes,
     );
   }
 }

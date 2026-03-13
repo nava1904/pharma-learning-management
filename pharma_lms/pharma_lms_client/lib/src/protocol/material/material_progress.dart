@@ -29,6 +29,7 @@ abstract class MaterialProgress implements _i1.SerializableModel {
     this.materialVersionId,
     this.enrollmentId,
     this.timeSpentSeconds,
+    this.lastHeartbeat,
     this.readTimeMet,
   }) : progressPct = progressPct ?? 0;
 
@@ -44,6 +45,7 @@ abstract class MaterialProgress implements _i1.SerializableModel {
     int? materialVersionId,
     int? enrollmentId,
     int? timeSpentSeconds,
+    DateTime? lastHeartbeat,
     bool? readTimeMet,
   }) = _MaterialProgressImpl;
 
@@ -72,6 +74,11 @@ abstract class MaterialProgress implements _i1.SerializableModel {
       materialVersionId: jsonSerialization['materialVersionId'] as int?,
       enrollmentId: jsonSerialization['enrollmentId'] as int?,
       timeSpentSeconds: jsonSerialization['timeSpentSeconds'] as int?,
+      lastHeartbeat: jsonSerialization['lastHeartbeat'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['lastHeartbeat'],
+            ),
       readTimeMet: jsonSerialization['readTimeMet'] == null
           ? null
           : _i1.BoolJsonExtension.fromJson(jsonSerialization['readTimeMet']),
@@ -111,7 +118,10 @@ abstract class MaterialProgress implements _i1.SerializableModel {
   /// Active engagement time in seconds.
   int? timeSpentSeconds;
 
-  /// Whether minimum read time was met.
+  /// When the server last received a heartbeat (for server-side minimum read time).
+  DateTime? lastHeartbeat;
+
+  /// Whether minimum read time was met (server-set only).
   bool? readTimeMet;
 
   /// Returns a shallow copy of this [MaterialProgress]
@@ -129,6 +139,7 @@ abstract class MaterialProgress implements _i1.SerializableModel {
     int? materialVersionId,
     int? enrollmentId,
     int? timeSpentSeconds,
+    DateTime? lastHeartbeat,
     bool? readTimeMet,
   });
   @override
@@ -146,6 +157,7 @@ abstract class MaterialProgress implements _i1.SerializableModel {
       if (materialVersionId != null) 'materialVersionId': materialVersionId,
       if (enrollmentId != null) 'enrollmentId': enrollmentId,
       if (timeSpentSeconds != null) 'timeSpentSeconds': timeSpentSeconds,
+      if (lastHeartbeat != null) 'lastHeartbeat': lastHeartbeat?.toJson(),
       if (readTimeMet != null) 'readTimeMet': readTimeMet,
     };
   }
@@ -171,6 +183,7 @@ class _MaterialProgressImpl extends MaterialProgress {
     int? materialVersionId,
     int? enrollmentId,
     int? timeSpentSeconds,
+    DateTime? lastHeartbeat,
     bool? readTimeMet,
   }) : super._(
          id: id,
@@ -184,6 +197,7 @@ class _MaterialProgressImpl extends MaterialProgress {
          materialVersionId: materialVersionId,
          enrollmentId: enrollmentId,
          timeSpentSeconds: timeSpentSeconds,
+         lastHeartbeat: lastHeartbeat,
          readTimeMet: readTimeMet,
        );
 
@@ -203,6 +217,7 @@ class _MaterialProgressImpl extends MaterialProgress {
     Object? materialVersionId = _Undefined,
     Object? enrollmentId = _Undefined,
     Object? timeSpentSeconds = _Undefined,
+    Object? lastHeartbeat = _Undefined,
     Object? readTimeMet = _Undefined,
   }) {
     return MaterialProgress(
@@ -225,6 +240,9 @@ class _MaterialProgressImpl extends MaterialProgress {
       timeSpentSeconds: timeSpentSeconds is int?
           ? timeSpentSeconds
           : this.timeSpentSeconds,
+      lastHeartbeat: lastHeartbeat is DateTime?
+          ? lastHeartbeat
+          : this.lastHeartbeat,
       readTimeMet: readTimeMet is bool? ? readTimeMet : this.readTimeMet,
     );
   }

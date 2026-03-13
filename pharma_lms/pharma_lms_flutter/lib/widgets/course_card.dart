@@ -56,128 +56,140 @@ class CourseCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: AppColors.indigo50,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.menu_book_rounded,
-                    size: 48,
-                    color: AppColors.indigo600.withValues(alpha: 0.6),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.slate900,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (progress != null)
-                          ProgressRing(
-                            progress: progress!,
-                            size: 40,
-                            strokeWidth: 3,
-                          ),
-                      ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final maxH = constraints.maxHeight.isFinite ? constraints.maxHeight : 300.0;
+              final contentHeight = (maxH - 120).clamp(0.0, double.infinity);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppColors.indigo50,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.slate600,
-                            ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    child: Center(
+                      child: Icon(
+                        Icons.menu_book_rounded,
+                        size: 48,
+                        color: AppColors.indigo600.withValues(alpha: 0.6),
                       ),
-                    ],
-                    if (resumeLabel != null && resumeLabel!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Resume: $resumeLabel',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.teal600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (versionCount != null || lastUpdated != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
+                    ),
+                  ),
+                  SizedBox(
+                    height: contentHeight,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (versionCount != null)
-                            Text(
-                              '$versionCount version(s)',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.slate500,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.slate900,
                                   ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          if (versionCount != null && lastUpdated != null)
-                            Text(
-                              ' • ',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.slate500,
-                                  ),
-                            ),
-                          if (lastUpdated != null)
-                            Text(
-                              lastUpdated!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.slate500,
-                                  ),
+                          ),
+                          if (progress != null)
+                            ProgressRing(
+                              progress: progress!,
+                              size: 40,
+                              strokeWidth: 3,
                             ),
                         ],
                       ),
-                    ],
-                    if (status != null) ...[
-                      const SizedBox(height: 8),
-                      StatusBadge(status: status!),
-                    ],
-                    if (onTap != null) ...[
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: onTap,
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                          child: Text(
-                            ctaLabel ??
-                                (progress != null && progress! > 0
-                                    ? 'Continue'
-                                    : 'Start'),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.slate600,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (resumeLabel != null && resumeLabel!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Resume: $resumeLabel',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.teal600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (versionCount != null || lastUpdated != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            if (versionCount != null)
+                              Text(
+                                '$versionCount version(s)',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.slate500,
+                                    ),
+                              ),
+                            if (versionCount != null && lastUpdated != null)
+                              Text(
+                                ' • ',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.slate500,
+                                    ),
+                              ),
+                            if (lastUpdated != null)
+                              Text(
+                                lastUpdated!,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.slate500,
+                                    ),
+                              ),
+                          ],
+                        ),
+                      ],
+                      if (status != null) ...[
+                        const SizedBox(height: 8),
+                        StatusBadge(status: status!),
+                      ],
+                      if (onTap != null) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: onTap,
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            child: Text(
+                              ctaLabel ??
+                                  (progress != null && progress! > 0
+                                      ? 'Continue'
+                                      : 'Start'),
+                            ),
                           ),
                         ),
+                      ],
+                        ],
                       ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

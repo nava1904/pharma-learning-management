@@ -56,12 +56,12 @@ class DocumentRepository {
     required int versionId,
     required String transition,
     int? userId,
-    String? passwordReauth,
+    String? passwordPlaintext,
   }) =>
       api.document.transitionDocumentLifecycle(
         versionId: versionId,
         transition: transition,
         userId: userId,
-        passwordReauth: passwordReauth,
+        passwordPlaintext: passwordPlaintext,
       );
 }

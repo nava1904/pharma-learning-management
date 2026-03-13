@@ -26,6 +26,8 @@ abstract class Assessment implements _i1.SerializableModel {
     required this.passingScore,
     bool? randomize,
     this.timeLimitMinutes,
+    this.maxAttempts,
+    this.questionsToDisplay,
   }) : randomize = randomize ?? true;
 
   factory Assessment({
@@ -37,6 +39,8 @@ abstract class Assessment implements _i1.SerializableModel {
     required int passingScore,
     bool? randomize,
     int? timeLimitMinutes,
+    int? maxAttempts,
+    int? questionsToDisplay,
   }) = _AssessmentImpl;
 
   factory Assessment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -59,6 +63,8 @@ abstract class Assessment implements _i1.SerializableModel {
           ? null
           : _i1.BoolJsonExtension.fromJson(jsonSerialization['randomize']),
       timeLimitMinutes: jsonSerialization['timeLimitMinutes'] as int?,
+      maxAttempts: jsonSerialization['maxAttempts'] as int?,
+      questionsToDisplay: jsonSerialization['questionsToDisplay'] as int?,
     );
   }
 
@@ -86,6 +92,13 @@ abstract class Assessment implements _i1.SerializableModel {
   /// Time limit in minutes.
   int? timeLimitMinutes;
 
+  /// Maximum attempts allowed (0 = unlimited).
+  int? maxAttempts;
+
+  /// Number of questions to display from the bank.
+  /// TRN-WF-03: Must be <= totalQuestions / 2 for adequate randomization.
+  int? questionsToDisplay;
+
   /// Returns a shallow copy of this [Assessment]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -98,6 +111,8 @@ abstract class Assessment implements _i1.SerializableModel {
     int? passingScore,
     bool? randomize,
     int? timeLimitMinutes,
+    int? maxAttempts,
+    int? questionsToDisplay,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -111,6 +126,8 @@ abstract class Assessment implements _i1.SerializableModel {
       'passingScore': passingScore,
       'randomize': randomize,
       if (timeLimitMinutes != null) 'timeLimitMinutes': timeLimitMinutes,
+      if (maxAttempts != null) 'maxAttempts': maxAttempts,
+      if (questionsToDisplay != null) 'questionsToDisplay': questionsToDisplay,
     };
   }
 
@@ -132,6 +149,8 @@ class _AssessmentImpl extends Assessment {
     required int passingScore,
     bool? randomize,
     int? timeLimitMinutes,
+    int? maxAttempts,
+    int? questionsToDisplay,
   }) : super._(
          id: id,
          courseVersionId: courseVersionId,
@@ -141,6 +160,8 @@ class _AssessmentImpl extends Assessment {
          passingScore: passingScore,
          randomize: randomize,
          timeLimitMinutes: timeLimitMinutes,
+         maxAttempts: maxAttempts,
+         questionsToDisplay: questionsToDisplay,
        );
 
   /// Returns a shallow copy of this [Assessment]
@@ -156,6 +177,8 @@ class _AssessmentImpl extends Assessment {
     int? passingScore,
     bool? randomize,
     Object? timeLimitMinutes = _Undefined,
+    Object? maxAttempts = _Undefined,
+    Object? questionsToDisplay = _Undefined,
   }) {
     return Assessment(
       id: id is int? ? id : this.id,
@@ -172,6 +195,10 @@ class _AssessmentImpl extends Assessment {
       timeLimitMinutes: timeLimitMinutes is int?
           ? timeLimitMinutes
           : this.timeLimitMinutes,
+      maxAttempts: maxAttempts is int? ? maxAttempts : this.maxAttempts,
+      questionsToDisplay: questionsToDisplay is int?
+          ? questionsToDisplay
+          : this.questionsToDisplay,
     );
   }
 }

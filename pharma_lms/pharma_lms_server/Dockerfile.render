@@ -1,0 +1,48 @@
+# Build stage
+FROM dart:3.5.0 AS build
+
+WORKDIR /app
+
+# Copy the entire pharma_lms directory
+COPY pharma_lms_client ./pharma_lms_client
+COPY pharma_lms_server ./pharma_lms_server
+
+# Get dependencies for client
+WORKDIR /app/pharma_lms_client
+RUN dart pub get
+
+# Get dependencies and compile server
+WORKDIR /app/pharma_lms_server
+RUN dart pub get
+RUN dart compile exe bin/main.dart -o bin/server
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy compiled binary
+COPY --from=build /app/pharma_lms_server/bin/server ./bin/server
+
+# Copy config files
+COPY --from=build /app/pharma_lms_server/config ./config
+
+# Copy migrations
+COPY --from=build /app/pharma_lms_server/migrations ./migrations
+
+# Copy web assets if any
+COPY --from=build /app/pharma_lms_server/web ./web
+
+# Expose ports
+EXPOSE 8080 8081 8082
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/ || exit 1
+
+# Run the server
+CMD ["./bin/server", "--mode", "production", "--apply-migrations"]

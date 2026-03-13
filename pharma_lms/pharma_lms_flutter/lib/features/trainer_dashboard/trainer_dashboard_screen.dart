@@ -12,10 +12,32 @@ import '../../widgets/course_card.dart';
 import '../../widgets/quick_action_button.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/stat_card.dart';
+import 'new_course_dialog.dart';
 
 /// Trainer/SME Dashboard: stats, quick actions, my courses.
 class TrainerDashboardScreen extends ConsumerWidget {
   const TrainerDashboardScreen({super.key});
+
+  /// TRN-WF-01: Open New Course Dialog and navigate to builder if created
+  static Future<void> _openNewCourseDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required int organizationId,
+    required int createdById,
+  }) async {
+    final course = await NewCourseDialog.show(
+      context,
+      organizationId: organizationId,
+      createdById: createdById,
+    );
+
+    if (course != null && context.mounted) {
+      // Refresh the courses list
+      ref.invalidate(coursesProvider);
+      // Navigate to course builder with the new course
+      context.push('/trainer/course-builder', extra: course);
+    }
+  }
 
   static Future<void> _openAnalytics(BuildContext context, Course course) async {
     if (course.id == null) return;
@@ -157,8 +179,12 @@ class TrainerDashboardScreen extends ConsumerWidget {
                             label: 'Create New Course',
                             subtitle: 'Build training content',
                             icon: Icons.add,
-                            onPressed: () =>
-                                context.push('/trainer/course-builder'),
+                            onPressed: () => _openNewCourseDialog(
+                              context,
+                              ref,
+                              organizationId: user?.organizationId ?? 1,
+                              createdById: userId ?? 1,
+                            ),
                             backgroundColor: AppColors.teal50,
                             borderColor: AppColors.teal100,
                             iconColor: AppColors.teal600,
@@ -167,8 +193,10 @@ class TrainerDashboardScreen extends ConsumerWidget {
                             label: 'Upload Materials',
                             subtitle: 'SOPs, videos, documents',
                             icon: Icons.upload_file,
-                            onPressed: () =>
-                                context.push('/trainer/materials'),
+                            onPressed: () => context.push(
+                              '/trainer/materials',
+                              extra: {'organizationId': user?.organizationId ?? 1},
+                            ),
                             backgroundColor: const Color(0xFFDCFCE7),
                             borderColor: const Color(0xFF86EFAC),
                             iconColor: AppColors.success,
@@ -229,7 +257,12 @@ class TrainerDashboardScreen extends ConsumerWidget {
                     title: 'My Courses',
                     color: AppColors.teal600,
                     action: ElevatedButton.icon(
-                      onPressed: () => context.push('/trainer/course-builder'),
+                      onPressed: () => _openNewCourseDialog(
+                        context,
+                        ref,
+                        organizationId: user?.organizationId ?? 1,
+                        createdById: userId ?? 1,
+                      ),
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text('New Course'),
                     ),
@@ -268,8 +301,12 @@ class TrainerDashboardScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton(
-                            onPressed: () =>
-                                context.push('/trainer/course-builder'),
+                            onPressed: () => _openNewCourseDialog(
+                              context,
+                              ref,
+                              organizationId: user?.organizationId ?? 1,
+                              createdById: userId ?? 1,
+                            ),
                             child: const Text('Create Your First Course'),
                           ),
                         ],

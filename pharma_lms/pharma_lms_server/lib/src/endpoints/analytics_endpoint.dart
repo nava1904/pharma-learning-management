@@ -6,6 +6,7 @@ import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../services/compliance_calculator_service.dart';
 import '../services/rbac_helper.dart';
+import '../services/scheduled_job_service.dart';
 
 /// Analytics & Reporting domain endpoint.
 class AnalyticsEndpoint extends Endpoint {
@@ -54,8 +55,9 @@ class AnalyticsEndpoint extends Endpoint {
     for (final r in records) {
       final score = r.score ?? 0;
       if (score >= passingScore) passedCount++;
-      if (score <= 20) buckets['0-20'] = buckets['0-20']! + 1;
-      else if (score <= 40) buckets['21-40'] = buckets['21-40']! + 1;
+      if (score <= 20) {
+        buckets['0-20'] = buckets['0-20']! + 1;
+      } else if (score <= 40) buckets['21-40'] = buckets['21-40']! + 1;
       else if (score <= 60) buckets['41-60'] = buckets['41-60']! + 1;
       else if (score <= 80) buckets['61-80'] = buckets['61-80']! + 1;
       else buckets['81-100'] = buckets['81-100']! + 1;
@@ -138,20 +140,64 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// IT-WF-04: Manual trigger for background jobs.
+  /// Supported jobNames: CertExpiryCheck, NotificationWorker, ComplianceCalc, AuditTrailIntegrityCheck
   Future<Map<String, dynamic>> triggerManualJob(
     Session session, {
     required String jobName,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
-    await ScheduledJobLog.db.insertRow(
-      session,
-      ScheduledJobLog(
-        jobName: jobName,
-        status: 'triggered',
-        recordsProcessed: 0,
-      ),
-    );
-    return {'success': true, 'jobName': jobName};
+    
+    switch (jobName) {
+      case 'CertExpiryCheck':
+        return await ScheduledJobService.runCertExpiryCheck(session);
+      case 'NotificationWorker':
+        return await ScheduledJobService.runNotificationWorker(session);
+      case 'ComplianceCalc':
+        return await ScheduledJobService.runComplianceCalc(session);
+      case 'AuditTrailIntegrityCheck':
+        return await ScheduledJobService.runAuditTrailIntegrityCheck(session);
+      default:
+        // Legacy: just log the trigger
+        await ScheduledJobLog.db.insertRow(
+          session,
+          ScheduledJobLog(
+            jobName: jobName,
+            status: 'triggered',
+            recordsProcessed: 0,
+          ),
+        );
+        return {'success': true, 'jobName': jobName, 'message': 'Job triggered (legacy mode)'};
+    }
+  }
+
+  /// SYS-WF-04: Run certificate expiry check job.
+  /// Creates renewal assignments for certificates expiring in 30-60 days.
+  /// Marks expired certificates and logs to audit trail.
+  Future<Map<String, dynamic>> runCertExpiryCheck(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
+    return await ScheduledJobService.runCertExpiryCheck(session);
+  }
+
+  /// SYS-WF-05: Run notification worker job.
+  /// Processes escalation ladder for due/overdue enrollments.
+  Future<Map<String, dynamic>> runNotificationWorker(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
+    return await ScheduledJobService.runNotificationWorker(session);
+  }
+
+  /// SYS-WF-07: Run compliance calculation job.
+  /// Computes org-wide and dept-wide compliance, writes snapshots.
+  Future<Map<String, dynamic>> runComplianceCalc(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
+    return await ScheduledJobService.runComplianceCalc(session);
+  }
+
+  /// SYS-WF-08: Run audit trail integrity check (CRITICAL - 21 CFR Part 11).
+  /// Verifies SHA-256 hashes and sequence continuity.
+  /// Throws exception if integrity issues found.
+  Future<Map<String, dynamic>> runAuditTrailIntegrityCheck(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
+    return await ScheduledJobService.runAuditTrailIntegrityCheck(session);
   }
 
   /// Department compliance summary.
@@ -687,5 +733,17 @@ class AnalyticsEndpoint extends Endpoint {
       }
     }
     return filtered;
+  }
+
+  /// Get the count of open quality events.
+  Future<int> getOpenQualityEventsCount(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
+    return await QualityEvent.db.count(session, where: (t) => t.status.equals('open'));
+  }
+
+  /// Get SLA breaches.
+  Future<List<SlaBreach>> getSlaBreaches(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
+    return await SlaBreach.db.find(session);
   }
 }

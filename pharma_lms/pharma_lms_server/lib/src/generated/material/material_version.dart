@@ -25,7 +25,12 @@ abstract class MaterialVersion
     required this.version,
     required this.storageKey,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    this.fileHash,
+    String? virusScanStatus,
+    this.virusScanAt,
+    this.fileSizeBytes,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       virusScanStatus = virusScanStatus ?? 'pending';
 
   factory MaterialVersion({
     int? id,
@@ -34,6 +39,10 @@ abstract class MaterialVersion
     required int version,
     required String storageKey,
     DateTime? createdAt,
+    String? fileHash,
+    String? virusScanStatus,
+    DateTime? virusScanAt,
+    int? fileSizeBytes,
   }) = _MaterialVersionImpl;
 
   factory MaterialVersion.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -50,6 +59,14 @@ abstract class MaterialVersion
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
+      fileHash: jsonSerialization['fileHash'] as String?,
+      virusScanStatus: jsonSerialization['virusScanStatus'] as String?,
+      virusScanAt: jsonSerialization['virusScanAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['virusScanAt'],
+            ),
+      fileSizeBytes: jsonSerialization['fileSizeBytes'] as int?,
     );
   }
 
@@ -74,6 +91,18 @@ abstract class MaterialVersion
   /// When created.
   DateTime createdAt;
 
+  /// SHA-256 file hash for integrity verification (TRN-WF-02).
+  String? fileHash;
+
+  /// Virus scan status: pending, clean, quarantined (TRN-WF-02).
+  String? virusScanStatus;
+
+  /// When virus scan completed.
+  DateTime? virusScanAt;
+
+  /// File size in bytes.
+  int? fileSizeBytes;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -87,6 +116,10 @@ abstract class MaterialVersion
     int? version,
     String? storageKey,
     DateTime? createdAt,
+    String? fileHash,
+    String? virusScanStatus,
+    DateTime? virusScanAt,
+    int? fileSizeBytes,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -98,6 +131,10 @@ abstract class MaterialVersion
       'version': version,
       'storageKey': storageKey,
       'createdAt': createdAt.toJson(),
+      if (fileHash != null) 'fileHash': fileHash,
+      if (virusScanStatus != null) 'virusScanStatus': virusScanStatus,
+      if (virusScanAt != null) 'virusScanAt': virusScanAt?.toJson(),
+      if (fileSizeBytes != null) 'fileSizeBytes': fileSizeBytes,
     };
   }
 
@@ -111,6 +148,10 @@ abstract class MaterialVersion
       'version': version,
       'storageKey': storageKey,
       'createdAt': createdAt.toJson(),
+      if (fileHash != null) 'fileHash': fileHash,
+      if (virusScanStatus != null) 'virusScanStatus': virusScanStatus,
+      if (virusScanAt != null) 'virusScanAt': virusScanAt?.toJson(),
+      if (fileSizeBytes != null) 'fileSizeBytes': fileSizeBytes,
     };
   }
 
@@ -154,6 +195,10 @@ class _MaterialVersionImpl extends MaterialVersion {
     required int version,
     required String storageKey,
     DateTime? createdAt,
+    String? fileHash,
+    String? virusScanStatus,
+    DateTime? virusScanAt,
+    int? fileSizeBytes,
   }) : super._(
          id: id,
          materialId: materialId,
@@ -161,6 +206,10 @@ class _MaterialVersionImpl extends MaterialVersion {
          version: version,
          storageKey: storageKey,
          createdAt: createdAt,
+         fileHash: fileHash,
+         virusScanStatus: virusScanStatus,
+         virusScanAt: virusScanAt,
+         fileSizeBytes: fileSizeBytes,
        );
 
   /// Returns a shallow copy of this [MaterialVersion]
@@ -174,6 +223,10 @@ class _MaterialVersionImpl extends MaterialVersion {
     int? version,
     String? storageKey,
     DateTime? createdAt,
+    Object? fileHash = _Undefined,
+    Object? virusScanStatus = _Undefined,
+    Object? virusScanAt = _Undefined,
+    Object? fileSizeBytes = _Undefined,
   }) {
     return MaterialVersion(
       id: id is int? ? id : this.id,
@@ -184,6 +237,12 @@ class _MaterialVersionImpl extends MaterialVersion {
       version: version ?? this.version,
       storageKey: storageKey ?? this.storageKey,
       createdAt: createdAt ?? this.createdAt,
+      fileHash: fileHash is String? ? fileHash : this.fileHash,
+      virusScanStatus: virusScanStatus is String?
+          ? virusScanStatus
+          : this.virusScanStatus,
+      virusScanAt: virusScanAt is DateTime? ? virusScanAt : this.virusScanAt,
+      fileSizeBytes: fileSizeBytes is int? ? fileSizeBytes : this.fileSizeBytes,
     );
   }
 }
@@ -211,6 +270,28 @@ class MaterialVersionUpdateTable extends _i1.UpdateTable<MaterialVersionTable> {
         table.createdAt,
         value,
       );
+
+  _i1.ColumnValue<String, String> fileHash(String? value) => _i1.ColumnValue(
+    table.fileHash,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> virusScanStatus(String? value) =>
+      _i1.ColumnValue(
+        table.virusScanStatus,
+        value,
+      );
+
+  _i1.ColumnValue<DateTime, DateTime> virusScanAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.virusScanAt,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> fileSizeBytes(int? value) => _i1.ColumnValue(
+    table.fileSizeBytes,
+    value,
+  );
 }
 
 class MaterialVersionTable extends _i1.Table<int?> {
@@ -234,6 +315,23 @@ class MaterialVersionTable extends _i1.Table<int?> {
       this,
       hasDefault: true,
     );
+    fileHash = _i1.ColumnString(
+      'fileHash',
+      this,
+    );
+    virusScanStatus = _i1.ColumnString(
+      'virusScanStatus',
+      this,
+      hasDefault: true,
+    );
+    virusScanAt = _i1.ColumnDateTime(
+      'virusScanAt',
+      this,
+    );
+    fileSizeBytes = _i1.ColumnInt(
+      'fileSizeBytes',
+      this,
+    );
   }
 
   late final MaterialVersionUpdateTable updateTable;
@@ -251,6 +349,18 @@ class MaterialVersionTable extends _i1.Table<int?> {
 
   /// When created.
   late final _i1.ColumnDateTime createdAt;
+
+  /// SHA-256 file hash for integrity verification (TRN-WF-02).
+  late final _i1.ColumnString fileHash;
+
+  /// Virus scan status: pending, clean, quarantined (TRN-WF-02).
+  late final _i1.ColumnString virusScanStatus;
+
+  /// When virus scan completed.
+  late final _i1.ColumnDateTime virusScanAt;
+
+  /// File size in bytes.
+  late final _i1.ColumnInt fileSizeBytes;
 
   _i2.MaterialTable get material {
     if (_material != null) return _material!;
@@ -272,6 +382,10 @@ class MaterialVersionTable extends _i1.Table<int?> {
     version,
     storageKey,
     createdAt,
+    fileHash,
+    virusScanStatus,
+    virusScanAt,
+    fileSizeBytes,
   ];
 
   @override

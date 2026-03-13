@@ -72,26 +72,127 @@ class MaterialEndpoint extends Endpoint {
     );
   }
 
-  /// Create material version after successful upload.
+  /// TRN-WF-02: Create material version after successful upload.
+  /// Supports file integrity tracking (fileHash), file size, and virus scan status.
+  /// changeSummary is required when uploading a new version of existing material.
   Future<MaterialVersion> createMaterialVersion(
     Session session, {
     required int materialId,
     required String storageKey,
+    String? fileHash,
+    int? fileSizeBytes,
+    String? changeSummary,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'material', action: 'write');
+    final user = await RbacHelper.getCurrentPharmaUser(session);
+    
     final existing = await MaterialVersion.db.find(
       session,
       where: (t) => t.materialId.equals(materialId),
+      orderBy: (t) => t.version,
+      orderDescending: true,
     );
-    final nextVersion = existing.isEmpty ? 1 : (existing.map((v) => v.version).reduce((a, b) => a > b ? a : b) + 1);
-    return await MaterialVersion.db.insertRow(
+    
+    final nextVersion = existing.isEmpty ? 1 : (existing.first.version + 1);
+    
+    // TRN-WF-02: Require change summary for versions > 1
+    if (nextVersion > 1 && (changeSummary == null || changeSummary.trim().isEmpty)) {
+      throw Exception('TRN-WF-02: Change summary required when uploading a new version');
+    }
+    
+    final newVersion = await MaterialVersion.db.insertRow(
       session,
       MaterialVersion(
         materialId: materialId,
         version: nextVersion,
         storageKey: storageKey,
+        fileHash: fileHash,
+        fileSizeBytes: fileSizeBytes,
+        virusScanStatus: 'pending',
       ),
     );
+    
+    // Audit trail for material version creation using generic emit
+    await EventService.emit(
+      session,
+      topic: 'pharma.material.version',
+      eventType: 'material_version.created',
+      aggregateId: newVersion.id.toString(),
+      payload: {
+        'materialId': materialId,
+        'version': nextVersion,
+        'storageKey': storageKey,
+        'fileHash': fileHash,
+        'fileSizeBytes': fileSizeBytes,
+        'changeSummary': changeSummary,
+        'uploadedById': user?.id,
+      },
+    );
+    
+    return newVersion;
+  }
+  
+  /// TRN-WF-02: Update material metadata (title).
+  Future<Material> updateMaterial(
+    Session session, {
+    required int materialId,
+    String? title,
+    String? materialType,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'material', action: 'write');
+    
+    final material = await Material.db.findById(session, materialId);
+    if (material == null) throw Exception('Material not found');
+    
+    final updated = material.copyWith(
+      title: title ?? material.title,
+      materialType: materialType ?? material.materialType,
+    );
+    
+    return await Material.db.updateRow(session, updated);
+  }
+  
+  /// TRN-WF-02: Get latest version of a material.
+  Future<MaterialVersion?> getLatestMaterialVersion(
+    Session session,
+    int materialId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    await RbacHelper.requirePermission(session, resource: 'material', action: 'read');
+    
+    final versions = await MaterialVersion.db.find(
+      session,
+      where: (t) => t.materialId.equals(materialId),
+      orderBy: (t) => t.version,
+      orderDescending: true,
+      limit: 1,
+    );
+    
+    return versions.isNotEmpty ? versions.first : null;
+  }
+  
+  /// TRN-WF-02: Update virus scan status after scanning.
+  Future<MaterialVersion> updateVirusScanStatus(
+    Session session, {
+    required int materialVersionId,
+    required String virusScanStatus,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'material', action: 'write');
+    
+    final version = await MaterialVersion.db.findById(session, materialVersionId);
+    if (version == null) throw Exception('Material version not found');
+    
+    final validStatuses = ['pending', 'clean', 'quarantined'];
+    if (!validStatuses.contains(virusScanStatus)) {
+      throw Exception('Invalid virus scan status. Must be one of: $validStatuses');
+    }
+    
+    final updated = version.copyWith(
+      virusScanStatus: virusScanStatus,
+      virusScanAt: DateTime.now(),
+    );
+    
+    return await MaterialVersion.db.updateRow(session, updated);
   }
 
   Future<List<MaterialVersion>> getMaterialVersions(
@@ -138,6 +239,12 @@ class MaterialEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'material', action: 'read');
     final isCompletion = progressPct >= 100 || completedAt != null;
 
+    final existing = await MaterialProgress.db.findFirstRow(
+      session,
+      where: (t) =>
+          t.userId.equals(userId) & t.materialId.equals(materialId),
+    );
+
     if (isCompletion && lessonId != null) {
       final lesson = await Lesson.db.findById(
         session,
@@ -152,13 +259,15 @@ class MaterialEndpoint extends Endpoint {
       final durationMinutes = lesson.durationMinutes ?? 1;
       final requiredSeconds = durationMinutes * 60;
 
-      if (timeSpentSeconds == null || timeSpentSeconds < requiredSeconds) {
+      final effectiveTimeSpent = timeSpentSeconds ?? existing?.timeSpentSeconds ?? 0;
+      if (effectiveTimeSpent < requiredSeconds) {
         throw Exception(
-          'Minimum read time not met: need $requiredSeconds seconds, got ${timeSpentSeconds ?? 0}',
+          'Minimum read time not met: need $requiredSeconds seconds, got $effectiveTimeSpent',
         );
       }
-      if (readTimeMet != true) {
-        throw Exception('Read time must be explicitly acknowledged');
+      final readTimeAcknowledged = readTimeMet == true || existing?.readTimeMet == true;
+      if (!readTimeAcknowledged) {
+        throw Exception('Read time must be met (via recordEngagement) before completion');
       }
 
       final material = lesson.material;
@@ -195,12 +304,6 @@ class MaterialEndpoint extends Endpoint {
       }
     }
 
-    final existing = await MaterialProgress.db.findFirstRow(
-      session,
-      where: (t) =>
-          t.userId.equals(userId) & t.materialId.equals(materialId),
-    );
-
     if (existing != null) {
       final updated = existing.copyWith(
         progressPct: progressPct,
@@ -226,9 +329,7 @@ class MaterialEndpoint extends Endpoint {
           (existing.progressPct == 0 || existing.progressPct < progressPct)) {
         final enrollment = await Enrollment.db.findById(session, enrollmentId);
         if (enrollment != null &&
-            enrollment.startedAt == null &&
-            enrollment.userId != null &&
-            enrollment.courseVersionId != null) {
+            enrollment.startedAt == null) {
           final now = DateTime.now();
           await Enrollment.db.updateRow(
             session,
@@ -240,8 +341,8 @@ class MaterialEndpoint extends Endpoint {
           await EventService.emitEnrollmentStarted(
             session,
             enrollmentId: enrollmentId,
-            userId: enrollment.userId!,
-            courseVersionId: enrollment.courseVersionId!,
+            userId: enrollment.userId,
+            courseVersionId: enrollment.courseVersionId,
             startedAt: now,
           );
         }
@@ -275,9 +376,7 @@ class MaterialEndpoint extends Endpoint {
     if (enrollmentId != null && progressPct > 0) {
       final enrollment = await Enrollment.db.findById(session, enrollmentId);
       if (enrollment != null &&
-          enrollment.startedAt == null &&
-          enrollment.userId != null &&
-          enrollment.courseVersionId != null) {
+          enrollment.startedAt == null) {
         final now = DateTime.now();
         await Enrollment.db.updateRow(
           session,
@@ -289,8 +388,8 @@ class MaterialEndpoint extends Endpoint {
         await EventService.emitEnrollmentStarted(
           session,
           enrollmentId: enrollmentId,
-          userId: enrollment.userId!,
-          courseVersionId: enrollment.courseVersionId!,
+          userId: enrollment.userId,
+          courseVersionId: enrollment.courseVersionId,
           startedAt: now,
         );
       }
@@ -319,9 +418,9 @@ class MaterialEndpoint extends Endpoint {
   }
 
   /// Heartbeat: record engagement (tab_focused, scroll_depth, play_position).
-  /// Server accumulates timeSpentSeconds only when tabFocused; sets readTimeMet
-  /// when all conditions met (time, PDF scroll 80%, video 90%).
-  /// videoPositionSeconds and scrollDepthPct stored for resume-from-last-position.
+  /// Minimum read time is enforced server-side: elapsed time is computed from
+  /// [lastHeartbeat], capped at 15 seconds per heartbeat to prevent offline pause abuse.
+  /// [readTimeMet] is set strictly on the server when timeSpentSeconds >= required read time.
   Future<MaterialProgress> recordEngagement(
     Session session, {
     required int userId,
@@ -345,7 +444,7 @@ class MaterialEndpoint extends Endpoint {
       throw Exception('Lesson materialId does not match');
     }
 
-    final material = lesson.material;
+    final material = await Material.db.findById(session, materialId);
     final durationMinutes = lesson.durationMinutes ?? 1;
     final requiredSeconds = durationMinutes * 60;
 
@@ -355,11 +454,16 @@ class MaterialEndpoint extends Endpoint {
           t.userId.equals(userId) & t.materialId.equals(materialId),
     );
 
+    final now = DateTime.now().toUtc();
     int newTimeSpent = existing?.timeSpentSeconds ?? 0;
-    if (tabFocused && deltaSeconds > 0) {
-      newTimeSpent += deltaSeconds;
-      if (newTimeSpent > requiredSeconds) newTimeSpent = requiredSeconds;
+
+    if (tabFocused && existing?.lastHeartbeat != null) {
+      final elapsed = now.difference(existing!.lastHeartbeat!.toUtc()).inSeconds;
+      final cappedSeconds = elapsed.clamp(0, 15);
+      newTimeSpent += cappedSeconds;
     }
+
+    final lastHeartbeat = now;
 
     Map<String, dynamic> interaction = {};
     if (existing?.interactionJson != null) {
@@ -382,7 +486,7 @@ class MaterialEndpoint extends Endpoint {
     final interactionJson = interaction.isEmpty ? null : jsonEncode(interaction);
 
     bool readTimeMet = existing?.readTimeMet ?? false;
-    if (!readTimeMet && newTimeSpent >= requiredSeconds && material != null) {
+    if (!readTimeMet && material != null && newTimeSpent >= requiredSeconds) {
       final type = material.materialType.toLowerCase();
       if (type == 'video') {
         final pct = interaction['videoWatchedPct'] as num?;
@@ -398,6 +502,7 @@ class MaterialEndpoint extends Endpoint {
     if (existing != null) {
       final updated = existing.copyWith(
         timeSpentSeconds: newTimeSpent,
+        lastHeartbeat: lastHeartbeat,
         interactionJson: interactionJson ?? existing.interactionJson,
         readTimeMet: readTimeMet ? true : existing.readTimeMet,
         enrollmentId: enrollmentId ?? existing.enrollmentId,
@@ -412,6 +517,7 @@ class MaterialEndpoint extends Endpoint {
         materialId: materialId,
         progressPct: 0,
         timeSpentSeconds: newTimeSpent,
+        lastHeartbeat: lastHeartbeat,
         interactionJson: interactionJson,
         readTimeMet: readTimeMet ? true : null,
         enrollmentId: enrollmentId,

@@ -41,6 +41,15 @@ class AuditEventType {
   static const capaStatusChanged = 'CapaStatusChanged';
   static const capaClosed = 'CapaClosed';
   static const capaCreated = 'CapaCreated';
+  static const userTerminated = 'UserTerminated';
+  static const enrollmentCancelled = 'EnrollmentCancelled';
+  static const assignmentSuperseded = 'AssignmentSuperseded';
+  static const certificateExpired = 'CertificateExpired';
+  static const certificateRenewalAssigned = 'CertificateRenewalAssigned';
+  static const complianceSnapshotCreated = 'ComplianceSnapshotCreated';
+  static const auditIntegrityCheckPassed = 'AuditIntegrityCheckPassed';
+  static const auditIntegrityCheckFailed = 'AuditIntegrityCheckFailed';
+  static const notificationEscalation = 'NotificationEscalation';
 
   static const Set<String> known = {
     reportExport,
@@ -70,6 +79,15 @@ class AuditEventType {
     capaStatusChanged,
     capaClosed,
     capaCreated,
+    userTerminated,
+    enrollmentCancelled,
+    assignmentSuperseded,
+    certificateExpired,
+    certificateRenewalAssigned,
+    complianceSnapshotCreated,
+    auditIntegrityCheckPassed,
+    auditIntegrityCheckFailed,
+    notificationEscalation,
   };
 
   /// Returns true if [action] is in the known registry.

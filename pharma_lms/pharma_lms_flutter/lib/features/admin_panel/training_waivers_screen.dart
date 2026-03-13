@@ -94,7 +94,7 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<PharmaUser>(
-                    value: selectedUser,
+                    initialValue: selectedUser,
                     decoration: const InputDecoration(
                       labelText: 'Employee',
                       border: OutlineInputBorder(),
@@ -110,7 +110,7 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<Course>(
-                    value: selectedCourse,
+                    initialValue: selectedCourse,
                     decoration: const InputDecoration(
                       labelText: 'Course',
                       border: OutlineInputBorder(),
@@ -206,7 +206,7 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
           userId: selectedUser.id!,
           courseId: selectedCourse.id!,
           requestedById: currentUser!.id!,
-          requestReason: reason!,
+          requestReason: reason,
           evidenceStoragePath: evPath,
         );
         if (mounted) {
@@ -342,7 +342,7 @@ class _TrainingWaiversScreenState extends ConsumerState<TrainingWaiversScreen> {
           : 'User #${w.userId}';
       final courseTitle = w.course?.title ?? 'Course #${w.courseId}';
       final requested =
-          w.requestedAt?.toIso8601String().split('T').first ?? '-';
+          w.requestedAt.toIso8601String().split('T').first ?? '-';
       return PlutoRow(
         cells: {
           'user': PlutoCell(value: userName),

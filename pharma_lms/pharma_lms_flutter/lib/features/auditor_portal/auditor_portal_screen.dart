@@ -583,7 +583,7 @@ class _PagesViewedWidget extends StatelessWidget {
                     (log) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        '${log.pageTitle ?? log.pageUrl}',
+                        log.pageTitle ?? log.pageUrl,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.slate600,
                             ),

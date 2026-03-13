@@ -12,3 +12,11 @@ fields:
   storageKey: String
   ### When created.
   createdAt: DateTime, default=now
+  ### SHA-256 file hash for integrity verification (TRN-WF-02).
+  fileHash: String?
+  ### Virus scan status: pending, clean, quarantined (TRN-WF-02).
+  virusScanStatus: String?, default='pending'
+  ### When virus scan completed.
+  virusScanAt: DateTime?
+  ### File size in bytes.
+  fileSizeBytes: int?

@@ -1,0 +1,55 @@
+services:
+  # Serverpod Backend API
+  - type: web
+    name: pharma-lms-api
+    runtime: docker
+    dockerfilePath: ./pharma_lms/pharma_lms_server/Dockerfile.render
+    dockerContext: ./pharma_lms
+    region: oregon
+    plan: starter
+    branch: main
+    healthCheckPath: /
+    envVars:
+      - key: SERVERPOD_DATABASE_HOST
+        fromDatabase:
+          name: pharma-lms-db
+          property: host
+      - key: SERVERPOD_DATABASE_PORT
+        fromDatabase:
+          name: pharma-lms-db
+          property: port
+      - key: SERVERPOD_DATABASE_NAME
+        fromDatabase:
+          name: pharma-lms-db
+          property: database
+      - key: SERVERPOD_DATABASE_USER
+        fromDatabase:
+          name: pharma-lms-db
+          property: user
+      - key: SERVERPOD_DATABASE_PASSWORD
+        fromDatabase:
+          name: pharma-lms-db
+          property: password
+      - key: SERVERPOD_REDIS_ENABLED
+        value: "false"
+      - key: SERVERPOD_API_SERVER_PORT
+        value: "8080"
+      - key: SERVERPOD_INSIGHTS_SERVER_PORT
+        value: "8081"
+      - key: SERVERPOD_WEB_SERVER_PORT
+        value: "8082"
+      - key: SERVERPOD_RUN_MODE
+        value: "production"
+      - key: SERVERPOD_SERVICE_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+databases:
+  - name: pharma-lms-db
+    databaseName: pharma_lms
+    region: oregon
+    plan: starter
+    postgresMajorVersion: "15"

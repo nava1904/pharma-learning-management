@@ -96,13 +96,8 @@ class _OidcSignInWidgetState extends State<OidcSignInWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const SizedBox(
-        height: 48,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      );
-    }
-    if (_config == null || !_config!.enabled) {
+    // While loading OIDC config, show nothing (no extra spinner on landing page).
+    if (_loading || _config == null || !_config!.enabled) {
       return const SizedBox.shrink();
     }
     return SizedBox(

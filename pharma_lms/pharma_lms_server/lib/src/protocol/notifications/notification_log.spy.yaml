@@ -1,0 +1,20 @@
+### Log of notification delivery attempts. GMP.
+class: NotificationLog
+
+table: notification_log
+
+fields:
+  ### The notification record.
+  notification: Notification?, relation
+  ### When the delivery was attempted.
+  attemptedAt: DateTime, default=now
+  ### Delivery channel: email, sms, in_app.
+  channel: String
+  ### Status: sent, failed, bounced, delivered.
+  status: String, default='sent'
+  ### Error message if failed.
+  errorMessage: String?
+  ### Retry count.
+  retryCount: int, default=0
+  ### External message ID (e.g., SendGrid ID).
+  externalMessageId: String?

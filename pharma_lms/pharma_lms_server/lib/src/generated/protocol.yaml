@@ -29,11 +29,16 @@ admin:
   - approveTrainingWaiver:
   - rejectTrainingWaiver:
   - unlockUserByEmail:
+  - terminateUser:
 analytics:
   - getCourseAnalytics:
   - getTrainingCompletionRate:
   - getSystemHealth:
   - triggerManualJob:
+  - runCertExpiryCheck:
+  - runNotificationWorker:
+  - runComplianceCalc:
+  - runAuditTrailIntegrityCheck:
   - getDepartmentComplianceSummary:
   - getCertificationExpiryRiskCount:
   - getAuditReadinessScore:
@@ -54,11 +59,18 @@ analytics:
   - getSopRetrainingVelocity:
   - streamAnalytics:
   - getRecentActivity:
+  - getOpenQualityEventsCount:
+  - getSlaBreaches:
 assessmentBuilder:
   - createQuestion:
   - updateQuestion:
+  - deleteQuestion:
+  - createQuestionBank:
+  - updateQuestionBank:
+  - getQuestionBankDetails:
   - createAssessment:
   - updateAssessment:
+  - validateAssessmentForSubmission:
 assessment:
   - getAssessmentForCourse:
   - getQuestions:
@@ -83,13 +95,17 @@ courseBuilder:
   - createLesson:
   - updateLesson:
   - createCourseVersion:
+  - createNewVersionFromExisting:
   - updateCourseVersionStatus:
+  - validateForQaSubmission:
+  - submitForQaReview:
 course:
   - listCourses:
   - getCourse:
   - getCourseVersions:
   - getCourseVersion:
   - createCourse:
+  - createCourseWithVersion:
   - getModulesForCourseVersion:
   - getLessonsForModule:
   - getLessonWithMaterial:
@@ -107,6 +123,7 @@ event:
   - triggerSopUpdated:
   - triggerEmployeeCreated:
   - triggerEmployeeTransferred:
+  - triggerCapaTrainingComplete:
 inspection:
   - listInspectionRecords:
   - createInspectionRecord:
@@ -126,6 +143,9 @@ material:
   - getUploadDescription:
   - verifyUpload:
   - createMaterialVersion:
+  - updateMaterial:
+  - getLatestMaterialVersion:
+  - updateVirusScanStatus:
   - getMaterialVersions:
   - listMaterials:
   - updateProgress:
@@ -152,6 +172,7 @@ qa:
   - listPendingCourseVersions:
   - approveCourseVersion:
   - rejectCourseVersion:
+  - getPendingDocumentApprovalsCount:
 qualityEvent:
   - listQualityEvents:
   - getQualityEvent:
@@ -159,6 +180,7 @@ qualityEvent:
   - createQualityEvent:
   - updateCapaStatus:
   - closeCapa:
+  - closeCapaWithSignature:
   - createCapa:
   - assignTrainingFromCapa:
   - listInspectionReports:
@@ -186,6 +208,7 @@ training:
   - completeTraining:
   - listAnnotations:
   - addAnnotation:
+  - revokeSignature:
 user:
   - getUser:
   - getUserByEmail:

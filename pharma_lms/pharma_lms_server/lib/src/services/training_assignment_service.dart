@@ -137,13 +137,18 @@ class TrainingAssignmentService {
     return result;
   }
 
-  /// Cancel an assignment.
+  /// Cancel an assignment (ADM-WF-02).
+  /// Cascades cancellation to linked active enrollments.
   static Future<TrainingAssignment> cancelAssignment(
     Session session, {
     required int assignmentId,
     required int cancelledById,
-    String? reason,
+    required String reason,
   }) async {
+    if (reason.trim().isEmpty) {
+      throw Exception('Cancellation reason is required (ADM-WF-02)');
+    }
+
     final existing = await TrainingAssignment.db.findById(session, assignmentId);
     if (existing == null) throw Exception('Assignment not found');
     if (existing.status == 'cancelled') {
@@ -159,6 +164,31 @@ class TrainingAssignmentService {
     );
     final result = await TrainingAssignment.db.updateRow(session, updated);
 
+    // ADM-WF-02: Cascade cancellation to linked active enrollments
+    // Only cancel 'not_started' and 'in_progress' enrollments (completed remain unchanged)
+    final activeEnrollments = await Enrollment.db.find(
+      session,
+      where: (t) =>
+          t.assignmentId.equals(assignmentId) &
+          (t.status.equals('not_started') | t.status.equals('in_progress')),
+    );
+
+    for (final enrollment in activeEnrollments) {
+      final oldStatus = enrollment.status;
+      final cancelledEnrollment = enrollment.copyWith(status: 'cancelled');
+      await Enrollment.db.updateRow(session, cancelledEnrollment);
+
+      await AuditService.log(
+        session,
+        entityType: 'enrollment',
+        entityId: enrollment.id.toString(),
+        action: 'EnrollmentCancelled',
+        oldValueJson: '{"status":"$oldStatus"}',
+        newValueJson: '{"status":"cancelled","reason":"Assignment cancelled: $reason"}',
+        userId: cancelledById,
+      );
+    }
+
     await AuditService.log(
       session,
       entityType: 'training_assignment',
@@ -166,7 +196,7 @@ class TrainingAssignmentService {
       action: 'AssignmentCancelled',
       oldValueJson:
           '{"dueDate":"${existing.dueDate.toIso8601String()}","status":"${existing.status}"}',
-      newValueJson: '{"cancelledAt":"${now.toIso8601String()}","reason":"$reason"}',
+      newValueJson: '{"cancelledAt":"${now.toIso8601String()}","reason":"$reason","cascadedEnrollments":${activeEnrollments.length}}',
       userId: cancelledById,
     );
 

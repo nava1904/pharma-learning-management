@@ -98,4 +98,13 @@ class AppTypography {
       ),
     );
   }
+
+  static TextStyle headlineLarge(BuildContext context) =>
+      Theme.of(context).textTheme.headlineLarge ?? const TextStyle(fontSize: 22, fontWeight: FontWeight.w600);
+
+  static TextStyle headlineMedium(BuildContext context) =>
+      Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 20, fontWeight: FontWeight.w600);
+
+  static TextStyle bodyLarge(BuildContext context) =>
+      Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
 }

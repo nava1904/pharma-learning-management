@@ -69,11 +69,11 @@ class AuditEndpoint extends Endpoint {
     }
     if (from != null) {
       results =
-          results.where((r) => !r.timestamp.isBefore(from!)).toList();
+          results.where((r) => !r.timestamp.isBefore(from)).toList();
     }
     if (to != null) {
       results =
-          results.where((r) => !r.timestamp.isAfter(to!)).toList();
+          results.where((r) => !r.timestamp.isAfter(to)).toList();
     }
 
     return results.take(limit).toList();
@@ -113,10 +113,10 @@ class AuditEndpoint extends Endpoint {
       results = results.where((r) => r.entityType == entityType).toList();
     }
     if (from != null) {
-      results = results.where((r) => !r.timestamp.isBefore(from!)).toList();
+      results = results.where((r) => !r.timestamp.isBefore(from)).toList();
     }
     if (to != null) {
-      results = results.where((r) => !r.timestamp.isAfter(to!)).toList();
+      results = results.where((r) => !r.timestamp.isAfter(to)).toList();
     }
     return results.take(limit).toList();
   }
@@ -140,11 +140,11 @@ class AuditEndpoint extends Endpoint {
     }
     if (from != null) {
       results =
-          results.where((r) => !r.timestamp.isBefore(from!)).toList();
+          results.where((r) => !r.timestamp.isBefore(from)).toList();
     }
     if (to != null) {
       results =
-          results.where((r) => !r.timestamp.isAfter(to!)).toList();
+          results.where((r) => !r.timestamp.isAfter(to)).toList();
     }
 
     return results.take(limit).toList();

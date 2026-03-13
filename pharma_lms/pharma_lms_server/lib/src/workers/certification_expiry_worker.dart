@@ -61,28 +61,26 @@ class CertificationExpiryWorker extends FutureCall {
         );
       }
 
-      if (cert.userId != null) {
-        final recent = await Notification.db.find(
+      final recent = await Notification.db.find(
+        session,
+        where: (t) =>
+            t.userId.equals(cert.userId!) &
+            t.type.equals(notificationType),
+        limit: 1,
+        orderBy: (t) => t.createdAt,
+        orderDescending: true,
+      );
+      final lastSent = recent.isNotEmpty ? recent.first.createdAt : null;
+      if (lastSent == null || now.difference(lastSent).inHours >= 24) {
+        await Notification.db.insertRow(
           session,
-          where: (t) =>
-              t.userId.equals(cert.userId!) &
-              t.type.equals(notificationType),
-          limit: 1,
-          orderBy: (t) => t.createdAt,
-          orderDescending: true,
+          Notification(
+            userId: cert.userId!,
+            type: notificationType,
+            channel: 'in_app',
+          ),
         );
-        final lastSent = recent.isNotEmpty ? recent.first.createdAt : null;
-        if (lastSent == null || now.difference(lastSent).inHours >= 24) {
-          await Notification.db.insertRow(
-            session,
-            Notification(
-              userId: cert.userId!,
-              type: notificationType,
-              channel: 'in_app',
-            ),
-          );
-        }
       }
-    }
+        }
   }
 }

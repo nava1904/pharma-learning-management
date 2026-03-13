@@ -96,7 +96,7 @@ class EventService {
         'userId': userId,
         'courseVersionId': courseVersionId,
         'completedAt': completedAt.toIso8601String(),
-        if (score != null) 'score': score,
+        'score': ?score,
       },
     );
   }
@@ -139,8 +139,8 @@ class EventService {
         'materialId': materialId,
         'progressPct': progressPct,
         if (completedAt != null) 'completedAt': completedAt.toIso8601String(),
-        if (enrollmentId != null) 'enrollmentId': enrollmentId,
-        if (lessonId != null) 'lessonId': lessonId,
+        'enrollmentId': ?enrollmentId,
+        'lessonId': ?lessonId,
       },
     );
   }

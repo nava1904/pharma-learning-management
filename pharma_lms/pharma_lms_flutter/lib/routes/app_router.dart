@@ -120,9 +120,9 @@ List<RouteBase> get _buildRoutes => [
     ),
     ShellRoute(
       builder: (context, state, child) => AppLayout(
-        child: child,
         currentPath: state.uri.path,
         breadcrumbItems: breadcrumbFromPath(state.uri.path),
+        child: child,
       ),
       routes: [
         GoRoute(
@@ -187,7 +187,7 @@ List<RouteBase> get _buildRoutes => [
     ),
     GoRoute(
       path: '/qa',
-      builder: (context, state) => const QADashboardScreen(),
+      builder: (context, state) => const QACommandCenterScreen(),
     ),
     GoRoute(
       path: '/trainer',
@@ -203,7 +203,16 @@ List<RouteBase> get _buildRoutes => [
         ),
         GoRoute(
           path: 'materials',
-          builder: (context, state) => const MaterialUploadScreen(),
+          builder: (context, state) {
+            final extra = state.extra;
+            int organizationId = 1; // Default fallback
+            if (extra is Map<String, dynamic>) {
+              organizationId = extra['organizationId'] as int? ?? 1;
+            } else if (extra is int) {
+              organizationId = extra;
+            }
+            return MaterialUploadScreen(organizationId: organizationId);
+          },
         ),
         GoRoute(
           path: 'assessments',

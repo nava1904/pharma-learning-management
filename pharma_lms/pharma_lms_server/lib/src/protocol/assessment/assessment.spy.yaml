@@ -14,3 +14,8 @@ fields:
   randomize: bool, default=true
   ### Time limit in minutes.
   timeLimitMinutes: int?
+  ### Maximum attempts allowed (0 = unlimited).
+  maxAttempts: int?
+  ### Number of questions to display from the bank.
+  ### TRN-WF-03: Must be <= totalQuestions / 2 for adequate randomization.
+  questionsToDisplay: int?

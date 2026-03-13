@@ -296,7 +296,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                               ),
                               Expanded(
                                 child: DropdownButtonFormField<int?>(
-                                  value: _columnMapping[field],
+                                  initialValue: _columnMapping[field],
                                   decoration: const InputDecoration(
                                     isDense: true,
                                     border: OutlineInputBorder(),

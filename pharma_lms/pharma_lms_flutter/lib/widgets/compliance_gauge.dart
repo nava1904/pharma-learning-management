@@ -29,9 +29,8 @@ class ComplianceGauge extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
           Semantics(
             label: 'Compliance: ${clamped.round()}%',
@@ -44,27 +43,37 @@ class ComplianceGauge extends StatelessWidget {
               ),
             ),
           ),
-          if (showValue || label != null) ...[
-            const SizedBox(height: 8),
-            if (showValue)
-              Text(
-                '${clamped.round()}%',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-              ),
-            if (label != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                label!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: DesignColors.neutral600,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ],
+          if (showValue || label != null)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (showValue)
+                  Text(
+                    '${clamped.round()}%',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                          fontSize: size * 0.2,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (label != null) ...[
+                  if (showValue) SizedBox(height: size * 0.04),
+                  Text(
+                    label!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: DesignColors.neutral600,
+                          fontSize: size * 0.12,
+                        ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
         ],
       ),
     );

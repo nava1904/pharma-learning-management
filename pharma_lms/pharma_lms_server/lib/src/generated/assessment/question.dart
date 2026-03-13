@@ -27,6 +27,7 @@ abstract class Question
     required this.optionsJson,
     required this.correctAnswer,
     this.difficulty,
+    this.regulatoryTag,
   });
 
   factory Question({
@@ -38,6 +39,7 @@ abstract class Question
     required String optionsJson,
     required String correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   }) = _QuestionImpl;
 
   factory Question.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -54,6 +56,7 @@ abstract class Question
       optionsJson: jsonSerialization['optionsJson'] as String,
       correctAnswer: jsonSerialization['correctAnswer'] as String,
       difficulty: jsonSerialization['difficulty'] as String?,
+      regulatoryTag: jsonSerialization['regulatoryTag'] as String?,
     );
   }
 
@@ -84,6 +87,9 @@ abstract class Question
   /// Difficulty: easy, medium, hard.
   String? difficulty;
 
+  /// Regulatory tag (e.g., '21 CFR 11', 'GMP', 'ICH Q10').
+  String? regulatoryTag;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -99,6 +105,7 @@ abstract class Question
     String? optionsJson,
     String? correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -112,6 +119,7 @@ abstract class Question
       'optionsJson': optionsJson,
       'correctAnswer': correctAnswer,
       if (difficulty != null) 'difficulty': difficulty,
+      if (regulatoryTag != null) 'regulatoryTag': regulatoryTag,
     };
   }
 
@@ -128,6 +136,7 @@ abstract class Question
       'optionsJson': optionsJson,
       'correctAnswer': correctAnswer,
       if (difficulty != null) 'difficulty': difficulty,
+      if (regulatoryTag != null) 'regulatoryTag': regulatoryTag,
     };
   }
 
@@ -173,6 +182,7 @@ class _QuestionImpl extends Question {
     required String optionsJson,
     required String correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   }) : super._(
          id: id,
          questionBankId: questionBankId,
@@ -182,6 +192,7 @@ class _QuestionImpl extends Question {
          optionsJson: optionsJson,
          correctAnswer: correctAnswer,
          difficulty: difficulty,
+         regulatoryTag: regulatoryTag,
        );
 
   /// Returns a shallow copy of this [Question]
@@ -197,6 +208,7 @@ class _QuestionImpl extends Question {
     String? optionsJson,
     String? correctAnswer,
     Object? difficulty = _Undefined,
+    Object? regulatoryTag = _Undefined,
   }) {
     return Question(
       id: id is int? ? id : this.id,
@@ -209,6 +221,9 @@ class _QuestionImpl extends Question {
       optionsJson: optionsJson ?? this.optionsJson,
       correctAnswer: correctAnswer ?? this.correctAnswer,
       difficulty: difficulty is String? ? difficulty : this.difficulty,
+      regulatoryTag: regulatoryTag is String?
+          ? regulatoryTag
+          : this.regulatoryTag,
     );
   }
 }
@@ -246,6 +261,12 @@ class QuestionUpdateTable extends _i1.UpdateTable<QuestionTable> {
     table.difficulty,
     value,
   );
+
+  _i1.ColumnValue<String, String> regulatoryTag(String? value) =>
+      _i1.ColumnValue(
+        table.regulatoryTag,
+        value,
+      );
 }
 
 class QuestionTable extends _i1.Table<int?> {
@@ -275,6 +296,10 @@ class QuestionTable extends _i1.Table<int?> {
       'difficulty',
       this,
     );
+    regulatoryTag = _i1.ColumnString(
+      'regulatoryTag',
+      this,
+    );
   }
 
   late final QuestionUpdateTable updateTable;
@@ -299,6 +324,9 @@ class QuestionTable extends _i1.Table<int?> {
   /// Difficulty: easy, medium, hard.
   late final _i1.ColumnString difficulty;
 
+  /// Regulatory tag (e.g., '21 CFR 11', 'GMP', 'ICH Q10').
+  late final _i1.ColumnString regulatoryTag;
+
   _i2.QuestionBankTable get questionBank {
     if (_questionBank != null) return _questionBank!;
     _questionBank = _i1.createRelationTable(
@@ -321,6 +349,7 @@ class QuestionTable extends _i1.Table<int?> {
     optionsJson,
     correctAnswer,
     difficulty,
+    regulatoryTag,
   ];
 
   @override

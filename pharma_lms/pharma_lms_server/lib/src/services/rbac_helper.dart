@@ -86,7 +86,7 @@ class RbacHelper {
       if (email == null || email.isEmpty) return null;
 
       // Case-insensitive match so auth profile (e.g. Alice@) matches pharma_user (alice@).
-      final normalized = email!.trim().toLowerCase();
+      final normalized = email.trim().toLowerCase();
       final rows = await session.db.unsafeQuery(
         r'SELECT id FROM pharma_user WHERE lower(trim(email)) = @email LIMIT 1',
         parameters: QueryParameters.named({'email': normalized}),

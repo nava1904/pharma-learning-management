@@ -27,29 +27,25 @@ class TrainingTimelineScreen extends ConsumerWidget {
           final events = <AuditTimelineEvent>[];
 
           for (final r in records) {
-            if (r.completedAt != null) {
-              events.add(AuditTimelineEvent(
-                timestamp: r.completedAt!,
-                title: r.courseVersion?.course?.title ?? 'Course completed',
-                subtitle: 'Score: ${r.score ?? 0}%',
-                type: (r.score ?? 0) >= 80
-                    ? AuditEventType.success
-                    : AuditEventType.warning,
-              ));
-            }
-          }
+            events.add(AuditTimelineEvent(
+              timestamp: r.completedAt!,
+              title: r.courseVersion?.course?.title ?? 'Course completed',
+              subtitle: 'Score: ${r.score ?? 0}%',
+              type: (r.score ?? 0) >= 80
+                  ? AuditEventType.success
+                  : AuditEventType.warning,
+            ));
+                    }
 
           for (final c in certificates) {
-            if (c.issuedAt != null) {
-              events.add(AuditTimelineEvent(
-                timestamp: c.issuedAt!,
-                title: 'Certificate issued',
-                subtitle: c.courseVersion?.course?.title ?? 'Course',
-                type: AuditEventType.success,
-                icon: Icons.verified_outlined,
-              ));
-            }
-          }
+            events.add(AuditTimelineEvent(
+              timestamp: c.issuedAt!,
+              title: 'Certificate issued',
+              subtitle: c.courseVersion?.course?.title ?? 'Course',
+              type: AuditEventType.success,
+              icon: Icons.verified_outlined,
+            ));
+                    }
 
           events.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 

@@ -15,7 +15,7 @@ class SopCoverageScreen extends StatefulWidget {
 
 class _SopCoverageScreenState extends State<SopCoverageScreen> {
   List<Document> _documents = [];
-  Map<int, List<CourseVersion>> _versionsByCourse = {};
+  final Map<int, List<CourseVersion>> _versionsByCourse = {};
   Document? _selectedDoc;
   CourseVersion? _selectedVersion;
   Map<String, dynamic>? _coverage;
@@ -145,7 +145,7 @@ class _SopCoverageScreenState extends State<SopCoverageScreen> {
                 ),
                 const SizedBox(height: 4),
                 DropdownButtonFormField<Document>(
-                  value: _selectedDoc,
+                  initialValue: _selectedDoc,
                   items: _documents
                       .map((d) => DropdownMenuItem(
                             value: d,
@@ -169,7 +169,7 @@ class _SopCoverageScreenState extends State<SopCoverageScreen> {
                 ),
                 const SizedBox(height: 4),
                 DropdownButtonFormField<CourseVersion>(
-                  value: _selectedVersion,
+                  initialValue: _selectedVersion,
                   items: (_selectedDoc != null
                           ? _versionsByCourse[_selectedDoc!.id] ?? []
                           : <CourseVersion>[])

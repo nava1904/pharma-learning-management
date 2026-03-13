@@ -44,7 +44,6 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
   String? _error;
   int _currentLessonIndex = 0;
   int _currentLessonElapsedSeconds = 0;
-  Timer? _readTimer;
   Timer? _heartbeatTimer;
   bool _timerPaused = false;
   bool _tabVisible = true;
@@ -80,7 +79,6 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _readTimer?.cancel();
     _heartbeatTimer?.cancel();
     _videoController?.dispose();
     _passwordController.dispose();
@@ -207,16 +205,9 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
   }
 
   void _startReadTimer(Lesson lesson) {
-    _readTimer?.cancel();
     _heartbeatTimer?.cancel();
     if (_lessonViewedMaterialIds.contains(lesson.materialId)) return;
     if (lesson.id == null || _effectiveUserId <= 0) return;
-
-    _readTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_timerPaused || !_tabVisible) return;
-      _currentLessonElapsedSeconds++;
-      if (mounted) setState(() {});
-    });
 
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
       if (_lessonViewedMaterialIds.contains(lesson.materialId)) {
@@ -249,27 +240,15 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
           videoPositionSeconds: videoPositionSeconds,
           deltaSeconds: 10,
         );
-        if (progress.readTimeMet == true && mounted) {
-          _lessonViewedMaterialIds.add(lesson.materialId);
-          _readTimer?.cancel();
-          _heartbeatTimer?.cancel();
-          try {
-            final interactionJson = material != null
-                ? _buildInteractionJson(material)
-                : null;
-            await client.material.updateProgress(
-              userId: _effectiveUserId,
-              materialId: lesson.materialId,
-              progressPct: 100,
-              completedAt: DateTime.now(),
-              timeSpentSeconds: progress.timeSpentSeconds ?? _currentLessonElapsedSeconds,
-              readTimeMet: true,
-              lessonId: lesson.id,
-              enrollmentId: widget.enrollmentId,
-              interactionJson: interactionJson,
-            );
-          } catch (_) {}
-          if (mounted) setState(() {});
+        if (mounted) {
+          if (progress.timeSpentSeconds != null) {
+            setState(() => _currentLessonElapsedSeconds = progress.timeSpentSeconds!);
+          }
+          if (progress.readTimeMet == true) {
+            _lessonViewedMaterialIds.add(lesson.materialId);
+            _heartbeatTimer?.cancel();
+            setState(() {});
+          }
         }
       } catch (_) {}
     });
@@ -373,24 +352,17 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
         progressPct = (progressMeasure.clamp(0.0, 1.0) * 100).round();
       }
 
-      final durationMinutes = lesson.durationMinutes ?? 1;
-      final requiredSeconds = durationMinutes * 60;
-      final timeSpent = _currentLessonElapsedSeconds >= requiredSeconds
-          ? _currentLessonElapsedSeconds
-          : requiredSeconds;
-
       await client.material.updateProgress(
         userId: _effectiveUserId,
         materialId: materialId,
         progressPct: progressPct,
-        readTimeMet: completed ? true : null,
-        timeSpentSeconds: timeSpent,
+        timeSpentSeconds: _currentLessonElapsedSeconds,
         lessonId: lesson.id,
         enrollmentId: widget.enrollmentId,
         interactionJson: jsonEncode({
           ...data,
           'scorm_completion_status': status,
-          if (rawScore != null) 'scorm_score_raw': rawScore,
+          'scorm_score_raw': ?rawScore,
         }),
         completedAt: completed ? DateTime.now() : null,
       );
@@ -416,15 +388,12 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
   }
 
   void _stopReadTimer() {
-    _readTimer?.cancel();
     _heartbeatTimer?.cancel();
-    _currentLessonElapsedSeconds = 0;
   }
 
   Future<void> _markLessonCompleteAndProceed(Lesson lesson) async {
     if (lesson.id == null || _effectiveUserId <= 0) return;
     _lessonViewedMaterialIds.add(lesson.materialId);
-    _readTimer?.cancel();
     _heartbeatTimer?.cancel();
     final material = _currentLessonWithMaterial?.material;
     try {
@@ -435,7 +404,6 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
         progressPct: 100,
         completedAt: DateTime.now(),
         timeSpentSeconds: _currentLessonElapsedSeconds,
-        readTimeMet: true,
         lessonId: lesson.id,
         enrollmentId: widget.enrollmentId,
         interactionJson: interactionJson,
@@ -459,29 +427,25 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
     final type = _currentLessonWithMaterial?.material?.materialType.toLowerCase() ?? '';
     if (type == 'video' && _videoController != null) {
       final ar = _videoController!.value.aspectRatio;
-      return SizedBox(
-        height: 400,
-        child: AspectRatio(
-          aspectRatio: ar > 0 ? ar : 16 / 9,
-          child: VideoPlayer(_videoController!),
+      final aspectRatio = ar > 0 ? ar : 16 / 9;
+      return Container(
+        color: AppColors.slate900,
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: aspectRatio,
+            child: VideoPlayer(_videoController!),
+          ),
         ),
       );
     }
     // PDF, SCORM: WebView (SCORM completion tracked via read-time for zip packages)
     if (_materialWebController != null) {
-      return SizedBox(
-        height: 400,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.slate200),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: WebViewWidget(controller: _materialWebController!),
-        ),
+      return Container(
+        color: AppColors.slate900,
+        child: WebViewWidget(controller: _materialWebController!),
       );
     }
-    return const SizedBox.shrink();
+    return Container(color: AppColors.slate900);
   }
 
   bool get _allLessonsViewed {
@@ -524,7 +488,7 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
         enrollmentId: enrollmentId,
         userId: userId,
         signatureMeaning: _selectedSignatureMeaning ?? 'I have read and understood',
-        passwordReauth: password,
+        passwordPlaintext: password,
       );
       if (mounted) {
         setState(() {
@@ -754,7 +718,7 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
                         const SizedBox(height: 16),
                         if (_signatureMeanings.isNotEmpty)
                           DropdownButtonFormField<String>(
-                            value: _selectedSignatureMeaning,
+                            initialValue: _selectedSignatureMeaning,
                             decoration: const InputDecoration(
                               labelText: 'Signature meaning',
                             ),
@@ -815,313 +779,267 @@ class _CourseViewerScreenState extends State<CourseViewerScreen>
         ? _lessons[_currentLessonIndex]
         : null;
 
-    // Dynamic progress: completed lessons + fractional progress of current lesson (time spent)
-    double progress = 0.0;
-    if (_lessons.isNotEmpty) {
-      final completedCount = _lessonViewedMaterialIds.length;
-      double currentFraction = 0.0;
-      if (currentLesson != null &&
-          !_lessonViewedMaterialIds.contains(currentLesson.materialId)) {
-        final required = (currentLesson.durationMinutes ?? 1) * 60;
-        currentFraction = (required > 0)
-            ? (_currentLessonElapsedSeconds / required).clamp(0.0, 1.0)
-            : 0.0;
-      }
-      progress = (completedCount + currentFraction) / _lessons.length;
-    }
-
+    // Theater Mode: two-pane layout (syllabus | viewer + sticky bar). Progress from server only.
     return VisibilityDetector(
       key: const Key('course_viewer_visibility'),
       onVisibilityChanged: _onVisibilityChanged,
       child: Scaffold(
-      appBar: AppBar(
-        title: Text(_courseTitle ?? 'Course'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Progress',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppColors.slate600,
-                          ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (currentLesson != null &&
-                            !_lessonViewedMaterialIds.contains(currentLesson.materialId)) ...[
-                          Text(
-                            'Time: ${_currentLessonElapsedSeconds ~/ 60}m ${_currentLessonElapsedSeconds % 60}s / '
-                            '${(currentLesson.durationMinutes ?? 1)}m',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: AppColors.slate600,
-                                ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        Text(
-                          '${(progress * 100).round()}%',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.teal600,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: AppColors.slate200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.teal600),
-                  ),
-                ),
-                if (currentLesson != null &&
-                    !_lessonViewedMaterialIds.contains(currentLesson.materialId)) ...[
-                  const SizedBox(height: 12),
-                  _StickyReadTimeBar(
-                    elapsedSeconds: _currentLessonElapsedSeconds,
-                    requiredSeconds: (currentLesson.durationMinutes ?? 1) * 60,
-                    onProceed: () => _markLessonCompleteAndProceed(currentLesson),
-                    hasNextLesson: _currentLessonIndex < _lessons.length - 1,
-                  ),
-                ],
-              ],
-            ),
+        appBar: AppBar(
+          title: Text(_courseTitle ?? 'Course'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+        ),
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left pane: persistent syllabus sidebar (320px)
+            Container(
+              width: 320,
+              decoration: BoxDecoration(
+                color: AppColors.slate50,
+                border: Border(
+                  right: BorderSide(color: AppColors.slate200),
+                ),
+              ),
+              child: _buildTheaterSyllabus(),
+            ),
+            // Right pane: material viewer (cinematic black) + sticky read-time bar
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (_modules.isNotEmpty)
-                    ..._modules.map((m) => Card(
-                          child: ExpansionTile(
-                            title: Text(m.title),
-                            children: _lessons
-                                .where((l) => l.moduleId == m.id)
-                                .map((l) => ListTile(
-                                      title: Text(l.title),
-                                      trailing: _lessonViewedMaterialIds
-                                              .contains(l.materialId)
-                                          ? const Icon(Icons.check_circle,
-                                              color: Colors.green)
-                                          : null,
-                                    ))
-                                .toList(),
-                          ),
-                        )),
-                  const SizedBox(height: 16),
+                  Expanded(
+                    child: Container(
+                      color: AppColors.slate900,
+                      child: _buildContentArea(currentLesson),
+                    ),
+                  ),
                   if (currentLesson != null) ...[
-                    Card(
+                    _StickyReadTimeBar(
+                      elapsedSeconds: _currentLessonElapsedSeconds,
+                      requiredSeconds: (currentLesson.durationMinutes ?? 1) * 60,
+                      readTimeMetByServer: _lessonViewedMaterialIds.contains(currentLesson.materialId),
+                      onProceed: () => _markLessonCompleteAndProceed(currentLesson),
+                      hasNextLesson: _currentLessonIndex < _lessons.length - 1,
+                    ),
+                    SafeArea(
+                      top: false,
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
                           children: [
-                            Text(
-                              currentLesson.title,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            if (_loadingMaterial)
-                              const SizedBox(
-                                height: 200,
-                                child: Center(
-                                    child: CircularProgressIndicator()),
-                              )
-                            else if (_materialViewUrl != null &&
-                                _currentLessonWithMaterial?.material != null)
-                              _buildMaterialViewer()
-                            else if (_currentLessonWithMaterial?.material !=
-                                null)
-                              Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _currentLessonWithMaterial!
-                                        .material!.title,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Type: ${_currentLessonWithMaterial!.material!.materialType}. '
-                                    'Minimum read time applies.',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall,
-                                  ),
-                                ],
-                              )
-                            else
-                              const Text(
-                                'No material content. '
-                                'Minimum read time applies.',
+                            if (_lessons.isNotEmpty)
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _currentLessonIndex > 0
+                                      ? () {
+                                          _stopReadTimer();
+                                          final prevIndex = _currentLessonIndex - 1;
+                                          _loadLessonMaterial(_lessons[prevIndex]);
+                                          setState(() => _currentLessonIndex = prevIndex);
+                                          if (!_lessonViewedMaterialIds.contains(_lessons[prevIndex].materialId)) {
+                                            _startReadTimer(_lessons[prevIndex]);
+                                          }
+                                        }
+                                      : null,
+                                  icon: const Icon(Icons.arrow_back, size: 18),
+                                  label: const Text('Previous'),
+                                ),
                               ),
-                            const SizedBox(height: 16),
-                            Builder(
-                              builder: (context) {
-                                final remaining = _remainingSeconds(currentLesson);
-                                final canProceed = _canProceed(currentLesson);
-                                if (canProceed) {
-                                  return const Text('✓ Ready to proceed');
-                                }
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Read for ${remaining}s more',
-                                      style: TextStyle(
-                                        color: Colors.orange[800],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () =>
-                                          _startReadTimer(currentLesson),
-                                      child: const Text('Start reading timer'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+                            if (_lessons.isNotEmpty) const SizedBox(width: 12),
+                            if (_lessons.isNotEmpty)
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _currentLessonIndex < _lessons.length - 1 &&
+                                          _lessonViewedMaterialIds.contains(currentLesson.materialId)
+                                      ? () {
+                                          _stopReadTimer();
+                                          final nextIndex = _currentLessonIndex + 1;
+                                          _loadLessonMaterial(_lessons[nextIndex]);
+                                          setState(() => _currentLessonIndex = nextIndex);
+                                          if (!_lessonViewedMaterialIds.contains(_lessons[nextIndex].materialId)) {
+                                            _startReadTimer(_lessons[nextIndex]);
+                                          }
+                                        }
+                                      : null,
+                                  icon: const Icon(Icons.arrow_forward, size: 18),
+                                  label: const Text('Next'),
+                                ),
+                              ),
                           ],
                         ),
                       ),
                     ),
-                  ] else if (_lessons.isEmpty)
-                    const Card(
+                    SafeArea(
+                      top: false,
                       child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('No lessons in this course.'),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  if (_lessons.isNotEmpty)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _currentLessonIndex > 0
-                            ? () {
-                                _stopReadTimer();
-                                final prevIndex = _currentLessonIndex - 1;
-                                _loadLessonMaterial(_lessons[prevIndex]);
-                                setState(() => _currentLessonIndex = prevIndex);
-                                if (!_lessonViewedMaterialIds.contains(_lessons[prevIndex].materialId)) {
-                                  _startReadTimer(_lessons[prevIndex]);
-                                }
-                              }
-                            : null,
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text('Previous'),
-                      ),
-                    ),
-                  if (_lessons.isNotEmpty) const SizedBox(width: 16),
-                  if (_lessons.isNotEmpty)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _currentLessonIndex < _lessons.length - 1
-                            ? (_canProceed(currentLesson!)
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: !_showRetrainingGate &&
+                                    _allLessonsViewed &&
+                                    widget.enrollmentId != null &&
+                                    _effectiveCourseVersionId > 0
                                 ? () {
-                                    _stopReadTimer();
-                                    final nextIndex = _currentLessonIndex + 1;
-                                    _loadLessonMaterial(_lessons[nextIndex]);
-                                    setState(() => _currentLessonIndex = nextIndex);
-                                    if (!_lessonViewedMaterialIds.contains(_lessons[nextIndex].materialId)) {
-                                      _startReadTimer(_lessons[nextIndex]);
-                                    }
+                                    context.push(
+                                      '/assessment/${widget.courseId}',
+                                      extra: {
+                                        'courseVersionId': _effectiveCourseVersionId,
+                                        'enrollmentId': widget.enrollmentId,
+                                        'userId': _effectiveUserId,
+                                        'courseTitle': _courseTitle ?? widget.courseTitle,
+                                      },
+                                    );
                                   }
-                                : null)
-                            : null,
-                        icon: const Icon(Icons.arrow_forward),
-                        label: const Text('Next'),
+                                : null,
+                            child: const Text('Take Assessment'),
+                          ),
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: !_showRetrainingGate &&
-                          _allLessonsViewed &&
-                          widget.enrollmentId != null &&
-                          _effectiveCourseVersionId > 0
-                      ? () {
-                          context.push(
-                            '/assessment/${widget.courseId}',
-                            extra: {
-                              'courseVersionId': _effectiveCourseVersionId,
-                              'enrollmentId': widget.enrollmentId,
-                              'userId': _effectiveUserId,
-                              'courseTitle': _courseTitle ?? widget.courseTitle,
-                            },
-                          );
-                        }
-                      : null,
-                  child: const Text('Take Assessment'),
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
+    );
+  }
+
+  /// Theater Mode: syllabus with ExpansionTile per Module, ListTile per Lesson.
+  /// Active lesson highlighted (indigo50), green checkmark if viewed (server readTimeMet).
+  Widget _buildTheaterSyllabus() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _modules.length,
+      itemBuilder: (context, idx) {
+        final m = _modules[idx];
+        final moduleLessons = _lessons.where((l) => l.moduleId == m.id).toList();
+        if (moduleLessons.isEmpty) return const SizedBox.shrink();
+        return ExpansionTile(
+          initiallyExpanded: true,
+          title: Text(
+            m.title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.slate700,
+                ),
+          ),
+          children: moduleLessons.map((l) {
+            final isCurrent = _currentLessonIndex < _lessons.length &&
+                _lessons[_currentLessonIndex].materialId == l.materialId;
+            final isViewed = _lessonViewedMaterialIds.contains(l.materialId);
+            return ListTile(
+              title: Text(
+                l.title,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              trailing: isViewed
+                  ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                  : null,
+              tileColor: isCurrent ? AppColors.indigo50 : null,
+              onTap: () {
+                final i = _lessons.indexWhere((le) => le.materialId == l.materialId);
+                if (i >= 0) {
+                  _stopReadTimer();
+                  _loadLessonMaterial(l);
+                  setState(() => _currentLessonIndex = i);
+                  if (!_lessonViewedMaterialIds.contains(l.materialId)) {
+                    _startReadTimer(l);
+                  }
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildContentArea(Lesson? currentLesson) {
+    if (_lessons.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('No lessons in this course.'),
+        ),
+      );
+    }
+    if (currentLesson == null) return const SizedBox.shrink();
+    if (_loadingMaterial) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_materialViewUrl != null && _currentLessonWithMaterial?.material != null) {
+      return _buildMaterialViewer();
+    }
+    if (_currentLessonWithMaterial?.material != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _currentLessonWithMaterial!.material!.title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Type: ${_currentLessonWithMaterial!.material!.materialType}. '
+                'Minimum read time applies.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.slate600,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'No material content. Minimum read time applies.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.slate600,
+              ),
+        ),
+      ),
     );
   }
 }
 
-/// Sticky read time bar: animated progress, morphs to "Next Lesson" when complete.
+/// Sticky read time bar. Progress fill uses server-sourced [elapsedSeconds].
+/// "Proceed to Next Lesson" is only clickable when [readTimeMetByServer] is true (server returned readTimeMet).
 class _StickyReadTimeBar extends StatelessWidget {
   const _StickyReadTimeBar({
     required this.elapsedSeconds,
     required this.requiredSeconds,
+    required this.readTimeMetByServer,
     required this.onProceed,
     required this.hasNextLesson,
   });
 
   final int elapsedSeconds;
   final int requiredSeconds;
+  final bool readTimeMetByServer;
   final VoidCallback onProceed;
   final bool hasNextLesson;
 
   @override
   Widget build(BuildContext context) {
+    // Progress from server only (timeSpentSeconds from heartbeat payload).
     final progress = requiredSeconds > 0
         ? (elapsedSeconds / requiredSeconds).clamp(0.0, 1.0)
         : 1.0;
-    final isComplete = progress >= 1.0;
+    // Only when server returned readTimeMet do we show clickable Proceed.
+    final isComplete = readTimeMetByServer;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
@@ -1195,17 +1113,79 @@ class _StickyReadTimeBar extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
+                      child: _AnimatedReadProgress(
+                        progress: progress,
                         minHeight: 8,
-                        backgroundColor: AppColors.slate200,
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.teal600),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
+    );
+  }
+}
+
+/// Animates progress value smoothly when it updates (e.g. every 10s from server).
+class _AnimatedReadProgress extends StatefulWidget {
+  const _AnimatedReadProgress({
+    required this.progress,
+    this.minHeight = 8,
+  });
+
+  final double progress;
+  final double minHeight;
+
+  @override
+  State<_AnimatedReadProgress> createState() => _AnimatedReadProgressState();
+}
+
+class _AnimatedReadProgressState extends State<_AnimatedReadProgress>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: widget.progress, end: widget.progress).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedReadProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.progress != widget.progress) {
+      _animation = Tween<double>(begin: oldWidget.progress, end: widget.progress).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      );
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return LinearProgressIndicator(
+          value: _animation.value,
+          minHeight: widget.minHeight,
+          backgroundColor: AppColors.slate200,
+          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.teal600),
+        );
+      },
     );
   }
 }

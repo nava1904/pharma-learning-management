@@ -16,3 +16,5 @@ fields:
   correctAnswer: String
   ### Difficulty: easy, medium, hard.
   difficulty: String?
+  ### Regulatory tag (e.g., '21 CFR 11', 'GMP', 'ICH Q10').
+  regulatoryTag: String?

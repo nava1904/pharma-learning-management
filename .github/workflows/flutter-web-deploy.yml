@@ -1,0 +1,56 @@
+name: Deploy Flutter Web to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pharma_lms/pharma_lms_flutter/**'
+      - '.github/workflows/flutter-web-deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'pharma_lms/pharma_lms_flutter/**'
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get Flutter dependencies
+        working-directory: pharma_lms/pharma_lms_flutter
+        run: flutter pub get
+
+      - name: Update config.json with production API URL
+        working-directory: pharma_lms/pharma_lms_flutter
+        run: |
+          echo '{"apiUrl": "${{ secrets.PRODUCTION_API_URL }}"}' > assets/config.json
+          cat assets/config.json
+
+      - name: Build Flutter Web
+        working-directory: pharma_lms/pharma_lms_flutter
+        run: |
+          flutter build web --release --web-renderer html --base-href /
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: pharma_lms/pharma_lms_flutter/build/web
+          vercel-args: '--prod'

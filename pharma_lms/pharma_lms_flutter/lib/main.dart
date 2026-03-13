@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -14,26 +13,38 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Ignore clipboard paste_fail on web (browser blocks clipboard without user gesture).
-  final onError = (Object error, StackTrace stack) {
-    if (error.toString().contains('paste_fail') &&
-        error.toString().contains('Clipboard.getData')) {
-      return; // ignore
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (details.exception.toString().contains('paste_fail') &&
+        details.exception.toString().contains('Clipboard.getData')) {
+      return;
     }
-    FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stack));
+    FlutterError.presentError(details);
   };
-  runZonedGuarded(() async {
-    // Prevent "flutter/lifecycle channel was discarded" warnings on web.
-    ui.channelBuffers.resize('flutter/lifecycle', 8);
 
-    final serverUrl = await getServerUrl();
-    await initClient(serverUrl);
+  // Prevent "flutter/lifecycle channel was discarded" warnings on web.
+  ui.channelBuffers.resize('flutter/lifecycle', 8);
 
-    runApp(
-      const ProviderScope(
-        child: PharmaLmsApp(),
-      ),
+  String serverUrl;
+  try {
+    serverUrl = await getServerUrl().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => 'http://localhost:8080/',
     );
-  }, onError);
+  } catch (_) {
+    serverUrl = 'http://localhost:8080/';
+  }
+
+  try {
+    await initClient(serverUrl);
+  } catch (_) {
+    // Still run app so user sees UI; client may reconnect later.
+  }
+
+  runApp(
+    const ProviderScope(
+      child: PharmaLmsApp(),
+    ),
+  );
 }
 
 class PharmaLmsApp extends ConsumerWidget {

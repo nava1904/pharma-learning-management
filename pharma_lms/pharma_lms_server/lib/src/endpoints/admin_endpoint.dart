@@ -490,12 +490,12 @@ class AdminEndpoint extends Endpoint {
       action: 'WaiverApproved',
       newValueJson: '{"approvedById":$approvedById}',
     );
-    if (waiver.userId != null && waiver.courseId != null) {
+    if (waiver.courseId != null) {
       await EventService.emitWaiverApproved(
         session,
         waiverId: waiverId,
-        userId: waiver.userId!,
-        courseId: waiver.courseId!,
+        userId: waiver.userId,
+        courseId: waiver.courseId,
       );
     }
     return updated;
@@ -556,6 +556,138 @@ class AdminEndpoint extends Endpoint {
       action: 'UserUnlocked',
       newValueJson: '{"email":"$email"}',
     );
+    return true;
+  }
+
+  /// ADM-WF-07: Terminate a user - HR workflow for employee offboarding.
+  /// - Updates PharmaUser status to 'terminated'
+  /// - Revokes all active UserSessions
+  /// - Supersedes all open TrainingAssignments
+  /// - Cancels all not_started/in_progress Enrollments
+  /// - Writes UserTerminated audit event
+  /// Training records, certificates, e-signatures are RETAINED for compliance.
+  Future<bool> terminateUser(
+    Session session, {
+    required int userId,
+    required DateTime terminationDate,
+    required String reason,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'user', action: 'write');
+
+    if (reason.trim().isEmpty) {
+      throw Exception('Termination reason is required (ADM-WF-07)');
+    }
+
+    // 1. Fetch the user
+    final user = await PharmaUser.db.findById(session, userId);
+    if (user == null) throw Exception('User not found');
+    if (user.status == 'terminated') {
+      throw Exception('User is already terminated');
+    }
+
+    final now = DateTime.now();
+    final oldStatus = user.status;
+    final terminatedById = (await RbacHelper.getCurrentPharmaUser(session))?.id;
+
+    // 2. Update PharmaUser status to 'terminated'
+    final updatedUser = user.copyWith(status: 'terminated');
+    await PharmaUser.db.updateRow(session, updatedUser);
+
+    // 3. Revoke all active UserSessions for this user
+    final activeSessions = await UserSession.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.endedAt.equals(null),
+    );
+    var revokedSessionCount = 0;
+    for (final userSession in activeSessions) {
+      final revokedSession = userSession.copyWith(
+        endedAt: now,
+        endReason: 'admin_revoke',
+      );
+      await UserSession.db.updateRow(session, revokedSession);
+      revokedSessionCount++;
+    }
+
+    // 4. Supersede all open TrainingAssignments
+    final openAssignments = await TrainingAssignment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.status.equals('active'),
+    );
+    var supersededAssignmentCount = 0;
+    for (final assignment in openAssignments) {
+      final superseded = assignment.copyWith(
+        status: 'superseded',
+        cancelledAt: now,
+        cancelledById: terminatedById,
+        cancellationReason: 'Employee terminated: $reason',
+      );
+      await TrainingAssignment.db.updateRow(session, superseded);
+
+      await AuditService.log(
+        session,
+        entityType: 'training_assignment',
+        entityId: assignment.id.toString(),
+        action: AuditEventType.assignmentSuperseded,
+        oldValueJson: '{"status":"${assignment.status}"}',
+        newValueJson: '{"status":"superseded","reason":"employee_terminated"}',
+        userId: terminatedById,
+      );
+      supersededAssignmentCount++;
+    }
+
+    // 5. Cancel all not_started/in_progress Enrollments
+    final activeEnrollments = await Enrollment.db.find(
+      session,
+      where: (t) =>
+          t.userId.equals(userId) &
+          (t.status.equals('not_started') | t.status.equals('in_progress')),
+    );
+    var cancelledEnrollmentCount = 0;
+    for (final enrollment in activeEnrollments) {
+      final oldEnrollmentStatus = enrollment.status;
+      final cancelled = enrollment.copyWith(status: 'cancelled');
+      await Enrollment.db.updateRow(session, cancelled);
+
+      await AuditService.log(
+        session,
+        entityType: 'enrollment',
+        entityId: enrollment.id.toString(),
+        action: AuditEventType.enrollmentCancelled,
+        oldValueJson: '{"status":"$oldEnrollmentStatus"}',
+        newValueJson: '{"status":"cancelled","reason":"employee_terminated"}',
+        userId: terminatedById,
+      );
+      cancelledEnrollmentCount++;
+    }
+
+    // 6. Block the auth user to prevent login
+    if (user.email.isNotEmpty) {
+      try {
+        await lockUserByEmail(session, user.email);
+      } catch (_) {
+        // Auth user may not exist - continue
+      }
+    }
+
+    // 7. Write UserTerminated audit event
+    await AuditService.log(
+      session,
+      entityType: 'pharma_user',
+      entityId: userId.toString(),
+      action: AuditEventType.userTerminated,
+      oldValueJson: '{"status":"$oldStatus"}',
+      newValueJson: jsonEncode({
+        'status': 'terminated',
+        'terminationDate': terminationDate.toIso8601String(),
+        'reason': reason,
+        'terminatedById': terminatedById,
+        'revokedSessions': revokedSessionCount,
+        'supersededAssignments': supersededAssignmentCount,
+        'cancelledEnrollments': cancelledEnrollmentCount,
+      }),
+      userId: terminatedById,
+    );
+
     return true;
   }
 }

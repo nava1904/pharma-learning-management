@@ -1,0 +1,20 @@
+### Result of audit trail integrity check (SYS-WF-08).
+class: AuditIntegrityResult
+
+table: audit_integrity_result
+
+fields:
+  ### When the check was performed.
+  checkedAt: DateTime, default=now
+  ### Number of records checked.
+  recordsChecked: int
+  ### Number of hash mismatches found.
+  hashMismatches: int
+  ### Number of sequence gaps found.
+  sequenceGaps: int
+  ### Overall result: passed, failed.
+  result: String
+  ### Details of any failures as JSON array.
+  failureDetailsJson: String?
+  ### Job log reference.
+  scheduledJobLog: ScheduledJobLog?, relation(optional)

@@ -10,7 +10,9 @@ fields:
   timestamp: DateTime, default=now
   ### Signature meaning: "I have read and understood", "Verification", "Approval".
   signatureMeaning: String
-  ### Hash of password re-authentication (for verification).
+  ### Plaintext password for verification only; never persisted (server sets to null before insert).
+  passwordPlaintext: String?
+  ### Server-generated only for legacy/audit; must not be accepted from client.
   passwordReauthHash: String?
   ### Entity type signed (e.g., training_record, certificate).
   entityType: String
@@ -20,3 +22,9 @@ fields:
   ipAddress: String?
   ### HMAC for integrity verification (userId, entityType, entityId, timestamp, meaning).
   integrityHash: String?
+  ### Whether the signature is valid (false if revoked).
+  isValid: bool, default=true
+  ### Reason for revocation (QA-WF-06).
+  revokedReason: String?
+  ### ID of the revoking signature (QA-WF-06).
+  revokedBySignatureId: int?

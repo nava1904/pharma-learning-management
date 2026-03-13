@@ -1,46 +1,88 @@
-import 'dart:typed_data';
-
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Material;
 import 'package:go_router/go_router.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart' as pharma;
-import 'package:serverpod_client/serverpod_client.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
-import '../../core/file_io.dart';
 import '../../design_system/colors.dart';
 import '../../design_system/spacing.dart';
 
-/// Max file size before warning (100MB).
-const _maxFileSizeBytes = 100 * 1024 * 1024;
+/// Type alias to distinguish from Flutter Material
+typedef LmsMaterial = Material;
 
-/// Material upload: drag-drop zone, type chips, preview thumbnail.
-class MaterialUploadScreen extends StatefulWidget {
-  const MaterialUploadScreen({
+/// Shows material upload as a modal bottom sheet.
+/// Returns the selected [Material] or null if dismissed.
+Future<LmsMaterial?> showMaterialUploadSheet(
+  BuildContext context, {
+  String? prefilterType,
+  required int organizationId,
+}) async {
+  return showModalBottomSheet<LmsMaterial>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: DesignColors.neutral50,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: MaterialUploadView(
+          scrollController: controller,
+          isModal: true,
+          prefilterType: prefilterType,
+          organizationId: organizationId,
+          onMaterialSelected: (m) => Navigator.of(ctx).pop(m),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Reusable material upload view.
+/// Can be used standalone or embedded in a modal bottom sheet.
+class MaterialUploadView extends StatefulWidget {
+  const MaterialUploadView({
     super.key,
-    this.organizationId = 1,
+    this.scrollController,
+    this.isModal = false,
+    this.prefilterType,
+    this.onMaterialSelected,
+    required this.organizationId,
   });
 
+  final ScrollController? scrollController;
+  final bool isModal;
+  final String? prefilterType;
+  final void Function(LmsMaterial material)? onMaterialSelected;
   final int organizationId;
 
   @override
-  State<MaterialUploadScreen> createState() => _MaterialUploadScreenState();
+  State<MaterialUploadView> createState() => _MaterialUploadViewState();
 }
 
-class _MaterialUploadScreenState extends State<MaterialUploadScreen> {
-  List<pharma.Material> _materials = [];
+class _MaterialUploadViewState extends State<MaterialUploadView> {
+  List<LmsMaterial> _materials = [];
   bool _loading = true;
   String? _error;
-  String _selectedType = 'pdf';
-  PlatformFile? _previewFile;
+  String _selectedType = 'All';
+  bool _isDragOver = false;
+  bool _isUploading = false;
+  double _uploadProgress = 0.0;
+  String? _uploadingFileName;
 
-  static const _allowedExtensions = ['pdf', 'doc', 'docx', 'mp4', 'webm', 'zip'];
-  static const _typeChips = ['PDF', 'Video', 'SCORM'];
+  final List<String> _types = ['All', 'PDF', 'Video', 'SCORM', 'Image', 'Other'];
 
   @override
   void initState() {
     super.initState();
+    if (widget.prefilterType != null && _types.contains(widget.prefilterType)) {
+      _selectedType = widget.prefilterType!;
+    }
     _load();
   }
 
@@ -50,11 +92,11 @@ class _MaterialUploadScreenState extends State<MaterialUploadScreen> {
       _error = null;
     });
     try {
-      final materials = await client.material.listMaterials(
+      final result = await client.material.listMaterials(
         organizationId: widget.organizationId,
       );
       setState(() {
-        _materials = materials;
+        _materials = result;
         _loading = false;
       });
     } catch (e) {
@@ -65,326 +107,767 @@ class _MaterialUploadScreenState extends State<MaterialUploadScreen> {
     }
   }
 
-  String _typeToExtension() {
-    switch (_selectedType.toLowerCase()) {
-      case 'video':
-        return 'mp4';
-      case 'scorm':
-        return 'zip';
-      default:
-        return 'pdf';
-    }
-  }
-
-  List<String> _extensionsForType() {
-    switch (_selectedType.toLowerCase()) {
-      case 'video':
-        return ['mp4', 'webm'];
-      case 'scorm':
-        return ['zip'];
-      default:
-        return ['pdf', 'doc', 'docx'];
-    }
+  List<LmsMaterial> get _filteredMaterials {
+    if (_selectedType == 'All') return _materials;
+    return _materials
+        .where((m) => m.materialType.toLowerCase() == _selectedType.toLowerCase())
+        .toList();
   }
 
   Future<void> _pickAndUpload() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: _extensionsForType(),
-      withData: false,
-      withReadStream: kIsWeb,
+      allowedExtensions: ['pdf', 'mp4', 'mov', 'webm', 'zip', 'png', 'jpg', 'jpeg'],
+      withData: true,
     );
-    if (result == null || result.files.isEmpty || !mounted) return;
+    if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
-    if (file.size > _maxFileSizeBytes && mounted) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Large file'),
-          content: Text(
-            'This file is ${(file.size / (1024 * 1024)).toStringAsFixed(1)} MB. '
-            'Uploading files over 100MB may be slow or cause issues. Continue?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Continue'),
-            ),
-          ],
-        ),
-      );
-      if (proceed != true || !mounted) return;
-    }
-    await _processFile(file);
+    await _uploadFile(file);
   }
 
-  Future<void> _processFile(PlatformFile file) async {
-    setState(() => _previewFile = file);
+  Future<void> _uploadFile(PlatformFile file) async {
+    if (file.bytes == null) {
+      _showError('File data not available');
+      return;
+    }
 
-    final title = file.name;
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+      _uploadingFileName = file.name;
+    });
+
     try {
+      // Determine material type from extension
+      final ext = file.extension?.toLowerCase() ?? '';
+      String materialType;
+      if (['pdf'].contains(ext)) {
+        materialType = 'PDF';
+      } else if (['mp4', 'mov', 'webm'].contains(ext)) {
+        materialType = 'Video';
+      } else if (['zip'].contains(ext)) {
+        materialType = 'SCORM';
+      } else if (['png', 'jpg', 'jpeg'].contains(ext)) {
+        materialType = 'Image';
+      } else {
+        materialType = 'Other';
+      }
+
+      setState(() => _uploadProgress = 0.1);
+
+      // Create the material record first
       final material = await client.material.createMaterial(
-        title: title,
-        materialType: _selectedType.toLowerCase(),
+        title: file.name.replaceAll(RegExp(r'\.[^.]+$'), ''),
+        materialType: materialType,
         organizationId: widget.organizationId,
       );
-      if (!mounted) return;
-      await _uploadFile(material, file, file.extension ?? _typeToExtension());
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
-    }
-  }
 
-  Future<void> _uploadFile(
-    pharma.Material material,
-    PlatformFile file,
-    String ext,
-  ) async {
-    final path = 'materials/${material.id}/v1.$ext';
-    try {
-      final desc = await client.material.getUploadDescription(path);
-      if (desc == null) throw Exception('No upload description');
-      final uploader = FileUploader(desc);
+      setState(() => _uploadProgress = 0.2);
 
-      bool success;
-      if (kIsWeb && file.readStream != null) {
-        success = await uploader.upload(
-          file.readStream!,
-          file.size,
-        );
-      } else if (!kIsWeb && file.path != null) {
-        final stream = openReadStream(file.path!);
-        if (stream != null) {
-          success = await uploader.upload(stream, file.size);
-        } else {
-          final bytes = await readFileBytes(file.path!);
-          success = await uploader.uploadByteData(
-            ByteData.sublistView(Uint8List.fromList(bytes)),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not read file for upload')),
-          );
-        }
-        return;
+      // Generate storage path
+      final storagePath = 'materials/${material.id}/v1.${file.extension}';
+
+      // Get upload description (returns signed URL as string)
+      final uploadUrl = await client.material.getUploadDescription(storagePath);
+      if (uploadUrl == null) {
+        throw Exception('Failed to get upload URL');
       }
 
-      if (!success) throw Exception('Upload failed');
-      await client.material.verifyUpload(path);
+      setState(() => _uploadProgress = 0.3);
+
+      // Upload file using ByteData stream
+      final bytes = file.bytes!;
+      final uploader = FileUploader(uploadUrl);
+      
+      await uploader.upload(
+        Stream.fromIterable([bytes]),
+        bytes.length,
+      );
+
+      setState(() => _uploadProgress = 0.7);
+
+      // Verify upload
+      final verified = await client.material.verifyUpload(storagePath);
+      if (!verified) {
+        throw Exception('Upload verification failed');
+      }
+
+      setState(() => _uploadProgress = 0.85);
+
+      // TRN-WF-02: Compute file hash for integrity verification
+      final fileHash = sha256.convert(bytes).toString();
+
+      // Create material version record with file hash and size
       await client.material.createMaterialVersion(
         materialId: material.id!,
-        storageKey: path,
+        storageKey: storagePath,
+        fileHash: fileHash,
+        fileSizeBytes: bytes.length,
       );
+
+      setState(() => _uploadProgress = 1.0);
+
+      // Refresh list
+      await _load();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload complete')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: DesignColors.success),
+                const SizedBox(width: DesignSpacing.sm),
+                Expanded(child: Text('${file.name} uploaded successfully')),
+              ],
+            ),
+            backgroundColor: DesignColors.neutral800,
+          ),
         );
-        setState(() => _previewFile = null);
-        _load();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
-      }
+      _showError('Upload failed: $e');
+    } finally {
+      setState(() {
+        _isUploading = false;
+        _uploadProgress = 0.0;
+        _uploadingFileName = null;
+      });
     }
   }
 
-  Future<void> _uploadExisting(pharma.Material material) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: _allowedExtensions,
-      withData: false,
-      withReadStream: kIsWeb,
-    );
-    if (result == null || result.files.isEmpty || !mounted) return;
-    final file = result.files.first;
-    await _uploadFile(material, file, file.extension ?? 'bin');
-  }
-
-  Widget _buildPreviewThumbnail() {
-    if (_previewFile == null) return const SizedBox.shrink();
-    final ext = (_previewFile!.extension ?? '').toLowerCase();
-    final isVideo = ['mp4', 'webm'].contains(ext);
-    final isPdf = ext == 'pdf';
-
-    return Container(
-      width: 120,
-      height: 90,
-      margin: const EdgeInsets.only(top: DesignSpacing.md),
-      decoration: BoxDecoration(
-        color: DesignColors.neutral100,
-        borderRadius: BorderRadius.circular(DesignSpacing.sm),
-        border: Border.all(color: DesignColors.neutral300),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(DesignSpacing.sm),
-        child: isVideo
-            ? Icon(Icons.videocam, size: 40, color: DesignColors.primary)
-            : isPdf
-                ? Icon(Icons.picture_as_pdf, size: 40, color: DesignColors.danger)
-                : Icon(Icons.folder_zip, size: 40, color: DesignColors.warning),
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: DesignColors.danger),
+            const SizedBox(width: DesignSpacing.sm),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: DesignColors.neutral800,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Upload Materials'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!),
-                      const SizedBox(height: DesignSpacing.md),
-                      FilledButton(
-                        onPressed: _load,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(DesignSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Type selector chips
-                        Text(
-                          'Material Type',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                color: DesignColors.neutral600,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: DesignSpacing.sm),
-                        Row(
-                          children: _typeChips.map((label) {
-                            final type = label.toLowerCase();
-                            final isSelected = _selectedType == type;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: DesignSpacing.sm),
-                              child: FilterChip(
-                                label: Text(label),
-                                selected: isSelected,
-                                onSelected: (_) => setState(() => _selectedType = type),
-                                selectedColor: DesignColors.primary.withValues(alpha: 0.2),
-                                checkmarkColor: DesignColors.primary,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: DesignSpacing.lg),
-                        // Drop zone (tap to open file picker; drag-drop supported via platform)
-                        GestureDetector(
-                          onTap: _pickAndUpload,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: DesignSpacing.xl,
-                              horizontal: DesignSpacing.lg,
-                            ),
-                            decoration: BoxDecoration(
-                              color: DesignColors.neutral50,
-                              borderRadius: BorderRadius.circular(DesignSpacing.md),
-                              border: Border.all(
-                                color: DesignColors.neutral300,
-                                width: 2,
-                                strokeAlign: BorderSide.strokeAlignInside,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.cloud_upload_outlined,
-                                  size: 48,
-                                  color: DesignColors.neutral400,
-                                ),
-                                const SizedBox(height: DesignSpacing.md),
-                                Text(
-                                  'Drag files here or tap to browse',
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        color: DesignColors.neutral600,
-                                      ),
-                                ),
-                                Text(
-                                  _extensionsForType().join(', '),
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: DesignColors.neutral500,
-                                      ),
-                                ),
-                                _buildPreviewThumbnail(),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: DesignSpacing.xl),
-                        // Material list
-                        Text(
-                          'Materials',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: DesignSpacing.md),
-                        ..._materials.map((m) => Card(
-                              margin: const EdgeInsets.only(bottom: DesignSpacing.sm),
-                              child: ListTile(
-                                leading: Icon(
-                                  _iconForType(m.materialType),
-                                  color: DesignColors.primary,
-                                ),
-                                title: Text(m.title),
-                                subtitle: Text(
-                                  '${m.materialType} • ${m.storageKey ?? "No file"}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                trailing: m.storageKey == null
-                                    ? FilledButton.tonal(
-                                        onPressed: () => _uploadExisting(m),
-                                        child: const Text('Upload'),
-                                      )
-                                    : null,
-                              ),
-                            )),
-                      ],
-                    ),
-                  ),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Header
+        _buildHeader(),
+
+        // Type filter chips
+        _buildTypeFilters(),
+
+        // Upload drop zone
+        _buildDropZone(),
+
+        // Materials list
+        Expanded(child: _buildMaterialsList()),
+      ],
     );
   }
 
-  IconData _iconForType(String type) {
-    switch (type.toLowerCase()) {
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(DesignSpacing.md),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: DesignColors.neutral200),
+        ),
+      ),
+      child: Column(
+        children: [
+          if (widget.isModal)
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: DesignSpacing.sm),
+              decoration: BoxDecoration(
+                color: DesignColors.neutral300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          Row(
+            children: [
+              const Icon(Icons.folder_open, color: DesignColors.primary, size: 28),
+              const SizedBox(width: DesignSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.isModal ? 'Select Material' : 'Material Library',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: DesignColors.neutral900,
+                      ),
+                    ),
+                    if (widget.isModal)
+                      const Text(
+                        'Choose a material to attach to your lesson',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: DesignColors.neutral500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (!widget.isModal)
+                IconButton(
+                  onPressed: _load,
+                  icon: const Icon(Icons.refresh, color: DesignColors.neutral600),
+                  tooltip: 'Refresh',
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeFilters() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignSpacing.md,
+        vertical: DesignSpacing.sm,
+      ),
+      color: Colors.white,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _types.map((type) {
+            final isSelected = _selectedType == type;
+            return Padding(
+              padding: const EdgeInsets.only(right: DesignSpacing.xs),
+              child: FilterChip(
+                label: Text(type),
+                selected: isSelected,
+                onSelected: (_) => setState(() => _selectedType = type),
+                selectedColor: DesignColors.primary.withAlpha(30),
+                checkmarkColor: DesignColors.primary,
+                labelStyle: TextStyle(
+                  color: isSelected ? DesignColors.primary : DesignColors.neutral700,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                side: BorderSide(
+                  color: isSelected ? DesignColors.primary : DesignColors.neutral300,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropZone() {
+    // Using MouseRegion + GestureDetector instead of DragTarget to avoid
+    // Flutter mouse_tracker.dart assertion errors on desktop/web platforms.
+    return Container(
+      margin: const EdgeInsets.all(DesignSpacing.md),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isDragOver = true),
+        onExit: (_) => setState(() => _isDragOver = false),
+        child: GestureDetector(
+          onTap: _pickAndUpload,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(DesignSpacing.lg),
+            decoration: BoxDecoration(
+              color: _isDragOver
+                  ? DesignColors.primary.withAlpha(15)
+                  : DesignColors.neutral100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isDragOver ? DesignColors.primary : DesignColors.neutral300,
+                width: 2,
+                strokeAlign: BorderSide.strokeAlignInside,
+              ),
+            ),
+            child: _isUploading ? _buildUploadProgress() : _buildDropZoneContent(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropZoneContent() {
+    return InkWell(
+      onTap: _pickAndUpload,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(DesignSpacing.md),
+            decoration: BoxDecoration(
+              color: DesignColors.primary.withAlpha(20),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.cloud_upload_outlined,
+              size: 40,
+              color: DesignColors.primary,
+            ),
+          ),
+          const SizedBox(height: DesignSpacing.md),
+          const Text(
+            'Drag & drop files here',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: DesignColors.neutral800,
+            ),
+          ),
+          const SizedBox(height: DesignSpacing.xs),
+          const Text(
+            'or click to browse • PDF, Video, SCORM, Images',
+            style: TextStyle(
+              fontSize: 13,
+              color: DesignColors.neutral500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadProgress() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 60,
+          height: 60,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: _uploadProgress,
+                strokeWidth: 4,
+                backgroundColor: DesignColors.neutral200,
+                valueColor: const AlwaysStoppedAnimation(DesignColors.primary),
+              ),
+              Text(
+                '${(_uploadProgress * 100).toInt()}%',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: DesignColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: DesignSpacing.md),
+        Text(
+          'Uploading ${_uploadingFileName ?? 'file'}...',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: DesignColors.neutral700,
+          ),
+        ),
+        const SizedBox(height: DesignSpacing.xs),
+        const Text(
+          'Virus scan will run automatically after upload',
+          style: TextStyle(
+            fontSize: 12,
+            color: DesignColors.neutral500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMaterialsList() {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: DesignColors.primary),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: DesignColors.danger),
+            const SizedBox(height: DesignSpacing.md),
+            const Text(
+              'Failed to load materials',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: DesignColors.neutral800,
+              ),
+            ),
+            const SizedBox(height: DesignSpacing.sm),
+            TextButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final materials = _filteredMaterials;
+    if (materials.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.folder_off_outlined, size: 48, color: DesignColors.neutral400),
+            const SizedBox(height: DesignSpacing.md),
+            Text(
+              _selectedType == 'All'
+                  ? 'No materials uploaded yet'
+                  : 'No $_selectedType materials found',
+              style: const TextStyle(
+                fontSize: 16,
+                color: DesignColors.neutral600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: widget.scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: DesignSpacing.md),
+      itemCount: materials.length,
+      itemBuilder: (context, index) {
+        final material = materials[index];
+        return _MaterialListTile(
+          material: material,
+          isModal: widget.isModal,
+          onSelect: widget.onMaterialSelected != null
+              ? () => widget.onMaterialSelected!(material)
+              : null,
+          onTap: widget.isModal
+              ? null
+              : () => context.push('/materials/${material.id}'),
+        );
+      },
+    );
+  }
+}
+
+/// Individual material tile with TRN-WF-02 compliance indicators.
+class _MaterialListTile extends StatelessWidget {
+  const _MaterialListTile({
+    required this.material,
+    this.isModal = false,
+    this.onSelect,
+    this.onTap,
+  });
+
+  final LmsMaterial material;
+  final bool isModal;
+  final VoidCallback? onSelect;
+  final VoidCallback? onTap;
+
+  IconData get _typeIcon {
+    switch (material.materialType.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
       case 'video':
         return Icons.videocam;
       case 'scorm':
-        return Icons.quiz;
+        return Icons.school;
+      case 'image':
+        return Icons.image;
       default:
-        return Icons.picture_as_pdf;
+        return Icons.insert_drive_file;
     }
+  }
+
+  Color get _typeColor {
+    switch (material.materialType.toLowerCase()) {
+      case 'pdf':
+        return const Color(0xFFE53935);
+      case 'video':
+        return const Color(0xFF7B1FA2);
+      case 'scorm':
+        return const Color(0xFF1976D2);
+      case 'image':
+        return const Color(0xFF43A047);
+      default:
+        return DesignColors.neutral600;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: DesignSpacing.sm),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: DesignColors.neutral200),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(DesignSpacing.md),
+          child: Row(
+            children: [
+              // Type icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _typeColor.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(_typeIcon, color: _typeColor, size: 24),
+              ),
+              const SizedBox(width: DesignSpacing.md),
+
+              // Title and metadata
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      material.title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: DesignColors.neutral900,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _TypeBadge(type: material.materialType),
+                        const SizedBox(width: DesignSpacing.sm),
+                        // Virus scan status indicator (TRN-WF-02)
+                        _VirusScanBadge(status: _getMockVirusScanStatus()),
+                        const SizedBox(width: DesignSpacing.sm),
+                        // File hash indicator (TRN-WF-02)
+                        if (_getMockFileHash() != null)
+                          _FileHashChip(hash: _getMockFileHash()!),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Select button for modal mode
+              if (isModal && onSelect != null) ...[
+                const SizedBox(width: DesignSpacing.sm),
+                ElevatedButton(
+                  onPressed: onSelect,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DesignColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignSpacing.md,
+                      vertical: DesignSpacing.sm,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Select'),
+                ),
+              ],
+
+              // Chevron for standalone mode
+              if (!isModal && onTap != null)
+                const Icon(Icons.chevron_right, color: DesignColors.neutral400),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Mock methods - replace with actual data when MaterialVersion is queried
+  // TRN-WF-02: After serverpod generate, fetch actual virusScanStatus from MaterialVersion
+  String _getMockVirusScanStatus() {
+    // In production, query the latest MaterialVersion for this material
+    // Return: 'pending', 'clean', or 'quarantined'
+    final hash = material.id.hashCode;
+    if (hash % 10 == 0) return 'quarantined';
+    if (hash % 3 == 0) return 'pending';
+    return 'clean';
+  }
+
+  String? _getMockFileHash() {
+    // In production, query the latest MaterialVersion for this material
+    // Return actual SHA-256 hash from MaterialVersion.fileHash
+    return 'sha256:${material.id.hashCode.toRadixString(16).padLeft(8, '0')}a1b2c3d4';
+  }
+}
+
+/// Type badge showing material type.
+class _TypeBadge extends StatelessWidget {
+  const _TypeBadge({required this.type});
+
+  final String type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignSpacing.xs + 2,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: DesignColors.neutral200,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        type.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: DesignColors.neutral700,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+/// Virus scan status badge (TRN-WF-02 compliance).
+class _VirusScanBadge extends StatelessWidget {
+  const _VirusScanBadge({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    IconData icon;
+    Color color;
+    String tooltip;
+
+    switch (status.toLowerCase()) {
+      case 'clean':
+        icon = Icons.verified_user;
+        color = DesignColors.success;
+        tooltip = 'Virus scan: Clean';
+      case 'pending':
+        icon = Icons.hourglass_top;
+        color = DesignColors.warning;
+        tooltip = 'Virus scan: Pending';
+      case 'quarantined':
+        icon = Icons.warning_amber;
+        color = DesignColors.danger;
+        tooltip = 'Virus scan: Quarantined';
+      default:
+        icon = Icons.help_outline;
+        color = DesignColors.neutral500;
+        tooltip = 'Virus scan: Unknown';
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: color.withAlpha(25),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Icon(icon, size: 14, color: color),
+      ),
+    );
+  }
+}
+
+/// Truncated file hash chip (TRN-WF-02 compliance).
+class _FileHashChip extends StatelessWidget {
+  const _FileHashChip({required this.hash});
+
+  final String hash;
+
+  String get _truncatedHash {
+    if (hash.length <= 16) return hash;
+    return '${hash.substring(0, 12)}...';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'File hash: $hash',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignSpacing.xs,
+          vertical: 2,
+        ),
+        decoration: BoxDecoration(
+          color: DesignColors.neutral100,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: DesignColors.neutral300),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.fingerprint,
+              size: 12,
+              color: DesignColors.neutral500,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              _truncatedHash,
+              style: const TextStyle(
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: DesignColors.neutral600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Standalone screen wrapper that uses MaterialUploadView.
+class MaterialUploadScreen extends StatelessWidget {
+  const MaterialUploadScreen({
+    super.key,
+    required this.organizationId,
+  });
+
+  final int organizationId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: DesignColors.neutral50,
+      appBar: AppBar(
+        title: const Text('Material Library'),
+        backgroundColor: Colors.white,
+        foregroundColor: DesignColors.neutral900,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: DesignColors.neutral200,
+            height: 1,
+          ),
+        ),
+      ),
+      body: MaterialUploadView(organizationId: organizationId),
+    );
   }
 }

@@ -151,7 +151,7 @@ class DocumentEndpoint extends Endpoint {
     String? obsoleteReason,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? ipAddress,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'document', action: 'write');
@@ -189,7 +189,7 @@ class DocumentEndpoint extends Endpoint {
         signatureMeaning: signatureMeaning,
         entityType: 'document_lifecycle',
         entityId: documentVersionId.toString(),
-        passwordReauth: passwordReauth,
+        passwordPlaintext: passwordPlaintext,
         ipAddress: ipAddress,
       );
       final lifecycle = DocumentLifecycle(

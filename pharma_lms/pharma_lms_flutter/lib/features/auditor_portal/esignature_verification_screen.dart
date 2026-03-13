@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
+import '../esignature/esignature_screen.dart' show showEsignatureModal;
 
 /// E-signature verification screen for auditors - 21 CFR Part 11 inspection readiness.
 class EsignatureVerificationScreen extends StatefulWidget {
@@ -247,67 +248,229 @@ class _EsignatureVerificationScreenState
                           child: Text('No electronic signatures found'),
                         )
                       else
-                        ..._signatures.map((s) => Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: Icon(
-                                  Icons.draw,
-                                  color: s.integrityHash == null
-                                      ? Colors.orange
-                                      : Colors.green,
-                                ),
-                                onTap: s.id != null
-                                    ? () => _showIntegrityCheck(context, s.id!)
-                                    : null,
-                                title: Text(
-                                  s.signatureMeaning,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${s.entityType} / ${s.entityId}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                    Text(
-                                      s.timestamp.toIso8601String(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                    if (s.user != null)
-                                      Text(
-                                        'User: ${s.user!.firstName} ${s.user!.lastName}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
-                                      ),
-                                    if (s.ipAddress != null)
-                                      Text(
-                                        'IP: ${s.ipAddress}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
-                                      ),
-                                    Text(
-                                      'Password re-auth: ${s.passwordReauthHash != null ? "Yes" : "No"}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                  ],
-                                ),
-                                isThreeLine: true,
-                              ),
-                            )),
+                        ..._signatures.map((s) => _buildSignatureCard(s)),
                     ],
                   ),
                 ),
     );
+  }
+
+  /// Build a signature card with revocation support (QA-WF-06)
+  Widget _buildSignatureCard(ElectronicSignature s) {
+    final isRevoked = s.isValid == false;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: isRevoked ? Colors.red.shade50 : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: Icon(
+              isRevoked ? Icons.cancel : Icons.draw,
+              color: isRevoked 
+                  ? Colors.red 
+                  : (s.integrityHash == null ? Colors.orange : Colors.green),
+            ),
+            onTap: s.id != null
+                ? () => _showIntegrityCheck(context, s.id!)
+                : null,
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s.signatureMeaning,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      decoration: isRevoked ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                ),
+                if (isRevoked)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'REVOKED',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${s.entityType} / ${s.entityId}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Text(
+                  s.timestamp.toIso8601String(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (s.user != null)
+                  Text(
+                    'User: ${s.user!.firstName} ${s.user!.lastName}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                if (s.ipAddress != null)
+                  Text(
+                    'IP: ${s.ipAddress}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                Text(
+                  'Password re-auth: ${s.passwordReauthHash != null ? "Yes" : "No"}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (isRevoked && s.revokedReason != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Revocation reason: ${s.revokedReason}',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            isThreeLine: true,
+          ),
+          // QA-WF-06: Revoke Signature button (only visible if signature is valid)
+          if (!isRevoked && s.id != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+              child: TextButton.icon(
+                onPressed: () => _showRevokeDialog(s),
+                icon: const Icon(Icons.block, size: 18, color: Colors.red),
+                label: const Text(
+                  'Revoke Signature',
+                  style: TextStyle(color: Colors.red),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// QA-WF-06: Show revocation dialog requiring reason and e-signature
+  Future<void> _showRevokeDialog(ElectronicSignature signature) async {
+    final reasonController = TextEditingController();
+    
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Revoke Signature'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: const Text(
+                '⚠️ WARNING: Revoking this signature will invalidate any linked certificates. '
+                'This action is permanent and will be recorded in the audit trail.',
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Signature: ${signature.signatureMeaning}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            if (signature.user != null)
+              Text('Signed by: ${signature.user!.firstName} ${signature.user!.lastName}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Revocation Reason (required)',
+                hintText: 'Enter the reason for revoking this signature...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Revocation reason is required')),
+                );
+                return;
+              }
+              Navigator.pop(ctx, reasonController.text.trim());
+            },
+            child: const Text('Continue to E-Signature'),
+          ),
+        ],
+      ),
+    );
+
+    if (reason == null || !mounted) return;
+
+    // QA-WF-06: Require e-signature for revocation
+    final esignatureId = await showEsignatureModal(
+      context,
+      entityType: 'electronic_signature',
+      entityId: signature.id.toString(),
+      signatureMeaning: 'I am revoking this signature for the stated reason',
+    );
+
+    if (esignatureId == null || !mounted) return;
+
+    setState(() => _loading = true);
+    try {
+      await client.training.revokeSignature(
+        signatureId: signature.id!,
+        reason: reason,
+        passwordPlaintext: '', // E-signature already captured
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Signature revoked. Linked certificates have been invalidated.'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Revocation failed: $e')),
+        );
+      }
+    }
   }
 }

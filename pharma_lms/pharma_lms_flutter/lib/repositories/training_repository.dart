@@ -29,13 +29,13 @@ class TrainingRepository {
     required int enrollmentId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
   }) =>
       api.training.acknowledgeRetraining(
         enrollmentId: enrollmentId,
         userId: userId,
         signatureMeaning: signatureMeaning,
-        passwordReauth: passwordReauth,
+        passwordPlaintext: passwordPlaintext,
       );
 
   Future<List<Certificate>> getCertificatesForUser(int userId) =>
@@ -52,14 +52,14 @@ class TrainingRepository {
     required String signatureMeaning,
     required String entityType,
     required String entityId,
-    String? passwordReauth,
+    String? passwordPlaintext,
   }) =>
       api.training.createTrainingSignature(
         userId: userId,
         signatureMeaning: signatureMeaning,
         entityType: entityType,
         entityId: entityId,
-        passwordReauth: passwordReauth,
+        passwordPlaintext: passwordPlaintext,
       );
 
   Future<Certificate> completeTraining({
@@ -101,7 +101,7 @@ class TrainingRepository {
   Future<TrainingAssignment> cancelAssignment({
     required int assignmentId,
     required int cancelledById,
-    String? reason,
+    required String reason,
   }) =>
       api.training.cancelAssignment(
         assignmentId: assignmentId,

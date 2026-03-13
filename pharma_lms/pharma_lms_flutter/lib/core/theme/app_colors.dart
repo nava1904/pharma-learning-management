@@ -65,4 +65,7 @@ class AppColors {
     end: Alignment.bottomRight,
     colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
   );
+
+  // Added amber600 color
+  static const Color amber600 = Color(0xFFFFB300);
 }

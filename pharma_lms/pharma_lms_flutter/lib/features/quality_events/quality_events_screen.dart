@@ -6,6 +6,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/repository_providers.dart';
+import '../esignature/esignature_screen.dart' show showEsignatureModal;
 
 /// Quality Events and CAPA management - QA role.
 class QualityEventsScreen extends ConsumerStatefulWidget {
@@ -88,7 +89,7 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: eventType,
+                    initialValue: eventType,
                     decoration: const InputDecoration(
                       labelText: 'Event Type',
                       border: OutlineInputBorder(),
@@ -100,7 +101,7 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: status,
+                    initialValue: status,
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),
@@ -311,12 +312,26 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
                 }
               },
             ),
-            if ((capa.status ?? '') != 'Closed')
+            if (capa.status != 'Closed')
               ListTile(
                 title: const Text('Close CAPA'),
                 leading: const Icon(Icons.check_circle),
                 onTap: () async {
                   Navigator.pop(ctx);
+                  
+                  // QA-WF-04: Require e-signature for CAPA closure (21 CFR Part 11)
+                  final esignatureId = await showEsignatureModal(
+                    context,
+                    entityType: 'capa',
+                    entityId: capa.id.toString(),
+                    signatureMeaning: 'I certify this CAPA is effectively closed and verified',
+                  );
+
+                  if (esignatureId == null || !mounted) {
+                    // User cancelled or signature failed
+                    return;
+                  }
+
                   final user = await client.user.getUserByEmail('qa@pharmacorp.demo');
                   if (user?.id == null) {
                     if (mounted) {
@@ -334,7 +349,10 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
                     );
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('CAPA closed')),
+                        SnackBar(
+                          content: const Text('CAPA closed with e-signature verification'),
+                          backgroundColor: AppColors.success,
+                        ),
                       );
                       _load();
                     }
@@ -384,8 +402,7 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
             hint: const Text('Status'),
             items: [
               const DropdownMenuItem(value: null, child: Text('All')),
-              ...['Open', 'In Progress', 'Closed', 'Initiation', 'Verification', 'Closed']
-                  .toSet()
+              ...{'Open', 'In Progress', 'Closed', 'Initiation', 'Verification'}
                   .map((s) => DropdownMenuItem(value: s, child: Text(s))),
             ],
             onChanged: (v) {
@@ -533,7 +550,7 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
       itemCount: _capas.length,
       itemBuilder: (context, i) {
         final c = _capas[i];
-        final isClosed = (c.status ?? '') == 'Closed';
+        final isClosed = c.status == 'Closed';
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
@@ -547,7 +564,7 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Status: ${c.status ?? 'Initiation'}'),
+                Text('Status: ${c.status}'),
                 if (c.rootCause != null) Text('Root cause: ${c.rootCause}'),
                 if (c.effectivenessCheckDue != null)
                   Text(

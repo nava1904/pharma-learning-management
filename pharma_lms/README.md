@@ -62,3 +62,19 @@ serverpod run flutter_build
 - `training` - Assignments, enrollments, certificates
 - `audit` - Audit trail, access logs
 - `compliance` - Department compliance metrics
+
+## Deployment
+
+| Component | Platform | Status |
+|-----------|----------|--------|
+| Frontend | Vercel | ![Vercel](https://img.shields.io/badge/Vercel-Deployed-green) |
+| Backend | Render | ![Render](https://img.shields.io/badge/Render-Deployed-green) |
+| Database | Render PostgreSQL | ![DB](https://img.shields.io/badge/PostgreSQL-Managed-blue) |
+
+See **[docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)** for full deployment guide.
+
+## CI/CD
+
+- **Frontend**: Auto-deploy to Vercel on push to `main`
+- **Backend**: Auto-deploy to Render on push to `main`
+- **Migrations**: Manual workflow dispatch

@@ -211,7 +211,7 @@ class InspectionEndpoint extends Endpoint {
     return generateInspectionPackage(
       session,
       inspectionRecordId: inspectionRecordId,
-      generatedById: generatedById!,
+      generatedById: generatedById,
     );
   }
 
@@ -271,7 +271,7 @@ class InspectionEndpoint extends Endpoint {
     required int packageId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? ipAddress,
   }) async {
     final userRoles = await UserRole.db.find(
@@ -297,7 +297,7 @@ class InspectionEndpoint extends Endpoint {
       signatureMeaning: signatureMeaning,
       entityType: 'inspection_package',
       entityId: packageId.toString(),
-      passwordReauth: passwordReauth,
+      passwordPlaintext: passwordPlaintext,
       ipAddress: ipAddress,
     );
 

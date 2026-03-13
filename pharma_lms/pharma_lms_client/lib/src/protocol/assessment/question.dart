@@ -25,6 +25,7 @@ abstract class Question implements _i1.SerializableModel {
     required this.optionsJson,
     required this.correctAnswer,
     this.difficulty,
+    this.regulatoryTag,
   });
 
   factory Question({
@@ -36,6 +37,7 @@ abstract class Question implements _i1.SerializableModel {
     required String optionsJson,
     required String correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   }) = _QuestionImpl;
 
   factory Question.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -52,6 +54,7 @@ abstract class Question implements _i1.SerializableModel {
       optionsJson: jsonSerialization['optionsJson'] as String,
       correctAnswer: jsonSerialization['correctAnswer'] as String,
       difficulty: jsonSerialization['difficulty'] as String?,
+      regulatoryTag: jsonSerialization['regulatoryTag'] as String?,
     );
   }
 
@@ -80,6 +83,9 @@ abstract class Question implements _i1.SerializableModel {
   /// Difficulty: easy, medium, hard.
   String? difficulty;
 
+  /// Regulatory tag (e.g., '21 CFR 11', 'GMP', 'ICH Q10').
+  String? regulatoryTag;
+
   /// Returns a shallow copy of this [Question]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -92,6 +98,7 @@ abstract class Question implements _i1.SerializableModel {
     String? optionsJson,
     String? correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -105,6 +112,7 @@ abstract class Question implements _i1.SerializableModel {
       'optionsJson': optionsJson,
       'correctAnswer': correctAnswer,
       if (difficulty != null) 'difficulty': difficulty,
+      if (regulatoryTag != null) 'regulatoryTag': regulatoryTag,
     };
   }
 
@@ -126,6 +134,7 @@ class _QuestionImpl extends Question {
     required String optionsJson,
     required String correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   }) : super._(
          id: id,
          questionBankId: questionBankId,
@@ -135,6 +144,7 @@ class _QuestionImpl extends Question {
          optionsJson: optionsJson,
          correctAnswer: correctAnswer,
          difficulty: difficulty,
+         regulatoryTag: regulatoryTag,
        );
 
   /// Returns a shallow copy of this [Question]
@@ -150,6 +160,7 @@ class _QuestionImpl extends Question {
     String? optionsJson,
     String? correctAnswer,
     Object? difficulty = _Undefined,
+    Object? regulatoryTag = _Undefined,
   }) {
     return Question(
       id: id is int? ? id : this.id,
@@ -162,6 +173,9 @@ class _QuestionImpl extends Question {
       optionsJson: optionsJson ?? this.optionsJson,
       correctAnswer: correctAnswer ?? this.correctAnswer,
       difficulty: difficulty is String? ? difficulty : this.difficulty,
+      regulatoryTag: regulatoryTag is String?
+          ? regulatoryTag
+          : this.regulatoryTag,
     );
   }
 }

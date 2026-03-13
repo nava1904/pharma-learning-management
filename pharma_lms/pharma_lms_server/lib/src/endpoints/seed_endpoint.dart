@@ -761,7 +761,7 @@ class SeedEndpoint extends Endpoint {
         session,
         Course(
           title: c[0] as String,
-          sopNumber: c[2] as String?,
+          sopNumber: c[2],
           description: 'Comprehensive pharma training on ${c[0]}.',
           status: c[1] as String,
           createdById: smeId,
@@ -818,7 +818,7 @@ class SeedEndpoint extends Endpoint {
     cvValidationV1Id ??= cvIds[6];
     cvDataintegV1Id ??= cvIds[7];
 
-    final publishedCvs = [cvGmpV2Id!, cvColdchainV2Id!, cvAsepticV1Id!, cvSafetyV1Id!];
+    final publishedCvs = [cvGmpV2Id, cvColdchainV2Id, cvAsepticV1Id, cvSafetyV1Id];
     final moduleConfigs = [
       ['Introduction to GMP', 'What is GMP and Why It Matters', 'Regulatory Framework Overview (FDA/EMA)', 'Key GMP Principles and ALCOA+'],
       ['Documentation & Data Integrity', 'Good Documentation Practices', 'Electronic Records Under 21 CFR Part 11', 'Data Integrity Failures — Case Studies'],
@@ -885,10 +885,10 @@ class SeedEndpoint extends Endpoint {
       ['What is ALCOA+ in the context of data integrity?', '["An FDA inspection checklist","Principles for data integrity: Attributable, Legible, Contemporaneous, Original, Accurate","An antivirus standard","A GAMP 5 validation framework"]', '1'],
     ];
     final assessCvs = [
-      [cvGmpV2Id!, 80, 45],
-      [cvColdchainV2Id!, 75, 30],
-      [cvAsepticV1Id!, 85, 60],
-      [cvSafetyV1Id!, 75, 30],
+      [cvGmpV2Id, 80, 45],
+      [cvColdchainV2Id, 75, 30],
+      [cvAsepticV1Id, 85, 60],
+      [cvSafetyV1Id, 75, 30],
     ];
     final assessIds = <int>[];
     final questionIdsByAssess = <int, List<int>>{};
@@ -922,9 +922,9 @@ class SeedEndpoint extends Endpoint {
         Assessment(
           courseVersionId: ac[0],
           questionBankId: qb.id!,
-          passingScore: ac[1] as int,
+          passingScore: ac[1],
           randomize: true,
-          timeLimitMinutes: ac[2] as int,
+          timeLimitMinutes: ac[2],
         ),
       );
       assessIds.add(assess.id!);
@@ -975,17 +975,17 @@ class SeedEndpoint extends Endpoint {
 
     // Phase 6: Training assignments and enrollments
     final enrollData = [
-      [aliceId, cvGmpV2Id!, 'in_progress', -20, 10, 'onboarding'],
-      [aliceId, cvColdchainV2Id!, 'overdue', -40, -8, 'onboarding'],
-      [aliceId, cvAsepticV1Id!, 'completed', -320, -290, 'onboarding', -310],
-      [aliceId, cvGmpV2Id!, 'not_started', null, 14, 'sop_update'],
-      [bobId, cvGmpV2Id!, 'completed', -200, -180, 'onboarding', -195],
-      [bobId, cvColdchainV2Id!, 'completed', -180, -150, 'onboarding', -170],
-      [bobId, cvSafetyV1Id!, 'completed', -160, -130, 'onboarding', -155],
-      [carolId, cvGmpV2Id!, 'not_started', null, 0, 'onboarding'],
-      [carolId, cvAsepticV1Id!, 'not_started', null, 7, 'onboarding'],
-      [daveId, cvColdchainV2Id!, 'in_progress', -30, -5, 'onboarding'],
-      [daveId, cvGmpV2Id!, 'completed', -280, -250, 'onboarding', -270],
+      [aliceId, cvGmpV2Id, 'in_progress', -20, 10, 'onboarding'],
+      [aliceId, cvColdchainV2Id, 'overdue', -40, -8, 'onboarding'],
+      [aliceId, cvAsepticV1Id, 'completed', -320, -290, 'onboarding', -310],
+      [aliceId, cvGmpV2Id, 'not_started', null, 14, 'sop_update'],
+      [bobId, cvGmpV2Id, 'completed', -200, -180, 'onboarding', -195],
+      [bobId, cvColdchainV2Id, 'completed', -180, -150, 'onboarding', -170],
+      [bobId, cvSafetyV1Id, 'completed', -160, -130, 'onboarding', -155],
+      [carolId, cvGmpV2Id, 'not_started', null, 0, 'onboarding'],
+      [carolId, cvAsepticV1Id, 'not_started', null, 7, 'onboarding'],
+      [daveId, cvColdchainV2Id, 'in_progress', -30, -5, 'onboarding'],
+      [daveId, cvGmpV2Id, 'completed', -280, -250, 'onboarding', -270],
     ];
     final enrollmentIds = <int>[];
     final assignmentIds = <int>[];
@@ -1041,7 +1041,7 @@ class SeedEndpoint extends Endpoint {
         session,
         TrainingAssignment(
           userId: uid,
-          courseVersionId: cvGmpV2Id!,
+          courseVersionId: cvGmpV2Id,
           assignedById: adminId,
           assignedAt: dt(-30 - i),
           dueDate: dueDate,
@@ -1052,7 +1052,7 @@ class SeedEndpoint extends Endpoint {
         session,
         Enrollment(
           userId: uid,
-          courseVersionId: cvGmpV2Id!,
+          courseVersionId: cvGmpV2Id,
           assignmentId: assign.id!,
           status: s,
           startedAt: startedAt,
@@ -1142,35 +1142,35 @@ class SeedEndpoint extends Endpoint {
     final esigTampered = esigIds[5];
 
     final trData = [
-      [aliceEnrAseptic, aliceId, cvAsepticV1Id!, esigAliceAseptic, -310, 90],
-      [bobEnrGmp, bobId, cvGmpV2Id!, esigIds[1], -195, 85],
-      [bobEnrCc, bobId, cvColdchainV2Id!, esigIds[2], -170, 80],
-      [bobEnrSafety, bobId, cvSafetyV1Id!, esigIds[3], -155, 92],
-      [daveEnrGmp, daveId, cvGmpV2Id!, esigIds[4], -270, 82],
+      [aliceEnrAseptic, aliceId, cvAsepticV1Id, esigAliceAseptic, -310, 90],
+      [bobEnrGmp, bobId, cvGmpV2Id, esigIds[1], -195, 85],
+      [bobEnrCc, bobId, cvColdchainV2Id, esigIds[2], -170, 80],
+      [bobEnrSafety, bobId, cvSafetyV1Id, esigIds[3], -155, 92],
+      [daveEnrGmp, daveId, cvGmpV2Id, esigIds[4], -270, 82],
     ];
     final trIds = <int>[];
     for (final t in trData) {
       final tr = await TrainingRecord.db.insertRow(
         session,
         TrainingRecord(
-          enrollmentId: t[0] as int,
-          userId: t[1] as int,
-          courseVersionId: t[2] as int,
-          completedAt: dt(t[4] as int),
-          score: t[5] as int,
-          esignatureId: t[3] as int,
+          enrollmentId: t[0],
+          userId: t[1],
+          courseVersionId: t[2],
+          completedAt: dt(t[4]),
+          score: t[5],
+          esignatureId: t[3],
         ),
       );
       trIds.add(tr.id!);
     }
 
     final certData = [
-      [aliceId, cvAsepticV1Id!, trIds[0], esigAliceAseptic, -310, 55, 'active'],
+      [aliceId, cvAsepticV1Id, trIds[0], esigAliceAseptic, -310, 55, 'active'],
       [aliceId, cvIds[0], null, esigTampered, -100, null, 'obsolete'],
-      [bobId, cvGmpV2Id!, trIds[1], esigIds[1], -195, 170, 'active'],
-      [bobId, cvColdchainV2Id!, trIds[2], esigIds[2], -170, 195, 'active'],
-      [bobId, cvSafetyV1Id!, trIds[3], esigIds[3], -155, 210, 'active'],
-      [daveId, cvGmpV2Id!, trIds[4], esigIds[4], -270, 95, 'active'],
+      [bobId, cvGmpV2Id, trIds[1], esigIds[1], -195, 170, 'active'],
+      [bobId, cvColdchainV2Id, trIds[2], esigIds[2], -170, 195, 'active'],
+      [bobId, cvSafetyV1Id, trIds[3], esigIds[3], -155, 210, 'active'],
+      [daveId, cvGmpV2Id, trIds[4], esigIds[4], -270, 95, 'active'],
     ];
     for (final c in certData) {
       await Certificate.db.insertRow(

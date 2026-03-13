@@ -1,0 +1,26 @@
+### Organization-wide analytics snapshot for historical trending.
+class: AnalyticsSnapshot
+
+table: analytics_snapshot
+
+fields:
+  ### When the snapshot was taken.
+  snapshotDate: DateTime, default=now
+  ### Total active employees.
+  totalEmployees: int
+  ### Total compliant employees.
+  compliantCount: int
+  ### Total overdue employees.
+  overdueCount: int
+  ### Organization-wide compliance rate (0-100).
+  orgComplianceRate: double
+  ### Total active certificates.
+  totalCertificates: int
+  ### Certificates expiring in 30 days.
+  certsExpiring30d: int
+  ### Certificates expiring in 60 days.
+  certsExpiring60d: int
+  ### Total open training assignments.
+  openAssignments: int
+  ### Job log reference.
+  scheduledJobLog: ScheduledJobLog?, relation(optional)

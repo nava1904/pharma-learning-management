@@ -1,5 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
+import '../services/system_automation_service.dart';
+
 /// Event trigger endpoint - stub for manual testing of workflow events.
 /// Triggers future calls (SOP update retraining, employee onboarding).
 class EventEndpoint extends Endpoint {
@@ -50,5 +52,22 @@ class EventEndpoint extends Endpoint {
       oldRoleId: oldRoleId,
       newRoleId: newRoleId,
     );
+  }
+
+  /// Trigger CAPA training complete event (SYS-WF-06).
+  /// Sets effectiveness check due date and updates CAPA status.
+  Future<Map<String, dynamic>> triggerCapaTrainingComplete(
+    Session session, {
+    required int capaId,
+  }) async {
+    try {
+      await SystemAutomationService.handleCapaTrainingCompleted(
+        session,
+        capaId: capaId,
+      );
+      return {'success': true, 'capaId': capaId, 'message': 'CAPA training complete processed'};
+    } catch (e) {
+      return {'success': false, 'capaId': capaId, 'error': e.toString()};
+    }
   }
 }

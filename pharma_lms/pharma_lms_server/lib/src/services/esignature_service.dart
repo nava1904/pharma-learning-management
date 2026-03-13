@@ -28,19 +28,19 @@ class EsignatureService {
   static Future<String> issueBiometricToken(
     Session session, {
     required int userId,
-    required String passwordReauth,
+    required String passwordPlaintext,
   }) async {
     final valid = await PasswordVerificationService.verifyPassword(
       session,
       userId: userId,
-      password: passwordReauth,
+      password: passwordPlaintext,
     );
-    if (!valid) throw Exception('Password re-authentication failed');
+    if (!valid) throw Exception('Invalid credentials');
     final expiry = DateTime.now().add(_biometricTokenLifetime).millisecondsSinceEpoch;
     final payload = '$userId|$expiry';
     final key = utf8.encode(_getBiometricSecret());
     final hmac = Hmac(sha256, key).convert(utf8.encode(payload));
-    final token = base64Url.encode(hmac.bytes) + '.' + base64Url.encode(utf8.encode(payload));
+    final token = '${base64Url.encode(hmac.bytes)}.${base64Url.encode(utf8.encode(payload))}';
     return token;
   }
 
@@ -102,7 +102,7 @@ class EsignatureService {
   static const String meaningApproval = 'Approval';
 
   /// Create and store an electronic signature.
-  /// When [passwordReauth] is provided, verifies it server-side (Argon2id) and does not store it.
+  /// When [passwordPlaintext] is provided, verifies it server-side (Argon2id) and does not store it.
   /// When [biometricToken] is provided, verifies the short-lived token and uses its userId (plan 6B).
   static Future<ElectronicSignature> sign(
     Session session, {
@@ -110,7 +110,7 @@ class EsignatureService {
     required String signatureMeaning,
     required String entityType,
     required String entityId,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? biometricToken,
     String? ipAddress,
   }) async {
@@ -119,14 +119,14 @@ class EsignatureService {
       final tokenUserId = verifyBiometricToken(biometricToken);
       if (tokenUserId == null) throw Exception('Biometric token invalid or expired');
       effectiveUserId = tokenUserId;
-    } else if (passwordReauth != null && passwordReauth.isNotEmpty) {
+    } else if (passwordPlaintext != null && passwordPlaintext.isNotEmpty) {
       final valid = await PasswordVerificationService.verifyPassword(
         session,
         userId: userId,
-        password: passwordReauth,
+        password: passwordPlaintext,
       );
       if (!valid) {
-        throw Exception('Password re-authentication failed');
+        throw Exception('Invalid credentials');
       }
     }
 
@@ -143,6 +143,7 @@ class EsignatureService {
       signatureMeaning: signatureMeaning,
       entityType: entityType,
       entityId: entityId,
+      passwordPlaintext: null,
       passwordReauthHash: null,
       ipAddress: ipAddress,
       integrityHash: integrityHash,
@@ -162,5 +163,38 @@ class EsignatureService {
           t.entityType.equals(entityType) & t.entityId.equals(entityId),
     );
     return results.isNotEmpty ? results.first : null;
+  }
+
+  /// Revoke an electronic signature.
+  static Future<void> revokeSignature(
+    Session session, {
+    required int signatureId,
+    required String reason,
+    required String passwordPlaintext,
+  }) async {
+    final signature = await ElectronicSignature.db.findById(session, signatureId);
+    if (signature == null) throw Exception('Signature not found');
+
+    final revokerSignature = await sign(
+      session,
+      userId: signature.userId,
+      signatureMeaning: 'Revocation of signature',
+      entityType: 'electronic_signature',
+      entityId: signatureId.toString(),
+      passwordPlaintext: passwordPlaintext,
+    );
+
+    signature.isValid = false;
+    await ElectronicSignature.db.updateRow(session, signature);
+
+    final certificates = await Certificate.db.find(
+      session,
+      where: (t) => t.esignatureId.equals(signatureId), // Corrected field name
+    );
+
+    for (final cert in certificates) {
+      cert.status = 'revoked';
+      await Certificate.db.updateRow(session, cert);
+    }
   }
 }

@@ -1,0 +1,22 @@
+### Historical snapshot of department compliance metrics for trending.
+class: DepartmentComplianceSnapshot
+
+table: department_compliance_snapshot
+
+fields:
+  ### The department.
+  department: Department?, relation
+  ### When the snapshot was taken.
+  snapshotDate: DateTime, default=now
+  ### Total employees in department at snapshot time.
+  totalEmployees: int
+  ### Compliant employee count.
+  compliantCount: int
+  ### Overdue employee count.
+  overdueCount: int
+  ### Upcoming expiry count.
+  upcomingCount: int
+  ### Compliance percentage (0-100).
+  complianceRate: double
+  ### Job log reference.
+  scheduledJobLog: ScheduledJobLog?, relation(optional)

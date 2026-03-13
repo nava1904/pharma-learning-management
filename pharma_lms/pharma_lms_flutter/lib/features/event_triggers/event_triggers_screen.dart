@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/client.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Manual event triggers for workflow testing (SOP update, employee created).
+/// Manual event triggers for workflow testing (SYS-WF-01, 02, 03, 06).
+/// AWS EventBridge-inspired UI for testing domain automation events.
 class EventTriggersScreen extends StatefulWidget {
   const EventTriggersScreen({super.key});
 
@@ -13,14 +14,31 @@ class EventTriggersScreen extends StatefulWidget {
 }
 
 class _EventTriggersScreenState extends State<EventTriggersScreen> {
+  // SOP Updated (SYS-WF-01)
   final _sopDocIdController = TextEditingController();
   final _sopCourseVersionIdController = TextEditingController();
   final _sopReasonController = TextEditingController(text: 'SOP update - manual trigger');
+
+  // Employee Created (SYS-WF-02)
   final _empUserIdController = TextEditingController();
   final _empDepartmentIdController = TextEditingController();
   final _empRoleIdController = TextEditingController();
+
+  // Employee Transfer (SYS-WF-03)
+  final _transferUserIdController = TextEditingController();
+  final _transferOldRoleIdController = TextEditingController();
+  final _transferNewRoleIdController = TextEditingController();
+  final _transferOldDeptIdController = TextEditingController();
+  final _transferNewDeptIdController = TextEditingController();
+
+  // CAPA Training Complete (SYS-WF-06)
+  final _capaIdController = TextEditingController();
+
+  // Loading states
   bool _sopLoading = false;
   bool _empLoading = false;
+  bool _transferLoading = false;
+  bool _capaLoading = false;
 
   @override
   void dispose() {
@@ -30,16 +48,56 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
     _empUserIdController.dispose();
     _empDepartmentIdController.dispose();
     _empRoleIdController.dispose();
+    _transferUserIdController.dispose();
+    _transferOldRoleIdController.dispose();
+    _transferNewRoleIdController.dispose();
+    _transferOldDeptIdController.dispose();
+    _transferNewDeptIdController.dispose();
+    _capaIdController.dispose();
     super.dispose();
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.destructive,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   Future<void> _triggerSopUpdated() async {
     final docId = _sopDocIdController.text.trim();
     final cvId = _sopCourseVersionIdController.text.trim();
     if (docId.isEmpty || cvId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Document ID and Course Version ID required')),
-      );
+      _showErrorSnackBar('Document ID and Course Version ID are required');
       return;
     }
     setState(() => _sopLoading = true);
@@ -51,17 +109,9 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
             ? 'SOP update - manual trigger'
             : _sopReasonController.text.trim(),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('SOP updated event triggered')),
-        );
-      }
+      _showSuccessSnackBar('SYS-WF-01: SOP Updated event triggered successfully');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
+      _showErrorSnackBar('Failed: $e');
     } finally {
       if (mounted) setState(() => _sopLoading = false);
     }
@@ -72,9 +122,7 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
     final deptId = _empDepartmentIdController.text.trim();
     final roleId = _empRoleIdController.text.trim();
     if (userId.isEmpty || deptId.isEmpty || roleId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User ID, Department ID, and Role ID required')),
-      );
+      _showErrorSnackBar('User ID, Department ID, and Role ID are required');
       return;
     }
     setState(() => _empLoading = true);
@@ -84,184 +132,509 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
         departmentId: deptId,
         roleId: roleId,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Employee created event triggered')),
-        );
-      }
+      _showSuccessSnackBar('SYS-WF-02: Employee Created event triggered successfully');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
+      _showErrorSnackBar('Failed: $e');
     } finally {
       if (mounted) setState(() => _empLoading = false);
+    }
+  }
+
+  Future<void> _triggerEmployeeTransferred() async {
+    final userId = _transferUserIdController.text.trim();
+    final oldRoleId = _transferOldRoleIdController.text.trim();
+    final newRoleId = _transferNewRoleIdController.text.trim();
+    final oldDeptId = _transferOldDeptIdController.text.trim();
+    final newDeptId = _transferNewDeptIdController.text.trim();
+
+    if (userId.isEmpty || oldRoleId.isEmpty || newRoleId.isEmpty) {
+      _showErrorSnackBar('User ID, Old Role ID, and New Role ID are required');
+      return;
+    }
+    setState(() => _transferLoading = true);
+    try {
+      await client.event.triggerEmployeeTransferred(
+        userId: userId,
+        oldRoleId: oldRoleId,
+        newRoleId: newRoleId,
+        oldDepartmentId: oldDeptId.isNotEmpty ? oldDeptId : '0',
+        newDepartmentId: newDeptId.isNotEmpty ? newDeptId : '0',
+      );
+      _showSuccessSnackBar('SYS-WF-03: Employee Transferred event triggered successfully');
+    } catch (e) {
+      _showErrorSnackBar('Failed: $e');
+    } finally {
+      if (mounted) setState(() => _transferLoading = false);
+    }
+  }
+
+  Future<void> _triggerCapaTrainingComplete() async {
+    final capaId = _capaIdController.text.trim();
+    if (capaId.isEmpty) {
+      _showErrorSnackBar('CAPA ID is required');
+      return;
+    }
+    final capaIdInt = int.tryParse(capaId);
+    if (capaIdInt == null) {
+      _showErrorSnackBar('CAPA ID must be a valid number');
+      return;
+    }
+    setState(() => _capaLoading = true);
+    try {
+      final result = await client.event.triggerCapaTrainingComplete(
+        capaId: capaIdInt,
+      );
+      if (result['success'] == true) {
+        _showSuccessSnackBar('SYS-WF-06: CAPA Training Complete triggered successfully');
+      } else {
+        _showErrorSnackBar('Failed: ${result['error'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed: $e');
+    } finally {
+      if (mounted) setState(() => _capaLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Event Triggers'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/admin'),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          Text(
-            'Manual workflow testing (no Kafka required)',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.slate600,
-                ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.description, color: AppColors.indigo600),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Trigger SOP Updated',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
+      body: CustomScrollView(
+        slivers: [
+          // AWS-inspired dark header
+          SliverAppBar(
+            expandedHeight: 160,
+            pinned: true,
+            backgroundColor: AppColors.slate900,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () =>
+                  context.canPop() ? context.pop() : context.go('/admin'),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.slate900,
+                      AppColors.slate800,
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Simulates retraining workflow when SOP is updated. Requires document and course version IDs.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.slate600,
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(56, 16, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.indigo600.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.bolt,
+                                color: AppColors.indigo200,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Event Triggers',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                Text(
+                                  'Domain Automation Testing Console',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: AppColors.slate400,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _sopDocIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Document ID',
-                      hintText: 'e.g. 1',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _sopCourseVersionIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Course Version ID',
-                      hintText: 'e.g. 1',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _sopReasonController,
-                    decoration: const InputDecoration(
-                      labelText: 'Reason (optional)',
-                      border: OutlineInputBorder(),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _sopLoading ? null : _triggerSopUpdated,
-                    child: _sopLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Trigger SOP Updated'),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person_add, color: AppColors.indigo600),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Trigger Employee Created',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+
+          // Body content
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.slate100, AppColors.slate50],
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Info banner
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.indigo50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.indigo200),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Simulates role-based training assignment for new employee.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.slate600,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _empUserIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'User ID',
-                      hintText: 'e.g. 1',
-                      border: OutlineInputBorder(),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AppColors.indigo600),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Manual workflow testing without Kafka. Triggers domain events directly.',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.indigo700,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _empDepartmentIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Department ID',
-                      hintText: 'e.g. 1',
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 24),
+
+                    // Event cards grid
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final crossAxisCount = constraints.maxWidth > 900
+                            ? 2
+                            : 1;
+                        return GridView.count(
+                          crossAxisCount: crossAxisCount,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 20,
+                          crossAxisSpacing: 20,
+                          childAspectRatio: crossAxisCount == 2 ? 1.1 : 1.8,
+                          children: [
+                            _buildSopUpdatedCard(),
+                            _buildEmployeeCreatedCard(),
+                            _buildEmployeeTransferCard(),
+                            _buildCapaTrainingCompleteCard(),
+                          ],
+                        );
+                      },
                     ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _empRoleIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Role ID',
-                      hintText: 'e.g. 1',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _empLoading ? null : _triggerEmployeeCreated,
-                    child: _empLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Trigger Employee Created'),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEventCard({
+    required String workflowId,
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required List<Widget> fields,
+    required String buttonLabel,
+    required bool loading,
+    required VoidCallback onTrigger,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.slate300.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: iconColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              workflowId,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: iconColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              description,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.slate600,
+                  ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // Fields
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: fields
+                      .map((f) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: f,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
+
+          // Action button
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: loading ? null : onTrigger,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: iconColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.send, size: 18),
+                label: Text(buttonLabel),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactTextField(TextEditingController controller, String label,
+      {String? hint}) {
+    return SizedBox(
+      height: 44,
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(fontSize: 13),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.slate300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.slate300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.indigo600, width: 2),
+          ),
+        ),
+        keyboardType: TextInputType.number,
+      ),
+    );
+  }
+
+  Widget _buildSopUpdatedCard() {
+    return _buildEventCard(
+      workflowId: 'SYS-WF-01',
+      title: 'Trigger SOP Updated',
+      description:
+          'Initiates retraining workflow when an SOP document is updated. Creates assignments for affected users.',
+      icon: Icons.description_outlined,
+      iconColor: AppColors.indigo600,
+      bgColor: AppColors.indigo50,
+      loading: _sopLoading,
+      buttonLabel: 'Trigger Event',
+      onTrigger: _triggerSopUpdated,
+      fields: [
+        _buildCompactTextField(_sopDocIdController, 'Document ID', hint: 'e.g. 1'),
+        _buildCompactTextField(_sopCourseVersionIdController, 'Course Version ID',
+            hint: 'e.g. 1'),
+        _buildCompactTextField(_sopReasonController, 'Reason'),
+      ],
+    );
+  }
+
+  Widget _buildEmployeeCreatedCard() {
+    return _buildEventCard(
+      workflowId: 'SYS-WF-02',
+      title: 'Trigger Employee Created',
+      description:
+          'Assigns role-based onboarding training when a new employee joins the organization.',
+      icon: Icons.person_add_outlined,
+      iconColor: AppColors.teal600,
+      bgColor: AppColors.teal50,
+      loading: _empLoading,
+      buttonLabel: 'Trigger Event',
+      onTrigger: _triggerEmployeeCreated,
+      fields: [
+        _buildCompactTextField(_empUserIdController, 'User ID', hint: 'e.g. 1'),
+        _buildCompactTextField(_empDepartmentIdController, 'Department ID',
+            hint: 'e.g. 1'),
+        _buildCompactTextField(_empRoleIdController, 'Role ID', hint: 'e.g. 1'),
+      ],
+    );
+  }
+
+  Widget _buildEmployeeTransferCard() {
+    return _buildEventCard(
+      workflowId: 'SYS-WF-03',
+      title: 'Trigger Employee Transfer',
+      description:
+          'Archives old role assignments and creates delta training for new role requirements.',
+      icon: Icons.swap_horiz_outlined,
+      iconColor: AppColors.amber600,
+      bgColor: const Color(0xFFFFF8E1),
+      loading: _transferLoading,
+      buttonLabel: 'Trigger Event',
+      onTrigger: _triggerEmployeeTransferred,
+      fields: [
+        _buildCompactTextField(_transferUserIdController, 'User ID',
+            hint: 'e.g. 1'),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCompactTextField(
+                  _transferOldRoleIdController, 'Old Role ID',
+                  hint: 'e.g. 1'),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildCompactTextField(
+                  _transferNewRoleIdController, 'New Role ID',
+                  hint: 'e.g. 2'),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCompactTextField(
+                  _transferOldDeptIdController, 'Old Dept (opt)'),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildCompactTextField(
+                  _transferNewDeptIdController, 'New Dept (opt)'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCapaTrainingCompleteCard() {
+    return _buildEventCard(
+      workflowId: 'SYS-WF-06',
+      title: 'Trigger CAPA Training Complete',
+      description:
+          'Sets effectiveness check due date (90 days) and updates CAPA status after training completion.',
+      icon: Icons.verified_outlined,
+      iconColor: AppColors.destructive,
+      bgColor: const Color(0xFFFEF2F2),
+      loading: _capaLoading,
+      buttonLabel: 'Trigger Event',
+      onTrigger: _triggerCapaTrainingComplete,
+      fields: [
+        _buildCompactTextField(_capaIdController, 'CAPA ID', hint: 'e.g. 1'),
+      ],
     );
   }
 }

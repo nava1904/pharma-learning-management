@@ -31,6 +31,7 @@ abstract class MaterialProgress
     this.materialVersionId,
     this.enrollmentId,
     this.timeSpentSeconds,
+    this.lastHeartbeat,
     this.readTimeMet,
   }) : progressPct = progressPct ?? 0;
 
@@ -46,6 +47,7 @@ abstract class MaterialProgress
     int? materialVersionId,
     int? enrollmentId,
     int? timeSpentSeconds,
+    DateTime? lastHeartbeat,
     bool? readTimeMet,
   }) = _MaterialProgressImpl;
 
@@ -74,6 +76,11 @@ abstract class MaterialProgress
       materialVersionId: jsonSerialization['materialVersionId'] as int?,
       enrollmentId: jsonSerialization['enrollmentId'] as int?,
       timeSpentSeconds: jsonSerialization['timeSpentSeconds'] as int?,
+      lastHeartbeat: jsonSerialization['lastHeartbeat'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['lastHeartbeat'],
+            ),
       readTimeMet: jsonSerialization['readTimeMet'] == null
           ? null
           : _i1.BoolJsonExtension.fromJson(jsonSerialization['readTimeMet']),
@@ -115,7 +122,10 @@ abstract class MaterialProgress
   /// Active engagement time in seconds.
   int? timeSpentSeconds;
 
-  /// Whether minimum read time was met.
+  /// When the server last received a heartbeat (for server-side minimum read time).
+  DateTime? lastHeartbeat;
+
+  /// Whether minimum read time was met (server-set only).
   bool? readTimeMet;
 
   @override
@@ -136,6 +146,7 @@ abstract class MaterialProgress
     int? materialVersionId,
     int? enrollmentId,
     int? timeSpentSeconds,
+    DateTime? lastHeartbeat,
     bool? readTimeMet,
   });
   @override
@@ -153,6 +164,7 @@ abstract class MaterialProgress
       if (materialVersionId != null) 'materialVersionId': materialVersionId,
       if (enrollmentId != null) 'enrollmentId': enrollmentId,
       if (timeSpentSeconds != null) 'timeSpentSeconds': timeSpentSeconds,
+      if (lastHeartbeat != null) 'lastHeartbeat': lastHeartbeat?.toJson(),
       if (readTimeMet != null) 'readTimeMet': readTimeMet,
     };
   }
@@ -172,6 +184,7 @@ abstract class MaterialProgress
       if (materialVersionId != null) 'materialVersionId': materialVersionId,
       if (enrollmentId != null) 'enrollmentId': enrollmentId,
       if (timeSpentSeconds != null) 'timeSpentSeconds': timeSpentSeconds,
+      if (lastHeartbeat != null) 'lastHeartbeat': lastHeartbeat?.toJson(),
       if (readTimeMet != null) 'readTimeMet': readTimeMet,
     };
   }
@@ -227,6 +240,7 @@ class _MaterialProgressImpl extends MaterialProgress {
     int? materialVersionId,
     int? enrollmentId,
     int? timeSpentSeconds,
+    DateTime? lastHeartbeat,
     bool? readTimeMet,
   }) : super._(
          id: id,
@@ -240,6 +254,7 @@ class _MaterialProgressImpl extends MaterialProgress {
          materialVersionId: materialVersionId,
          enrollmentId: enrollmentId,
          timeSpentSeconds: timeSpentSeconds,
+         lastHeartbeat: lastHeartbeat,
          readTimeMet: readTimeMet,
        );
 
@@ -259,6 +274,7 @@ class _MaterialProgressImpl extends MaterialProgress {
     Object? materialVersionId = _Undefined,
     Object? enrollmentId = _Undefined,
     Object? timeSpentSeconds = _Undefined,
+    Object? lastHeartbeat = _Undefined,
     Object? readTimeMet = _Undefined,
   }) {
     return MaterialProgress(
@@ -281,6 +297,9 @@ class _MaterialProgressImpl extends MaterialProgress {
       timeSpentSeconds: timeSpentSeconds is int?
           ? timeSpentSeconds
           : this.timeSpentSeconds,
+      lastHeartbeat: lastHeartbeat is DateTime?
+          ? lastHeartbeat
+          : this.lastHeartbeat,
       readTimeMet: readTimeMet is bool? ? readTimeMet : this.readTimeMet,
     );
   }
@@ -332,6 +351,12 @@ class MaterialProgressUpdateTable
     value,
   );
 
+  _i1.ColumnValue<DateTime, DateTime> lastHeartbeat(DateTime? value) =>
+      _i1.ColumnValue(
+        table.lastHeartbeat,
+        value,
+      );
+
   _i1.ColumnValue<bool, bool> readTimeMet(bool? value) => _i1.ColumnValue(
     table.readTimeMet,
     value,
@@ -375,6 +400,10 @@ class MaterialProgressTable extends _i1.Table<int?> {
       'timeSpentSeconds',
       this,
     );
+    lastHeartbeat = _i1.ColumnDateTime(
+      'lastHeartbeat',
+      this,
+    );
     readTimeMet = _i1.ColumnBool(
       'readTimeMet',
       this,
@@ -411,7 +440,10 @@ class MaterialProgressTable extends _i1.Table<int?> {
   /// Active engagement time in seconds.
   late final _i1.ColumnInt timeSpentSeconds;
 
-  /// Whether minimum read time was met.
+  /// When the server last received a heartbeat (for server-side minimum read time).
+  late final _i1.ColumnDateTime lastHeartbeat;
+
+  /// Whether minimum read time was met (server-set only).
   late final _i1.ColumnBool readTimeMet;
 
   _i2.PharmaUserTable get user {
@@ -451,6 +483,7 @@ class MaterialProgressTable extends _i1.Table<int?> {
     materialVersionId,
     enrollmentId,
     timeSpentSeconds,
+    lastHeartbeat,
     readTimeMet,
   ];
 

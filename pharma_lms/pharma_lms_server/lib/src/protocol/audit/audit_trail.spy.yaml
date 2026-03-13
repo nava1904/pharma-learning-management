@@ -22,3 +22,5 @@ fields:
   reason: String?
   ### IP address.
   ipAddress: String?
+  ### SHA-256 hash of critical fields for integrity verification (21 CFR Part 11).
+  rowHash: String?

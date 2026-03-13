@@ -22,12 +22,17 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
     this.user,
     DateTime? timestamp,
     required this.signatureMeaning,
+    this.passwordPlaintext,
     this.passwordReauthHash,
     required this.entityType,
     required this.entityId,
     this.ipAddress,
     this.integrityHash,
-  }) : timestamp = timestamp ?? DateTime.now();
+    bool? isValid,
+    this.revokedReason,
+    this.revokedBySignatureId,
+  }) : timestamp = timestamp ?? DateTime.now(),
+       isValid = isValid ?? true;
 
   factory ElectronicSignature({
     int? id,
@@ -35,11 +40,15 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
     _i2.PharmaUser? user,
     DateTime? timestamp,
     required String signatureMeaning,
+    String? passwordPlaintext,
     String? passwordReauthHash,
     required String entityType,
     required String entityId,
     String? ipAddress,
     String? integrityHash,
+    bool? isValid,
+    String? revokedReason,
+    int? revokedBySignatureId,
   }) = _ElectronicSignatureImpl;
 
   factory ElectronicSignature.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -55,11 +64,17 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['timestamp']),
       signatureMeaning: jsonSerialization['signatureMeaning'] as String,
+      passwordPlaintext: jsonSerialization['passwordPlaintext'] as String?,
       passwordReauthHash: jsonSerialization['passwordReauthHash'] as String?,
       entityType: jsonSerialization['entityType'] as String,
       entityId: jsonSerialization['entityId'] as String,
       ipAddress: jsonSerialization['ipAddress'] as String?,
       integrityHash: jsonSerialization['integrityHash'] as String?,
+      isValid: jsonSerialization['isValid'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['isValid']),
+      revokedReason: jsonSerialization['revokedReason'] as String?,
+      revokedBySignatureId: jsonSerialization['revokedBySignatureId'] as int?,
     );
   }
 
@@ -79,7 +94,10 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
   /// Signature meaning: "I have read and understood", "Verification", "Approval".
   String signatureMeaning;
 
-  /// Hash of password re-authentication (for verification).
+  /// Plaintext password for verification only; never persisted (server sets to null before insert).
+  String? passwordPlaintext;
+
+  /// Server-generated only for legacy/audit; must not be accepted from client.
   String? passwordReauthHash;
 
   /// Entity type signed (e.g., training_record, certificate).
@@ -94,6 +112,15 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
   /// HMAC for integrity verification (userId, entityType, entityId, timestamp, meaning).
   String? integrityHash;
 
+  /// Whether the signature is valid (false if revoked).
+  bool isValid;
+
+  /// Reason for revocation (QA-WF-06).
+  String? revokedReason;
+
+  /// ID of the revoking signature (QA-WF-06).
+  int? revokedBySignatureId;
+
   /// Returns a shallow copy of this [ElectronicSignature]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -103,11 +130,15 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
     _i2.PharmaUser? user,
     DateTime? timestamp,
     String? signatureMeaning,
+    String? passwordPlaintext,
     String? passwordReauthHash,
     String? entityType,
     String? entityId,
     String? ipAddress,
     String? integrityHash,
+    bool? isValid,
+    String? revokedReason,
+    int? revokedBySignatureId,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -118,11 +149,16 @@ abstract class ElectronicSignature implements _i1.SerializableModel {
       if (user != null) 'user': user?.toJson(),
       'timestamp': timestamp.toJson(),
       'signatureMeaning': signatureMeaning,
+      if (passwordPlaintext != null) 'passwordPlaintext': passwordPlaintext,
       if (passwordReauthHash != null) 'passwordReauthHash': passwordReauthHash,
       'entityType': entityType,
       'entityId': entityId,
       if (ipAddress != null) 'ipAddress': ipAddress,
       if (integrityHash != null) 'integrityHash': integrityHash,
+      'isValid': isValid,
+      if (revokedReason != null) 'revokedReason': revokedReason,
+      if (revokedBySignatureId != null)
+        'revokedBySignatureId': revokedBySignatureId,
     };
   }
 
@@ -141,22 +177,30 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
     _i2.PharmaUser? user,
     DateTime? timestamp,
     required String signatureMeaning,
+    String? passwordPlaintext,
     String? passwordReauthHash,
     required String entityType,
     required String entityId,
     String? ipAddress,
     String? integrityHash,
+    bool? isValid,
+    String? revokedReason,
+    int? revokedBySignatureId,
   }) : super._(
          id: id,
          userId: userId,
          user: user,
          timestamp: timestamp,
          signatureMeaning: signatureMeaning,
+         passwordPlaintext: passwordPlaintext,
          passwordReauthHash: passwordReauthHash,
          entityType: entityType,
          entityId: entityId,
          ipAddress: ipAddress,
          integrityHash: integrityHash,
+         isValid: isValid,
+         revokedReason: revokedReason,
+         revokedBySignatureId: revokedBySignatureId,
        );
 
   /// Returns a shallow copy of this [ElectronicSignature]
@@ -169,11 +213,15 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
     Object? user = _Undefined,
     DateTime? timestamp,
     String? signatureMeaning,
+    Object? passwordPlaintext = _Undefined,
     Object? passwordReauthHash = _Undefined,
     String? entityType,
     String? entityId,
     Object? ipAddress = _Undefined,
     Object? integrityHash = _Undefined,
+    bool? isValid,
+    Object? revokedReason = _Undefined,
+    Object? revokedBySignatureId = _Undefined,
   }) {
     return ElectronicSignature(
       id: id is int? ? id : this.id,
@@ -181,6 +229,9 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
       user: user is _i2.PharmaUser? ? user : this.user?.copyWith(),
       timestamp: timestamp ?? this.timestamp,
       signatureMeaning: signatureMeaning ?? this.signatureMeaning,
+      passwordPlaintext: passwordPlaintext is String?
+          ? passwordPlaintext
+          : this.passwordPlaintext,
       passwordReauthHash: passwordReauthHash is String?
           ? passwordReauthHash
           : this.passwordReauthHash,
@@ -190,6 +241,13 @@ class _ElectronicSignatureImpl extends ElectronicSignature {
       integrityHash: integrityHash is String?
           ? integrityHash
           : this.integrityHash,
+      isValid: isValid ?? this.isValid,
+      revokedReason: revokedReason is String?
+          ? revokedReason
+          : this.revokedReason,
+      revokedBySignatureId: revokedBySignatureId is int?
+          ? revokedBySignatureId
+          : this.revokedBySignatureId,
     );
   }
 }

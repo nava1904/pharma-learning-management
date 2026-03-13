@@ -48,13 +48,13 @@ import 'package:pharma_lms_client/src/protocol/analytics/analytics_event.dart'
     as _i20;
 import 'package:pharma_lms_client/src/protocol/assessment/question.dart'
     as _i21;
-import 'package:pharma_lms_client/src/protocol/assessment/assessment.dart'
-    as _i22;
-import 'package:pharma_lms_client/src/protocol/assessment/assessment_attempt.dart'
-    as _i23;
-import 'package:pharma_lms_client/src/protocol/assessment/assessment_result.dart'
-    as _i24;
 import 'package:pharma_lms_client/src/protocol/assessment/question_bank.dart'
+    as _i22;
+import 'package:pharma_lms_client/src/protocol/assessment/assessment.dart'
+    as _i23;
+import 'package:pharma_lms_client/src/protocol/assessment/assessment_attempt.dart'
+    as _i24;
+import 'package:pharma_lms_client/src/protocol/assessment/assessment_result.dart'
     as _i25;
 import 'package:pharma_lms_client/src/protocol/audit/audit_trail.dart' as _i26;
 import 'package:pharma_lms_client/src/protocol/audit/access_log.dart' as _i27;
@@ -587,6 +587,27 @@ class EndpointAdmin extends _i2.EndpointRef {
         'unlockUserByEmail',
         {'email': email},
       );
+
+  /// ADM-WF-07: Terminate a user - HR workflow for employee offboarding.
+  /// - Updates PharmaUser status to 'terminated'
+  /// - Revokes all active UserSessions
+  /// - Supersedes all open TrainingAssignments
+  /// - Cancels all not_started/in_progress Enrollments
+  /// - Writes UserTerminated audit event
+  /// Training records, certificates, e-signatures are RETAINED for compliance.
+  _i3.Future<bool> terminateUser({
+    required int userId,
+    required DateTime terminationDate,
+    required String reason,
+  }) => caller.callServerEndpoint<bool>(
+    'admin',
+    'terminateUser',
+    {
+      'userId': userId,
+      'terminationDate': terminationDate,
+      'reason': reason,
+    },
+  );
 }
 
 /// Analytics & Reporting domain endpoint.
@@ -623,6 +644,7 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// IT-WF-04: Manual trigger for background jobs.
+  /// Supported jobNames: CertExpiryCheck, NotificationWorker, ComplianceCalc, AuditTrailIntegrityCheck
   _i3.Future<Map<String, dynamic>> triggerManualJob({
     required String jobName,
   }) => caller.callServerEndpoint<Map<String, dynamic>>(
@@ -630,6 +652,44 @@ class EndpointAnalytics extends _i2.EndpointRef {
     'triggerManualJob',
     {'jobName': jobName},
   );
+
+  /// SYS-WF-04: Run certificate expiry check job.
+  /// Creates renewal assignments for certificates expiring in 30-60 days.
+  /// Marks expired certificates and logs to audit trail.
+  _i3.Future<Map<String, dynamic>> runCertExpiryCheck() =>
+      caller.callServerEndpoint<Map<String, dynamic>>(
+        'analytics',
+        'runCertExpiryCheck',
+        {},
+      );
+
+  /// SYS-WF-05: Run notification worker job.
+  /// Processes escalation ladder for due/overdue enrollments.
+  _i3.Future<Map<String, dynamic>> runNotificationWorker() =>
+      caller.callServerEndpoint<Map<String, dynamic>>(
+        'analytics',
+        'runNotificationWorker',
+        {},
+      );
+
+  /// SYS-WF-07: Run compliance calculation job.
+  /// Computes org-wide and dept-wide compliance, writes snapshots.
+  _i3.Future<Map<String, dynamic>> runComplianceCalc() =>
+      caller.callServerEndpoint<Map<String, dynamic>>(
+        'analytics',
+        'runComplianceCalc',
+        {},
+      );
+
+  /// SYS-WF-08: Run audit trail integrity check (CRITICAL - 21 CFR Part 11).
+  /// Verifies SHA-256 hashes and sequence continuity.
+  /// Throws exception if integrity issues found.
+  _i3.Future<Map<String, dynamic>> runAuditTrailIntegrityCheck() =>
+      caller.callServerEndpoint<Map<String, dynamic>>(
+        'analytics',
+        'runAuditTrailIntegrityCheck',
+        {},
+      );
 
   /// Department compliance summary.
   _i3.Future<List<_i12.DepartmentComplianceSummary>>
@@ -797,9 +857,25 @@ class EndpointAnalytics extends _i2.EndpointRef {
         'getRecentActivity',
         {'userId': userId},
       );
+
+  /// Get the count of open quality events.
+  _i3.Future<int> getOpenQualityEventsCount() => caller.callServerEndpoint<int>(
+    'analytics',
+    'getOpenQualityEventsCount',
+    {},
+  );
+
+  /// Get SLA breaches.
+  _i3.Future<List<_i16.SlaBreach>> getSlaBreaches() =>
+      caller.callServerEndpoint<List<_i16.SlaBreach>>(
+        'analytics',
+        'getSlaBreaches',
+        {},
+      );
 }
 
 /// Assessment builder endpoint for SME/trainers.
+/// TRN-WF-03: Build Assessment and Question Bank
 /// {@category Endpoint}
 class EndpointAssessmentBuilder extends _i2.EndpointRef {
   EndpointAssessmentBuilder(_i2.EndpointCaller caller) : super(caller);
@@ -814,6 +890,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     required String optionsJson,
     required String correctAnswer,
     String? difficulty,
+    String? regulatoryTag,
   }) => caller.callServerEndpoint<_i21.Question>(
     'assessmentBuilder',
     'createQuestion',
@@ -824,6 +901,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
       'optionsJson': optionsJson,
       'correctAnswer': correctAnswer,
       'difficulty': difficulty,
+      'regulatoryTag': regulatoryTag,
     },
   );
 
@@ -847,13 +925,65 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i22.Assessment> createAssessment({
+  /// TRN-WF-03: Delete a question from a question bank.
+  /// Note: Cannot delete questions if they have been used in completed attempts.
+  _i3.Future<bool> deleteQuestion({required int questionId}) =>
+      caller.callServerEndpoint<bool>(
+        'assessmentBuilder',
+        'deleteQuestion',
+        {'questionId': questionId},
+      );
+
+  /// TRN-WF-03: Create a new question bank.
+  _i3.Future<_i22.QuestionBank> createQuestionBank({
+    required String name,
+    required int organizationId,
+    String? tagsJson,
+  }) => caller.callServerEndpoint<_i22.QuestionBank>(
+    'assessmentBuilder',
+    'createQuestionBank',
+    {
+      'name': name,
+      'organizationId': organizationId,
+      'tagsJson': tagsJson,
+    },
+  );
+
+  /// TRN-WF-03: Update question bank metadata.
+  _i3.Future<_i22.QuestionBank> updateQuestionBank({
+    required int questionBankId,
+    String? name,
+    String? tagsJson,
+  }) => caller.callServerEndpoint<_i22.QuestionBank>(
+    'assessmentBuilder',
+    'updateQuestionBank',
+    {
+      'questionBankId': questionBankId,
+      'name': name,
+      'tagsJson': tagsJson,
+    },
+  );
+
+  /// TRN-WF-03: Get questions in a bank with count for validation.
+  _i3.Future<Map<String, dynamic>> getQuestionBankDetails({
+    required int questionBankId,
+  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+    'assessmentBuilder',
+    'getQuestionBankDetails',
+    {'questionBankId': questionBankId},
+  );
+
+  /// TRN-WF-03: Create assessment with 2x question pool validation.
+  /// questionsToDisplay must be <= totalQuestions / 2 for adequate randomization.
+  _i3.Future<_i23.Assessment> createAssessment({
     required int courseVersionId,
     required int questionBankId,
     required int passingScore,
     required bool randomize,
     int? timeLimitMinutes,
-  }) => caller.callServerEndpoint<_i22.Assessment>(
+    int? maxAttempts,
+    int? questionsToDisplay,
+  }) => caller.callServerEndpoint<_i23.Assessment>(
     'assessmentBuilder',
     'createAssessment',
     {
@@ -862,15 +992,20 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
       'passingScore': passingScore,
       'randomize': randomize,
       'timeLimitMinutes': timeLimitMinutes,
+      'maxAttempts': maxAttempts,
+      'questionsToDisplay': questionsToDisplay,
     },
   );
 
-  _i3.Future<_i22.Assessment> updateAssessment({
+  /// TRN-WF-03: Update assessment with 2x question pool validation.
+  _i3.Future<_i23.Assessment> updateAssessment({
     required int assessmentId,
     int? passingScore,
     bool? randomize,
     int? timeLimitMinutes,
-  }) => caller.callServerEndpoint<_i22.Assessment>(
+    int? maxAttempts,
+    int? questionsToDisplay,
+  }) => caller.callServerEndpoint<_i23.Assessment>(
     'assessmentBuilder',
     'updateAssessment',
     {
@@ -878,7 +1013,19 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
       'passingScore': passingScore,
       'randomize': randomize,
       'timeLimitMinutes': timeLimitMinutes,
+      'maxAttempts': maxAttempts,
+      'questionsToDisplay': questionsToDisplay,
     },
+  );
+
+  /// TRN-WF-03: Validate assessment configuration for QA submission.
+  /// Returns validation status and any issues found.
+  _i3.Future<Map<String, dynamic>> validateAssessmentForSubmission({
+    required int assessmentId,
+  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+    'assessmentBuilder',
+    'validateAssessmentForSubmission',
+    {'assessmentId': assessmentId},
   );
 }
 
@@ -890,8 +1037,8 @@ class EndpointAssessment extends _i2.EndpointRef {
   @override
   String get name => 'assessment';
 
-  _i3.Future<_i22.Assessment?> getAssessmentForCourse(int courseVersionId) =>
-      caller.callServerEndpoint<_i22.Assessment?>(
+  _i3.Future<_i23.Assessment?> getAssessmentForCourse(int courseVersionId) =>
+      caller.callServerEndpoint<_i23.Assessment?>(
         'assessment',
         'getAssessmentForCourse',
         {'courseVersionId': courseVersionId},
@@ -904,11 +1051,11 @@ class EndpointAssessment extends _i2.EndpointRef {
         {'questionBankId': questionBankId},
       );
 
-  _i3.Future<_i23.AssessmentAttempt> startAttempt({
+  _i3.Future<_i24.AssessmentAttempt> startAttempt({
     required int userId,
     required int assessmentId,
     int? enrollmentId,
-  }) => caller.callServerEndpoint<_i23.AssessmentAttempt>(
+  }) => caller.callServerEndpoint<_i24.AssessmentAttempt>(
     'assessment',
     'startAttempt',
     {
@@ -933,18 +1080,18 @@ class EndpointAssessment extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i23.AssessmentAttempt> submitAttempt({required int attemptId}) =>
-      caller.callServerEndpoint<_i23.AssessmentAttempt>(
+  _i3.Future<_i24.AssessmentAttempt> submitAttempt({required int attemptId}) =>
+      caller.callServerEndpoint<_i24.AssessmentAttempt>(
         'assessment',
         'submitAttempt',
         {'attemptId': attemptId},
       );
 
-  _i3.Future<_i24.AssessmentResult> recordAnswer({
+  _i3.Future<_i25.AssessmentResult> recordAnswer({
     required int attemptId,
     required int questionId,
     required String answer,
-  }) => caller.callServerEndpoint<_i24.AssessmentResult>(
+  }) => caller.callServerEndpoint<_i25.AssessmentResult>(
     'assessment',
     'recordAnswer',
     {
@@ -954,19 +1101,19 @@ class EndpointAssessment extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i25.QuestionBank>> listQuestionBanks({
+  _i3.Future<List<_i22.QuestionBank>> listQuestionBanks({
     int? organizationId,
-  }) => caller.callServerEndpoint<List<_i25.QuestionBank>>(
+  }) => caller.callServerEndpoint<List<_i22.QuestionBank>>(
     'assessment',
     'listQuestionBanks',
     {'organizationId': organizationId},
   );
 
-  _i3.Future<_i25.QuestionBank> createQuestionBank({
+  _i3.Future<_i22.QuestionBank> createQuestionBank({
     required String name,
     required int organizationId,
     String? tagsJson,
-  }) => caller.callServerEndpoint<_i25.QuestionBank>(
+  }) => caller.callServerEndpoint<_i22.QuestionBank>(
     'assessment',
     'createQuestionBank',
     {
@@ -1193,6 +1340,26 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
     },
   );
 
+  /// TRN-WF-05: Create a new course version from an existing version.
+  /// This clones all modules and lessons, increments version, and sets supersededByVersionId.
+  /// changeSummary is MANDATORY - describes what changed and why.
+  /// Returns the new CourseVersion with all content copied.
+  _i3.Future<Map<String, dynamic>> createNewVersionFromExisting({
+    required int existingVersionId,
+    required String changeSummary,
+    required bool isMajorVersion,
+    int? createdById,
+  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+    'courseBuilder',
+    'createNewVersionFromExisting',
+    {
+      'existingVersionId': existingVersionId,
+      'changeSummary': changeSummary,
+      'isMajorVersion': isMajorVersion,
+      'createdById': createdById,
+    },
+  );
+
   /// Update course version status. TC-07: approved/effective -> no edit.
   /// Lifecycle: draft -> pending_approval (SME) -> effective (QA). Only QA can set effective.
   _i3.Future<_i32.CourseVersion> updateCourseVersionStatus({
@@ -1206,6 +1373,32 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
       'courseVersionId': courseVersionId,
       'status': status,
       'approverId': approverId,
+    },
+  );
+
+  /// TRN-WF-04: Validate course version for QA submission.
+  /// Performs all validation checks required before submitting for QA review.
+  /// Returns validation status and detailed results for each rule.
+  _i3.Future<Map<String, dynamic>> validateForQaSubmission({
+    required int courseVersionId,
+  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+    'courseBuilder',
+    'validateForQaSubmission',
+    {'courseVersionId': courseVersionId},
+  );
+
+  /// TRN-WF-04: Submit course for QA review.
+  /// Validates all rules first, then changes status to pending_approval if all pass.
+  /// Returns the updated CourseVersion or throws if validation fails.
+  _i3.Future<_i32.CourseVersion> submitForQaReview({
+    required int courseVersionId,
+    int? submittedById,
+  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+    'courseBuilder',
+    'submitForQaReview',
+    {
+      'courseVersionId': courseVersionId,
+      'submittedById': submittedById,
     },
   );
 }
@@ -1260,6 +1453,27 @@ class EndpointCourse extends _i2.EndpointRef {
   }) => caller.callServerEndpoint<_i33.Course>(
     'course',
     'createCourse',
+    {
+      'title': title,
+      'organizationId': organizationId,
+      'sopNumber': sopNumber,
+      'description': description,
+      'createdById': createdById,
+    },
+  );
+
+  /// TRN-WF-01: Create Course with initial CourseVersion v1.0 atomically.
+  /// This is the correct workflow entry point for trainers creating new courses.
+  /// Returns a map with 'course' and 'courseVersion' keys.
+  _i3.Future<Map<String, dynamic>> createCourseWithVersion({
+    required String title,
+    required int organizationId,
+    String? sopNumber,
+    String? description,
+    int? createdById,
+  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+    'course',
+    'createCourseWithVersion',
     {
       'title': title,
       'organizationId': organizationId,
@@ -1359,6 +1573,8 @@ class EndpointDocument extends _i2.EndpointRef {
     },
   );
 
+  /// Create a document version. Plan 3B: optional versionMajor, versionMinor, isMajorVersion.
+  /// If versionMajor/versionMinor omitted, parses version as "major.minor".
   _i3.Future<_i35.DocumentVersion> createDocumentVersion({
     required int documentId,
     required String version,
@@ -1399,7 +1615,7 @@ class EndpointDocument extends _i2.EndpointRef {
     String? obsoleteReason,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? ipAddress,
   }) => caller.callServerEndpoint<_i36.DocumentLifecycle>(
     'document',
@@ -1410,7 +1626,7 @@ class EndpointDocument extends _i2.EndpointRef {
       'obsoleteReason': obsoleteReason,
       'userId': userId,
       'signatureMeaning': signatureMeaning,
-      'passwordReauth': passwordReauth,
+      'passwordPlaintext': passwordPlaintext,
       'ipAddress': ipAddress,
     },
   );
@@ -1490,6 +1706,16 @@ class EndpointEvent extends _i2.EndpointRef {
       'oldRoleId': oldRoleId,
       'newRoleId': newRoleId,
     },
+  );
+
+  /// Trigger CAPA training complete event (SYS-WF-06).
+  /// Sets effectiveness check due date and updates CAPA status.
+  _i3.Future<Map<String, dynamic>> triggerCapaTrainingComplete({
+    required int capaId,
+  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+    'event',
+    'triggerCapaTrainingComplete',
+    {'capaId': capaId},
   );
 }
 
@@ -1618,7 +1844,7 @@ class EndpointInspection extends _i2.EndpointRef {
     required int packageId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? ipAddress,
   }) => caller.callServerEndpoint<_i40.InspectionPackage>(
     'inspection',
@@ -1627,7 +1853,7 @@ class EndpointInspection extends _i2.EndpointRef {
       'packageId': packageId,
       'userId': userId,
       'signatureMeaning': signatureMeaning,
-      'passwordReauth': passwordReauth,
+      'passwordPlaintext': passwordPlaintext,
       'ipAddress': ipAddress,
     },
   );
@@ -1718,16 +1944,60 @@ class EndpointMaterial extends _i2.EndpointRef {
     {'path': path},
   );
 
-  /// Create material version after successful upload.
+  /// TRN-WF-02: Create material version after successful upload.
+  /// Supports file integrity tracking (fileHash), file size, and virus scan status.
+  /// changeSummary is required when uploading a new version of existing material.
   _i3.Future<_i42.MaterialVersion> createMaterialVersion({
     required int materialId,
     required String storageKey,
+    String? fileHash,
+    int? fileSizeBytes,
+    String? changeSummary,
   }) => caller.callServerEndpoint<_i42.MaterialVersion>(
     'material',
     'createMaterialVersion',
     {
       'materialId': materialId,
       'storageKey': storageKey,
+      'fileHash': fileHash,
+      'fileSizeBytes': fileSizeBytes,
+      'changeSummary': changeSummary,
+    },
+  );
+
+  /// TRN-WF-02: Update material metadata (title).
+  _i3.Future<_i41.Material> updateMaterial({
+    required int materialId,
+    String? title,
+    String? materialType,
+  }) => caller.callServerEndpoint<_i41.Material>(
+    'material',
+    'updateMaterial',
+    {
+      'materialId': materialId,
+      'title': title,
+      'materialType': materialType,
+    },
+  );
+
+  /// TRN-WF-02: Get latest version of a material.
+  _i3.Future<_i42.MaterialVersion?> getLatestMaterialVersion(int materialId) =>
+      caller.callServerEndpoint<_i42.MaterialVersion?>(
+        'material',
+        'getLatestMaterialVersion',
+        {'materialId': materialId},
+      );
+
+  /// TRN-WF-02: Update virus scan status after scanning.
+  _i3.Future<_i42.MaterialVersion> updateVirusScanStatus({
+    required int materialVersionId,
+    required String virusScanStatus,
+  }) => caller.callServerEndpoint<_i42.MaterialVersion>(
+    'material',
+    'updateVirusScanStatus',
+    {
+      'materialVersionId': materialVersionId,
+      'virusScanStatus': virusScanStatus,
     },
   );
 
@@ -1793,9 +2063,9 @@ class EndpointMaterial extends _i2.EndpointRef {
   );
 
   /// Heartbeat: record engagement (tab_focused, scroll_depth, play_position).
-  /// Server accumulates timeSpentSeconds only when tabFocused; sets readTimeMet
-  /// when all conditions met (time, PDF scroll 80%, video 90%).
-  /// videoPositionSeconds and scrollDepthPct stored for resume-from-last-position.
+  /// Minimum read time is enforced server-side: elapsed time is computed from
+  /// [lastHeartbeat], capped at 15 seconds per heartbeat to prevent offline pause abuse.
+  /// [readTimeMet] is set strictly on the server when timeSpentSeconds >= required read time.
   _i3.Future<_i43.MaterialProgress> recordEngagement({
     required int userId,
     required int materialId,
@@ -1984,6 +2254,8 @@ class EndpointQa extends _i2.EndpointRef {
   /// reviewChecklistJson: QA-WF-01 structured checklist (content accuracy, etc.)
   _i3.Future<_i32.CourseVersion> approveCourseVersion({
     required int courseVersionId,
+    required String passwordPlaintext,
+    required String signatureMeaning,
     int? approverId,
     String? reviewChecklistJson,
   }) => caller.callServerEndpoint<_i32.CourseVersion>(
@@ -1991,6 +2263,8 @@ class EndpointQa extends _i2.EndpointRef {
     'approveCourseVersion',
     {
       'courseVersionId': courseVersionId,
+      'passwordPlaintext': passwordPlaintext,
+      'signatureMeaning': signatureMeaning,
       'approverId': approverId,
       'reviewChecklistJson': reviewChecklistJson,
     },
@@ -2010,6 +2284,14 @@ class EndpointQa extends _i2.EndpointRef {
       'returnForChanges': returnForChanges,
     },
   );
+
+  /// Get the count of pending document approvals.
+  _i3.Future<int> getPendingDocumentApprovalsCount() =>
+      caller.callServerEndpoint<int>(
+        'qa',
+        'getPendingDocumentApprovalsCount',
+        {},
+      );
 }
 
 /// Quality Event Integration domain endpoint.
@@ -2099,6 +2381,19 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     {
       'capaId': capaId,
       'closedById': closedById,
+    },
+  );
+
+  /// Close a CAPA with e-signature.
+  _i3.Future<void> closeCapaWithSignature({
+    required int capaId,
+    required String passwordPlaintext,
+  }) => caller.callServerEndpoint<void>(
+    'qualityEvent',
+    'closeCapaWithSignature',
+    {
+      'capaId': capaId,
+      'passwordPlaintext': passwordPlaintext,
     },
   );
 
@@ -2262,11 +2557,12 @@ class EndpointTraining extends _i2.EndpointRef {
     },
   );
 
-  /// Cancel an assignment.
+  /// Cancel an assignment (ADM-WF-02).
+  /// Requires a mandatory reason and cascades cancellation to linked active enrollments.
   _i3.Future<_i7.TrainingAssignment> cancelAssignment({
     required int assignmentId,
     required int cancelledById,
-    String? reason,
+    required String reason,
   }) => caller.callServerEndpoint<_i7.TrainingAssignment>(
     'training',
     'cancelAssignment',
@@ -2306,7 +2602,7 @@ class EndpointTraining extends _i2.EndpointRef {
     required int enrollmentId,
     required int userId,
     required String signatureMeaning,
-    String? passwordReauth,
+    String? passwordPlaintext,
   }) => caller.callServerEndpoint<_i52.Enrollment>(
     'training',
     'acknowledgeRetraining',
@@ -2314,7 +2610,7 @@ class EndpointTraining extends _i2.EndpointRef {
       'enrollmentId': enrollmentId,
       'userId': userId,
       'signatureMeaning': signatureMeaning,
-      'passwordReauth': passwordReauth,
+      'passwordPlaintext': passwordPlaintext,
     },
   );
 
@@ -2373,25 +2669,25 @@ class EndpointTraining extends _i2.EndpointRef {
   /// Issue a short-lived biometric token after password verification (plan 6B).
   _i3.Future<String> issueBiometricToken({
     required int userId,
-    required String passwordReauth,
+    required String passwordPlaintext,
   }) => caller.callServerEndpoint<String>(
     'training',
     'issueBiometricToken',
     {
       'userId': userId,
-      'passwordReauth': passwordReauth,
+      'passwordPlaintext': passwordPlaintext,
     },
   );
 
   /// Create electronic signature for training completion (called after e-sign UI).
-  /// passwordReauth: plaintext password for re-authentication (sent over HTTPS).
+  /// passwordPlaintext: plaintext password for re-authentication (sent over HTTPS); verified server-side, never stored.
   /// biometricToken: short-lived token from issueBiometricToken (plan 6B).
   _i3.Future<int> createTrainingSignature({
     required int userId,
     required String signatureMeaning,
     required String entityType,
     required String entityId,
-    String? passwordReauth,
+    String? passwordPlaintext,
     String? biometricToken,
     String? ipAddress,
   }) => caller.callServerEndpoint<int>(
@@ -2402,7 +2698,7 @@ class EndpointTraining extends _i2.EndpointRef {
       'signatureMeaning': signatureMeaning,
       'entityType': entityType,
       'entityId': entityId,
-      'passwordReauth': passwordReauth,
+      'passwordPlaintext': passwordPlaintext,
       'biometricToken': biometricToken,
       'ipAddress': ipAddress,
     },
@@ -2452,6 +2748,22 @@ class EndpointTraining extends _i2.EndpointRef {
       'note': note,
     },
   );
+
+  /// QA-WF-06: Revoke an electronic signature (QA role).
+  /// This invalidates the signature and any linked certificates.
+  _i3.Future<void> revokeSignature({
+    required int signatureId,
+    required String reason,
+    required String passwordPlaintext,
+  }) => caller.callServerEndpoint<void>(
+    'training',
+    'revokeSignature',
+    {
+      'signatureId': signatureId,
+      'reason': reason,
+      'passwordPlaintext': passwordPlaintext,
+    },
+  );
 }
 
 /// User-centric endpoint for employee operations.
@@ -2469,6 +2781,8 @@ class EndpointUser extends _i2.EndpointRef {
         {'id': id},
       );
 
+  /// Returns PharmaUser by email. If the session is authenticated but has no
+  /// PharmaUser (e.g. no profile yet), returns null instead of throwing 500.
   _i3.Future<_i17.PharmaUser?> getUserByEmail(String email) =>
       caller.callServerEndpoint<_i17.PharmaUser?>(
         'user',
