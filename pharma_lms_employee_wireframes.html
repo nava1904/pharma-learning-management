@@ -1,0 +1,670 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.shell{display:flex;flex-direction:column;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;font-size:13px;color:var(--color-text-primary)}
+.topbar{display:flex;align-items:center;gap:10px;padding:0 16px;height:48px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);flex-shrink:0}
+.logo-mark{width:24px;height:24px;position:relative;flex-shrink:0}
+.logo-a{position:absolute;top:0;left:0;width:15px;height:15px;background:#185FA5;border-radius:3px}
+.logo-b{position:absolute;bottom:0;right:0;width:15px;height:15px;background:#1D9E75;border-radius:3px}
+.brand{font-weight:500;font-size:13px;color:var(--color-text-primary)}
+.tb-search{flex:1;max-width:220px;height:28px;border:0.5px solid var(--color-border-secondary);border-radius:6px;padding:0 10px;font-size:12px;background:var(--color-background-secondary);color:var(--color-text-primary)}
+.tb-spacer{flex:1}
+.tb-badge{width:28px;height:28px;border-radius:50%;border:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;position:relative}
+.tb-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:#E24B4A;border-radius:50%;border:1.5px solid var(--color-background-primary)}
+.av{width:28px;height:28px;border-radius:50%;background:#185FA5;color:#fff;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.av-dot{position:absolute;bottom:0;right:0;width:8px;height:8px;background:#1D9E75;border-radius:50%;border:1.5px solid var(--color-background-primary)}
+.body{display:flex;flex:1;min-height:0}
+.sidebar{width:64px;border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;padding:8px 0;background:var(--color-background-primary);flex-shrink:0}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;cursor:pointer;border-radius:0;position:relative;transition:background .12s}
+.nav-item:hover{background:var(--color-background-secondary)}
+.nav-item.active{background:#E6F1FB}
+.nav-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#185FA5;border-radius:0 2px 2px 0}
+.nav-icon{font-size:18px;line-height:1}
+.nav-label{font-size:9px;color:var(--color-text-secondary);text-align:center;line-height:1.2}
+.nav-item.active .nav-label{color:#185FA5;font-weight:500}
+.nav-badge{position:absolute;top:6px;right:6px;min-width:14px;height:14px;background:#E24B4A;border-radius:7px;font-size:8px;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.nav-sep{height:1px;background:var(--color-border-tertiary);margin:6px 8px}
+.nav-bottom{margin-top:auto}
+.content{flex:1;overflow-y:auto;background:var(--color-background-tertiary);min-height:0}
+.screen{display:none;padding:16px;flex-direction:column;gap:12px}
+.screen.active{display:flex}
+.pg-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pg-title{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.pg-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px}
+.card-title{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px}
+.row{display:flex;gap:10px}
+.col{flex:1;min-width:0}
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.stat-label{font-size:10px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-val{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.stat-val.danger{color:#A32D2D}
+.stat-val.warn{color:#633806}
+.stat-val.good{color:#27500A}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:500;white-space:nowrap}
+.badge.danger{background:#FCEBEB;color:#791F1F}
+.badge.warn{background:#FAEEDA;color:#633806}
+.badge.good{background:#EAF3DE;color:#27500A}
+.badge.info{background:#E6F1FB;color:#0C447C}
+.badge.neutral{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.progress-bar{height:5px;background:var(--color-border-tertiary);border-radius:3px;overflow:hidden;margin:4px 0}
+.progress-fill{height:100%;border-radius:3px;background:#185FA5}
+.course-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.course-row:last-child{border-bottom:none}
+.course-thumb{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.course-info{flex:1;min-width:0}
+.course-title{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-text-primary)}
+.course-meta{font-size:10px;color:var(--color-text-secondary);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);transition:background .12s}
+.btn:hover{background:var(--color-background-secondary)}
+.btn.primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn.primary:hover{background:#0C447C}
+.btn.danger{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.tab-bar{display:flex;gap:0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:10px}
+.tab{padding:7px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;color:var(--color-text-secondary);white-space:nowrap}
+.tab.active{border-bottom-color:#185FA5;color:#185FA5;font-weight:500}
+.divider{height:0.5px;background:var(--color-border-tertiary)}
+.field-group{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.field-label{font-size:10px;color:var(--color-text-secondary);font-weight:500}
+.field-val{font-size:12px;color:var(--color-text-primary)}
+.timeline-item{display:flex;gap:10px;padding:6px 0}
+.tl-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.tl-line{width:0.5px;background:var(--color-border-tertiary);margin:0 3.75px;flex-shrink:0}
+.assess-q{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;margin-bottom:8px}
+.assess-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:6px;margin-top:6px;cursor:pointer;font-size:11px;background:var(--color-background-primary);transition:background .12s}
+.assess-opt:hover{background:var(--color-background-secondary)}
+.assess-opt.selected{border-color:#185FA5;background:#E6F1FB;color:#0C447C}
+.radio{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--color-border-secondary);flex-shrink:0}
+.radio.selected{background:#185FA5;border-color:#185FA5}
+.cert-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+.cert-icon{width:40px;height:40px;border-radius:8px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.cert-info{flex:1;min-width:0}
+.overdue-banner{background:#FCEBEB;border:0.5px solid #F09595;border-radius:var(--border-radius-md);padding:10px 14px;display:flex;align-items:center;gap:8px;border-radius:0}
+.screen-nav{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 10px}
+.snav{padding:4px 10px;border-radius:20px;font-size:10px;cursor:pointer;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);background:var(--color-background-primary);transition:all .12s}
+.snav.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.matrix-grid{display:grid;grid-template-columns:120px repeat(4,minmax(0,1fr));gap:1px;background:var(--color-border-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden;font-size:10px}
+.mc{background:var(--color-background-primary);padding:6px 8px;display:flex;align-items:center;justify-content:center;text-align:center}
+.mc.head{background:var(--color-background-secondary);font-weight:500;font-size:9px;color:var(--color-text-secondary)}
+.mc.name{justify-content:flex-start;font-size:11px;font-weight:500}
+.mc.done{background:#EAF3DE}
+.mc.ongo{background:#E6F1FB}
+.mc.late{background:#FCEBEB}
+.mc.none{background:var(--color-background-primary)}
+.dot-done::before{content:'✓';color:#27500A;font-weight:600}
+.dot-ongo::before{content:'↻';color:#0C447C}
+.dot-late::before{content:'!';color:#791F1F;font-weight:700}
+.dot-none::before{content:'–';color:var(--color-text-tertiary)}
+</style>
+
+<div class="shell" style="height:580px">
+
+<div class="topbar">
+  <div class="logo-mark"><div class="logo-a"></div><div class="logo-b"></div></div>
+  <span class="brand">Pharma LMS</span>
+  <input class="tb-search" placeholder="Search courses, SOPs…" />
+  <div class="tb-spacer"></div>
+  <div class="tb-badge" title="Notifications" style="font-size:14px">
+    &#x1F514;
+    <div class="tb-dot"></div>
+  </div>
+  <div class="av">JD<div class="av-dot"></div></div>
+</div>
+
+<div class="body">
+
+<div class="sidebar">
+  <div class="nav-item active" onclick="showScreen('dashboard',this)" title="Dashboard">
+    <div class="nav-icon">&#x2302;</div>
+    <div class="nav-label">Home</div>
+  </div>
+  <div class="nav-item" onclick="showScreen('training',this)" title="My Training">
+    <div class="nav-icon">&#x1F393;</div>
+    <div class="nav-label">Training</div>
+    <div class="nav-badge">2</div>
+  </div>
+  <div class="nav-item" onclick="showScreen('catalog',this)" title="Course Catalog">
+    <div class="nav-icon">&#x1F4DA;</div>
+    <div class="nav-label">Catalog</div>
+  </div>
+  <div class="nav-item" onclick="showScreen('assessment',this)" title="Assessments">
+    <div class="nav-icon">&#x270F;</div>
+    <div class="nav-label">Assess</div>
+    <div class="nav-badge" style="background:#BA7517">1</div>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-item" onclick="showScreen('certificates',this)" title="My Credentials">
+    <div class="nav-icon">&#x2713;</div>
+    <div class="nav-label">Certs</div>
+  </div>
+  <div class="nav-item" onclick="showScreen('history',this)" title="Training History">
+    <div class="nav-icon">&#x1F4CB;</div>
+    <div class="nav-label">History</div>
+  </div>
+  <div class="nav-item" onclick="showScreen('matrix',this)" title="Training Matrix">
+    <div class="nav-icon">&#x229E;</div>
+    <div class="nav-label">Matrix</div>
+  </div>
+  <div class="nav-bottom">
+  <div class="nav-sep"></div>
+  <div class="nav-item" onclick="showScreen('profile',this)" title="Profile">
+    <div class="nav-icon">&#x1F464;</div>
+    <div class="nav-label">Profile</div>
+  </div>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="screen active" id="screen-dashboard">
+  <div class="overdue-banner">
+    <span style="font-size:14px">&#x26A0;</span>
+    <div style="flex:1">
+      <span style="font-size:11px;font-weight:500;color:#791F1F">2 overdue training items require immediate attention</span>
+      <span style="font-size:10px;color:#A32D2D;margin-left:8px">GMP Fundamentals · Aseptic Technique</span>
+    </div>
+    <button class="btn danger" style="font-size:10px;padding:3px 10px">View overdue</button>
+  </div>
+  <div class="pg-header">
+    <div>
+      <div class="pg-title">Good morning, John</div>
+      <div class="pg-sub">Employee · QA Department · Last active today</div>
+    </div>
+    <button class="btn primary" style="font-size:10px">Resume last course</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-label">Compliance rate</div><div class="stat-val good">87%</div></div>
+    <div class="stat"><div class="stat-label">Overdue items</div><div class="stat-val danger">2</div></div>
+    <div class="stat"><div class="stat-label">Due this month</div><div class="stat-val warn">3</div></div>
+    <div class="stat"><div class="stat-label">Completed total</div><div class="stat-val">12</div></div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-title">Continue training</div>
+        <div class="course-row">
+          <div class="course-thumb" style="background:#FCEBEB">&#x1F9EA;</div>
+          <div class="course-info">
+            <div class="course-title">GMP Fundamentals v3.1</div>
+            <div class="course-meta">Module 3 of 5 · 35% complete</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:35%"></div></div>
+          </div>
+          <span class="badge danger">Overdue</span>
+        </div>
+        <div class="course-row">
+          <div class="course-thumb" style="background:#FAEEDA">&#x1F4C4;</div>
+          <div class="course-info">
+            <div class="course-title">Aseptic Technique SOP</div>
+            <div class="course-meta">Module 1 of 4 · 10% complete</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:10%"></div></div>
+          </div>
+          <span class="badge danger">Overdue</span>
+        </div>
+        <div class="course-row">
+          <div class="course-thumb" style="background:#E6F1FB">&#x1F4CA;</div>
+          <div class="course-info">
+            <div class="course-title">Data Integrity (21 CFR Part 11)</div>
+            <div class="course-meta">Not started · Due in 8 days</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+          </div>
+          <span class="badge warn">Due soon</span>
+        </div>
+      </div>
+    </div>
+    <div class="col" style="max-width:180px">
+      <div class="card" style="height:100%">
+        <div class="card-title">Up next</div>
+        <div style="background:#FCEBEB;border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:500;color:#791F1F">GMP Fundamentals v3.1</div>
+          <div style="font-size:10px;color:#A32D2D;margin-top:3px">4 days overdue</div>
+          <button class="btn danger" style="margin-top:8px;width:100%;justify-content:center;font-size:10px">Resume</button>
+        </div>
+        <div style="font-size:10px;color:var(--color-text-secondary);font-weight:500;margin-bottom:6px">Recent certificates</div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 0">
+          <span style="font-size:14px">&#x1F3C6;</span>
+          <div><div style="font-size:10px;font-weight:500">Cold Chain Mgmt</div><div style="font-size:9px;color:var(--color-text-secondary)">Earned 14 Mar 2026</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 0">
+          <span style="font-size:14px">&#x1F3C6;</span>
+          <div><div style="font-size:10px;font-weight:500">Pharmacovigilance</div><div style="font-size:9px;color:var(--color-text-secondary)">Earned 01 Mar 2026</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Compliance timeline</div>
+    <div style="display:flex;gap:0;margin-top:4px">
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--color-text-secondary)">Jan</div>
+        <div style="height:32px;background:#EAF3DE;border-radius:3px 3px 0 0;margin-top:3px"></div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--color-text-secondary)">Feb</div>
+        <div style="height:24px;background:#EAF3DE;border-radius:3px 3px 0 0;margin-top:3px"></div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--color-text-secondary)">Mar</div>
+        <div style="height:40px;background:#E6F1FB;border-radius:3px 3px 0 0;margin-top:3px"></div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--color-text-secondary)">Apr</div>
+        <div style="height:16px;background:#FCEBEB;border-radius:3px 3px 0 0;margin-top:3px;opacity:0.6"></div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--color-text-secondary)">May</div>
+        <div style="height:8px;background:var(--color-border-tertiary);border-radius:3px 3px 0 0;margin-top:3px"></div>
+      </div>
+    </div>
+    <div style="height:0.5px;background:var(--color-border-tertiary);margin-top:0"></div>
+    <div style="display:flex;gap:12px;margin-top:6px">
+      <span style="font-size:9px;color:#27500A">&#9632; Completed</span>
+      <span style="font-size:9px;color:#0C447C">&#9632; In progress</span>
+      <span style="font-size:9px;color:#791F1F">&#9632; Overdue</span>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-training">
+  <div class="pg-header">
+    <div><div class="pg-title">My training</div><div class="pg-sub">5 active assignments · 2 overdue</div></div>
+    <div style="display:flex;gap:6px">
+      <select style="font-size:11px;padding:4px 8px;border:0.5px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary)"><option>All status</option><option>Overdue</option><option>In progress</option><option>Not started</option></select>
+      <select style="font-size:11px;padding:4px 8px;border:0.5px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary)"><option>All categories</option><option>GMP</option><option>Safety</option><option>Quality</option></select>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab active">In progress <span class="badge info" style="margin-left:4px">2</span></div>
+    <div class="tab">To do <span class="badge warn" style="margin-left:4px">2</span></div>
+    <div class="tab">Completed <span class="badge neutral" style="margin-left:4px">8</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <span class="badge danger">Overdue · 4 days</span>
+        <span style="font-size:10px;color:var(--color-text-secondary)">GMP</span>
+      </div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:2px">GMP Fundamentals v3.1</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Module 3 of 5 · Est. 45 min remaining</div>
+      <div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:35%"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;margin-bottom:10px">
+        <span style="font-size:10px;color:var(--color-text-secondary)">35% complete</span>
+        <span style="font-size:10px;color:#791F1F">Due: 10 Mar 2026</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn primary" style="flex:1;justify-content:center;font-size:10px">Resume</button>
+        <button class="btn" style="font-size:10px">Details</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <span class="badge danger">Overdue · 1 day</span>
+        <span style="font-size:10px;color:var(--color-text-secondary)">Safety</span>
+      </div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:2px">Aseptic Technique SOP</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Module 1 of 4 · Est. 70 min remaining</div>
+      <div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:10%"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;margin-bottom:10px">
+        <span style="font-size:10px;color:var(--color-text-secondary)">10% complete</span>
+        <span style="font-size:10px;color:#791F1F">Due: 13 Mar 2026</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn primary" style="flex:1;justify-content:center;font-size:10px">Resume</button>
+        <button class="btn" style="font-size:10px">Details</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="background:#FAEEDA;border-color:#FAC775">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:16px">&#x1F501;</span>
+      <div>
+        <div style="font-size:11px;font-weight:500;color:#633806">SOP retraining required — Aseptic Technique rev 4.2</div>
+        <div style="font-size:10px;color:#854F0B;margin-top:2px">Content has changed since your last completion. You must re-read and acknowledge the updated SOP.</div>
+      </div>
+      <button class="btn" style="font-size:10px;flex-shrink:0;border-color:#FAC775">Review changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-catalog">
+  <div class="pg-header">
+    <div><div class="pg-title">Course catalog</div><div class="pg-sub">Browse all available training</div></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input style="flex:1;height:30px;border:0.5px solid var(--color-border-secondary);border-radius:6px;padding:0 10px;font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary)" placeholder="Search by title, SOP, category..." />
+    <select style="font-size:11px;padding:4px 10px;border:0.5px solid var(--color-border-secondary);border-radius:6px;height:30px;background:var(--color-background-primary);color:var(--color-text-primary)"><option>All categories</option><option>GMP</option><option>GLP</option><option>Safety</option><option>Quality</option><option>Regulatory</option></select>
+    <select style="font-size:11px;padding:4px 10px;border:0.5px solid var(--color-border-secondary);border-radius:6px;height:30px;background:var(--color-background-primary);color:var(--color-text-primary)"><option>All types</option><option>Mandatory</option><option>Elective</option></select>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+    <div class="card" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="badge info">GMP</span><span class="badge danger">Mandatory</span></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">GMP Fundamentals v3.1</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Core good manufacturing principles for regulated environments.</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">
+        <span>5 modules</span><span>&#183;</span><span>2h 30m</span><span>&#183;</span><span>Pass: 80%</span>
+      </div>
+      <div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:35%"></div></div>
+      <div style="font-size:10px;color:#0C447C;margin-top:3px">In progress · 35%</div>
+    </div>
+    <div class="card" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="badge neutral">Safety</span><span class="badge danger">Mandatory</span></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">Aseptic Technique &amp; Sterile Environments</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Gowning, cleanroom protocol, and contamination prevention.</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--color-text-secondary);margin-bottom:8px"><span>4 modules</span><span>&#183;</span><span>1h 45m</span><span>&#183;</span><span>Pass: 85%</span></div>
+      <button class="btn primary" style="width:100%;justify-content:center;font-size:10px">Start course</button>
+    </div>
+    <div class="card" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="badge info">Regulatory</span><span class="badge danger">Mandatory</span></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">Data Integrity (21 CFR Part 11)</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Electronic records, e-signatures, audit trail requirements.</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--color-text-secondary);margin-bottom:8px"><span>3 modules</span><span>&#183;</span><span>1h 20m</span><span>&#183;</span><span>Pass: 80%</span></div>
+      <button class="btn" style="width:100%;justify-content:center;font-size:10px">Enroll</button>
+    </div>
+    <div class="card" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="badge good">Quality</span><span class="badge neutral">Elective</span></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">Root Cause Analysis (RCA)</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Fishbone, 5-why and corrective action fundamentals.</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--color-text-secondary);margin-bottom:8px"><span>3 modules</span><span>&#183;</span><span>2h 00m</span><span>&#183;</span><span>Pass: 75%</span></div>
+      <button class="btn" style="width:100%;justify-content:center;font-size:10px">Enroll</button>
+    </div>
+    <div class="card" style="cursor:pointer;border-color:#1D9E75">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="badge good">GLP</span><span class="badge neutral">Elective</span></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">Pharmacovigilance Essentials</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Adverse event reporting and signal detection basics.</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--color-text-secondary);margin-bottom:8px"><span>4 modules</span><span>&#183;</span><span>2h 15m</span><span>&#183;</span><span>Pass: 80%</span></div>
+      <div style="font-size:10px;color:#27500A">&#10003; Completed · Cert valid until Dec 2026</div>
+    </div>
+    <div class="card" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="badge neutral">Cold Chain</span><span class="badge danger">Mandatory</span></div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">Cold Chain &amp; Temperature Management</div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Storage conditions, deviation reporting, excursion handling.</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--color-text-secondary);margin-bottom:8px"><span>3 modules</span><span>&#183;</span><span>1h 30m</span><span>&#183;</span><span>Pass: 80%</span></div>
+      <button class="btn" style="width:100%;justify-content:center;font-size:10px">Enroll</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-assessment">
+  <div class="pg-header">
+    <div><div class="pg-title">Assessment — GMP Fundamentals v3.1</div><div class="pg-sub">Module 3 · 20 questions · 80% to pass · 1 attempt remaining</div></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="background:#FAEEDA;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:500;color:#633806">&#x23F1; 28:42 remaining</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
+    <div style="width:20px;height:20px;border-radius:4px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:9px;color:#27500A;font-weight:600">1</div>
+    <div style="width:20px;height:20px;border-radius:4px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:9px;color:#27500A;font-weight:600">2</div>
+    <div style="width:20px;height:20px;border-radius:4px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:9px;color:#27500A;font-weight:600">3</div>
+    <div style="width:20px;height:20px;border-radius:4px;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:600">4</div>
+    <div style="width:20px;height:20px;border-radius:4px;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--color-text-tertiary)">5</div>
+    <div style="width:20px;height:20px;border-radius:4px;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--color-text-tertiary)">6</div>
+    <div style="font-size:10px;color:var(--color-text-secondary);align-self:center;margin-left:4px">…20</div>
+  </div>
+  <div class="assess-q">
+    <div style="font-size:10px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px">Question 4 of 20</div>
+    <div style="font-size:12px;font-weight:500;line-height:1.5;margin-bottom:2px">Which of the following is the correct action when a temperature excursion is detected in a cold-room storing API batches?</div>
+    <div class="assess-opt selected"><div class="radio selected"></div>Immediately notify QA and quarantine the affected batches pending investigation</div>
+    <div class="assess-opt"><div class="radio"></div>Continue normal operations and log the excursion in the deviation register at end of shift</div>
+    <div class="assess-opt"><div class="radio"></div>Discard all stock and reorder from the supplier</div>
+    <div class="assess-opt"><div class="radio"></div>Move the affected batches to a different cold-room and monitor for 24 hours</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <button class="btn" style="font-size:11px">&#8592; Previous</button>
+    <div style="font-size:10px;color:var(--color-text-secondary)">3 of 20 answered</div>
+    <button class="btn primary" style="font-size:11px">Next &#8594;</button>
+  </div>
+  <div class="card" style="background:#E6F1FB;border-color:#B5D4F4;margin-top:4px">
+    <div style="font-size:10px;color:#0C447C">&#x1F6C8; <strong>GxP note:</strong> Your answers are recorded with a timestamp. This assessment contributes to your 21 CFR Part 11 audit trail. Do not close the browser during the assessment.</div>
+  </div>
+</div>
+
+<div class="screen" id="screen-certificates">
+  <div class="pg-header">
+    <div><div class="pg-title">My credentials</div><div class="pg-sub">5 certificates earned · 1 expiring in 60 days</div></div>
+    <button class="btn" style="font-size:10px">&#x21E9; Export all</button>
+  </div>
+  <div class="card" style="background:#FAEEDA;border-color:#FAC775;padding:10px 14px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:14px">&#x23F0;</span>
+      <div><span style="font-size:11px;font-weight:500;color:#633806">Cold Chain Management</span><span style="font-size:10px;color:#854F0B;margin-left:8px">certificate expires in 60 days — recertification available now</span></div>
+      <button class="btn" style="font-size:10px;flex-shrink:0;border-color:#FAC775">Recertify</button>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="cert-card">
+      <div class="cert-icon">&#x1F3C6;</div>
+      <div class="cert-info">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:12px;font-weight:500">GMP Fundamentals</span>
+          <span class="badge good">Valid</span>
+        </div>
+        <div style="font-size:10px;color:var(--color-text-secondary)">Cert no. PLM-2026-00412 · Score 92% · Issued 14 Mar 2026 · Expires 14 Mar 2027</div>
+        <div style="font-size:10px;color:var(--color-text-secondary);margin-top:2px">GxP-verified · e-signature on record</div>
+      </div>
+      <button class="btn" style="font-size:10px;flex-shrink:0">&#x21E9; PDF</button>
+    </div>
+    <div class="cert-card">
+      <div class="cert-icon">&#x1F3C6;</div>
+      <div class="cert-info">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:12px;font-weight:500">Pharmacovigilance Essentials</span>
+          <span class="badge good">Valid</span>
+        </div>
+        <div style="font-size:10px;color:var(--color-text-secondary)">Cert no. PLM-2026-00389 · Score 88% · Issued 01 Mar 2026 · Expires 01 Mar 2027</div>
+        <div style="font-size:10px;color:var(--color-text-secondary);margin-top:2px">GxP-verified · e-signature on record</div>
+      </div>
+      <button class="btn" style="font-size:10px;flex-shrink:0">&#x21E9; PDF</button>
+    </div>
+    <div class="cert-card" style="border-color:#FAC775">
+      <div class="cert-icon" style="background:#FAEEDA">&#x23F0;</div>
+      <div class="cert-info">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:12px;font-weight:500">Cold Chain Management</span>
+          <span class="badge warn">Expiring soon</span>
+        </div>
+        <div style="font-size:10px;color:var(--color-text-secondary)">Cert no. PLM-2025-00211 · Score 85% · Issued 14 May 2025 · Expires 14 May 2026</div>
+        <div style="font-size:10px;color:#854F0B;margin-top:2px">Recertification required before 14 May 2026</div>
+      </div>
+      <button class="btn" style="font-size:10px;flex-shrink:0;border-color:#FAC775">Recertify</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-history">
+  <div class="pg-header">
+    <div><div class="pg-title">Training history</div><div class="pg-sub">Complete audit-ready record of all activity</div></div>
+    <button class="btn" style="font-size:10px">&#x21E9; Export CSV</button>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+    <input style="flex:1;height:28px;border:0.5px solid var(--color-border-secondary);border-radius:6px;padding:0 10px;font-size:11px;background:var(--color-background-primary);color:var(--color-text-primary)" placeholder="Filter by course, action, date…" />
+    <select style="font-size:11px;padding:4px 8px;border:0.5px solid var(--color-border-secondary);border-radius:6px;height:28px;background:var(--color-background-primary);color:var(--color-text-primary)"><option>All time</option><option>Last 30 days</option><option>Last 90 days</option></select>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed">
+      <thead>
+        <tr style="background:var(--color-background-secondary)">
+          <th style="padding:8px 12px;text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);width:120px">Date</th>
+          <th style="padding:8px 12px;text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)">Course / activity</th>
+          <th style="padding:8px 12px;text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);width:80px">Action</th>
+          <th style="padding:8px 12px;text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);width:70px">Score</th>
+          <th style="padding:8px 12px;text-align:center;font-weight:500;font-size:10px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);width:60px">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+          <td style="padding:7px 12px;color:var(--color-text-secondary);font-size:10px">14 Mar 2026 09:41</td>
+          <td style="padding:7px 12px">GMP Fundamentals v3.1 — Module 3</td>
+          <td style="padding:7px 12px"><span class="badge info">Resumed</span></td>
+          <td style="padding:7px 12px;color:var(--color-text-secondary)">—</td>
+          <td style="padding:7px 12px;text-align:center"><span class="badge info">In progress</span></td>
+        </tr>
+        <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+          <td style="padding:7px 12px;color:var(--color-text-secondary);font-size:10px">14 Mar 2026 08:20</td>
+          <td style="padding:7px 12px">GMP Fundamentals v3.1 — Assessment</td>
+          <td style="padding:7px 12px"><span class="badge warn">Attempt</span></td>
+          <td style="padding:7px 12px;color:#791F1F">74% — Fail</td>
+          <td style="padding:7px 12px;text-align:center"><span class="badge danger">Failed</span></td>
+        </tr>
+        <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+          <td style="padding:7px 12px;color:var(--color-text-secondary);font-size:10px">01 Mar 2026 14:05</td>
+          <td style="padding:7px 12px">Pharmacovigilance Essentials</td>
+          <td style="padding:7px 12px"><span class="badge good">Completed</span></td>
+          <td style="padding:7px 12px;color:#27500A">88% — Pass</td>
+          <td style="padding:7px 12px;text-align:center"><span class="badge good">Certified</span></td>
+        </tr>
+        <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+          <td style="padding:7px 12px;color:var(--color-text-secondary);font-size:10px">14 Feb 2026 10:30</td>
+          <td style="padding:7px 12px">Aseptic Technique — SOP v4.2 acknowledgement</td>
+          <td style="padding:7px 12px"><span class="badge neutral">Acknowledged</span></td>
+          <td style="padding:7px 12px;color:var(--color-text-secondary)">N/A</td>
+          <td style="padding:7px 12px;text-align:center"><span class="badge good">Signed</span></td>
+        </tr>
+        <tr>
+          <td style="padding:7px 12px;color:var(--color-text-secondary);font-size:10px">02 Jan 2026 09:15</td>
+          <td style="padding:7px 12px">Cold Chain Management</td>
+          <td style="padding:7px 12px"><span class="badge good">Completed</span></td>
+          <td style="padding:7px 12px;color:#27500A">85% — Pass</td>
+          <td style="padding:7px 12px;text-align:center"><span class="badge good">Certified</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:10px;color:var(--color-text-secondary);text-align:center;padding:4px">All records are immutable and timestamped per 21 CFR Part 11. Exported CSV includes e-signature hashes.</div>
+</div>
+
+<div class="screen" id="screen-matrix">
+  <div class="pg-header">
+    <div><div class="pg-title">Training matrix</div><div class="pg-sub">Your compliance status across all assigned training</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:10px">Role: QA Analyst · Department: Quality Assurance</div>
+    <div class="matrix-grid">
+      <div class="mc head" style="justify-content:flex-start">Employee</div>
+      <div class="mc head">GMP Fund.</div>
+      <div class="mc head">Aseptic Tech.</div>
+      <div class="mc head">Data Integrity</div>
+      <div class="mc head">Cold Chain</div>
+      <div class="mc name">You (John D.)</div>
+      <div class="mc ongo"><span class="dot-ongo"></span></div>
+      <div class="mc late"><span class="dot-late"></span></div>
+      <div class="mc none"><span class="dot-none"></span></div>
+      <div class="mc done"><span class="dot-done"></span></div>
+      <div class="mc name">Team avg.</div>
+      <div class="mc done"><span class="dot-done"></span></div>
+      <div class="mc done"><span class="dot-done"></span></div>
+      <div class="mc ongo"><span class="dot-ongo"></span></div>
+      <div class="mc done"><span class="dot-done"></span></div>
+      <div class="mc name">Dept. req.</div>
+      <div class="mc done" style="font-size:10px;color:#27500A">Required</div>
+      <div class="mc done" style="font-size:10px;color:#27500A">Required</div>
+      <div class="mc done" style="font-size:10px;color:#27500A">Required</div>
+      <div class="mc done" style="font-size:10px;color:#27500A">Required</div>
+    </div>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:10px">
+      <span style="color:#27500A">&#10003; Completed</span>
+      <span style="color:#0C447C">&#8635; In progress</span>
+      <span style="color:#791F1F">! Overdue</span>
+      <span style="color:var(--color-text-tertiary)">— Not started</span>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-title">Compliance gap</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px">GMP Fundamentals</span>
+            <span class="badge info">35% done</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px">Aseptic Technique</span>
+            <span class="badge danger">Overdue</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px">Data Integrity</span>
+            <span class="badge neutral">Not started</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-title">Next recertifications</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px">Cold Chain Mgmt</span>
+            <span class="badge warn">60 days</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px">Pharmacovigilance</span>
+            <span class="badge neutral">352 days</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-profile">
+  <div class="pg-header">
+    <div><div class="pg-title">Profile &amp; settings</div></div>
+    <button class="btn primary" style="font-size:10px">Save changes</button>
+  </div>
+  <div class="row" style="align-items:flex-start">
+    <div style="max-width:160px">
+      <div class="card" style="text-align:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:#185FA5;color:#fff;font-size:18px;font-weight:500;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">JD</div>
+        <div style="font-size:12px;font-weight:500">John Doe</div>
+        <div style="font-size:10px;color:var(--color-text-secondary);margin-top:2px">QA Analyst</div>
+        <div style="font-size:10px;color:var(--color-text-secondary)">Quality Assurance</div>
+        <div style="margin-top:8px"><span class="badge good">Compliant</span></div>
+        <button class="btn" style="margin-top:10px;width:100%;justify-content:center;font-size:10px">Change photo</button>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-title">Personal details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+          <div class="field-group"><div class="field-label">Full name</div><div class="field-val">John Doe</div></div>
+          <div class="field-group"><div class="field-label">Employee ID</div><div class="field-val">EMP-00412</div></div>
+          <div class="field-group"><div class="field-label">Email</div><div class="field-val">j.doe@pharmaco.com</div></div>
+          <div class="field-group"><div class="field-label">Department</div><div class="field-val">Quality Assurance</div></div>
+          <div class="field-group"><div class="field-label">Job role</div><div class="field-val">QA Analyst</div></div>
+          <div class="field-group"><div class="field-label">Hire date</div><div class="field-val">12 Jan 2024</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:8px">
+        <div class="card-title">Notification preferences</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;font-size:11px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-weight:500">Overdue reminders</div><div style="font-size:10px;color:var(--color-text-secondary)">Email + in-app when training is past due date</div></div>
+            <div style="width:34px;height:18px;background:#185FA5;border-radius:9px;position:relative;cursor:pointer"><div style="width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px"></div></div>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-weight:500">Due-date reminders</div><div style="font-size:10px;color:var(--color-text-secondary)">Email 7 days and 1 day before due date</div></div>
+            <div style="width:34px;height:18px;background:#185FA5;border-radius:9px;position:relative;cursor:pointer"><div style="width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px"></div></div>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-weight:500">Certificate earned</div><div style="font-size:10px;color:var(--color-text-secondary)">Email when a new certificate is issued</div></div>
+            <div style="width:34px;height:18px;background:var(--color-background-secondary);border-radius:9px;position:relative;cursor:pointer;border:0.5px solid var(--color-border-secondary)"><div style="width:14px;height:14px;background:var(--color-border-secondary);border-radius:50%;position:absolute;left:2px;top:1px"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+function showScreen(id, navEl) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const s = document.getElementById('screen-' + id);
+  if (s) s.classList.add('active');
+  if (navEl) navEl.classList.add('active');
+}
+</script>

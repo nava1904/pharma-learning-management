@@ -1,0 +1,12 @@
+### Per-user key/value preferences (email notifications, auto-save, dark mode).
+class: UserPreference
+
+table: user_preference
+
+fields:
+  ### The user this preference belongs to.
+  user: PharmaUser?, relation
+  ### Preference key: email_notifications, auto_save_drafts, dark_mode, etc.
+  preferenceKey: String
+  ### Preference value as string.
+  preferenceValue: String

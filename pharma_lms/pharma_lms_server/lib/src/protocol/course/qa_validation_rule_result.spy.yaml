@@ -1,0 +1,12 @@
+### Single rule result from QA validation.
+class: QaValidationRuleResult
+
+fields:
+  ### Rule name/identifier.
+  rule: String
+  ### Human-readable description of the rule.
+  description: String
+  ### Whether the rule passed.
+  passed: bool
+  ### Detail message (e.g., "3 module(s) found" or error message).
+  detail: String

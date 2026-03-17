@@ -1,0 +1,18 @@
+### Result of TRN-WF-04 validateForQaSubmission.
+class: QaValidationResult
+
+fields:
+  ### Course version ID validated.
+  courseVersionId: int
+  ### Course title.
+  courseTitle: String
+  ### Version string (e.g., "1.0").
+  version: String
+  ### Whether all validation rules passed.
+  allPassed: bool
+  ### Number of rules that passed.
+  passedCount: int
+  ### Total number of rules checked.
+  totalRules: int
+  ### Per-rule validation results.
+  validationResults: List<QaValidationRuleResult>

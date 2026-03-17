@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart';
 
-import '../../core/client.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/app_shell.dart';
@@ -28,7 +26,7 @@ class TrainingTimelineScreen extends ConsumerWidget {
 
           for (final r in records) {
             events.add(AuditTimelineEvent(
-              timestamp: r.completedAt!,
+              timestamp: r.completedAt,
               title: r.courseVersion?.course?.title ?? 'Course completed',
               subtitle: 'Score: ${r.score ?? 0}%',
               type: (r.score ?? 0) >= 80
@@ -39,7 +37,7 @@ class TrainingTimelineScreen extends ConsumerWidget {
 
           for (final c in certificates) {
             events.add(AuditTimelineEvent(
-              timestamp: c.issuedAt!,
+              timestamp: c.issuedAt,
               title: 'Certificate issued',
               subtitle: c.courseVersion?.course?.title ?? 'Course',
               type: AuditEventType.success,

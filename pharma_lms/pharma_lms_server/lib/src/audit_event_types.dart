@@ -50,6 +50,9 @@ class AuditEventType {
   static const auditIntegrityCheckPassed = 'AuditIntegrityCheckPassed';
   static const auditIntegrityCheckFailed = 'AuditIntegrityCheckFailed';
   static const notificationEscalation = 'NotificationEscalation';
+  static const complianceDropAlert = 'ComplianceDropAlert';
+  static const courseReleaseAssigned = 'CourseReleaseAssigned';
+  static const departmentTransferCompleted = 'DepartmentTransferCompleted';
 
   static const Set<String> known = {
     reportExport,
@@ -88,6 +91,9 @@ class AuditEventType {
     auditIntegrityCheckPassed,
     auditIntegrityCheckFailed,
     notificationEscalation,
+    complianceDropAlert,
+    courseReleaseAssigned,
+    departmentTransferCompleted,
   };
 
   /// Returns true if [action] is in the known registry.

@@ -64,7 +64,7 @@ class CertificationExpiryWorker extends FutureCall {
       final recent = await Notification.db.find(
         session,
         where: (t) =>
-            t.userId.equals(cert.userId!) &
+            t.userId.equals(cert.userId) &
             t.type.equals(notificationType),
         limit: 1,
         orderBy: (t) => t.createdAt,
@@ -75,7 +75,7 @@ class CertificationExpiryWorker extends FutureCall {
         await Notification.db.insertRow(
           session,
           Notification(
-            userId: cert.userId!,
+            userId: cert.userId,
             type: notificationType,
             channel: 'in_app',
           ),

@@ -61,6 +61,15 @@ analytics:
   - getRecentActivity:
   - getOpenQualityEventsCount:
   - getSlaBreaches:
+  - getMonthlyTrainingHours:
+  - getWeeklyLearningProgress:
+  - getUserAverageQuizScore:
+  - getUserLearningStreak:
+  - getUpcomingDueDates:
+  - getComplianceAlerts:
+  - exportCourseAnalyticsCsv:
+  - exportLearnerProgressCsv:
+  - getEmployeeDashboardSummary:
 assessmentBuilder:
   - createQuestion:
   - updateQuestion:
@@ -80,11 +89,16 @@ assessment:
   - recordAnswer:
   - listQuestionBanks:
   - createQuestionBank:
+  - generateRandomAssessment:
+  - importQuestionsToBank:
 audit:
   - logReportExport:
   - getAuditTrail:
   - getConfigChangeLog:
   - getAccessLogs:
+  - exportAuditCsv:
+auditTrail:
+  - logAction:
 compliance:
   - getDepartmentCompliance:
   - getUserCompliance:
@@ -99,6 +113,10 @@ courseBuilder:
   - updateCourseVersionStatus:
   - validateForQaSubmission:
   - submitForQaReview:
+  - deleteModule:
+  - deleteLesson:
+  - updateLessonMaterial:
+  - saveDraft:
 course:
   - listCourses:
   - getCourse:
@@ -109,6 +127,9 @@ course:
   - getModulesForCourseVersion:
   - getLessonsForModule:
   - getLessonWithMaterial:
+  - searchCourses:
+  - updateCourse:
+  - deleteCourse:
 document:
   - listDocuments:
   - getDocument:
@@ -124,6 +145,8 @@ event:
   - triggerEmployeeCreated:
   - triggerEmployeeTransferred:
   - triggerCapaTrainingComplete:
+  - triggerComplianceDropAlert:
+  - triggerNewCourseRelease:
 inspection:
   - listInspectionRecords:
   - createInspectionRecord:
@@ -151,6 +174,8 @@ material:
   - updateProgress:
   - getProgress:
   - recordEngagement:
+  - deleteMaterial:
+  - getMaterialWithVersions:
 mfa:
   - getMfaStatus:
   - enrollMfa:
@@ -160,6 +185,9 @@ mfa:
   - isMfaVerified:
 notification:
   - getInAppNotifications:
+  - getTrainerNotifications:
+  - markNotificationRead:
+  - getUnreadCount:
 organization:
   - listOrganizations:
   - getOrganization:
@@ -173,6 +201,8 @@ qa:
   - approveCourseVersion:
   - rejectCourseVersion:
   - getPendingDocumentApprovalsCount:
+  - returnCourseForChanges:
+  - getCourseReviews:
 qualityEvent:
   - listQualityEvents:
   - getQualityEvent:
@@ -188,6 +218,14 @@ qualityEvent:
 seed:
   - runSeed:
   - runMvpSeed:
+  - clearAndReseed:
+  - runComprehensiveSeed:
+  - provisionAuthAccounts:
+sopLinkage:
+  - linkSopToCourse:
+  - unlinkSopFromCourse:
+  - getLinkedSops:
+  - getCoursesForSop:
 training:
   - listSignatureMeanings:
   - getAssignmentsForUser:
@@ -201,6 +239,7 @@ training:
   - getCertificatesForUser:
   - getTrainingRecordsForUser:
   - getCertificateById:
+  - getWaiverById:
   - getSignatureWithIntegrityCheck:
   - listElectronicSignatures:
   - issueBiometricToken:
@@ -209,9 +248,20 @@ training:
   - listAnnotations:
   - addAnnotation:
   - revokeSignature:
+  - selfEnroll:
+  - getEnrollmentsForCourseVersion:
+  - getAssignmentsForCourseVersion:
+  - getAllAssignments:
+  - getTrainingRecordsForCourseVersion:
+  - getEnrollmentProgress:
+  - isCourseContentComplete:
+  - getCertificatesForCourseVersion:
 user:
   - getUser:
   - getUserByEmail:
+  - getUserRoleByEmail:
+  - getUserPreferences:
+  - setUserPreference:
 validation:
   - generateUrs:
   - generateFs:

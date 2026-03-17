@@ -107,16 +107,37 @@ class ComplianceCalculatorService {
       }
     }
 
-    final total = certs.length;
+    final totalCerts = certs.length;
     final waivedCount = waivers.length;
-    final rate = total > 0 ? (compliant ? 100.0 : 0.0) : 100.0;
+
+    final enrollments = await Enrollment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+    final totalEnrollments = enrollments.length;
+    final completedEnrollments = enrollments.where((e) => e.status == 'completed').length;
+
+    final assignments = await TrainingAssignment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.status.equals('active'),
+    );
+    final overdueAssignments = assignments.where((a) =>
+      a.dueDate.isBefore(cutoff)
+    ).length;
+
+    overdueCount += overdueAssignments;
+    if (overdueAssignments > 0) compliant = false;
+
+    final rate = totalEnrollments > 0
+        ? (completedEnrollments / totalEnrollments * 100.0)
+        : 100.0;
 
     return UserComplianceMetrics(
       compliant: compliant,
       overdueCount: overdueCount,
       upcomingCount: upcomingCount,
       complianceRate: rate,
-      totalCertificates: total,
+      totalCertificates: totalCerts,
       waivedCount: waivedCount,
     );
   }

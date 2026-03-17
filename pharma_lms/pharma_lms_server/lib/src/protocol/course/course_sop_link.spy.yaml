@@ -1,0 +1,16 @@
+### Explicit many-to-many SOP-Course linkage. Replaces implicit sopNumber matching.
+class: CourseSopLink
+
+table: course_sop_link
+
+fields:
+  ### The course linked to the SOP.
+  course: Course?, relation
+  ### The SOP document linked.
+  document: Document?, relation
+  ### Who created the link.
+  linkedBy: PharmaUser?, relation
+  ### When the link was created.
+  linkedAt: DateTime, default=now
+  ### When the link was removed (soft-delete).
+  unlinkedAt: DateTime?

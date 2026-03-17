@@ -5,7 +5,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/biometric_storage.dart';
 import '../../core/client.dart';
-import '../../core/theme/app_colors.dart';
+import '../../design_system/pharma_design_system.dart';
 
 /// Shows e-signature as a modal dialog. Returns esignatureId on success, null on cancel/expiry.
 Future<int?> showEsignatureModal(
@@ -248,19 +248,35 @@ class _EsignatureModalState extends State<EsignatureModal> {
             children: [
               Row(
                 children: [
+                  const Icon(Icons.draw_outlined,
+                      size: 22, color: PharmaColors.emerald600),
+                  const SizedBox(width: 8),
                   Text(
                     'Electronic Signature',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                   const Spacer(),
                   if (!_windowExpired)
-                    Text(
-                      '$_countdownSeconds s',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
                         color: _countdownSeconds <= 10
-                            ? AppColors.destructive
-                            : AppColors.teal600,
+                            ? PharmaColors.dangerBg
+                            : PharmaColors.emerald50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$_countdownSeconds s',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: _countdownSeconds <= 10
+                              ? PharmaColors.danger
+                              : PharmaColors.emerald600,
+                        ),
                       ),
                     ),
                 ],
@@ -268,7 +284,7 @@ class _EsignatureModalState extends State<EsignatureModal> {
               const SizedBox(height: 16),
               if (_windowExpired) ...[
                 Card(
-                  color: AppColors.destructive.withValues(alpha: 0.1),
+                  color: PharmaColors.dangerBg,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -276,21 +292,21 @@ class _EsignatureModalState extends State<EsignatureModal> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.timer_off, color: AppColors.destructive),
+                            const Icon(Icons.timer_off, color: PharmaColors.danger),
                             const SizedBox(width: 12),
                             Text(
                               'Re-auth window expired',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppColors.destructive,
+                                    color: PharmaColors.danger,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Re-open your result to sign.',
-                          style: TextStyle(color: AppColors.slate700),
+                          style: TextStyle(color: PharmaColors.textSecondary),
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton(
@@ -331,9 +347,29 @@ class _EsignatureModalState extends State<EsignatureModal> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 const SizedBox(height: 8),
-                const Text(
-                  '21 CFR Part 11 compliant. Re-authentication required.',
-                  style: TextStyle(fontSize: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: PharmaColors.infoBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: PharmaColors.info.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified_user, size: 16, color: PharmaColors.infoText),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '21 CFR Part 11 · GMP Annex 11 · HMAC-SHA256 integrity',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: PharmaColors.infoText,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 if (_biometricChecked && _biometricAvailable && _hasStoredToken) ...[
@@ -540,13 +576,24 @@ class _EsignatureScreenState extends State<EsignatureScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Center(
-                child: Text(
-                  '$_countdownSeconds s',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
                     color: _countdownSeconds <= 10
-                        ? AppColors.destructive
-                        : AppColors.teal600,
+                        ? PharmaColors.dangerBg
+                        : PharmaColors.emerald50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$_countdownSeconds s',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: _countdownSeconds <= 10
+                          ? PharmaColors.danger
+                          : PharmaColors.emerald600,
+                    ),
                   ),
                 ),
               ),
@@ -560,7 +607,7 @@ class _EsignatureScreenState extends State<EsignatureScreen> {
           children: [
             if (_windowExpired) ...[
               Card(
-                color: AppColors.destructive.withValues(alpha: 0.1),
+                color: PharmaColors.dangerBg,
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -568,21 +615,21 @@ class _EsignatureScreenState extends State<EsignatureScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.timer_off, color: AppColors.destructive),
+                          const Icon(Icons.timer_off, color: PharmaColors.danger),
                           const SizedBox(width: 12),
                           Text(
                             'Re-auth window expired',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.destructive,
+                                  color: PharmaColors.danger,
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Re-open your result to sign.',
-                        style: TextStyle(color: AppColors.slate700),
+                        style: TextStyle(color: PharmaColors.textSecondary),
                       ),
                       const SizedBox(height: 16),
                       OutlinedButton(
@@ -628,8 +675,29 @@ class _EsignatureScreenState extends State<EsignatureScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     const SizedBox(height: 8),
-                    const Text(
-                      '21 CFR Part 11 compliant. Password re-authentication required.',
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: PharmaColors.infoBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: PharmaColors.info.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.verified_user, size: 16, color: PharmaColors.infoText),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '21 CFR Part 11 · GMP Annex 11 · HMAC-SHA256 integrity',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: PharmaColors.infoText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     TextField(

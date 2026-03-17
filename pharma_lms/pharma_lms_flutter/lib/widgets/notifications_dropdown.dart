@@ -26,61 +26,64 @@ class _NotificationsDropdownState extends ConsumerState<NotificationsDropdown> {
     }
 
     _overlayEntry = OverlayEntry(
-      builder: (context) => GestureDetector(
-        onTap: () {
-          _overlayEntry?.remove();
-          _overlayEntry = null;
-          setState(() {});
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Stack(
-          children: [
-            Positioned(
-              width: 384,
-              child: CompositedTransformFollower(
-                link: _layerLink,
-                showWhenUnlinked: false,
-                offset: const Offset(-320, 56),
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    constraints: const BoxConstraints(maxHeight: 400),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.slate200),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            'Notifications',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.slate900,
-                                ),
+      builder: (context) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: GestureDetector(
+          onTap: () {
+            _overlayEntry?.remove();
+            _overlayEntry = null;
+            setState(() {});
+          },
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Positioned(
+                width: 384,
+                child: CompositedTransformFollower(
+                  link: _layerLink,
+                  showWhenUnlinked: false,
+                  offset: const Offset(-320, 56),
+                  child: Material(
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.slate200),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'Notifications',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.slate900,
+                                  ),
+                            ),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        Flexible(
-                          child: _NotificationsList(
-                            onDismiss: () {
-                              _overlayEntry?.remove();
-                              _overlayEntry = null;
-                              setState(() {});
-                            },
+                          const Divider(height: 1),
+                          Flexible(
+                            child: _NotificationsList(
+                              onDismiss: () {
+                                _overlayEntry?.remove();
+                                _overlayEntry = null;
+                                setState(() {});
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

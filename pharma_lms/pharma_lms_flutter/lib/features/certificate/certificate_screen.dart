@@ -4,7 +4,10 @@ import 'package:lottie/lottie.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/certificate_pdf_service.dart';
 import '../../core/client.dart';
+import '../../core/file_download.dart';
+import '../../design_system/pharma_design_system.dart';
 
 /// Certificate display with QR code for verification.
 class CertificateScreen extends StatefulWidget {
@@ -65,6 +68,41 @@ class _CertificateScreenState extends State<CertificateScreen> {
     }
   }
 
+  Future<void> _downloadPdf(BuildContext context, Certificate cert) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: PharmaColors.emerald600)),
+    );
+    try {
+      final bytes = await generateCertificatePdf(cert);
+      if (!context.mounted) return;
+      final id = cert.id ?? 0;
+      final saved = await saveBytesToFile(bytes, 'vyuh_lms_certificate_$id.pdf');
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(saved ? 'Certificate downloaded' : 'Download cancelled'),
+            backgroundColor: saved ? PharmaColors.emerald600 : null,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: PharmaColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -100,6 +138,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
     final verificationUrl = cert.qrCode != null
         ? 'https://pharma-lms.demo/verify/${cert.qrCode}'
         : 'CERT-${cert.id}';
+    final isObsolete = cert.status == 'obsolete';
 
     return Scaffold(
       appBar: AppBar(
@@ -108,158 +147,332 @@ class _CertificateScreenState extends State<CertificateScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/employee'),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            onPressed: () => _downloadPdf(context, cert),
+            tooltip: 'Download PDF',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
-            child: Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      height: 100,
-                      width: 100,
-                      child: Lottie.asset(
-                        'assets/lottie/certificate.json',
-                        fit: BoxFit.contain,
-                        repeat: false,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              children: [
+                // ── Certificate Card ──
+                Card(
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Certificate of Completion',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        if ((cert.status ?? 'active') == 'obsolete') ...[
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Obsolete',
-                              style: TextStyle(
-                                color: Colors.orange.shade900,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
+                        SizedBox(
+                          height: 100,
+                          width: 100,
+                          child: Lottie.asset(
+                            'assets/lottie/certificate.json',
+                            fit: BoxFit.contain,
+                            repeat: false,
                           ),
-                        ] else
-                          ...[
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Certificate of Completion',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
                             const SizedBox(width: 12),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade100,
+                                color: isObsolete
+                                    ? PharmaColors.orangeBg
+                                    : PharmaColors.successBg,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Active',
+                                isObsolete ? 'Obsolete' : 'Active',
                                 style: TextStyle(
-                                  color: Colors.green.shade800,
+                                  color: isObsolete
+                                      ? PharmaColors.orangeText
+                                      : PharmaColors.successText,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
                               ),
                             ),
                           ],
-                      ],
-                    ),
-                    if ((cert.status ?? 'active') == 'obsolete')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Container(
+                        ),
+                        if (isObsolete)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: PharmaColors.orangeBg,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: PharmaColors.orange.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                'This certificate is superseded by a newer course version.',
+                                style: TextStyle(
+                                  color: PharmaColors.orangeText,
+                                  fontSize: 13,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 24),
+                        Text.rich(
+                          TextSpan(
+                            text: courseTitle,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            children: [
+                              if (cert.courseVersion?.version != null)
+                                TextSpan(
+                                  text: ' · v${cert.courseVersion!.version}',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: PharmaColors.textTertiary,
+                                      ),
+                                ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'This certifies that',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          userName,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'has successfully completed the required training.',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        // ── Dates Row ──
+                        Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
+                            color: PharmaColors.pageBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange.shade200),
                           ),
-                          child: Text(
-                            'This certificate is superseded by a newer course version.',
-                            style: TextStyle(
-                              color: Colors.orange.shade900,
-                              fontSize: 13,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.calendar_today,
+                                  size: 14, color: PharmaColors.textTertiary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Issued: ${cert.issuedAt.toString().split(' ')[0]}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: PharmaColors.textSecondary,
+                                ),
+                              ),
+                              if (cert.expiresAt != null) ...[
+                                const SizedBox(width: 16),
+                                const Icon(Icons.event,
+                                    size: 14, color: PharmaColors.textTertiary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Expires: ${cert.expiresAt!.toString().split(' ')[0]}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: PharmaColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // ── QR Code ──
+                        if (cert.qrCode != null)
+                          QrImageView(
+                            data: verificationUrl,
+                            version: QrVersions.auto,
+                            size: 120,
+                          )
+                        else
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: PharmaColors.pageBg,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            textAlign: TextAlign.center,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'ID: ${cert.id}',
+                              style: const TextStyle(
+                                color: PharmaColors.textTertiary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Verification: $verificationUrl',
+                          style: const TextStyle(
+                            color: PharmaColors.textTertiary,
+                            fontSize: 11,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // ── E-Signature Details ──
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.draw_outlined,
+                                size: 18, color: PharmaColors.emerald600),
+                            const SizedBox(width: 8),
+                            Text(
+                              'E-Signature Record',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _certDetailRow('Signer', userName),
+                        _certDetailRow(
+                            'Date',
+                            cert.issuedAt.toString().split(' ')[0]),
+                        _certDetailRow('Meaning', 'I have read and understood'),
+                        _certDetailRow('Method', 'Password Re-authentication'),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: PharmaColors.emerald50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified,
+                                  size: 14, color: PharmaColors.emerald600),
+                              const SizedBox(width: 6),
+                              Text(
+                                '21 CFR Part 11 Compliant',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: PharmaColors.emerald700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    const SizedBox(height: 24),
-                    Text(
-                      courseTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'This certifies that',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      userName,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'has successfully completed the required training.',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Issued: ${cert.issuedAt.toString().split(' ')[0]}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    if (cert.expiresAt != null)
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // ── ALCOA+ Footer ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PharmaColors.pageBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: PharmaColors.borderLight),
+                  ),
+                  child: Column(
+                    children: [
                       Text(
-                        'Expires: ${cert.expiresAt!.toString().split(' ')[0]}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    const SizedBox(height: 24),
-                    if (cert.qrCode != null)
-                      QrImageView(
-                        data: verificationUrl,
-                        version: QrVersions.auto,
-                        size: 120,
-                      )
-                    else
-                      Container(
-                        width: 120,
-                        height: 120,
-                        color: Colors.grey[200],
-                        alignment: Alignment.center,
-                        child: Text(
-                          'ID: ${cert.id}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                        'Attributable · Legible · Contemporaneous · Original · Accurate',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: PharmaColors.textTertiary,
                         ),
                       ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Verification: $verificationUrl',
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'All training records are electronically signed per '
+                        '21 CFR Part 11 and GMP Annex 11',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: PharmaColors.textQuaternary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _certDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: PharmaColors.textTertiary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                color: PharmaColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

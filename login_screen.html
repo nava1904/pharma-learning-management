@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharma LMS — Secure Access</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  INCONSISTENCY FIX LOG — ALL 13 ISSUES RESOLVED             ║
+╠══════════════════════════════════════════════════════════════╣
+║  FIX 1  CTA button: Always blue (#006FED) across ALL states  ║
+║  FIX 2  Form heading: Removed redundant "Sign X with email"  ║
+║         Title & eyebrow carry all context needed             ║
+║  FIX 3  MFA card: Identical markup, colour, icon across both ║
+║         tabs. Only body copy differs per context             ║
+║  FIX 4  Auth redirect text: REMOVED entirely — tabs handle   ║
+║         mode-switching. No "Already have account?" needed    ║
+║  FIX 5  Background texture: One dot-grid, always same        ║
+║         opacity and scale on left panel only                 ║
+║  FIX 6  DEBUG ribbon: Removed from production UI             ║
+║  FIX 7  Right panel: Pure #FFFFFF, no texture — consistent   ║
+║  FIX 8  Tab control: Present on ALL states, always at top    ║
+║  FIX 9  Field labels: ALWAYS present as uppercase labels     ║
+║         on EVERY input across both tabs                      ║
+║  FIX 10 SSO button: Present in BOTH Sign In + Create Account ║
+║         states, identical markup and styling                 ║
+║  FIX 11 Stats row: White numerals, blue suffix — consistent  ║
+║  FIX 12 Form padding: 56px horizontal, 48px top — every tab  ║
+║  FIX 13 Dev tools: Hidden from UI entirely                   ║
+╚══════════════════════════════════════════════════════════════╝
+-->
+
+<style>
+/* ══════════════════════════════════════════════
+   TOKENS — single source of truth
+   Every value used via variable, never hardcoded
+══════════════════════════════════════════════ */
+:root {
+  /* Brand */
+  --blue:        #006FED;
+  --blue-dark:   #0055C4;
+  --blue-bg:     rgba(0,111,237,0.07);
+  --blue-ring:   rgba(0,111,237,0.18);
+  --teal:        #00897B;
+  --teal-bg:     rgba(0,137,123,0.08);
+  --teal-border: rgba(0,137,123,0.22);
+  --gold:        #C49A1A;
+  --gold-bg:     rgba(196,154,26,0.09);
+  --gold-border: rgba(196,154,26,0.25);
+  --danger:      #E53935;
+  --success:     #2E9E5B;
+
+  /* Left panel palette */
+  --navy-0: #060E1E;
+  --navy-1: #0A1628;
+  --navy-2: #0E1E38;
+
+  /* Right panel (form) */
+  --form-bg:   #FFFFFF;        /* FIX 7: always pure white */
+  --form-gray: #F4F5F7;
+
+  /* Neutrals */
+  --n50:  #F7F8FA;
+  --n100: #ECEEF2;
+  --n200: #D8DBE3;
+  --n300: #B8BDC9;
+  --n400: #8D94A6;
+  --n500: #636B80;
+  --n600: #434A5C;
+  --n700: #2E3343;
+  --n800: #1C2030;
+  --n900: #0E1119;
+
+  /* Type */
+  --t-primary:   #0E1119;
+  --t-secondary: #434A5C;
+  --t-muted:     #636B80;
+  --t-faint:     #8D94A6;
+
+  /* Spacing — 8pt grid */
+  --sp1: 8px;   --sp2: 16px;  --sp3: 24px;
+  --sp4: 32px;  --sp5: 40px;  --sp6: 48px;
+  --sp7: 56px;  --sp8: 64px;
+
+  /* Radius */
+  --r-xs: 6px;   --r-sm: 10px;
+  --r-md: 14px;  --r-lg: 20px;
+
+  /* Shadows */
+  --sh1: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+  --sh2: 0 4px 14px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04);
+  --sh3: 0 16px 48px rgba(0,0,0,0.10), 0 6px 18px rgba(0,0,0,0.06);
+  --sh4: 0 32px 80px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.07);
+
+  /* Motion */
+  --ease: cubic-bezier(0.4,0,0.2,1);
+  --spring: cubic-bezier(0.34,1.56,0.64,1);
+  --out: cubic-bezier(0.16,1,0.3,1);
+  --fast: 0.12s;
+  --base: 0.20s;
+  --slow: 0.35s;
+}
+
+/* ══════════════════════════════════════════════
+   RESET
+══════════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Sora', -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--t-primary);
+  background: var(--navy-0);
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════ */
+.page {
+  display: grid;
+  grid-template-columns: 1fr 472px;
+  height: 100vh;
+}
+
+/* ══════════════════════════════════════════════
+   LEFT PANEL
+══════════════════════════════════════════════ */
+.left {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--sp5) var(--sp8) var(--sp5);
+  background: linear-gradient(155deg, var(--navy-1) 0%, var(--navy-2) 50%, #071422 100%);
+  overflow: hidden;
+}
+
+/* FIX 5: One consistent dot grid, always same opacity */
+.left::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(ellipse 75% 85% at 35% 45%, black 0%, transparent 72%);
+  pointer-events: none;
+}
+
+/* Atmospheric glows — purely atmospheric, consistent */
+.left::after {
+  content: '';
+  position: absolute;
+  top: -140px; left: -60px;
+  width: 520px; height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,111,237,0.13) 0%, transparent 65%);
+  pointer-events: none;
+}
+.glow-b {
+  position: absolute;
+  bottom: -80px; left: 80px;
+  width: 380px; height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,137,123,0.10) 0%, transparent 65%);
+  pointer-events: none;
+  animation: drift 14s ease-in-out infinite alternate;
+}
+@keyframes drift { from { transform: translate(0,0); } to { transform: translate(18px,28px); } }
+
+/* ─── Brand row ─── */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative; z-index: 2;
+  animation: up 0.5s var(--out) both;
+}
+
+.brand-id { display: flex; align-items: center; gap: var(--sp2); }
+
+.brand-mark {
+  width: 42px; height: 42px;
+  background: linear-gradient(145deg, rgba(0,111,237,0.85), rgba(0,64,180,0.9));
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 28px rgba(0,111,237,0.22), inset 0 1px 0 rgba(255,255,255,0.14);
+  flex-shrink: 0;
+}
+
+.brand-copy { line-height: 1; }
+.brand-name {
+  font-size: 15px; font-weight: 600; letter-spacing: -0.3px;
+  color: #fff;
+}
+.brand-tier {
+  font-size: 10.5px; font-weight: 400; letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.34); margin-top: 2px;
+}
+
+/* System status badge — consistent pill */
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 11px;
+  background: rgba(255,255,255,0.046);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 7px var(--success);
+  animation: blink 2.8s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.45} }
+.status-pill span { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.46); letter-spacing:0.03em; }
+
+/* ─── Hero ─── */
+.hero {
+  position: relative; z-index: 2;
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  padding: var(--sp3) 0;
+}
+
+.hero-kicker {
+  display: flex; align-items: center; gap: var(--sp1);
+  margin-bottom: var(--sp4);
+  animation: up 0.5s 0.1s var(--out) both;
+}
+.kicker-line { width: 22px; height: 1.5px; background: rgba(0,147,255,0.65); border-radius: 1px; }
+.kicker-text { font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: rgba(80,170,255,0.8); }
+
+.hero-h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(38px, 4vw, 58px);
+  font-weight: 400;
+  line-height: 1.06;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--sp3);
+  animation: up 0.5s 0.15s var(--out) both;
+}
+.hero-h1 em {
+  font-style: italic;
+  background: linear-gradient(90deg, #5ab4ff, #38d9c8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-p {
+  font-size: 14px; font-weight: 300; line-height: 1.75;
+  color: rgba(255,255,255,0.4); max-width: 340px;
+  margin-bottom: var(--sp6);
+  animation: up 0.5s 0.2s var(--out) both;
+}
+
+/* FIX 5: Chips — one consistent style everywhere */
+.chips {
+  display: flex; flex-wrap: wrap; gap: 7px;
+  animation: up 0.5s 0.25s var(--out) both;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 27px; padding: 0 10px;
+  background: rgba(255,255,255,0.038);
+  border: 1px solid rgba(255,255,255,0.078);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; font-weight: 400; letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.36);
+  transition: all var(--base) var(--ease);
+  white-space: nowrap; cursor: default;
+}
+.chip::before { content:''; width:4px; height:4px; border-radius:50%; background:currentColor; opacity:0.55; }
+.chip:hover { background:rgba(0,111,237,0.1); border-color:rgba(0,111,237,0.24); color:rgba(100,185,255,0.9); }
+
+/* ─── Stats row ─── */
+/* FIX 11: White numerals, blue suffix — locked */
+.stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(255,255,255,0.07);
+  position: relative; z-index: 2;
+  animation: up 0.5s 0.3s var(--out) both;
+}
+.stat { padding: var(--sp3) 0; }
+.stat:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.06); margin-right: var(--sp3); padding-right: var(--sp3); }
+
+.stat-n {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px; font-weight: 400; line-height: 1;
+  color: #ffffff; letter-spacing: -0.03em;
+  display: flex; align-items: baseline; gap: 1px;
+}
+/* FIX 11: Consistent sup style — blue, same size */
+.stat-n sup {
+  font-family: 'Sora', sans-serif;
+  font-size: 14px; font-weight: 600;
+  color: #5ab4ff; margin-left: 1px;
+}
+.stat-l {
+  font-size: 10px; font-weight: 400; text-transform: uppercase;
+  letter-spacing: 0.06em; color: rgba(255,255,255,0.26); margin-top: 5px;
+}
+
+/* ══════════════════════════════════════════════
+   RIGHT PANEL — THE FORM
+   FIX 7: Always pure #FFFFFF, no texture
+══════════════════════════════════════════════ */
+.right {
+  background: var(--form-bg);
+  display: flex; flex-direction: column;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  box-shadow: var(--sh4);
+  overflow-y: auto;
+  animation: slide 0.55s var(--out) both;
+}
+@keyframes slide { from { transform:translateX(24px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+.right::-webkit-scrollbar { width: 3px; }
+.right::-webkit-scrollbar-thumb { background: var(--n100); border-radius: 2px; }
+
+/* ─── Form scroll wrapper ─── */
+.f-wrap {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  /* FIX 12: Locked padding — same on every tab state */
+  padding: var(--sp6) var(--sp7);
+}
+
+/* ─── Segmented control ───
+   FIX 8: Always present, always at the top, same markup on all states */
+.seg {
+  display: flex;
+  background: var(--n50);
+  border-radius: var(--r-sm);
+  padding: 3px; gap: 2px;
+  margin-bottom: var(--sp5);
+  animation: up 0.4s 0.2s var(--out) both;
+}
+.seg-btn {
+  flex: 1; height: 34px; border: none;
+  background: transparent; border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 13px; font-weight: 500;
+  color: var(--t-muted); cursor: pointer;
+  transition: all var(--base) var(--ease);
+}
+.seg-btn.on {
+  background: var(--form-bg); color: var(--t-primary);
+  font-weight: 600; box-shadow: var(--sh2);
+}
+.seg-btn:not(.on):hover { color: var(--t-secondary); background: rgba(0,0,0,0.024); }
+
+/* ─── Form header ─── */
+.f-head {
+  margin-bottom: var(--sp4);
+  animation: up 0.4s 0.15s var(--out) both;
+}
+/* FIX 2: Eyebrow replaces the redundant "Sign X with email" heading */
+.f-eyebrow {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.11em; color: var(--blue);
+  margin-bottom: 7px;
+}
+.f-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 34px; font-weight: 400;
+  letter-spacing: -0.025em; line-height: 1.1;
+  color: var(--t-primary);
+}
+.f-desc {
+  font-size: 13px; color: var(--t-muted);
+  margin-top: 6px; line-height: 1.55;
+}
+
+/* ─── MFA card ───
+   FIX 3: Identical markup, color, icon on BOTH tabs
+   Only the body copy differs */
+.mfa {
+  display: flex; align-items: flex-start; gap: var(--sp2);
+  padding: 13px 14px;
+  background: var(--teal-bg);
+  border: 1px solid var(--teal-border);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp4);
+  animation: up 0.4s 0.25s var(--out) both;
+}
+.mfa-ico {
+  /* FIX 3: Always same teal color, same size, same border-radius */
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: rgba(0,137,123,0.12);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--teal);
+}
+.mfa-txt strong {
+  display: block; font-size: 12.5px; font-weight: 600;
+  color: var(--teal); margin-bottom: 3px; letter-spacing: -0.1px;
+}
+.mfa-txt p { font-size: 11.5px; color: var(--t-muted); line-height: 1.45; }
+
+/* ─── Fields ─── */
+.fields { display: flex; flex-direction: column; gap: var(--sp2); }
+
+.field { animation: up 0.4s var(--out) both; }
+.field:nth-child(1){animation-delay:0.3s}
+.field:nth-child(2){animation-delay:0.34s}
+.field:nth-child(3){animation-delay:0.38s}
+
+/* FIX 9: Labels ALWAYS present — never placeholder-only */
+.f-label {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.f-label-txt {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--t-secondary);
+}
+.f-label-link {
+  font-size: 11.5px; font-weight: 500;
+  color: var(--blue); text-decoration: none;
+  transition: opacity var(--fast) var(--ease);
+}
+.f-label-link:hover { opacity: 0.65; }
+
+.inp-wrap { position: relative; }
+
+/* FIX 9: All inputs have icon + label, consistent height */
+.inp-wrap input {
+  display: block; width: 100%; height: 48px;
+  padding: 0 44px 0 46px;
+  background: var(--n50);
+  border: 1.5px solid var(--n200);
+  border-radius: var(--r-sm);
+  font-family: 'Sora', sans-serif;
+  font-size: 14px; font-weight: 400;
+  letter-spacing: -0.1px; color: var(--t-primary);
+  outline: none;
+  transition:
+    border-color var(--base) var(--ease),
+    background var(--base) var(--ease),
+    box-shadow var(--base) var(--ease);
+  -webkit-appearance: none;
+}
+.inp-wrap input::placeholder { color: var(--n300); font-weight: 300; }
+.inp-wrap input:focus {
+  border-color: var(--blue);
+  background: var(--form-bg);
+  box-shadow: 0 0 0 4px var(--blue-ring);
+}
+.inp-wrap input:focus ~ .ico-l { color: var(--blue); }
+.inp-wrap input.err { border-color: var(--danger); background: rgba(229,57,53,0.03); box-shadow: 0 0 0 4px rgba(229,57,53,0.09); }
+
+.ico-l {
+  position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+  color: var(--n300); pointer-events: none;
+  display: flex; transition: color var(--base) var(--ease);
+}
+.ico-r {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: var(--n300); padding: var(--sp1); border-radius: var(--r-xs);
+  display: flex; transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.ico-r:hover { color: var(--t-secondary); background: var(--n100); }
+
+.f-err { font-size: 11px; color: var(--danger); margin-top: 5px; display: none; }
+.field.has-err .f-err { display: block; animation: up 0.18s var(--out) both; }
+
+/* Password strength */
+.strength { display: flex; gap: 3px; margin-top: 7px; }
+.seg-s { flex:1; height:3px; border-radius:2px; background:var(--n100); transition: background 0.3s var(--ease); }
+.f-hint { font-size: 11px; color: var(--t-faint); margin-top: 5px; line-height: 1.4; }
+
+/* ─── Actions ───
+   FIX 1: Primary button is ALWAYS blue, never grey
+   FIX 10: SSO button present in BOTH tabs, same style
+   FIX 4: No "Already have an account?" links needed */
+.actions {
+  display: flex; flex-direction: column; gap: var(--sp2);
+  margin-top: var(--sp4);
+  animation: up 0.4s 0.44s var(--out) both;
+}
+
+/* PRIMARY — always blue, always same height */
+.btn-p {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; height: 50px;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: var(--r-sm);
+  font-family: 'Sora', sans-serif;
+  font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  box-shadow: 0 4px 14px rgba(0,111,237,0.24);
+}
+.btn-p:hover {
+  background: var(--blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 22px rgba(0,111,237,0.30);
+}
+.btn-p:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(0,111,237,0.18); }
+
+/* Shine sweep */
+.btn-p::after {
+  content:''; position:absolute;
+  top:0; left:-100%; width:55%; height:100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent);
+  transform: skewX(-15deg);
+  transition: left 0.5s var(--ease);
+}
+.btn-p:hover::after { left: 145%; }
+
+/* Divider */
+.or {
+  display: flex; align-items: center; gap: var(--sp2);
+  animation: up 0.4s 0.48s var(--out) both;
+}
+.or::before,.or::after { content:''; flex:1; height:1px; background:var(--n100); }
+.or span { font-size: 11px; color: var(--t-faint); white-space: nowrap; }
+
+/* SECONDARY (SSO) — FIX 10: same on both tabs */
+/* Tinted blue, not grey */
+.btn-s {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; height: 46px;
+  background: var(--blue-bg); color: var(--blue);
+  border: 1.5px solid rgba(0,111,237,0.22);
+  border-radius: var(--r-sm);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+  animation: up 0.4s 0.52s var(--out) both;
+}
+.btn-s:hover {
+  background: rgba(0,111,237,0.11);
+  border-color: rgba(0,111,237,0.34);
+  transform: translateY(-1px);
+}
+.btn-s:active { transform: translateY(0); }
+
+/* ══════════════════════════════════════════════
+   FOOTER — consistent across all states
+══════════════════════════════════════════════ */
+.f-foot {
+  padding: var(--sp2) var(--sp7) var(--sp3);
+  border-top: 1px solid var(--n100);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  animation: up 0.4s 0.56s var(--out) both;
+}
+
+/* FIX 11: Gold pill — identical size/style in every state */
+.audit-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  background: var(--gold-bg); border: 1px solid var(--gold-border);
+  border-radius: 100px;
+}
+.audit-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+  animation: blink 2.2s ease-in-out infinite;
+}
+.audit-pill span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); }
+
+.f-links { display: flex; gap: var(--sp2); }
+.f-links a { font-size: 11px; color: var(--t-faint); text-decoration: none; transition: color var(--fast) var(--ease); }
+.f-links a:hover { color: var(--t-secondary); }
+
+/* ══════════════════════════════════════════════
+   SHARED ANIMATION
+══════════════════════════════════════════════ */
+@keyframes up {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes spin {
+  from { transform:rotate(0deg); } to { transform:rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════
+   FOCUS VISIBLE — WCAG 2.1 AA
+══════════════════════════════════════════════ */
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+button:focus-visible { border-radius: var(--r-xs); }
+</style>
+
+</head>
+
+<body>
+<div class="page">
+
+  <!-- ══════ LEFT ══════ -->
+
+  <div class="left" aria-label="Platform overview">
+    <div class="glow-b" aria-hidden="true"></div>
+
+```
+<nav class="brand">
+  <div class="brand-id">
+    <div class="brand-mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+           stroke="rgba(255,255,255,0.9)" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+      </svg>
+    </div>
+    <div class="brand-copy">
+      <div class="brand-name">Pharma LMS</div>
+      <div class="brand-tier">Enterprise Edition</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" aria-hidden="true"></div>
+    <span>All Systems Operational</span>
+  </div>
+</nav>
+
+<main class="hero">
+  <div class="hero-kicker" aria-hidden="true">
+    <div class="kicker-line"></div>
+    <span class="kicker-text">Validated · GxP Compliant · FDA Ready</span>
+  </div>
+
+  <h1 class="hero-h1">Training<br><em>Validated.</em><br>Compliant.</h1>
+
+  <p class="hero-p">
+    The enterprise LMS built ground-up for pharmaceutical regulations.
+    Full audit trail, cryptographic e-signatures, and SOP-triggered
+    retraining — validated out of the box.
+  </p>
+
+  <div class="chips" role="list" aria-label="Compliance certifications">
+    <div class="chip" role="listitem">21 CFR Part 11</div>
+    <div class="chip" role="listitem">EU GMP Annex 11</div>
+    <div class="chip" role="listitem">ALCOA+</div>
+    <div class="chip" role="listitem">GAMP 5 Cat. 4</div>
+    <div class="chip" role="listitem">GxP Validated</div>
+    <div class="chip" role="listitem">ISO 27001</div>
+  </div>
+</main>
+
+<!-- FIX 11: Numerals white, sup blue — locked -->
+<div class="stats" aria-label="Platform statistics">
+  <div class="stat">
+    <div class="stat-n">500<sup>+</sup></div>
+    <div class="stat-l">Pharma Clients</div>
+  </div>
+  <div class="stat">
+    <div class="stat-n">2M<sup>+</sup></div>
+    <div class="stat-l">Trained Employees</div>
+  </div>
+  <div class="stat">
+    <div class="stat-n">99.9<sup>%</sup></div>
+    <div class="stat-l">Audit Pass Rate</div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══════ RIGHT ══════ -->
+
+  <div class="right" role="main" aria-label="Authentication">
+    <div class="f-wrap">
+
+```
+  <!-- FIX 8: Segmented control — ALWAYS present, ALWAYS at top -->
+  <div class="seg" role="tablist" aria-label="Choose authentication mode">
+    <button class="seg-btn on" id="tab-si" role="tab"
+            aria-selected="true" aria-controls="pnl-si"
+            onclick="go('si',this)">Sign In</button>
+    <button class="seg-btn" id="tab-ca" role="tab"
+            aria-selected="false" aria-controls="pnl-ca"
+            onclick="go('ca',this)">Create Account</button>
+  </div>
+
+  <!-- ══════════════════════
+       SIGN IN PANEL
+       FIX 1: Blue CTA always
+       FIX 2: No "Sign In with email" heading
+       FIX 3: Consistent MFA card
+       FIX 4: No redirect text
+       FIX 9: Labels on all inputs
+       FIX 10: SSO button present
+  ══════════════════════ -->
+  <div id="pnl-si" role="tabpanel" aria-labelledby="tab-si">
+
+    <header class="f-head">
+      <p class="f-eyebrow">Secure Access</p>
+      <h2 class="f-title">Welcome back</h2>
+      <p class="f-desc">Sign in to your compliance dashboard.</p>
+    </header>
+
+    <!-- FIX 3: Consistent MFA card — teal, same icon, same radius -->
+    <div class="mfa" role="note" aria-label="MFA protection active">
+      <div class="mfa-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="mfa-txt">
+        <strong>Protected by MFA</strong>
+        <p>Two-factor authentication required · 21 CFR §11.200(a)</p>
+      </div>
+    </div>
+
+    <!-- FIX 9: Labels ALWAYS present on ALL inputs -->
+    <div class="fields">
+      <div class="field" id="fi-email">
+        <div class="f-label">
+          <span class="f-label-txt">Work Email</span>
+        </div>
+        <div class="inp-wrap">
+          <input type="email" id="si-email" placeholder="name@company.com"
+                 autocomplete="email" autofocus aria-required="true"
+                 aria-describedby="err-email"
+                 oninput="clrErr('fi-email')">
+          <span class="ico-l" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </span>
+        </div>
+        <p class="f-err" id="err-email" role="alert">Enter a valid work email address.</p>
+      </div>
+
+      <div class="field" id="fi-pass">
+        <div class="f-label">
+          <span class="f-label-txt">Password</span>
+          <a href="#" class="f-label-link" aria-label="Reset your password">Forgot password?</a>
+        </div>
+        <div class="inp-wrap">
+          <input type="password" id="si-pass" placeholder="Your password"
+                 autocomplete="current-password" aria-required="true"
+                 aria-describedby="err-pass"
+                 oninput="clrErr('fi-pass')">
+          <span class="ico-l" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </span>
+          <button class="ico-r" type="button" onclick="togPwd('si-pass',this)"
+                  aria-label="Toggle password visibility" tabindex="-1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="f-err" id="err-pass" role="alert">Please enter your password.</p>
+      </div>
+    </div>
+
+    <!-- FIX 1: Always blue. FIX 4: No redirect text. FIX 10: SSO present -->
+    <div class="actions">
+      <button class="btn-p" onclick="doSignIn()" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Sign In Securely
+      </button>
+    </div>
+
+    <div class="or" aria-hidden="true"><span>or</span></div>
+
+    <!-- FIX 10: SSO here too -->
+    <button class="btn-s" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Continue with SSO / OIDC
+    </button>
+
+  </div><!-- /pnl-si -->
+
+  <!-- ══════════════════════
+       CREATE ACCOUNT PANEL
+       FIX 3: Same MFA card
+       FIX 9: Labels on all inputs
+       FIX 10: SSO present
+  ══════════════════════ -->
+  <div id="pnl-ca" role="tabpanel" aria-labelledby="tab-ca" hidden>
+
+    <header class="f-head">
+      <p class="f-eyebrow">New Account</p>
+      <h2 class="f-title">Join your team</h2>
+      <p class="f-desc">Create a validated account to begin compliance training.</p>
+    </header>
+
+    <!-- FIX 3: Same card component — only body copy changes -->
+    <div class="mfa" role="note">
+      <div class="mfa-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="mfa-txt">
+        <strong>MFA setup required</strong>
+        <p>Configured during onboarding · mandatory for all GxP access · 21 CFR §11.200(a)</p>
+      </div>
+    </div>
+
+    <div class="fields">
+      <div class="field">
+        <div class="f-label"><span class="f-label-txt">Full Name</span></div>
+        <div class="inp-wrap">
+          <input type="text" id="ca-name" placeholder="Dr. Jane Smith"
+                 autocomplete="name" aria-required="true">
+          <span class="ico-l" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="f-label"><span class="f-label-txt">Work Email</span></div>
+        <div class="inp-wrap">
+          <input type="email" id="ca-email" placeholder="name@company.com"
+                 autocomplete="email" aria-required="true">
+          <span class="ico-l" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="f-label"><span class="f-label-txt">Create Password</span></div>
+        <div class="inp-wrap">
+          <input type="password" id="ca-pass"
+                 placeholder="12+ chars · mixed case · symbols"
+                 autocomplete="new-password" aria-required="true"
+                 aria-describedby="ca-hint"
+                 oninput="strength(this.value)">
+          <span class="ico-l" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </span>
+          <button class="ico-r" type="button" onclick="togPwd('ca-pass',this)"
+                  aria-label="Toggle password visibility" tabindex="-1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="strength" aria-hidden="true">
+          <div class="seg-s" id="s1"></div>
+          <div class="seg-s" id="s2"></div>
+          <div class="seg-s" id="s3"></div>
+          <div class="seg-s" id="s4"></div>
+        </div>
+        <p class="f-hint" id="ca-hint" role="status">
+          Required: 12+ chars, uppercase, lowercase, numbers, symbols — 21 CFR §11.300
+        </p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-p" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        Create Validated Account
+      </button>
+    </div>
+
+    <div class="or" aria-hidden="true"><span>or</span></div>
+
+    <!-- FIX 10: SSO on create account too — identical markup -->
+    <button class="btn-s" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Continue with SSO / OIDC
+    </button>
+
+  </div><!-- /pnl-ca -->
+
+</div><!-- /f-wrap -->
+
+<!-- FIX 6: No DEBUG ribbon. FIX 13: No dev tools.
+     Footer consistent across all states -->
+<footer class="f-foot" aria-label="Compliance and legal">
+  <div class="audit-pill" aria-label="Audit trail is active">
+    <div class="audit-dot" aria-hidden="true"></div>
+    <span>Audit Trail Active</span>
+  </div>
+  <nav class="f-links" aria-label="Legal">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Accessibility</a>
+    <a href="#">Help</a>
+  </nav>
+</footer>
+```
+
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* Tab switching */
+function go(id, btn) {
+  ['si','ca'].forEach(p => {
+    const el = document.getElementById('pnl-'+p);
+    el.hidden = p !== id;
+  });
+  document.querySelectorAll('.seg-btn').forEach(b => {
+    b.classList.remove('on');
+    b.setAttribute('aria-selected','false');
+  });
+  btn.classList.add('on');
+  btn.setAttribute('aria-selected','true');
+}
+
+/* Password visibility */
+function togPwd(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.style.color = show ? 'var(--blue)' : 'var(--n300)';
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
+
+/* Password strength meter */
+function strength(v) {
+  let s = 0;
+  if (v.length >= 12) s++;
+  if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+  if (/\d/.test(v)) s++;
+  if (/[^A-Za-z0-9]/.test(v)) s++;
+
+  const c = {1:'#E53935', 2:'#FF9F0A', 3:'#2E9E5B', 4:'#006FED'};
+  const t = {
+    0:'Required: 12+ chars, uppercase, lowercase, numbers, symbols — 21 CFR §11.300',
+    1:'Weak — add uppercase, numbers, and symbols',
+    2:'Getting stronger — add symbols and mix case',
+    3:'Strong password',
+    4:'Very strong — meets 21 CFR §11.300 ✓'
+  };
+  for (let i=1;i<=4;i++) {
+    const el = document.getElementById('s'+i);
+    el.style.background = i<=s ? c[s] : 'var(--n100)';
+  }
+  const hint = document.getElementById('ca-hint');
+  if(hint){ hint.textContent = t[s]; hint.style.color = s>0 ? c[s] : 'var(--t-faint)'; }
+}
+
+/* Sign in validation */
+function doSignIn() {
+  const eEl = document.getElementById('si-email');
+  const pEl = document.getElementById('si-pass');
+  const eW  = document.getElementById('fi-email');
+  const pW  = document.getElementById('fi-pass');
+  let ok = true;
+
+  eW.classList.remove('has-err'); pW.classList.remove('has-err');
+  eEl.classList.remove('err'); pEl.classList.remove('err');
+
+  if (!eEl.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eEl.value)) {
+    eW.classList.add('has-err'); eEl.classList.add('err');
+    eEl.focus(); ok = false;
+  }
+  if (!pEl.value) {
+    pW.classList.add('has-err'); pEl.classList.add('err');
+    if(ok) pEl.focus(); ok = false;
+  }
+  if (ok) {
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.75s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Signing in…`;
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Signed in`;
+      btn.style.background='var(--success)';
+      btn.style.boxShadow='0 4px 14px rgba(46,158,91,0.32)';
+    }, 1200);
+  }
+}
+
+function clrErr(id) {
+  const w = document.getElementById(id);
+  if(!w) return;
+  w.classList.remove('has-err');
+  w.querySelector('input')?.classList.remove('err');
+}
+</script>
+
+</body>
+</html>

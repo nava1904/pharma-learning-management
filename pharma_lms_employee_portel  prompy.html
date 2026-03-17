@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharma LMS — Employee Portal Master Redesign Prompt</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #1A56DB; --blue-light: #EBF2FF;
+  --danger: #DC2626; --danger-light: #FEF2F2;
+  --success: #16A34A; --success-light: #F0FDF4;
+  --warning: #D97706; --warning-light: #FFFBEB;
+  --teal: #0D9488; --teal-light: #CCFBF1;
+  --n0:#fff; --n50:#F8FAFC; --n100:#F1F5F9; --n200:#E2E8F0;
+  --n300:#CBD5E1; --n400:#94A3B8; --n500:#64748B; --n600:#475569;
+  --n700:#334155; --n800:#1E293B; --n900:#0F172A;
+  --prose-max: 860px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 15px; line-height: 1.7; color: var(--n800);
+  background: var(--n50);
+}
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+
+/* TOC sidebar */
+.toc {
+position: sticky; top: 0; height: 100vh; overflow-y: auto;
+background: var(–n900); padding: 32px 0;
+border-right: 1px solid rgba(255,255,255,0.05);
+}
+.toc-brand {
+padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.07);
+margin-bottom: 20px;
+}
+.toc-brand-name { font-family: ‘Bricolage Grotesque’; font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.3px; }
+.toc-brand-sub  { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; letter-spacing: 0.03em; }
+.toc-section-label {
+font-size: 10px; font-weight: 700; text-transform: uppercase;
+letter-spacing: 0.12em; color: rgba(255,255,255,0.28);
+padding: 14px 24px 6px;
+}
+.toc a {
+display: block; padding: 7px 24px;
+font-size: 12.5px; color: rgba(255,255,255,0.52);
+text-decoration: none;
+transition: color 0.15s, background 0.15s;
+border-left: 2px solid transparent;
+}
+.toc a:hover { color: white; background: rgba(255,255,255,0.05); border-left-color: rgba(255,255,255,0.2); }
+.toc a.active { color: #60a5fa; border-left-color: #60a5fa; background: rgba(96,165,250,0.06); }
+
+/* Main content */
+.main { padding: 64px 80px; max-width: calc(var(–prose-max) + 160px); }
+
+/* Hero header */
+.doc-hero {
+margin-bottom: 64px; padding-bottom: 48px;
+border-bottom: 2px solid var(–n200);
+}
+.doc-hero-eyebrow {
+display: inline-flex; align-items: center; gap: 8px;
+padding: 4px 12px; border-radius: 100px;
+background: var(–blue-light); color: var(–blue);
+font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+margin-bottom: 20px;
+}
+.doc-hero h1 {
+font-family: ‘Bricolage Grotesque’; font-size: 42px; font-weight: 700;
+color: var(–n900); letter-spacing: -0.04em; line-height: 1.1;
+margin-bottom: 16px;
+}
+.doc-hero-desc { font-size: 17px; color: var(–n500); max-width: 560px; line-height: 1.7; }
+
+.hero-meta { display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap; }
+.hero-meta-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(–n500); }
+.hero-meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(–n300); }
+
+/* Sections */
+.section { margin-bottom: 72px; }
+.section-header {
+display: flex; align-items: baseline; gap: 16px;
+margin-bottom: 32px; padding-bottom: 16px;
+border-bottom: 1px solid var(–n200);
+}
+.section-num {
+font-family: ‘JetBrains Mono’; font-size: 11px; font-weight: 500;
+color: var(–n400); letter-spacing: 0.04em; flex-shrink: 0;
+}
+.section-title {
+font-family: ‘Bricolage Grotesque’; font-size: 26px; font-weight: 700;
+color: var(–n900); letter-spacing: -0.03em;
+}
+
+/* Principle blocks */
+.principle-grid { display: flex; flex-direction: column; gap: 20px; }
+.principle-card {
+background: var(–n0); border: 1px solid var(–n200);
+border-radius: 14px; padding: 24px 28px;
+border-left: 4px solid var(–blue);
+transition: box-shadow 0.2s;
+}
+.principle-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+.principle-card.danger { border-left-color: var(–danger); }
+.principle-card.success { border-left-color: var(–success); }
+.principle-card.warning { border-left-color: var(–warning); }
+.principle-card.teal   { border-left-color: var(–teal); }
+.principle-card.purple { border-left-color: #7c3aed; }
+
+.principle-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.principle-badge {
+font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+padding: 3px 10px; border-radius: 100px;
+background: var(–blue-light); color: var(–blue);
+}
+.principle-card.danger  .principle-badge { background: var(–danger-light); color: var(–danger); }
+.principle-card.success .principle-badge { background: var(–success-light); color: var(–success); }
+.principle-card.warning .principle-badge { background: var(–warning-light); color: var(–warning); }
+.principle-card.teal    .principle-badge { background: var(–teal-light); color: var(–teal); }
+.principle-card.purple  .principle-badge { background: #f3e8ff; color: #7c3aed; }
+
+.principle-name { font-family: ‘Bricolage Grotesque’; font-size: 17px; font-weight: 700; color: var(–n900); }
+.principle-body { font-size: 13.5px; color: var(–n600); line-height: 1.65; }
+.principle-body ul { margin-top: 10px; margin-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+
+/* Screen specs */
+.screen-spec {
+background: var(–n0); border: 1px solid var(–n200);
+border-radius: 14px; overflow: hidden; margin-bottom: 24px;
+}
+.screen-spec-header {
+background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+padding: 20px 28px;
+display: flex; align-items: center; gap: 16px;
+}
+.screen-num {
+width: 36px; height: 36px; border-radius: 50%;
+background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25);
+display: flex; align-items: center; justify-content: center;
+font-family: ‘JetBrains Mono’; font-size: 13px; font-weight: 500; color: white;
+}
+.screen-spec-title { font-family: ‘Bricolage Grotesque’; font-size: 18px; font-weight: 700; color: white; }
+.screen-route { font-family: ‘JetBrains Mono’; font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+.screen-spec-body { padding: 24px 28px; }
+.spec-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(–n400); margin-bottom: 8px; margin-top: 20px; }
+.spec-label:first-child { margin-top: 0; }
+.spec-item { font-size: 13.5px; color: var(–n700); line-height: 1.6; padding-left: 16px; border-left: 2px solid var(–n200); margin-bottom: 4px; }
+
+/* Code blocks */
+pre {
+background: var(–n900); color: #e2e8f0;
+border-radius: 12px; padding: 24px 28px;
+font-family: ‘JetBrains Mono’; font-size: 12.5px; line-height: 1.65;
+overflow-x: auto; margin: 16px 0;
+}
+code { font-family: ‘JetBrains Mono’; font-size: 12.5px; }
+.code-comment { color: #64748b; }
+.code-key { color: #93c5fd; }
+.code-val { color: #86efac; }
+.code-type { color: #fcd34d; }
+.code-str { color: #fca5a5; }
+
+/* Bug table */
+.bug-list { display: flex; flex-direction: column; gap: 12px; }
+.bug-item {
+display: grid; grid-template-columns: 100px 80px 1fr;
+gap: 16px; align-items: start;
+background: var(–n0); border: 1px solid var(–n200);
+border-radius: 10px; padding: 16px 20px;
+}
+.bug-id { font-family: ‘JetBrains Mono’; font-size: 11px; font-weight: 500; color: var(–n500); }
+.bug-sev {
+font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+padding: 3px 8px; border-radius: 100px; width: fit-content;
+}
+.bug-sev.critical { background: var(–danger-light); color: var(–danger); }
+.bug-sev.major    { background: var(–warning-light); color: var(–warning); }
+.bug-sev.moderate { background: #fef9c3; color: #854d0e; }
+.bug-sev.minor    { background: var(–n100); color: var(–n500); }
+.bug-desc { font-size: 13px; color: var(–n700); line-height: 1.55; }
+.bug-desc strong { color: var(–n900); font-weight: 600; }
+.bug-fix { font-size: 12px; color: var(–success); margin-top: 4px; }
+
+/* Checklist */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+display: flex; align-items: flex-start; gap: 10px;
+background: var(–n0); border: 1px solid var(–n200);
+border-radius: 8px; padding: 12px 16px; font-size: 13.5px; color: var(–n700);
+}
+.check-box {
+width: 20px; height: 20px; border-radius: 5px;
+background: var(–success-light); border: 1.5px solid var(–success);
+display: flex; align-items: center; justify-content: center;
+flex-shrink: 0; margin-top: 1px;
+color: var(–success);
+}
+
+/* Token grid */
+.token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px; }
+.token-swatch {
+border-radius: 10px; overflow: hidden;
+border: 1px solid var(–n200);
+background: var(–n0);
+}
+.swatch-color { height: 48px; }
+.swatch-info { padding: 10px 12px; }
+.swatch-name { font-size: 11.5px; font-weight: 600; color: var(–n800); }
+.swatch-hex  { font-family: ‘JetBrains Mono’; font-size: 10.5px; color: var(–n500); margin-top: 2px; }
+
+/* Nav section */
+.nav-diagram {
+background: var(–n900); border-radius: 14px; padding: 28px 32px;
+display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.nav-zone { }
+.nav-zone-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); margin-bottom: 12px; }
+.nav-zone-item { font-size: 13px; color: rgba(255,255,255,0.65); padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+.nav-badge-r { background: var(–danger); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 100px; margin-left: auto; }
+.nav-badge-a { background: var(–warning); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 100px; margin-left: auto; }
+
+p { margin-bottom: 12px; color: var(–n700); font-size: 14px; line-height: 1.7; }
+strong { color: var(–n900); }
+h3 { font-family: ‘Bricolage Grotesque’; font-size: 18px; font-weight: 700; color: var(–n900); margin: 28px 0 12px; letter-spacing: -0.02em; }
+</style>
+
+</head>
+<body>
+<div class="layout">
+
+<!-- TOC -->
+
+<div class="toc">
+  <div class="toc-brand">
+    <div class="toc-brand-name">Pharma LMS</div>
+    <div class="toc-brand-sub">Employee Portal Master Prompt</div>
+  </div>
+  <div class="toc-section-label">Overview</div>
+  <a href="#identity">0 · Identity &amp; Mission</a>
+  <a href="#stack">1 · Tech Stack</a>
+  <div class="toc-section-label">Design</div>
+  <a href="#principles">2 · Design Principles</a>
+  <a href="#tokens">5 · Design Tokens</a>
+  <a href="#colors">Color System</a>
+  <div class="toc-section-label">Screens</div>
+  <a href="#screens">3 · All 8 Screens</a>
+  <a href="#s1">S1 · Dashboard</a>
+  <a href="#s2">S2 · My Training</a>
+  <a href="#s3">S3 · Course Catalog</a>
+  <a href="#s4">S4 · Course Viewer</a>
+  <a href="#s5">S5 · Assessment</a>
+  <a href="#s6">S6 · Credentials</a>
+  <a href="#s7">S7 · Training History</a>
+  <a href="#s8">S8 · Profile</a>
+  <div class="toc-section-label">Technical</div>
+  <a href="#navigation">4 · Navigation</a>
+  <a href="#models">6 · Data Models</a>
+  <a href="#api">7 · API Contracts</a>
+  <a href="#state">8 · State (Riverpod)</a>
+  <a href="#components">9 · Components</a>
+  <a href="#routing">10 · Routing</a>
+  <a href="#compliance">11 · Compliance/Audit</a>
+  <a href="#a11y">12 · Accessibility</a>
+  <div class="toc-section-label">Quality</div>
+  <a href="#bugs">13 · Bugs to Fix</a>
+  <a href="#checklist">14 · Deliverables</a>
+</div>
+
+<!-- Main -->
+
+<div class="main">
+
+  <div class="doc-hero" id="identity">
+    <div class="doc-hero-eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Master Redesign Prompt · v1.0
+    </div>
+    <h1>Employee Portal<br>Redesign Prompt</h1>
+    <p class="doc-hero-desc">A complete, production-grade specification for rebuilding the Pharma LMS Employee Portal — fully connected to the Serverpod backend, applying all top-tier design principles.</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><div class="hero-meta-dot" style="background:#3b82f6"></div>Flutter 3.x + Riverpod</div>
+      <div class="hero-meta-item"><div class="hero-meta-dot" style="background:#10b981"></div>Serverpod + PostgreSQL</div>
+      <div class="hero-meta-item"><div class="hero-meta-dot" style="background:#f59e0b"></div>21 CFR Part 11 Compliant</div>
+      <div class="hero-meta-item"><div class="hero-meta-dot" style="background:#ef4444"></div>WCAG AA Accessible</div>
+      <div class="hero-meta-item"><div class="hero-meta-dot" style="background:#8b5cf6"></div>8 Screens · 14 Fixes</div>
+    </div>
+  </div>
+
+  <!-- SECTION 0 MISSION -->
+
+  <div class="section">
+    <p>The primary user is a pharmaceutical employee — lab technician, quality associate, production operator — who must complete mandatory compliance training on time. <strong>Late training is a regulatory violation.</strong> The product must communicate urgency, trust, and clarity at every pixel.</p>
+    <p>This is NOT a generic LMS. It is a compliance-critical, audit-ready platform where every interaction is logged, every certificate is legally significant, and every overdue item carries regulatory risk.</p>
+  </div>
+
+  <!-- SECTION 1 STACK -->
+
+  <div class="section" id="stack">
+    <div class="section-header">
+      <span class="section-num">§ 01</span>
+      <h2 class="section-title">Tech Stack</h2>
+    </div>
+    <pre><span class="code-comment">// Frontend</span>
+<span class="code-key">framework:</span>     <span class="code-val">Flutter 3.x</span>  <span class="code-comment">// mobile + web + desktop</span>
+<span class="code-key">state:</span>         <span class="code-val">flutter_riverpod ^2.x</span>
+<span class="code-key">routing:</span>       <span class="code-val">go_router ^13.x</span>
+<span class="code-key">http:</span>          <span class="code-val">dio ^5.x</span>  <span class="code-comment">// with JWT interceptor</span>
+<span class="code-key">storage:</span>       <span class="code-val">flutter_secure_storage</span> <span class="code-comment">// tokens</span>
+<span class="code-key">cache:</span>         <span class="code-val">hive</span>  <span class="code-comment">// offline + 5min TTL</span>
+<span class="code-key">animations:</span>    <span class="code-val">flutter_animate ^4.x</span>
+<span class="code-key">pdf_viewer:</span>    <span class="code-val">syncfusion_flutter_pdfviewer</span>
+<span class="code-key">video:</span>         <span class="code-val">video_player + chewie</span>
+<span class="code-key">charts:</span>        <span class="code-val">fl_chart ^0.68</span>
+<span class="code-key">fonts:</span>         <span class="code-val">Bricolage Grotesque + DM Sans + JetBrains Mono</span>
+
+<span class="code-comment">// Backend</span>
+<span class="code-key">framework:</span>     <span class="code-val">Serverpod (Dart)</span>
+<span class="code-key">database:</span>      <span class="code-val">PostgreSQL</span>
+<span class="code-key">cache:</span>         <span class="code-val">Redis</span>  <span class="code-comment">// sessions, rate limiting</span>
+<span class="code-key">events:</span>        <span class="code-val">Kafka</span>  <span class="code-comment">// audit trail, completion events</span>
+<span class="code-key">storage:</span>       <span class="code-val">S3 / MinIO</span>  <span class="code-comment">// PDFs, videos, SCORM</span>
+<span class="code-key">auth:</span>          <span class="code-val">JWT</span>  <span class="code-comment">// 15min access + 7d refresh</span></pre>
+
+  </div>
+
+  <!-- SECTION 2 PRINCIPLES -->
+
+  <div class="section" id="principles">
+    <div class="section-header">
+      <span class="section-num">§ 02</span>
+      <h2 class="section-title">Design Principles</h2>
+    </div>
+    <p>Apply ALL of the following simultaneously. Every screen must pass each principle before it is considered complete.</p>
+
+```
+<div class="principle-grid">
+  <div class="principle-card">
+    <div class="principle-header">
+      <span class="principle-badge">Apple HIG</span>
+      <span class="principle-name">Clarity · Deference · Depth</span>
+    </div>
+    <div class="principle-body">
+      <ul>
+        <li><strong>Clarity:</strong> Legible text at every size. Min tap target 44×44pt. No orphaned text.</li>
+        <li><strong>Deference:</strong> UI recedes — the course, certificate, and due date are always the hero.</li>
+        <li><strong>Depth:</strong> 4-layer system — background → cards → elevated modals → overlays. Each layer has its shadow token. Never mix layers.</li>
+        <li><strong>8pt Grid:</strong> Every spacing value is a multiple of 8. (4px for micro-gaps only)</li>
+        <li><strong>Motion:</strong> Page transitions 280ms ease-out. Skeletons replace spinners. Spring physics for sheets (stiffness 400, damping 35).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="principle-card warning">
+    <div class="principle-header">
+      <span class="principle-badge">Refactoring UI</span>
+      <span class="principle-name">Hierarchy · Spacing · Typography</span>
+    </div>
+    <div class="principle-body">
+      <ul>
+        <li>Use size, weight, and color — not borders or boxes — to create hierarchy.</li>
+        <li>Every screen has exactly ONE primary action, ONE secondary, rest tertiary.</li>
+        <li>Space = relationship. Closer items are more related. Section gaps are generous (48px+).</li>
+        <li>Display: Bricolage Grotesque 700 / Title: 600 / Body: DM Sans 400 / Code: JetBrains Mono</li>
+        <li>One primary color, semantic danger/success/warning, everything else is neutral grey.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="principle-card success">
+    <div class="principle-header">
+      <span class="principle-badge">Don't Make Me Think</span>
+      <span class="principle-name">One Action · Self-Evident · Recovery</span>
+    </div>
+    <div class="principle-body">
+      <ul>
+        <li>One obvious next action per screen. Never equally-weighted choices.</li>
+        <li>One navigation system — sidebar = primary navigation, topbar = context breadcrumb.</li>
+        <li>Any user understands what to do within 3 seconds of landing on any screen.</li>
+        <li>Errors always say what went wrong AND how to fix it. Never raw exceptions.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="principle-card danger">
+    <div class="principle-header">
+      <span class="principle-badge">Laws of UX</span>
+      <span class="principle-name">Fitts · Jakob · Hick · Miller · Doherty</span>
+    </div>
+    <div class="principle-body">
+      <ul>
+        <li><strong>Fitts:</strong> Primary CTAs min 48px tall. Danger items are RED, not just larger.</li>
+        <li><strong>Jakob:</strong> Familiar patterns — course cards look like course cards. No novel interactions.</li>
+        <li><strong>Hick:</strong> Max 5 items on dashboard before "View all →". Max 7 sidebar nav items.</li>
+        <li><strong>Miller:</strong> Max 4 stats on dashboard. Badges &gt;99 show "99+".</li>
+        <li><strong>Doherty:</strong> Skeleton within 100ms. Never blank white screen during any API call.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="principle-card teal">
+    <div class="principle-header">
+      <span class="principle-badge">UI is Communication</span>
+      <span class="principle-name">Colour Semantics · Human Dates · Empty States</span>
+    </div>
+    <div class="principle-body">
+      <ul>
+        <li><strong>OVERDUE = RED.</strong> Not orange. Not yellow. Red = danger = regulatory risk.</li>
+        <li><strong>COMPLETED = GREEN</strong> with checkmark. PENDING = BLUE. These are non-negotiable.</li>
+        <li>Dates are ALWAYS human: "Mar 11, 2026" — never "2026-03-11".</li>
+        <li>Status labels are ALWAYS human: "Not Started" — never "NOT_STARTED".</li>
+        <li>Empty states explain why it's empty AND what to do next.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="principle-card purple">
+    <div class="principle-header">
+      <span class="principle-badge">Designing with the Mind in Mind</span>
+      <span class="principle-name">Affordance · Feedback Loops · Recognition</span>
+    </div>
+    <div class="principle-body">
+      <ul>
+        <li>Buttons look like buttons. Inputs look like inputs. Locked items show padlocks.</li>
+        <li>Every action has a response within 100ms: tap → scale(0.97), API → skeleton, success → checkmark animation.</li>
+        <li>Recognition over recall — show course name in breadcrumb, show previous score before retake.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- COLOR TOKENS -->
+
+  <div class="section" id="colors">
+    <div class="section-header">
+      <span class="section-num">§ 05</span>
+      <h2 class="section-title" id="tokens">Design Tokens — Color</h2>
+    </div>
+    <div class="token-grid">
+      <div class="token-swatch"><div class="swatch-color" style="background:#1A56DB"></div><div class="swatch-info"><div class="swatch-name">Blue (Primary)</div><div class="swatch-hex">#1A56DB</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#EBF2FF"></div><div class="swatch-info"><div class="swatch-name">Blue Light</div><div class="swatch-hex">#EBF2FF</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#DC2626"></div><div class="swatch-info"><div class="swatch-name">Danger</div><div class="swatch-hex">#DC2626</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#16A34A"></div><div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-hex">#16A34A</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#D97706"></div><div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-hex">#D97706</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#0D9488"></div><div class="swatch-info"><div class="swatch-name">Teal</div><div class="swatch-hex">#0D9488</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#F1F5F9"></div><div class="swatch-info"><div class="swatch-name">N100 (Background)</div><div class="swatch-hex">#F1F5F9</div></div></div>
+      <div class="token-swatch"><div class="swatch-color" style="background:#0F172A"></div><div class="swatch-info"><div class="swatch-name">N900 (Text)</div><div class="swatch-hex">#0F172A</div></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 SCREENS -->
+
+  <div class="section" id="screens">
+    <div class="section-header">
+      <span class="section-num">§ 03</span>
+      <h2 class="section-title">All 8 Screens to Build</h2>
+    </div>
+
+```
+<div id="s1" class="screen-spec">
+  <div class="screen-spec-header">
+    <div class="screen-num">1</div>
+    <div><div class="screen-spec-title">Dashboard</div><div class="screen-route">/employee/dashboard</div></div>
+  </div>
+  <div class="screen-spec-body">
+    <div class="spec-label">Layout</div>
+    <div class="spec-item">Sidebar (240px) + Main content. Compliance urgency banner renders FIRST if overdueCount &gt; 0.</div>
+    <div class="spec-label">Key Elements</div>
+    <div class="spec-item">Compliance Alert Banner — red, pulsing left border, cannot be dismissed</div>
+    <div class="spec-item">4-stat row: Compliance %, Overdue count, Due This Month, Certificates earned</div>
+    <div class="spec-item">Hero "Up Next" card — most urgent course, animated progress ring, correct CTA color</div>
+    <div class="spec-item">Tab bar (In Progress / To Do / Completed) with item count badges — To Do count is RED if overdue</div>
+    <div class="spec-label">API</div>
+    <div class="spec-item"><code>GET /api/employee/dashboard</code> → single consolidated response, no N+1 calls</div>
+    <div class="spec-label">States Required</div>
+    <div class="spec-item">Loading skeleton · Error + retry · Empty (new user) · All complete (celebration)</div>
+  </div>
+</div>
+
+<div id="s4" class="screen-spec">
+  <div class="screen-spec-header" style="background:linear-gradient(135deg,#14532d,#166534)">
+    <div class="screen-num">4</div>
+    <div><div class="screen-spec-title">Course Viewer ← MOST CRITICAL</div><div class="screen-route">/employee/course/:courseId</div></div>
+  </div>
+  <div class="screen-spec-body">
+    <div class="spec-label">Layout</div>
+    <div class="spec-item">320px course sidebar (outline + progress) + flexible content area</div>
+    <div class="spec-label">Sidebar</div>
+    <div class="spec-item">Back button "← My Training" — always top-left, always same position</div>
+    <div class="spec-item">Course title + overall progress bar with % label</div>
+    <div class="spec-item">Module sections (collapsible) with lesson status icons: ✅ done / ▶ current (animated pulse) / 🔒 locked</div>
+    <div class="spec-label">Content Area</div>
+    <div class="spec-item">PDF lessons: embedded viewer, minimum read-time enforcement, page-based progress</div>
+    <div class="spec-item">Video lessons: cannot skip ahead, auto-resume from last position, speed controls</div>
+    <div class="spec-item">SCORM: iframe with postMessage bridge, cmi.completion_status captured</div>
+    <div class="spec-label">Footer</div>
+    <div class="spec-item">Reading timer progress bar + time remaining in JetBrains Mono</div>
+    <div class="spec-item">"Take Assessment" LOCKED state: grey + padlock + tooltip "Complete all lessons to unlock"</div>
+    <div class="spec-item">"Take Assessment" UNLOCKED state: teal green + arrow icon, animated transition</div>
+    <div class="spec-label">Broken State Prevention (BUG-001)</div>
+    <div class="spec-item">If courseVersionId null → friendly error: icon + explanation + Retry + Back buttons. NEVER raw error message.</div>
+    <div class="spec-label">Audit Events (Kafka)</div>
+    <div class="spec-item">LESSON_OPENED · LESSON_PROGRESS (every 30s) · LESSON_COMPLETED · SCORM_STATUS_CHANGE</div>
+  </div>
+</div>
+
+<div id="s6" class="screen-spec">
+  <div class="screen-spec-header" style="background:linear-gradient(135deg,#1e3a5f,#0f5132)">
+    <div class="screen-num">6</div>
+    <div><div class="screen-spec-title">Credentials Wallet</div><div class="screen-route">/employee/credentials</div></div>
+  </div>
+  <div class="screen-spec-body">
+    <div class="spec-label">Fix Required (BUG-007)</div>
+    <div class="spec-item">Must NEVER be empty without explanation. Show real credential cards if data exists. Show meaningful empty state if genuinely empty: "Complete a course to earn your first GxP-verified certificate."</div>
+    <div class="spec-label">Credential Card Contains</div>
+    <div class="spec-item">Navy gradient header + GxP Verified badge · Course name · Completed date (human format) · Score · Expiry date (RED if &lt;30 days) · Cert ID in JetBrains Mono</div>
+    <div class="spec-label">Expiring Soon Banner</div>
+    <div class="spec-item">Amber banner if any cert expires within 30 days: "1 certificate expires in N days — [Course Name]. Renew →"</div>
+    <div class="spec-label">Export</div>
+    <div class="spec-item">"Export Official PDF" button — generates GxP-compliant PDF with watermark (employee name + date + verification hash)</div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- SECTION 4 NAVIGATION -->
+
+  <div class="section" id="navigation">
+    <div class="section-header">
+      <span class="section-num">§ 04</span>
+      <h2 class="section-title">Navigation Architecture</h2>
+    </div>
+    <p>ONE navigation system — sidebar for navigation, topbar for context only. They never duplicate each other. (Fixes BUG-008)</p>
+    <div class="nav-diagram">
+      <div class="nav-zone">
+        <div class="nav-zone-title">Sidebar — Primary Navigation</div>
+        <div class="nav-zone-item" style="color:rgba(255,255,255,0.3);font-size:11px;text-transform:uppercase;letter-spacing:.08em">Overview</div>
+        <div class="nav-zone-item">Dashboard</div>
+        <div class="nav-zone-item" style="color:rgba(255,255,255,0.3);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-top:8px">Training</div>
+        <div class="nav-zone-item">My Training <span class="nav-badge-r">2</span></div>
+        <div class="nav-zone-item">Course Catalog</div>
+        <div class="nav-zone-item">Assessments <span class="nav-badge-a">1</span></div>
+        <div class="nav-zone-item" style="color:rgba(255,255,255,0.3);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-top:8px">Records</div>
+        <div class="nav-zone-item">My Credentials</div>
+        <div class="nav-zone-item">Training History</div>
+      </div>
+      <div class="nav-zone">
+        <div class="nav-zone-title">Topbar — Context Only</div>
+        <div class="nav-zone-item">Logo + "Pharma LMS"</div>
+        <div class="nav-zone-item">Breadcrumb (context, not nav)</div>
+        <div class="nav-zone-item">Search bar (max 360px, centered)</div>
+        <div class="nav-zone-item">🔔 Bell + red badge (count)</div>
+        <div class="nav-zone-item">Sign out icon</div>
+        <div class="nav-zone-item">Avatar initials circle</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API -->
+
+  <div class="section" id="api">
+    <div class="section-header">
+      <span class="section-num">§ 07</span>
+      <h2 class="section-title">API Contracts (Serverpod)</h2>
+    </div>
+    <pre><span class="code-comment">// All endpoints require: Authorization: Bearer {accessToken}</span>
+<span class="code-comment">// All responses: { data, meta: { requestId, timestamp } }</span>
+<span class="code-comment">// All errors: { error: { code, message } } — NEVER raw stack traces</span>
+
+<span class="code-type">class</span> <span class="code-val">EmployeeEndpoint</span> extends <span class="code-val">Endpoint</span> {
+<span class="code-comment">// Single dashboard call — no N+1</span>
+<span class="code-type">Future</span><<span class="code-val">DashboardSummary</span>> getDashboard(Session session);
+
+<span class="code-type">Future</span><<span class="code-val">List</span><<span class="code-val">TrainingAssignment</span>>> getTraining(
+Session session, {
+<span class="code-val">TrainingStatus</span>? status,
+<span class="code-val">String</span>? search,
+<span class="code-val">TrainingSortBy</span> sortBy = <span class="code-val">TrainingSortBy.dueDate</span>,
+});
+
+<span class="code-comment">// Returns 422 with friendly error if courseVersionId is null</span>
+<span class="code-type">Future</span><<span class="code-val">CourseDetail</span>> getCourse(Session session, <span class="code-val">String</span> courseId);
+
+<span class="code-comment">// Progress update — call every 30s during lesson</span>
+<span class="code-type">Future</span><<span class="code-val">ProgressUpdateResult</span>> updateLessonProgress(
+Session session, <span class="code-val">String</span> lessonId,
+<span class="code-val">double</span> progressPercent, <span class="code-val">int</span> secondsViewed,
+);
+
+<span class="code-type">Future</span><<span class="code-val">AssessmentResult</span>> submitAssessment(
+Session session, <span class="code-val">String</span> assessmentId,
+<span class="code-val">List</span><<span class="code-val">AssessmentAnswer</span>> answers,
+);
+
+<span class="code-type">Future</span><<span class="code-val">List</span><<span class="code-val">Credential</span>>> getCredentials(
+Session session, {
+<span class="code-val">DateTime</span>? from, <span class="code-val">DateTime</span>? to,
+<span class="code-val">String</span>? status, <span class="code-val">String</span>? search,
+});
+}</pre>
+
+  </div>
+
+  <!-- STATE -->
+
+  <div class="section" id="state">
+    <div class="section-header">
+      <span class="section-num">§ 08</span>
+      <h2 class="section-title">State Management (Riverpod)</h2>
+    </div>
+    <pre><span class="code-comment">// Use AsyncNotifierProvider for server data</span>
+<span class="code-comment">// Use StateProvider for UI state</span>
+<span class="code-comment">// Use StreamProvider for real-time</span>
+
+<span class="code-type">final</span> dashboardProvider = AsyncNotifierProvider<
+<span class="code-val">DashboardNotifier</span>, <span class="code-val">DashboardSummary</span>>(DashboardNotifier.new);
+
+<span class="code-type">final</span> courseDetailProvider = AsyncNotifierProvider.family<
+<span class="code-val">CourseNotifier</span>, <span class="code-val">CourseDetail</span>, <span class="code-val">String</span>>(CourseNotifier.new);
+
+<span class="code-comment">// ALL providers must:</span>
+<span class="code-comment">// 1. Show skeleton on AsyncLoading</span>
+<span class="code-comment">// 2. Show friendly error widget on AsyncError (not raw toString)</span>
+<span class="code-comment">// 3. Expose retry() method</span>
+<span class="code-comment">// 4. Cache in Hive with 5-minute TTL for offline</span></pre>
+
+  </div>
+
+  <!-- COMPLIANCE -->
+
+  <div class="section" id="compliance">
+    <div class="section-header">
+      <span class="section-num">§ 11</span>
+      <h2 class="section-title">Compliance &amp; Audit (21 CFR Part 11)</h2>
+    </div>
+    <p>Every user action that touches training records MUST fire a Kafka event. These events are the foundation of regulatory compliance.</p>
+    <pre><span class="code-comment">// Kafka events — fired via Serverpod endpoint, never directly</span>
+LESSON_OPENED:      { userId, courseId, lessonId, timestamp, ip }
+LESSON_PROGRESS:    { userId, lessonId, percent, secondsViewed }
+LESSON_COMPLETED:   { userId, lessonId, completedAt, totalSeconds }
+ASSESSMENT_STARTED: { userId, assessmentId, timestamp }
+ASSESSMENT_ANSWER:  { userId, questionId, answerId, timestamp }
+ASSESSMENT_SUBMITTED: { userId, assessmentId, score, passed }
+CERTIFICATE_VIEWED:    { userId, certificateId, timestamp }
+CERTIFICATE_DOWNLOADED:{ userId, certificateId, timestamp, format }
+
+<span class="code-comment">// Timestamps: stored UTC, displayed local time (human format)</span>
+<span class="code-comment">// SCORM: capture cmi.completion_status via postMessage bridge</span></pre>
+
+  </div>
+
+  <!-- BUGS -->
+
+  <div class="section" id="bugs">
+    <div class="section-header">
+      <span class="section-num">§ 13</span>
+      <h2 class="section-title">Bugs to Fix (All 12)</h2>
+    </div>
+    <div class="bug-list">
+      <div class="bug-item"><span class="bug-id">BUG-001</span><span class="bug-sev critical">Critical</span><div class="bug-desc"><strong>"Missing course version"</strong> hard crash screen with no recovery.<div class="bug-fix">→ Fix: validate courseVersionId before navigation. Return 422 with friendly message. Never blank/broken screen.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-002</span><span class="bug-sev critical">Critical</span><div class="bug-desc"><strong>Course content area is a black void</strong> — primary task blocked.<div class="bug-fix">→ Fix: loading skeleton → PDF/video/SCORM content. Never render #000 background.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-003</span><span class="bug-sev critical">Critical</span><div class="bug-desc"><strong>"Take Assessment" permanently disabled</strong> with no explanation.<div class="bug-fix">→ Fix: hover tooltip "Finish reading to unlock". Animate to enabled state when lessons complete.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-004</span><span class="bug-sev major">Major</span><div class="bug-desc"><strong>100% completion ring contradicts OVERDUE status</strong> — data contradiction destroys trust.<div class="bug-fix">→ Fix: replace orphan ring with 4 labelled stat cards. Compliance % ≠ overdue status.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-005</span><span class="bug-sev major">Major</span><div class="bug-desc"><strong>Dates as ISO "2026-03-11"</strong> throughout the app.<div class="bug-fix">→ Fix: apply DateDisplay.humanDate extension everywhere. Search &amp; replace all DateFormat patterns.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-006</span><span class="bug-sev major">Major</span><div class="bug-desc"><strong>Status as "NOT_STARTED", "IN_PROGRESS"</strong> — raw DB enums shown to users.<div class="bug-fix">→ Fix: TrainingStatusDisplay.label extension. Never pass .name to any Text widget.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-007</span><span class="bug-sev major">Major</span><div class="bug-desc"><strong>Credentials Wallet always empty</strong> — no guidance, no data.<div class="bug-fix">→ Fix: show real credential cards. Add meaningful empty state with "Complete a course to earn your first certificate".</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-008</span><span class="bug-sev moderate">Moderate</span><div class="bug-desc"><strong>Dual navigation</strong> — topbar and sidebar both navigate.<div class="bug-fix">→ Fix: topbar = breadcrumb context only. Remove link behaviour from breadcrumb.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-009</span><span class="bug-sev moderate">Moderate</span><div class="bug-desc"><strong>"Learning" vs "Courses"</strong> — unclear distinction in sidebar.<div class="bug-fix">→ Fix: rename to "My Training" (assigned) and "Course Catalog" (browse all).</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-010</span><span class="bug-sev moderate">Moderate</span><div class="bug-desc"><strong>Tab bar has no item counts</strong> — user can't see urgency at a glance.<div class="bug-fix">→ Fix: count badges on each tab. Red badge if any overdue items in that tab.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-011</span><span class="bug-sev minor">Minor</span><div class="bug-desc"><strong>Notification badge on logout icon</strong> instead of bell.<div class="bug-fix">→ Fix: red badge with count on bell icon only.</div></div></div>
+      <div class="bug-item"><span class="bug-id">BUG-012</span><span class="bug-sev minor">Minor</span><div class="bug-desc"><strong>Back button position inconsistent</strong> — different location per screen.<div class="bug-fix">→ Fix: always top-left of course sidebar, same position every time.</div></div></div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+
+  <div class="section" id="checklist">
+    <div class="section-header">
+      <span class="section-num">§ 14</span>
+      <h2 class="section-title">Deliverables Checklist</h2>
+    </div>
+    <div class="checklist">
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>All 8 screens implemented and navigable</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>All 12 bugs from Section 13 fixed and verified</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Design token system in tokens.dart — no hardcoded hex values anywhere</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>All API calls use AsyncNotifierProvider with loading/error/data states</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>All dates display as "Mar 11, 2026" — never ISO format</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>All status enums display as human-readable strings</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Compliance urgency banner visible on dashboard when overdueCount &gt; 0</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Course cards visually differentiate by status (border, color, button type)</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Course viewer renders actual content — never black void</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Assessment unlock state visible with tooltip explanation</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>All Kafka audit events firing correctly per 21 CFR Part 11</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>WCAG AA contrast ratios pass on all text/interactive elements</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Loading skeletons on all data-fetching screens — never blank white</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>Mobile responsive — bottom nav bar, drawer sidebar, full-width cards</div>
+      <div class="check-item"><div class="check-box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>No raw DB IDs, enum names, error messages, or DEBUG banners in production UI</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+// Highlight active TOC link on scroll
+const sections = document.querySelectorAll('[id]');
+const links = document.querySelectorAll('.toc a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>

@@ -34,11 +34,19 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
   // CAPA Training Complete (SYS-WF-06)
   final _capaIdController = TextEditingController();
 
+  // Compliance Drop Alert (SYS-WF-08b)
+  final _complianceThresholdController = TextEditingController(text: '90');
+
+  // New Course Release (SYS-WF-09)
+  final _courseVersionIdController = TextEditingController();
+
   // Loading states
   bool _sopLoading = false;
   bool _empLoading = false;
   bool _transferLoading = false;
   bool _capaLoading = false;
+  bool _complianceAlertLoading = false;
+  bool _courseReleaseLoading = false;
 
   @override
   void dispose() {
@@ -54,6 +62,8 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
     _transferOldDeptIdController.dispose();
     _transferNewDeptIdController.dispose();
     _capaIdController.dispose();
+    _complianceThresholdController.dispose();
+    _courseVersionIdController.dispose();
     super.dispose();
   }
 
@@ -196,6 +206,64 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
     }
   }
 
+  Future<void> _triggerComplianceDropAlert() async {
+    final thresholdStr = _complianceThresholdController.text.trim();
+    final threshold = double.tryParse(thresholdStr);
+    if (threshold == null || threshold < 0 || threshold > 100) {
+      _showErrorSnackBar('Threshold must be a number between 0 and 100');
+      return;
+    }
+    setState(() => _complianceAlertLoading = true);
+    try {
+      final result = await client.event.triggerComplianceDropAlert(
+        threshold: threshold / 100,
+      );
+      if (result['success'] == true) {
+        final alertCount = result['alertCount'] ?? 0;
+        _showSuccessSnackBar(
+          'SYS-WF-08b: Compliance Drop Alert completed - $alertCount department(s) below threshold',
+        );
+      } else {
+        _showErrorSnackBar('Failed: ${result['error'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed: $e');
+    } finally {
+      if (mounted) setState(() => _complianceAlertLoading = false);
+    }
+  }
+
+  Future<void> _triggerNewCourseRelease() async {
+    final cvIdStr = _courseVersionIdController.text.trim();
+    if (cvIdStr.isEmpty) {
+      _showErrorSnackBar('Course Version ID is required');
+      return;
+    }
+    final cvId = int.tryParse(cvIdStr);
+    if (cvId == null) {
+      _showErrorSnackBar('Course Version ID must be a valid number');
+      return;
+    }
+    setState(() => _courseReleaseLoading = true);
+    try {
+      final result = await client.event.triggerNewCourseRelease(
+        courseVersionId: cvId,
+      );
+      if (result['success'] == true) {
+        final assignCount = result['assignmentsCreated'] ?? 0;
+        _showSuccessSnackBar(
+          'SYS-WF-09: New Course Release completed - $assignCount assignment(s) created',
+        );
+      } else {
+        _showErrorSnackBar('Failed: ${result['error'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed: $e');
+    } finally {
+      if (mounted) setState(() => _courseReleaseLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -322,21 +390,29 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
                     // Event cards grid
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final crossAxisCount = constraints.maxWidth > 900
-                            ? 2
-                            : 1;
+                        final crossAxisCount = constraints.maxWidth > 1200
+                            ? 3
+                            : constraints.maxWidth > 700
+                                ? 2
+                                : 1;
                         return GridView.count(
                           crossAxisCount: crossAxisCount,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           mainAxisSpacing: 20,
                           crossAxisSpacing: 20,
-                          childAspectRatio: crossAxisCount == 2 ? 1.1 : 1.8,
+                          childAspectRatio: crossAxisCount == 3 
+                              ? 0.9 
+                              : crossAxisCount == 2 
+                                  ? 1.0 
+                                  : 1.6,
                           children: [
                             _buildSopUpdatedCard(),
                             _buildEmployeeCreatedCard(),
                             _buildEmployeeTransferCard(),
                             _buildCapaTrainingCompleteCard(),
+                            _buildComplianceDropAlertCard(),
+                            _buildNewCourseReleaseCard(),
                           ],
                         );
                       },
@@ -634,6 +710,50 @@ class _EventTriggersScreenState extends State<EventTriggersScreen> {
       onTrigger: _triggerCapaTrainingComplete,
       fields: [
         _buildCompactTextField(_capaIdController, 'CAPA ID', hint: 'e.g. 1'),
+      ],
+    );
+  }
+
+  Widget _buildComplianceDropAlertCard() {
+    return _buildEventCard(
+      workflowId: 'SYS-WF-08b',
+      title: 'Compliance Drop Alert',
+      description:
+          'Checks departments below compliance threshold and notifies QA team for immediate action.',
+      icon: Icons.trending_down,
+      iconColor: AppColors.amber600,
+      bgColor: const Color(0xFFFFFBEB),
+      loading: _complianceAlertLoading,
+      buttonLabel: 'Check Compliance',
+      onTrigger: _triggerComplianceDropAlert,
+      fields: [
+        _buildCompactTextField(
+          _complianceThresholdController, 
+          'Threshold (%)', 
+          hint: 'e.g. 90',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewCourseReleaseCard() {
+    return _buildEventCard(
+      workflowId: 'SYS-WF-09',
+      title: 'New Course Release',
+      description:
+          'Assigns newly published course to all users based on training matrix job role mappings.',
+      icon: Icons.school,
+      iconColor: AppColors.teal600,
+      bgColor: AppColors.teal50,
+      loading: _courseReleaseLoading,
+      buttonLabel: 'Release Course',
+      onTrigger: _triggerNewCourseRelease,
+      fields: [
+        _buildCompactTextField(
+          _courseVersionIdController, 
+          'Course Version ID', 
+          hint: 'e.g. 1',
+        ),
       ],
     );
   }

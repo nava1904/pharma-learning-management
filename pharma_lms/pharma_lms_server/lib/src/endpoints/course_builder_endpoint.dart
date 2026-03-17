@@ -312,7 +312,7 @@ class CourseBuilderEndpoint extends Endpoint {
   /// TRN-WF-04: Validate course version for QA submission.
   /// Performs all validation checks required before submitting for QA review.
   /// Returns validation status and detailed results for each rule.
-  Future<Map<String, dynamic>> validateForQaSubmission(
+  Future<QaValidationResult> validateForQaSubmission(
     Session session, {
     required int courseVersionId,
   }) async {
@@ -325,17 +325,17 @@ class CourseBuilderEndpoint extends Endpoint {
     );
     if (version == null) throw Exception('Course version not found');
     
-    final validationResults = <Map<String, dynamic>>[];
+    final validationResults = <QaValidationRuleResult>[];
     var allPassed = true;
     
     // Rule 1: Course must be in draft status
     final isDraft = version.status == 'draft';
-    validationResults.add({
-      'rule': 'Course Status',
-      'description': 'Course must be in draft status to submit for QA',
-      'passed': isDraft,
-      'detail': isDraft ? 'Status: draft' : 'Current status: ${version.status} (must be draft)',
-    });
+    validationResults.add(QaValidationRuleResult(
+      rule: 'Course Status',
+      description: 'Course must be in draft status to submit for QA',
+      passed: isDraft,
+      detail: isDraft ? 'Status: draft' : 'Current status: ${version.status} (must be draft)',
+    ));
     if (!isDraft) allPassed = false;
     
     // Rule 2: At least one module exists
@@ -345,12 +345,12 @@ class CourseBuilderEndpoint extends Endpoint {
       orderBy: (t) => t.orderIndex,
     );
     final hasModules = modules.isNotEmpty;
-    validationResults.add({
-      'rule': 'Modules Exist',
-      'description': 'Course must have at least one module',
-      'passed': hasModules,
-      'detail': hasModules ? '${modules.length} module(s) found' : 'No modules created',
-    });
+    validationResults.add(QaValidationRuleResult(
+      rule: 'Modules Exist',
+      description: 'Course must have at least one module',
+      passed: hasModules,
+      detail: hasModules ? '${modules.length} module(s) found' : 'No modules created',
+    ));
     if (!hasModules) allPassed = false;
     
     // Rule 3: All modules must have at least one lesson
@@ -369,14 +369,14 @@ class CourseBuilderEndpoint extends Endpoint {
     }
     
     final allModulesHaveLessons = modulesWithoutLessons.isEmpty && modules.isNotEmpty;
-    validationResults.add({
-      'rule': 'All Modules Have Lessons',
-      'description': 'Every module must have at least one lesson',
-      'passed': allModulesHaveLessons,
-      'detail': allModulesHaveLessons 
+    validationResults.add(QaValidationRuleResult(
+      rule: 'All Modules Have Lessons',
+      description: 'Every module must have at least one lesson',
+      passed: allModulesHaveLessons,
+      detail: allModulesHaveLessons 
           ? '${modules.length} module(s) with $totalLessons lesson(s) total'
           : 'Missing lessons in: ${modulesWithoutLessons.join(", ")}',
-    });
+    ));
     if (!allModulesHaveLessons) allPassed = false;
     
     // Rule 4: All lessons must have linked material
@@ -394,14 +394,14 @@ class CourseBuilderEndpoint extends Endpoint {
     }
     
     final allLessonsHaveMaterial = lessonsWithoutMaterial.isEmpty && totalLessons > 0;
-    validationResults.add({
-      'rule': 'All Lessons Have Material',
-      'description': 'Every lesson must have linked training material',
-      'passed': allLessonsHaveMaterial,
-      'detail': allLessonsHaveMaterial
+    validationResults.add(QaValidationRuleResult(
+      rule: 'All Lessons Have Material',
+      description: 'Every lesson must have linked training material',
+      passed: allLessonsHaveMaterial,
+      detail: allLessonsHaveMaterial
           ? 'All $totalLessons lesson(s) have material attached'
           : 'Missing material in: ${lessonsWithoutMaterial.take(5).join(", ")}${lessonsWithoutMaterial.length > 5 ? " (+${lessonsWithoutMaterial.length - 5} more)" : ""}',
-    });
+    ));
     if (!allLessonsHaveMaterial) allPassed = false;
     
     // Rule 5: Assessment must be configured
@@ -411,14 +411,14 @@ class CourseBuilderEndpoint extends Endpoint {
     );
     final assessment = assessments.isNotEmpty ? assessments.first : null;
     final hasAssessment = assessment != null;
-    validationResults.add({
-      'rule': 'Assessment Configured',
-      'description': 'Course must have an assessment linked',
-      'passed': hasAssessment,
-      'detail': hasAssessment
+    validationResults.add(QaValidationRuleResult(
+      rule: 'Assessment Configured',
+      description: 'Course must have an assessment linked',
+      passed: hasAssessment,
+      detail: hasAssessment
           ? 'Assessment linked (Pass: ${assessment.passingScore}%)'
           : 'No assessment configured for this course version',
-    });
+    ));
     if (!hasAssessment) allPassed = false;
     
     // Rule 6: TRN-WF-03 2x Question Pool Rule
@@ -440,23 +440,23 @@ class CourseBuilderEndpoint extends Endpoint {
           : 'Need ${minimumRequired - questionCount} more questions. Bank has $questionCount, need $minimumRequired for $questionsToDisplay displayed.';
     }
     
-    validationResults.add({
-      'rule': '2x Question Pool Rule (TRN-WF-03)',
-      'description': 'Questions to display must be ≤ Question Bank / 2',
-      'passed': hasAssessment && questionPoolValid,
-      'detail': questionPoolDetail,
-    });
+    validationResults.add(QaValidationRuleResult(
+      rule: '2x Question Pool Rule (TRN-WF-03)',
+      description: 'Questions to display must be ≤ Question Bank / 2',
+      passed: hasAssessment && questionPoolValid,
+      detail: questionPoolDetail,
+    ));
     if (hasAssessment && !questionPoolValid) allPassed = false;
     
-    return {
-      'courseVersionId': courseVersionId,
-      'courseTitle': version.course?.title ?? 'Unknown',
-      'version': version.version,
-      'allPassed': allPassed,
-      'passedCount': validationResults.where((r) => r['passed'] == true).length,
-      'totalRules': validationResults.length,
-      'validationResults': validationResults,
-    };
+    return QaValidationResult(
+      courseVersionId: courseVersionId,
+      courseTitle: version.course?.title ?? 'Unknown',
+      version: version.version,
+      allPassed: allPassed,
+      passedCount: validationResults.where((r) => r.passed).length,
+      totalRules: validationResults.length,
+      validationResults: validationResults,
+    );
   }
   
   /// TRN-WF-04: Submit course for QA review.
@@ -475,10 +475,10 @@ class CourseBuilderEndpoint extends Endpoint {
       courseVersionId: courseVersionId,
     );
     
-    if (validation['allPassed'] != true) {
-      final failedRules = (validation['validationResults'] as List)
-          .where((r) => r['passed'] == false)
-          .map((r) => r['rule'])
+    if (!validation.allPassed) {
+      final failedRules = validation.validationResults
+          .where((r) => !r.passed)
+          .map((r) => r.rule)
           .toList();
       throw Exception(
         'TRN-WF-04 validation failed: ${failedRules.join(", ")}',
@@ -503,6 +503,128 @@ class CourseBuilderEndpoint extends Endpoint {
     );
     
     return result;
+  }
+
+  /// Delete a module and cascade delete its lessons. Only for draft course versions.
+  Future<bool> deleteModule(
+    Session session, {
+    required int moduleId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    final module = await Module.db.findById(session, moduleId);
+    if (module == null) throw Exception('Module not found');
+    await _ensureVersionEditable(session, module.courseVersionId);
+    
+    final lessons = await Lesson.db.find(
+      session,
+      where: (t) => t.moduleId.equals(moduleId),
+    );
+    for (final lesson in lessons) {
+      await Lesson.db.deleteRow(session, lesson);
+    }
+    await Module.db.deleteRow(session, module);
+    
+    await AuditService.log(
+      session,
+      entityType: 'module',
+      entityId: moduleId.toString(),
+      action: 'ModuleDeleted',
+      oldValueJson: '{"title":"${module.title}","courseVersionId":${module.courseVersionId},"lessonCount":${lessons.length}}',
+    );
+    return true;
+  }
+
+  /// Delete a lesson by ID. Only for draft course versions.
+  Future<bool> deleteLesson(
+    Session session, {
+    required int lessonId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    final lesson = await Lesson.db.findById(session, lessonId);
+    if (lesson == null) throw Exception('Lesson not found');
+    final module = await Module.db.findById(session, lesson.moduleId);
+    if (module == null) throw Exception('Module not found');
+    await _ensureVersionEditable(session, module.courseVersionId);
+    
+    await Lesson.db.deleteRow(session, lesson);
+    
+    await AuditService.log(
+      session,
+      entityType: 'lesson',
+      entityId: lessonId.toString(),
+      action: 'LessonDeleted',
+      oldValueJson: '{"title":"${lesson.title}","moduleId":${lesson.moduleId}}',
+    );
+    return true;
+  }
+
+  /// Update a lesson's materialId (replaces hardcoded materialId: 1).
+  Future<Lesson> updateLessonMaterial(
+    Session session, {
+    required int lessonId,
+    required int materialId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    final lesson = await Lesson.db.findById(session, lessonId);
+    if (lesson == null) throw Exception('Lesson not found');
+    final module = await Module.db.findById(session, lesson.moduleId);
+    if (module == null) throw Exception('Module not found');
+    await _ensureVersionEditable(session, module.courseVersionId);
+    
+    final updated = lesson.copyWith(materialId: materialId);
+    return await Lesson.db.updateRow(session, updated);
+  }
+
+  /// Bulk save module/lesson ordering and metadata changes.
+  Future<bool> saveDraft(
+    Session session, {
+    required int courseVersionId,
+    required List<Map<String, dynamic>> modules,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    await _ensureVersionEditable(session, courseVersionId);
+    
+    for (final moduleData in modules) {
+      final moduleId = moduleData['id'] as int?;
+      if (moduleId == null) continue;
+      
+      final module = await Module.db.findById(session, moduleId);
+      if (module == null) continue;
+      
+      final updatedModule = module.copyWith(
+        title: moduleData['title'] as String? ?? module.title,
+        orderIndex: moduleData['orderIndex'] as int? ?? module.orderIndex,
+      );
+      await Module.db.updateRow(session, updatedModule);
+      
+      final lessonsData = moduleData['lessons'] as List<dynamic>?;
+      if (lessonsData != null) {
+        for (final lessonData in lessonsData) {
+          final ld = lessonData as Map<String, dynamic>;
+          final lessonId = ld['id'] as int?;
+          if (lessonId == null) continue;
+          
+          final lesson = await Lesson.db.findById(session, lessonId);
+          if (lesson == null) continue;
+          
+          final updatedLesson = lesson.copyWith(
+            title: ld['title'] as String? ?? lesson.title,
+            orderIndex: ld['orderIndex'] as int? ?? lesson.orderIndex,
+            durationMinutes: ld['durationMinutes'] as int? ?? lesson.durationMinutes,
+          );
+          await Lesson.db.updateRow(session, updatedLesson);
+        }
+      }
+    }
+    
+    await AuditService.log(
+      session,
+      entityType: 'course_version',
+      entityId: courseVersionId.toString(),
+      action: 'DraftSaved',
+      newValueJson: '{"moduleCount":${modules.length}}',
+    );
+    return true;
   }
 
   Future<void> _ensureVersionEditable(Session session, int courseVersionId) async {

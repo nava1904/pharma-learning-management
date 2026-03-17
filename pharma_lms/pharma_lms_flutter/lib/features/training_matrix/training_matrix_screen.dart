@@ -378,7 +378,7 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
                   ),
                   const SizedBox(height: 20),
                   DropdownButtonFormField<PharmaUser>(
-                    value: pickedUser,
+                    initialValue: pickedUser,
                     decoration: InputDecoration(
                       labelText: 'Select Employee',
                       border: OutlineInputBorder(

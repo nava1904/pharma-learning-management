@@ -130,9 +130,20 @@ class QaEndpoint extends Endpoint {
     if (version.status != 'pending_approval') {
       throw Exception('Only pending_approval versions can be rejected');
     }
-    final status = returnForChanges ? 'draft' : 'draft';
+    final status = returnForChanges ? 'needs_revision' : 'draft';
     final updated = version.copyWith(status: status);
-    return await CourseVersion.db.updateRow(session, updated);
+    final result = await CourseVersion.db.updateRow(session, updated);
+    
+    await AuditService.log(
+      session,
+      entityType: 'course_version',
+      entityId: courseVersionId.toString(),
+      action: returnForChanges ? 'CourseReturnedForChanges' : 'CourseRejected',
+      oldValueJson: '{"status":"pending_approval"}',
+      newValueJson: '{"status":"$status","reason":"${reason ?? ''}"}',
+    );
+    
+    return result;
   }
 
   /// Get the count of pending document approvals.
@@ -145,5 +156,66 @@ class QaEndpoint extends Endpoint {
     if (result.isEmpty || result.first.isEmpty) return 0;
     final count = result.first.first;
     return count is int ? count : int.tryParse(count.toString()) ?? 0;
+  }
+
+  /// Return a course for changes (not rejection). Status -> needs_revision.
+  Future<CourseVersion> returnCourseForChanges(
+    Session session, {
+    required int courseVersionId,
+    required String comments,
+    int? reviewerId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
+    final version = await CourseVersion.db.findById(session, courseVersionId);
+    if (version == null) throw Exception('Course version not found');
+    if (version.status != 'pending_approval') {
+      throw Exception('Only pending_approval versions can be returned for changes');
+    }
+    
+    final updated = version.copyWith(status: 'needs_revision');
+    final result = await CourseVersion.db.updateRow(session, updated);
+    
+    if (reviewerId != null) {
+      await CourseReview.db.insertRow(
+        session,
+        CourseReview(
+          courseVersionId: courseVersionId,
+          reviewerId: reviewerId,
+          decision: 'returned_for_changes',
+          comments: comments,
+        ),
+      );
+    }
+    
+    await AuditService.log(
+      session,
+      entityType: 'course_version',
+      entityId: courseVersionId.toString(),
+      action: 'CourseReturnedForChanges',
+      oldValueJson: '{"status":"pending_approval"}',
+      newValueJson: '{"status":"needs_revision","comments":"$comments"}',
+      userId: reviewerId,
+    );
+    
+    return result;
+  }
+
+  /// Get all course reviews for a course version.
+  Future<List<CourseReview>> getCourseReviews(
+    Session session, {
+    required int courseVersionId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'read');
+    return await CourseReview.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+      include: CourseReview.include(
+        reviewer: PharmaUser.include(),
+        esignature: ElectronicSignature.include(),
+      ),
+      orderBy: (t) => t.reviewedAt,
+      orderDescending: true,
+    );
   }
 }

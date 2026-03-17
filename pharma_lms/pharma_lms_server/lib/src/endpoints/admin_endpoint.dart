@@ -490,15 +490,13 @@ class AdminEndpoint extends Endpoint {
       action: 'WaiverApproved',
       newValueJson: '{"approvedById":$approvedById}',
     );
-    if (waiver.courseId != null) {
-      await EventService.emitWaiverApproved(
-        session,
-        waiverId: waiverId,
-        userId: waiver.userId,
-        courseId: waiver.courseId,
-      );
-    }
-    return updated;
+    await EventService.emitWaiverApproved(
+      session,
+      waiverId: waiverId,
+      userId: waiver.userId,
+      courseId: waiver.courseId,
+    );
+      return updated;
   }
 
   /// ADM-07: QA reject a training waiver.

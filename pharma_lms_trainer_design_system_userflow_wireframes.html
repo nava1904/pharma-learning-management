@@ -1,0 +1,1272 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --em:#059669;--em2:#D1FAE5;--em4:#047857;
+  --teal:#0D9488;--tealbg:#F0FDFA;
+  --red:#DC2626;--redbg:#FEF2F2;
+  --amb:#D97706;--ambbg:#FFFBEB;
+  --blu:#1D4ED8;--blubg:#EFF6FF;
+  --ora:#C2410C;--orabg:#FFF7ED;
+  --pur:#6D28D9;--purbg:#F5F3FF;
+  --navy:#0F172A;
+  --ink:#111827;--ink2:#374151;--ink3:#6B7280;--ink4:#9CA3AF;
+  --bg:#F9FAFB;--bg2:#F3F4F6;--bdr:#E5E7EB;
+  --sh:0 1px 3px rgba(0,0,0,.08);
+  --sh2:0 4px 12px rgba(0,0,0,.1);
+}
+body{font-family:var(--font-sans,-apple-system,sans-serif);font-size:13px;color:var(--color-text-primary)}
+/* Nav tabs */
+.nav{display:flex;gap:2px;padding:16px 16px 0;border-bottom:1px solid var(--bdr);background:var(--color-background-primary,#fff)}
+.nav-btn{padding:8px 16px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.nav-btn.active{color:var(--em);border-bottom-color:var(--em)}
+.nav-btn:hover:not(.active){color:var(--ink2)}
+.pane{display:none;padding:20px 16px}
+.pane.active{display:block}
+/* Cards */
+.card{background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:12px;padding:16px}
+.card-sm{background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px;padding:12px}
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.b-draft{background:#F3F4F6;color:#6B7280}
+.b-review{background:#F0FDFA;color:#0D9488}
+.b-approved{background:#D1FAE5;color:#047857}
+.b-revision{background:#FFFBEB;color:#D97706}
+.b-rejected{background:#FEF2F2;color:#DC2626}
+.b-critical{background:#FFF7ED;color:#C2410C}
+.b-ai{background:#FFFBEB;color:#D97706}
+.b-capa{background:#F5F3FF;color:#6D28D9}
+/* Stat card */
+.stat-card{background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px;padding:14px;text-align:center;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.stat-card.c-em::after{background:var(--em)}
+.stat-card.c-red::after{background:var(--red)}
+.stat-card.c-amb::after{background:var(--amb)}
+.stat-card.c-blu::after{background:var(--blu)}
+.stat-val{font-size:22px;font-weight:500;line-height:1.2;margin-bottom:4px}
+.stat-lbl{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.stat-val.red{color:var(--red)}
+.stat-val.em{color:var(--em)}
+.stat-val.amb{color:var(--amb)}
+.stat-val.blu{color:var(--blu)}
+/* Status stepper */
+.stepper{display:flex;align-items:center;gap:0}
+.step{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.step.done{background:var(--bg2);color:var(--ink3)}
+.step.active{background:var(--em);color:#fff}
+.step.future{background:transparent;border:1px solid var(--bdr);color:var(--ink4)}
+.step-arrow{color:var(--ink4);font-size:10px;padding:0 2px}
+/* Sidebar */
+.sidebar{width:180px;flex-shrink:0;background:var(--color-background-primary,#fff);border-right:1px solid var(--bdr);padding:12px 0}
+.sidebar-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);padding:12px 14px 4px}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;color:var(--ink3);cursor:pointer;border-radius:0;transition:all .1s}
+.sidebar-item:hover{background:var(--bg2);color:var(--ink2)}
+.sidebar-item.active{background:var(--em2);color:var(--em4);font-weight:500;border-left:3px solid var(--em);padding-left:11px}
+.sidebar-item .dot{width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:auto}
+/* Form elements */
+.field-label{font-size:11px;font-weight:500;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.field-val{font-size:12px;color:var(--ink2);background:var(--bg2);border:1px solid var(--bdr);border-radius:6px;padding:7px 10px}
+.field-input{font-size:12px;color:var(--ink2);background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;width:100%}
+.field-input:focus{outline:none;border-color:var(--em)}
+select.field-input{cursor:pointer}
+/* Buttons */
+.btn-primary{background:var(--em);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn-primary:hover{background:var(--em4)}
+.btn-secondary{background:transparent;color:var(--ink2);border:1px solid var(--bdr);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer}
+.btn-secondary:hover{background:var(--bg2)}
+.btn-danger{background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer}
+.btn-ghost{background:transparent;color:var(--em);border:none;font-size:12px;cursor:pointer;padding:4px 0}
+/* Progress */
+.progress-bar{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--em);border-radius:3px;transition:width .3s}
+/* Toggle */
+.toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
+.toggle-track{width:28px;height:16px;background:var(--bdr);border-radius:8px;position:relative;transition:background .2s}
+.toggle-track.on{background:var(--em)}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.toggle-track.on .toggle-thumb{transform:translateX(12px)}
+/* Section heading */
+.section-head{font-size:16px;font-weight:500;margin-bottom:14px;color:var(--color-text-primary)}
+.sub-head{font-size:12px;font-weight:500;margin-bottom:8px;color:var(--ink2)}
+/* Table */
+.table{width:100%;border-collapse:collapse;font-size:12px}
+.table th{text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);border-bottom:1px solid var(--bdr)}
+.table td{padding:8px 10px;border-bottom:1px solid var(--bdr);color:var(--ink2);vertical-align:middle}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:var(--bg)}
+/* Hash display */
+.hash{font-family:var(--font-mono,monospace);font-size:10px;color:var(--ink3);background:var(--bg2);padding:2px 6px;border-radius:4px;letter-spacing:.02em}
+/* Autosave */
+.autosave{font-size:11px;color:var(--em4);display:flex;align-items:center;gap:4px}
+.autosave::before{content:'';width:6px;height:6px;background:var(--em);border-radius:50%;display:inline-block}
+/* Alert banners */
+.banner{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.banner-icon{font-size:14px;flex-shrink:0;line-height:1.4}
+.banner.amber{background:var(--ambbg);border-left:3px solid var(--amb);color:var(--amb);border-radius:0 8px 8px 0}
+.banner.red{background:var(--redbg);border-left:3px solid var(--red);color:var(--red);border-radius:0 8px 8px 0}
+.banner.green{background:var(--em2);border-left:3px solid var(--em);color:var(--em4);border-radius:0 8px 8px 0}
+.banner.blue{background:var(--blubg);border-left:3px solid var(--blu);color:var(--blu);border-radius:0 8px 8px 0}
+.banner.orange{background:var(--orabg);border-left:3px solid var(--ora);color:var(--ora);border-radius:0 8px 8px 0}
+/* SHA indicator */
+.sha-row{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--blubg);border-radius:6px;font-size:11px;color:var(--blu)}
+.sha-dot{width:6px;height:6px;border-radius:50%;background:var(--em);flex-shrink:0}
+/* Lesson item */
+.lesson-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;transition:all .1s}
+.lesson-item:hover{background:var(--bg2)}
+.lesson-item.selected{background:var(--em2)}
+.lesson-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.lesson-icon.pdf{background:#FEE2E2;color:var(--red)}
+.lesson-icon.vid{background:#DBEAFE;color:var(--blu)}
+.lesson-icon.scm{background:#F3E8FF;color:var(--pur)}
+/* Module item */
+.module-item{border-radius:8px;margin-bottom:6px;overflow:hidden}
+.module-header{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg2);cursor:pointer;font-size:12px;font-weight:500;color:var(--ink2)}
+.module-header:hover{background:var(--bdr)}
+.module-body{padding:4px 0 4px 14px}
+/* Drag handle */
+.drag-handle{color:var(--ink4);font-size:10px;cursor:grab;user-select:none}
+/* Question item */
+.q-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .1s}
+.q-item:hover{border-color:var(--em);background:var(--bg)}
+.q-item.selected{border-color:var(--em);background:var(--em2)}
+/* Compliance ring */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+/* Pool bar */
+.pool-indicator{border-radius:8px;padding:8px 12px;font-size:11px;font-weight:500}
+.pool-ok{background:var(--em2);color:var(--em4)}
+.pool-warn{background:var(--ambbg);color:var(--amb)}
+/* Type badges */
+.type-mcq{background:#DBEAFE;color:#1D4ED8;font-size:10px;padding:1px 6px;border-radius:4px}
+.type-tf{background:var(--tealbg);color:var(--teal);font-size:10px;padding:1px 6px;border-radius:4px}
+.type-ms{background:var(--purbg);color:var(--pur);font-size:10px;padding:1px 6px;border-radius:4px}
+.diff-easy{background:#D1FAE5;color:#047857;font-size:10px;padding:1px 6px;border-radius:4px}
+.diff-med{background:#FFFBEB;color:#D97706;font-size:10px;padding:1px 6px;border-radius:4px}
+.diff-hard{background:#FEF2F2;color:#DC2626;font-size:10px;padding:1px 6px;border-radius:4px}
+/* Wireframe header */
+.wf-header{background:var(--color-background-primary,#fff);border-bottom:1px solid var(--bdr);padding:10px 16px;display:flex;align-items:center;gap:10px}
+.wf-logo{width:28px;height:28px;background:var(--em);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+.wf-search{flex:1;max-width:300px;background:var(--bg);border:1px solid var(--bdr);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--ink3)}
+.wf-bell{width:30px;height:30px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;position:relative}
+.wf-bell-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--red);border-radius:50%;border:1.5px solid #fff}
+.wf-avatar{width:30px;height:30px;border-radius:50%;background:var(--em);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.session-bar{height:2px;background:var(--em);width:68%;border-radius:1px}
+.session-bar-wrap{flex:1;background:var(--bdr);border-radius:1px;height:2px}
+/* Tabs inside wireframe */
+.wf-tabs{display:flex;border-bottom:1px solid var(--bdr);background:var(--color-background-primary,#fff)}
+.wf-tab{padding:8px 14px;font-size:11px;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.wf-tab.act{color:var(--em);border-bottom-color:var(--em)}
+/* Step dot */
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--bdr);display:inline-block}
+.step-dot.done{background:var(--em)}
+.step-dot.current{background:var(--em);box-shadow:0 0 0 3px var(--em2)}
+/* Annotation markers */
+.ann{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--amb);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
+/* Color swatch */
+.swatch{width:40px;height:40px;border-radius:8px;display:inline-block}
+</style>
+
+<div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:12px;overflow:hidden;min-height:400px">
+
+<!-- Top nav -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showPane('ds',this)">Design System</button>
+  <button class="nav-btn" onclick="showPane('uf',this)">User Flow</button>
+  <button class="nav-btn" onclick="showPane('wf1',this)">Dashboard</button>
+  <button class="nav-btn" onclick="showPane('wf2',this)">Course Builder</button>
+  <button class="nav-btn" onclick="showPane('wf3',this)">Assessment</button>
+  <button class="nav-btn" onclick="showPane('wf4',this)">QA Workflow</button>
+</div>
+
+<!-- ══════════ DESIGN SYSTEM ══════════ -->
+<div id="pane-ds" class="pane active">
+
+  <div class="section-head">Design System — Pharma LMS Trainer Portal</div>
+  <div style="font-size:12px;color:var(--ink3);margin-bottom:20px">Inspired by Odoo eLearning · FDA 21 CFR Part 11 · GMP Annex 11</div>
+
+  <!-- Color tokens -->
+  <div class="sub-head">Color tokens</div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px">
+    <div style="text-align:center">
+      <div class="swatch" style="background:#059669"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--em<br>#059669</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#0D9488"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--teal<br>#0D9488</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#0F172A"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--navy<br>#0F172A</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#DC2626"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--red<br>#DC2626</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#D97706"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--amb<br>#D97706</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#1D4ED8"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--blu<br>#1D4ED8</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#C2410C"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--ora<br>#C2410C</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#6D28D9"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--pur<br>#6D28D9</div>
+    </div>
+    <div style="text-align:center">
+      <div class="swatch" style="background:#F9FAFB;border:1px solid #E5E7EB"></div>
+      <div style="font-size:9px;color:var(--ink3);margin-top:3px">--bg<br>#F9FAFB</div>
+    </div>
+  </div>
+
+  <!-- Status badges -->
+  <div class="sub-head">Status badges (consistent across all 23 screens)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+    <span class="badge b-draft">✏ Draft</span>
+    <span class="badge b-review">⏳ Under Review</span>
+    <span class="badge b-approved">✓ QA Approved</span>
+    <span class="badge b-revision">⚠ Needs Revision</span>
+    <span class="badge b-rejected">✗ Rejected</span>
+    <span class="badge b-critical">◉ Critical</span>
+    <span class="badge b-ai">✦ AI Generated</span>
+    <span class="badge b-capa">◈ CAPA Linked</span>
+    <span class="badge" style="background:#FEF2F2;color:#DC2626">☣ Quarantined</span>
+    <span class="badge" style="background:#D1FAE5;color:#047857">🔒 Compliant</span>
+  </div>
+
+  <!-- Workflow stepper -->
+  <div class="sub-head">Workflow state stepper (P1 — always visible)</div>
+  <div style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:10px;color:var(--ink4);margin-bottom:6px">State: Draft</div>
+      <div class="stepper">
+        <div class="step active">✏ Draft</div>
+        <div class="step-arrow">›</div>
+        <div class="step future">👤 Under Review</div>
+        <div class="step-arrow">›</div>
+        <div class="step future">✓ QA Approved</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:10px;color:var(--ink4);margin-bottom:6px">State: Under Review</div>
+      <div class="stepper">
+        <div class="step done">✏ Draft</div>
+        <div class="step-arrow">›</div>
+        <div class="step active">👤 Under Review</div>
+        <div class="step-arrow">›</div>
+        <div class="step future">✓ QA Approved</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="sub-head">Buttons (P2 — one primary per screen)</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center">
+    <button class="btn-primary">Submit for QA Review</button>
+    <button class="btn-secondary">Preview as Employee</button>
+    <button class="btn-danger">Reject</button>
+    <button class="btn-ghost">View version history →</button>
+  </div>
+
+  <!-- Compliance banners -->
+  <div class="sub-head">Compliance banners (P3 — permanent, non-dismissible)</div>
+  <div style="margin-bottom:24px">
+    <div class="banner red"><span class="banner-icon">✗</span><div><strong>Course Rejected:</strong> This version has been rejected by QA and cannot be resubmitted. Create a new version.</div></div>
+    <div class="banner amber"><span class="banner-icon">⚠</span><div><strong>Assessment Locked:</strong> Content is under QA review. Server returns 403 on write attempts.</div></div>
+    <div class="banner green"><span class="banner-icon">✓</span><div><strong>QA Approved:</strong> HMAC-SHA256 signature verified. Course ready for employee assignment.</div></div>
+    <div class="banner orange"><span class="banner-icon">↻</span><div><strong>SOP Retraining Required:</strong> SOP-101 updated to v2.2. Your certificate is now obsolete. Retrain by 15 Apr 2026.</div></div>
+  </div>
+
+  <!-- Typography -->
+  <div class="sub-head">Typography scale</div>
+  <div style="border:1px solid var(--bdr);border-radius:8px;overflow:hidden;margin-bottom:24px">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:baseline;gap:12px">
+      <span style="font-size:20px;font-weight:500">Page title</span>
+      <span style="font-size:11px;color:var(--ink3)">20px / 500 / H1</span>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:baseline;gap:12px">
+      <span style="font-size:15px;font-weight:500">Section heading</span>
+      <span style="font-size:11px;color:var(--ink3)">15px / 500 / H2</span>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:baseline;gap:12px">
+      <span style="font-size:13px;font-weight:500">Card heading</span>
+      <span style="font-size:11px;color:var(--ink3)">13px / 500 / H3</span>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:baseline;gap:12px">
+      <span style="font-size:13px">Body text — standard labels, form fields, table data</span>
+      <span style="font-size:11px;color:var(--ink3)">13px / 400</span>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:baseline;gap:12px">
+      <span style="font-size:11px;color:var(--ink3)">Metadata, timestamps, helper text, SHA-256 hashes</span>
+      <span style="font-size:11px;color:var(--ink3)">11px / 400</span>
+    </div>
+    <div style="padding:10px 14px;display:flex;align-items:baseline;gap:12px">
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink4)">SECTION LABEL</span>
+      <span style="font-size:11px;color:var(--ink3)">10px / 700 / UC / micro labels only</span>
+    </div>
+  </div>
+
+  <!-- SHA + Compliance indicators -->
+  <div class="sub-head">Compliance UI indicators (P3)</div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
+    <div class="sha-row">
+      <div class="sha-dot"></div>
+      <span style="font-weight:500">Antivirus scan completed ✓</span>
+      <span style="margin-left:8px">SHA-256:</span>
+      <span class="hash">fe5a4c95797d5a...  📋</span>
+    </div>
+    <div style="background:var(--purbg);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--pur);display:flex;align-items:center;gap:6px">
+      <span style="font-weight:600">✦ AI Generated</span>
+      <span>This question was generated from SOP-101 GMP Guidelines on 25 Apr 2026. Requires trainer review before publication.</span>
+    </div>
+    <div style="background:var(--em2);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--em4);display:flex;align-items:center;gap:6px">
+      <span style="font-weight:600">🔐 HMAC-SHA256 Integrity: VERIFIED</span>
+      <span>Signature bound · 21 CFR §11.50 · IP: 192.168.1.42 · 14 Mar 2026 09:47 UTC</span>
+    </div>
+  </div>
+
+  <!-- Course thumbnail gradients -->
+  <div class="sub-head">Course thumbnail gradient system (Odoo-style category thumbnails)</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="width:80px;height:50px;border-radius:8px;background:linear-gradient(135deg,#7F1D1D,#EF4444);display:flex;align-items:flex-end;padding:4px 6px"><span style="font-size:8px;color:#fff;font-weight:600">GMP</span></div>
+    <div style="width:80px;height:50px;border-radius:8px;background:linear-gradient(135deg,#064E3B,#10B981);display:flex;align-items:flex-end;padding:4px 6px"><span style="font-size:8px;color:#fff;font-weight:600">Safety</span></div>
+    <div style="width:80px;height:50px;border-radius:8px;background:linear-gradient(135deg,#1E3A8A,#3B82F6);display:flex;align-items:flex-end;padding:4px 6px"><span style="font-size:8px;color:#fff;font-weight:600">Regulatory</span></div>
+    <div style="width:80px;height:50px;border-radius:8px;background:linear-gradient(135deg,#4C1D95,#8B5CF6);display:flex;align-items:flex-end;padding:4px 6px"><span style="font-size:8px;color:#fff;font-weight:600">Quality</span></div>
+    <div style="width:80px;height:50px;border-radius:8px;background:linear-gradient(135deg,#78350F,#F59E0B);display:flex;align-items:flex-end;padding:4px 6px"><span style="font-size:8px;color:#fff;font-weight:600">SOP</span></div>
+    <div style="width:80px;height:50px;border-radius:8px;background:linear-gradient(135deg,#3B0764,#A855F7);display:flex;align-items:flex-end;padding:4px 6px"><span style="font-size:8px;color:#fff;font-weight:600">CAPA</span></div>
+  </div>
+</div>
+
+<!-- ══════════ USER FLOW ══════════ -->
+<div id="pane-uf" class="pane">
+  <div class="section-head">Trainer Portal — User Flow</div>
+  <div style="font-size:12px;color:var(--ink3);margin-bottom:16px">23 compound screens · click any node for screen details</div>
+
+  <svg width="100%" viewBox="0 0 680 820" style="display:block">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+
+    <!-- Lane labels -->
+    <text x="18" y="55" class="ts" fill="#9CA3AF" transform="rotate(-90,18,55)" text-anchor="middle">Auth</text>
+    <text x="18" y="195" class="ts" fill="#9CA3AF" transform="rotate(-90,18,195)" text-anchor="middle">Hub</text>
+    <text x="18" y="375" class="ts" fill="#9CA3AF" transform="rotate(-90,18,375)" text-anchor="middle">Build</text>
+    <text x="18" y="570" class="ts" fill="#9CA3AF" transform="rotate(-90,18,570)" text-anchor="middle">QA</text>
+    <text x="18" y="730" class="ts" fill="#9CA3AF" transform="rotate(-90,18,730)" text-anchor="middle">Admin</text>
+
+    <!-- Lane dividers -->
+    <line x1="36" y1="110" x2="660" y2="110" stroke="#E5E7EB" stroke-width="0.5" stroke-dasharray="4 4"/>
+    <line x1="36" y1="260" x2="660" y2="260" stroke="#E5E7EB" stroke-width="0.5" stroke-dasharray="4 4"/>
+    <line x1="36" y1="460" x2="660" y2="460" stroke="#E5E7EB" stroke-width="0.5" stroke-dasharray="4 4"/>
+    <line x1="36" y1="640" x2="660" y2="640" stroke="#E5E7EB" stroke-width="0.5" stroke-dasharray="4 4"/>
+
+    <!-- ── AUTH LANE ── -->
+    <!-- TRN-01 Login -->
+    <g onclick="sendPrompt('Show me the TRN-01 Login wireframe for Pharma LMS trainer portal')" style="cursor:pointer">
+      <rect x="44" y="28" width="110" height="52" rx="8" fill="#0F172A" stroke="#0F172A" stroke-width="0.5"/>
+      <text x="99" y="50" class="th" text-anchor="middle" fill="#fff">TRN-01</text>
+      <text x="99" y="66" class="ts" text-anchor="middle" fill="#94A3B8">Login page</text>
+    </g>
+    <!-- TRN-02 MFA -->
+    <g onclick="sendPrompt('Show me the TRN-02 MFA Challenge wireframe')" style="cursor:pointer">
+      <rect x="186" y="28" width="110" height="52" rx="8" fill="#0F172A" stroke="#0F172A" stroke-width="0.5"/>
+      <text x="241" y="50" class="th" text-anchor="middle" fill="#fff">TRN-02</text>
+      <text x="241" y="66" class="ts" text-anchor="middle" fill="#94A3B8">MFA challenge</text>
+    </g>
+    <!-- TRN-03 MFA Enrol -->
+    <g onclick="sendPrompt('Explain TRN-03 MFA Enrolment Wizard')" style="cursor:pointer">
+      <rect x="328" y="28" width="110" height="52" rx="8" fill="#0F172A" stroke="#0F172A" stroke-width="0.5"/>
+      <text x="383" y="50" class="th" text-anchor="middle" fill="#fff">TRN-03</text>
+      <text x="383" y="66" class="ts" text-anchor="middle" fill="#94A3B8">MFA enrolment</text>
+    </g>
+    <!-- Login → MFA -->
+    <line x1="154" y1="54" x2="184" y2="54" stroke="#0F172A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="169" y="50" class="ts" text-anchor="middle" fill="#94A3B8">✓</text>
+    <!-- MFA → Dashboard or MFA-setup -->
+    <line x1="296" y1="54" x2="326" y2="54" stroke="#6B7280" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+    <text x="311" y="50" class="ts" text-anchor="middle" fill="#9CA3AF">first</text>
+
+    <!-- MFA → Dashboard (normal) -->
+    <line x1="241" y1="80" x2="241" y2="136" stroke="#0F172A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="252" y="114" class="ts" fill="#94A3B8">✓</text>
+
+    <!-- ── DASHBOARD LANE ── -->
+    <!-- TRN-07 Dashboard -->
+    <g onclick="sendPrompt('Show me the TRN-07 Dashboard wireframe for the trainer portal')" style="cursor:pointer">
+      <rect x="44" y="120" width="130" height="52" rx="8" fill="#059669" stroke="#047857" stroke-width="0.5"/>
+      <text x="109" y="142" class="th" text-anchor="middle" fill="#fff">TRN-07</text>
+      <text x="109" y="158" class="ts" text-anchor="middle" fill="#D1FAE5">Dashboard hub</text>
+    </g>
+    <!-- TRN-08 Course Library -->
+    <g onclick="sendPrompt('Show me the TRN-08 Course Library wireframe')" style="cursor:pointer">
+      <rect x="214" y="120" width="130" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="279" y="142" class="th" text-anchor="middle" fill="#111827">TRN-08</text>
+      <text x="279" y="158" class="ts" text-anchor="middle" fill="#6B7280">Course library</text>
+    </g>
+    <!-- TRN-09 Course Detail -->
+    <g onclick="sendPrompt('Show me the TRN-09 Course Detail Hub wireframe')" style="cursor:pointer">
+      <rect x="384" y="120" width="130" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="449" y="142" class="th" text-anchor="middle" fill="#111827">TRN-09</text>
+      <text x="449" y="158" class="ts" text-anchor="middle" fill="#6B7280">Course detail hub</text>
+    </g>
+    <!-- TRN-18 Notifications -->
+    <g onclick="sendPrompt('Show me TRN-18 Notifications Centre')" style="cursor:pointer">
+      <rect x="554" y="120" width="96" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="602" y="142" class="th" text-anchor="middle" fill="#111827">TRN-18</text>
+      <text x="602" y="158" class="ts" text-anchor="middle" fill="#6B7280">Notifications</text>
+    </g>
+    <!-- Dashboard → Library -->
+    <line x1="174" y1="146" x2="212" y2="146" stroke="#059669" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- Library → Detail -->
+    <line x1="344" y1="146" x2="382" y2="146" stroke="#374151" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="363" y="142" class="ts" text-anchor="middle" fill="#9CA3AF">click</text>
+    <!-- Dashboard → Notifications -->
+    <line x1="109" y1="120" x2="602" y2="172" stroke="#9CA3AF" stroke-width="0.8" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+
+    <!-- ── BUILD LANE ── -->
+    <!-- TRN-10 Builder -->
+    <g onclick="sendPrompt('Show me the TRN-10 Course Builder wireframe')" style="cursor:pointer">
+      <rect x="44" y="274" width="130" height="52" rx="8" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="0.8"/>
+      <text x="109" y="296" class="th" text-anchor="middle" fill="#1D4ED8">TRN-10</text>
+      <text x="109" y="312" class="ts" text-anchor="middle" fill="#3B82F6">Course builder</text>
+    </g>
+    <!-- TRN-11 Materials -->
+    <g onclick="sendPrompt('Show me TRN-11 Material Upload wireframe')" style="cursor:pointer">
+      <rect x="214" y="274" width="130" height="52" rx="8" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="0.8"/>
+      <text x="279" y="296" class="th" text-anchor="middle" fill="#1D4ED8">TRN-11</text>
+      <text x="279" y="312" class="ts" text-anchor="middle" fill="#3B82F6">Material upload</text>
+    </g>
+    <!-- TRN-12 Assessment -->
+    <g onclick="sendPrompt('Show me TRN-12 Assessment Builder wireframe')" style="cursor:pointer">
+      <rect x="384" y="274" width="130" height="52" rx="8" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="0.8"/>
+      <text x="449" y="296" class="th" text-anchor="middle" fill="#1D4ED8">TRN-12</text>
+      <text x="449" y="312" class="ts" text-anchor="middle" fill="#3B82F6">Assessment builder</text>
+    </g>
+    <!-- TRN-16 Material Library -->
+    <g onclick="sendPrompt('Show me TRN-16 Material Library')" style="cursor:pointer">
+      <rect x="554" y="274" width="96" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="602" y="296" class="th" text-anchor="middle" fill="#111827">TRN-16</text>
+      <text x="602" y="312" class="ts" text-anchor="middle" fill="#6B7280">Mat. library</text>
+    </g>
+    <!-- Course detail → Builder -->
+    <line x1="449" y1="172" x2="449" y2="200" stroke="#374151" stroke-width="1" marker-end="url(#arr)"/>
+    <line x1="449" y1="200" x2="109" y2="200" stroke="#374151" stroke-width="1"/>
+    <line x1="109" y1="200" x2="109" y2="272" stroke="#374151" stroke-width="1" marker-end="url(#arr)"/>
+    <text x="280" y="196" class="ts" text-anchor="middle" fill="#9CA3AF">Edit course</text>
+    <!-- Builder → Materials -->
+    <line x1="174" y1="300" x2="212" y2="300" stroke="#1D4ED8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- Builder → Assessment (via tab) -->
+    <line x1="449" y1="274" x2="449" y2="272" stroke="#E5E7EB" stroke-width="0"/>
+    <path d="M514 300 Q552 300 552 300" fill="none" stroke="#1D4ED8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- Library → Detail →  Builder (new course) -->
+    <line x1="109" y1="172" x2="109" y2="272" stroke="#059669" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="120" y="228" class="ts" fill="#6B7280">new</text>
+
+    <!-- ── QA LANE ── -->
+    <!-- TRN-13 Submission -->
+    <g onclick="sendPrompt('Show me TRN-13 Course Submission and Completeness Check wireframe')" style="cursor:pointer">
+      <rect x="44" y="474" width="130" height="52" rx="8" fill="#FFFBEB" stroke="#D97706" stroke-width="0.8"/>
+      <text x="109" y="496" class="th" text-anchor="middle" fill="#D97706">TRN-13</text>
+      <text x="109" y="512" class="ts" text-anchor="middle" fill="#D97706">Submit + checklist</text>
+    </g>
+    <!-- TRN-14 QA Status -->
+    <g onclick="sendPrompt('Show me TRN-14 QA Status and Feedback Hub wireframe')" style="cursor:pointer">
+      <rect x="214" y="474" width="130" height="52" rx="8" fill="#FFFBEB" stroke="#D97706" stroke-width="0.8"/>
+      <text x="279" y="496" class="th" text-anchor="middle" fill="#D97706">TRN-14</text>
+      <text x="279" y="512" class="ts" text-anchor="middle" fill="#D97706">QA status hub</text>
+    </g>
+    <!-- TRN-15 Version Mgmt -->
+    <g onclick="sendPrompt('Show me TRN-15 Version Management and QA History')" style="cursor:pointer">
+      <rect x="384" y="474" width="130" height="52" rx="8" fill="#FFFBEB" stroke="#D97706" stroke-width="0.8"/>
+      <text x="449" y="496" class="th" text-anchor="middle" fill="#D97706">TRN-15</text>
+      <text x="449" y="512" class="ts" text-anchor="middle" fill="#D97706">Version mgmt</text>
+    </g>
+    <!-- Assessment → Submit -->
+    <line x1="109" y1="326" x2="109" y2="472" stroke="#374151" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="120" y="410" class="ts" fill="#6B7280">submit</text>
+    <!-- Submit → QA Status -->
+    <line x1="174" y1="500" x2="212" y2="500" stroke="#D97706" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- QA returns / new version -->
+    <line x1="344" y1="500" x2="382" y2="500" stroke="#D97706" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+    <text x="363" y="496" class="ts" text-anchor="middle" fill="#9CA3AF">reject</text>
+    <!-- QA returned → back to builder -->
+    <path d="M279 474 Q279 440 109 440 Q109 330" fill="none" stroke="#D97706" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+    <text x="195" y="438" class="ts" text-anchor="middle" fill="#D97706">returned → revise</text>
+
+    <!-- ── ADMIN LANE ── -->
+    <!-- TRN-17 Analytics -->
+    <g onclick="sendPrompt('Show me TRN-17 Analytics Reports and Compliance Overview')" style="cursor:pointer">
+      <rect x="44" y="654" width="110" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="99" y="676" class="th" text-anchor="middle" fill="#111827">TRN-17</text>
+      <text x="99" y="692" class="ts" text-anchor="middle" fill="#6B7280">Analytics</text>
+    </g>
+    <!-- TRN-20 CAPA -->
+    <g onclick="sendPrompt('Show me TRN-20 CAPA Hub')" style="cursor:pointer">
+      <rect x="188" y="654" width="96" height="52" rx="8" fill="#F5F3FF" stroke="#6D28D9" stroke-width="0.5"/>
+      <text x="236" y="676" class="th" text-anchor="middle" fill="#6D28D9">TRN-20</text>
+      <text x="236" y="692" class="ts" text-anchor="middle" fill="#6D28D9">CAPA hub</text>
+    </g>
+    <!-- TRN-21 Archive -->
+    <g onclick="sendPrompt('Show me TRN-21 Archive and Retention Control')" style="cursor:pointer">
+      <rect x="318" y="654" width="96" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="366" y="676" class="th" text-anchor="middle" fill="#111827">TRN-21</text>
+      <text x="366" y="692" class="ts" text-anchor="middle" fill="#6B7280">Archive</text>
+    </g>
+    <!-- TRN-22 Onboarding -->
+    <g onclick="sendPrompt('Show me TRN-22 Trainer Onboarding Checklist')" style="cursor:pointer">
+      <rect x="448" y="654" width="96" height="52" rx="8" fill="#D1FAE5" stroke="#059669" stroke-width="0.5"/>
+      <text x="496" y="676" class="th" text-anchor="middle" fill="#047857">TRN-22</text>
+      <text x="496" y="692" class="ts" text-anchor="middle" fill="#059669">Onboarding</text>
+    </g>
+    <!-- TRN-05 Profile -->
+    <g onclick="sendPrompt('Show me TRN-05 Profile and Security Hub')" style="cursor:pointer">
+      <rect x="578" y="654" width="82" height="52" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+      <text x="619" y="676" class="th" text-anchor="middle" fill="#111827">TRN-05</text>
+      <text x="619" y="692" class="ts" text-anchor="middle" fill="#6B7280">Profile</text>
+    </g>
+    <!-- QA approved → Analytics -->
+    <line x1="279" y1="526" x2="99" y2="652" stroke="#059669" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+    <text x="168" y="592" class="ts" fill="#059669">approved → analytics</text>
+
+    <!-- Legend -->
+    <rect x="44" y="755" width="580" height="42" rx="6" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="0.5"/>
+    <line x1="60" y1="776" x2="90" y2="776" stroke="#0F172A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="96" y="780" class="ts" fill="#374151">Required path</text>
+    <line x1="180" y1="776" x2="210" y2="776" stroke="#D97706" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+    <text x="216" y="780" class="ts" fill="#374151">Conditional path</text>
+    <rect x="310" y="769" width="14" height="14" rx="3" fill="#059669"/>
+    <text x="330" y="780" class="ts" fill="#374151">Entry point</text>
+    <rect x="400" y="769" width="14" height="14" rx="3" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="0.8"/>
+    <text x="420" y="780" class="ts" fill="#374151">Build screens</text>
+    <rect x="490" y="769" width="14" height="14" rx="3" fill="#FFFBEB" stroke="#D97706" stroke-width="0.8"/>
+    <text x="510" y="780" class="ts" fill="#374151">QA workflow</text>
+  </svg>
+</div>
+
+<!-- ══════════ WIREFRAME: DASHBOARD ══════════ -->
+<div id="pane-wf1" class="pane">
+  <div class="section-head" style="margin-bottom:4px">TRN-07 — Trainer Dashboard</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:14px">Absorbs: notification panel (bell slide-over) · help slide-over · session timeout modal · last-login security notice</div>
+
+  <!-- App header -->
+  <div class="wf-header" style="border-radius:8px 8px 0 0;margin-bottom:0">
+    <div style="height:2px;width:100%;position:absolute;top:0;left:0;background:linear-gradient(to right,var(--em) 68%,var(--bdr) 68%);border-radius:2px 0 0 0"></div>
+    <div class="wf-logo">P</div>
+    <span style="font-size:12px;font-weight:500;color:var(--em)">Pharma<span style="color:var(--ink)">LMS</span></span>
+    <div style="flex:1"></div>
+    <div class="wf-search" style="font-size:11px">🔍 Search courses, SOPs, materials...</div>
+    <div style="flex:1"></div>
+    <div class="wf-bell">🔔<div class="wf-bell-badge"></div></div>
+    <div class="wf-avatar">EC</div>
+  </div>
+
+  <div style="display:flex;border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;min-height:520px">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">Overview</div>
+      <div class="sidebar-item active">📊 Dashboard</div>
+      <div class="sidebar-item">📚 My Courses <div class="dot"></div></div>
+      <div class="sidebar-section">Authoring</div>
+      <div class="sidebar-item">🔨 Course Builder</div>
+      <div class="sidebar-item">📁 Materials</div>
+      <div class="sidebar-section">Assessments</div>
+      <div class="sidebar-item">❓ Question Bank</div>
+      <div class="sidebar-section">Compliance</div>
+      <div class="sidebar-item">📈 Analytics</div>
+      <div class="sidebar-item">📋 Reports</div>
+      <div class="sidebar-item">🏥 CAPA Hub</div>
+      <div class="sidebar-section">Account</div>
+      <div class="sidebar-item">👤 Profile</div>
+      <div style="margin-top:auto;padding:12px 14px;border-top:1px solid var(--bdr)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="wf-avatar" style="width:26px;height:26px;font-size:10px">EC</div>
+          <div>
+            <div style="font-size:11px;font-weight:500">Dr. Emily Chen</div>
+            <div style="font-size:10px;color:var(--ink3)">Subject Matter Expert</div>
+          </div>
+        </div>
+        <div class="autosave" style="margin-top:8px">Auto-saved 1213</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div style="flex:1;padding:16px;background:var(--bg);overflow-y:auto">
+      <!-- SOP banner -->
+      <div class="banner orange" style="margin-bottom:12px">
+        <span class="banner-icon">↻</span>
+        <div><strong>SOP-101 updated to v2.2</strong> — GMP Guidelines retraining required by 15 Apr 2026 for 47 employees in Quality Control · <span style="text-decoration:underline;cursor:pointer">View affected courses</span></div>
+      </div>
+
+      <!-- Page heading + KPI cards -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:18px;font-weight:500;color:var(--color-text-primary)">Trainer Dashboard</div>
+          <div style="font-size:11px;color:var(--ink3)">Dr. Emily Chen · Subject Matter Expert · QC Site A · EMP-2847</div>
+        </div>
+        <button class="btn-primary" onclick="sendPrompt('Show me the TRN-10 Course Builder wireframe for creating a new course')">+ New Course</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+        <div class="stat-card c-em" onclick="sendPrompt('How does the Course Library screen TRN-08 work?')" style="cursor:pointer">
+          <div class="stat-val em">12</div>
+          <div class="stat-lbl">My Courses</div>
+        </div>
+        <div class="stat-card c-amb" onclick="sendPrompt('Show me TRN-14 QA Status Hub wireframe')" style="cursor:pointer">
+          <div class="stat-val amb">3</div>
+          <div class="stat-lbl">Under Review</div>
+        </div>
+        <div class="stat-card c-red" onclick="sendPrompt('What happens when a course needs revision in TRN-14?')" style="cursor:pointer">
+          <div class="stat-val red">2</div>
+          <div class="stat-lbl">Needs Action</div>
+        </div>
+        <div class="stat-card c-blu">
+          <div class="stat-val blu">84%</div>
+          <div class="stat-lbl">Avg Pass Rate</div>
+        </div>
+      </div>
+
+      <!-- My Courses quick table -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:500">My Courses — requires action first</span>
+          <button class="btn-ghost" onclick="sendPrompt('Show me the TRN-08 Course Library wireframe')">View all →</button>
+        </div>
+        <table class="table" style="width:100%">
+          <thead><tr><th>Course</th><th>Version</th><th>Status</th><th>Last updated</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="font-weight:500;font-size:12px">GMP Fundamentals</div><div style="font-size:10px;color:var(--ink3)">SOP-101 GMP Guidelines</div></td>
+              <td><span style="font-size:11px;background:var(--blubg);color:var(--blu);padding:1px 6px;border-radius:4px">v2.0</span></td>
+              <td><span class="badge b-revision">⚠ Needs Revision</span></td>
+              <td><span style="font-size:11px;color:var(--ink3)">2 hours ago</span></td>
+              <td><button class="btn-primary" style="font-size:11px;padding:4px 10px" onclick="sendPrompt('Show me TRN-14 QA Status Hub wireframe for a course with needs revision state')">Address Feedback</button></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:500;font-size:12px">Aseptic Technique</div><div style="font-size:10px;color:var(--ink3)">SOP-203 Safety SOP</div></td>
+              <td><span style="font-size:11px;background:var(--blubg);color:var(--blu);padding:1px 6px;border-radius:4px">v1.1</span></td>
+              <td><span class="badge b-review">⏳ Under Review</span></td>
+              <td><span style="font-size:11px;color:var(--ink3)">1 day ago</span></td>
+              <td><button class="btn-secondary" style="font-size:11px;padding:4px 10px">View</button></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:500;font-size:12px">Quality Control Basics</div><div style="font-size:10px;color:var(--ink3)">SOP-445 QC Procedures</div></td>
+              <td><span style="font-size:11px;background:var(--blubg);color:var(--blu);padding:1px 6px;border-radius:4px">v1.0</span></td>
+              <td><span class="badge b-approved">✓ QA Approved</span></td>
+              <td><span style="font-size:11px;color:var(--ink3)">3 days ago</span></td>
+              <td><button class="btn-secondary" style="font-size:11px;padding:4px 10px">Analytics</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- QA Review Panel -->
+      <div class="card" style="background:var(--ambbg);border-color:#FDE68A">
+        <div style="font-size:12px;font-weight:500;color:var(--amb);margin-bottom:8px">⚠ QA Review Panel — awaiting your response</div>
+        <div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #FDE68A">
+          <div style="display:flex;justify-content:space-between;align-items:start">
+            <div>
+              <div style="font-size:12px;font-weight:500">GMP Fundamentals v2.0</div>
+              <div style="font-size:11px;color:var(--ink3);margin-top:2px">Reviewed by John Dawes · Compliance Officer · 6 hours ago</div>
+              <div style="font-size:11px;color:var(--amb);margin-top:4px">Major: Section 3 — answer explanation missing regulatory citation. Minor: Quiz timer too short for question complexity.</div>
+            </div>
+            <button class="btn-primary" style="white-space:nowrap;font-size:11px" onclick="sendPrompt('Show me TRN-14 QA Status Hub wireframe for course returned for changes')">Fix Issues (3)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right context panel -->
+    <div style="width:168px;flex-shrink:0;border-left:1px solid var(--bdr);padding:12px;background:var(--color-background-primary,#fff)">
+      <div style="text-align:center;margin-bottom:12px">
+        <div class="wf-avatar" style="width:44px;height:44px;font-size:16px;font-weight:600;margin:0 auto 6px">EC</div>
+        <div style="font-size:11px;font-weight:500">Dr. Emily Chen</div>
+        <div style="font-size:10px;color:var(--ink3)">Subject Matter Expert</div>
+      </div>
+      <!-- Mini calendar -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4);margin-bottom:6px">March 2026</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:9px;text-align:center">
+        <div style="color:var(--ink4);padding:2px">S</div><div style="color:var(--ink4);padding:2px">M</div><div style="color:var(--ink4);padding:2px">T</div><div style="color:var(--ink4);padding:2px">W</div><div style="color:var(--ink4);padding:2px">T</div><div style="color:var(--ink4);padding:2px">F</div><div style="color:var(--ink4);padding:2px">S</div>
+        <div style="color:var(--ink3);padding:2px">1</div><div style="color:var(--ink3);padding:2px">2</div><div style="color:var(--ink3);padding:2px">3</div><div style="color:var(--ink3);padding:2px">4</div><div style="color:var(--ink3);padding:2px">5</div><div style="color:var(--ink3);padding:2px">6</div><div style="color:var(--ink3);padding:2px">7</div>
+        <div style="color:var(--ink3);padding:2px">8</div><div style="color:var(--ink3);padding:2px">9</div><div style="color:var(--ink3);padding:2px">10</div><div style="color:var(--ink3);padding:2px">11</div><div style="color:var(--ink3);padding:2px">12</div><div style="color:var(--ink3);padding:2px">13</div><div style="color:var(--ink3);padding:2px">14</div>
+        <div style="color:var(--ink3);padding:2px">15</div><div style="background:var(--em);color:#fff;border-radius:50%;padding:2px;font-weight:600">16</div><div style="color:var(--ink3);padding:2px">17</div><div style="color:var(--ink3);padding:2px">18</div><div style="color:var(--ink3);padding:2px">19</div><div style="color:var(--ink3);padding:2px">20</div><div style="color:var(--ink3);padding:2px">21</div>
+      </div>
+      <div style="border-top:1px solid var(--bdr);margin-top:12px;padding-top:10px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4);margin-bottom:6px">Version History</div>
+        <div style="font-size:10px;color:var(--ink3)">v2.0 Draft · today</div>
+        <div style="font-size:10px;color:var(--ink3)">v1.1 Published · Mar 10</div>
+        <div style="font-size:10px;color:var(--ink3)">v1.0 Published · Feb 14</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WIREFRAME: COURSE BUILDER ══════════ -->
+<div id="pane-wf2" class="pane">
+  <div class="section-head" style="margin-bottom:4px">TRN-10 — Course Builder (Details, Structure & Lessons)</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:14px">Odoo-style dual-panel · drag-drop module/lesson tree · lesson config panel · preview as employee · autosave · draft history</div>
+
+  <!-- Header -->
+  <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:11px;color:var(--ink3)">My Courses <span style="color:var(--ink4)">›</span> <span style="color:var(--ink2);font-weight:500">GMP Fundamentals</span> <span style="color:var(--ink4)">›</span> Builder</div>
+    <div style="flex:1"></div>
+    <div class="stepper">
+      <div class="step done">✏ Draft</div>
+      <div class="step-arrow">›</div>
+      <div class="step future" style="font-size:10px">👤 Under Review</div>
+      <div class="step-arrow">›</div>
+      <div class="step future" style="font-size:10px">✓ QA Approved</div>
+    </div>
+    <button class="btn-secondary" style="font-size:11px;padding:5px 10px" onclick="sendPrompt('How does Preview as Employee work in the Pharma LMS trainer portal?')">👁 Preview as Employee</button>
+    <button class="btn-primary" style="font-size:11px" onclick="sendPrompt('Show me TRN-13 Course Submission and Completeness Check wireframe')">Submit for QA →</button>
+  </div>
+
+  <!-- Builder tabs -->
+  <div class="wf-tabs" style="border-left:1px solid var(--bdr);border-right:1px solid var(--bdr)">
+    <div class="wf-tab act">📝 Course Details</div>
+    <div class="wf-tab">🗂 Modules</div>
+    <div class="wf-tab">📄 Lessons</div>
+    <div class="wf-tab">📎 Materials</div>
+    <div class="wf-tab">❓ Assessment</div>
+    <div class="wf-tab">⚙ Advanced</div>
+  </div>
+
+  <div style="display:flex;border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;min-height:480px">
+    <!-- Left panel: module/lesson tree -->
+    <div style="width:200px;flex-shrink:0;border-right:1px solid var(--bdr);padding:10px;background:var(--color-background-primary,#fff)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4);margin-bottom:8px;padding:0 2px">Course Structure</div>
+      <div style="font-size:11px;font-weight:500;color:var(--ink2);padding:4px 6px;margin-bottom:4px;background:var(--em2);border-radius:6px;display:flex;align-items:center;gap:4px">
+        <span style="font-size:10px;color:var(--em)">◆</span> GMP Fundamentals
+      </div>
+      <div style="font-size:10px;color:var(--ink3);padding:2px 6px;margin-bottom:6px">DRAFT · v2.0</div>
+      <!-- Module 1 -->
+      <div class="module-item">
+        <div class="module-header">
+          <span class="drag-handle">⠿</span>
+          <span style="width:16px;height:16px;background:var(--em2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--em);flex-shrink:0">1</span>
+          <span style="font-size:11px">Introduction</span>
+          <span style="color:var(--em);font-size:10px;margin-left:auto">▾</span>
+        </div>
+        <div class="module-body">
+          <div class="lesson-item selected">
+            <div class="lesson-icon pdf">PDF</div>
+            <div>
+              <div style="font-size:11px;color:var(--em4);font-weight:500">GMP Overview</div>
+              <div style="font-size:10px;color:var(--ink3)">15 min · min 10 min</div>
+            </div>
+          </div>
+          <div class="lesson-item">
+            <div class="lesson-icon vid">▶</div>
+            <div>
+              <div style="font-size:11px;color:var(--ink2)">GMP Guidelines</div>
+              <div style="font-size:10px;color:var(--ink3)">20 min · min 15 min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Module 2 -->
+      <div class="module-item">
+        <div class="module-header">
+          <span class="drag-handle">⠿</span>
+          <span style="width:16px;height:16px;background:var(--bg2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink3);flex-shrink:0">2</span>
+          <span style="font-size:11px">Safety SOP</span>
+          <span style="color:var(--ink4);font-size:10px;margin-left:auto">▸</span>
+        </div>
+      </div>
+      <!-- Module 3 -->
+      <div class="module-item">
+        <div class="module-header">
+          <span class="drag-handle">⠿</span>
+          <span style="width:16px;height:16px;background:var(--bg2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink3);flex-shrink:0">3</span>
+          <span style="font-size:11px">Quality Control</span>
+          <span style="color:var(--ink4);font-size:10px;margin-left:auto">▸</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-ghost" style="font-size:11px">+ Module</button>
+        <button class="btn-ghost" style="font-size:11px">+ Lesson</button>
+      </div>
+      <div style="border-top:1px solid var(--bdr);margin-top:10px;padding-top:8px">
+        <div class="autosave">Auto-saved 23s ago</div>
+      </div>
+    </div>
+
+    <!-- Centre panel: lesson config -->
+    <div style="flex:1;padding:16px;background:var(--bg)">
+      <div style="font-size:13px;font-weight:500;margin-bottom:14px;color:var(--color-text-primary)">Lesson: GMP Overview</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+          <div class="field-label">Title</div>
+          <input class="field-input" value="Lesson 1: GMP Overview" style="font-size:12px">
+        </div>
+        <div>
+          <div class="field-label">Lesson Type</div>
+          <select class="field-input" style="font-size:12px">
+            <option>PDF</option><option>Video</option><option>SCORM</option><option>HTML5</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Estimated Duration</div>
+          <div style="display:flex;gap:6px">
+            <input class="field-input" value="15" style="width:60px;font-size:12px">
+            <select class="field-input" style="font-size:12px;width:80px"><option>minutes</option></select>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">Min. Engagement Time (enforced)</div>
+          <select class="field-input" style="font-size:12px">
+            <option>10 minutes (600s)</option>
+            <option selected>15 minutes (900s)</option>
+            <option>20 minutes (1200s)</option>
+            <option>30 minutes (1800s)</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="field-label">Prerequisites</div>
+        <select class="field-input" style="font-size:12px">
+          <option>None Required</option>
+          <option>Lesson 0: Course Introduction</option>
+        </select>
+      </div>
+      <!-- Compliance notice -->
+      <div class="banner blue" style="font-size:11px">
+        <span class="banner-icon">ℹ</span>
+        <div><strong>21 CFR Part 11:</strong> Minimum time tracked server-side. Timer pauses on tab blur and 30s inactivity. Heartbeat events stored in MaterialProgress every 10 seconds. Next button locked until server confirms engagement.</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-danger" style="font-size:11px">Delete Lesson</button>
+        <div style="flex:1"></div>
+        <button class="btn-secondary" style="font-size:11px">Lesson Session →</button>
+        <button class="btn-primary" style="font-size:11px">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- Right context panel -->
+    <div style="width:160px;flex-shrink:0;border-left:1px solid var(--bdr);padding:12px;background:var(--color-background-primary,#fff)">
+      <div style="text-align:center;margin-bottom:10px">
+        <div class="wf-avatar" style="width:40px;height:40px;font-size:14px;font-weight:600;margin:0 auto 4px">EC</div>
+        <div style="font-size:11px;font-weight:500">Dr. Emily Chen</div>
+        <div style="font-size:10px;color:var(--ink3)">Subject Matter Expert</div>
+      </div>
+      <div style="border-top:1px solid var(--bdr);padding-top:10px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4)">Version History</div>
+          <button class="btn-ghost" style="font-size:10px">▾</button>
+        </div>
+        <div style="font-size:10px;color:var(--em4);font-weight:500">v2.0 Draft · now</div>
+        <div style="font-size:10px;color:var(--ink3)">v1.1 · Mar 10, 2026</div>
+        <div style="font-size:10px;color:var(--ink3)">v1.0 · Feb 14, 2026</div>
+      </div>
+      <button class="btn-primary" style="width:100%;font-size:11px;margin-bottom:6px">Save Draft</button>
+      <button class="btn-secondary" style="width:100%;font-size:11px" onclick="sendPrompt('Show me the Draft History slide-over feature in TRN-10 Course Builder')">Draft History</button>
+      <div class="autosave" style="margin-top:8px;font-size:10px">Auto-saved 23s ago</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WIREFRAME: ASSESSMENT BUILDER ══════════ -->
+<div id="pane-wf3" class="pane">
+  <div class="section-head" style="margin-bottom:4px">TRN-12 — Assessment Builder</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:14px">All 10 original assessment screens consolidated · dual-panel (question bank + configuration) · MCQ/T-F/Multi-Select · AI question generation · pool validation · lock state</div>
+
+  <!-- Header -->
+  <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px">
+    <div style="font-size:11px;color:var(--ink3)">My Courses <span style="color:var(--ink4)">›</span> <span style="color:var(--ink2);font-weight:500">GMP Fundamentals</span> <span style="color:var(--ink4)">›</span> Assessment</div>
+    <div style="flex:1"></div>
+    <div class="stepper">
+      <div class="step done" style="font-size:10px">✏ Draft</div>
+      <div class="step-arrow">›</div>
+      <div class="step active" style="font-size:10px">👤 Under Review</div>
+      <div class="step-arrow">›</div>
+      <div class="step future" style="font-size:10px">✓ QA Approved</div>
+    </div>
+  </div>
+
+  <!-- Lock banner (under review state) -->
+  <div class="banner amber" style="border-radius:0;border-left:none;border-right:none;border:none;border-top:1px solid #FDE68A;border-bottom:1px solid #FDE68A;padding:8px 14px">
+    <span class="banner-icon">🔒</span>
+    <div><strong>Assessment Locked</strong> — This assessment is under QA review and cannot be edited. Server returns 403 on write attempts. <span style="text-decoration:underline;cursor:pointer" onclick="sendPrompt('Explain the 21 CFR Part 11 immutability requirement for assessment locking')">Why is this locked?</span></div>
+  </div>
+
+  <div style="display:flex;border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;min-height:500px">
+    <!-- LEFT PANEL: Question Bank -->
+    <div style="width:340px;flex-shrink:0;border-right:1px solid var(--bdr);padding:12px;background:var(--color-background-primary,#fff)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:500">Question Bank</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-secondary" style="font-size:10px;padding:4px 8px;opacity:.5;cursor:not-allowed">+ Add Question</button>
+          <button class="btn-secondary" style="font-size:10px;padding:4px 8px;opacity:.5;cursor:not-allowed" onclick="sendPrompt('Show me the AI question generation feature TRN-07 for Pharma LMS')">✦ AI Generate</button>
+        </div>
+      </div>
+
+      <!-- Pool requirement indicator -->
+      <div class="pool-indicator pool-ok" style="margin-bottom:8px">
+        ✓ Pool requirement: ≥20 questions. You have 24. COMPLIANT (2.4×)
+      </div>
+
+      <!-- Search + filters -->
+      <input class="field-input" placeholder="🔍 Search question bank..." style="font-size:11px;margin-bottom:6px">
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:10px;background:var(--em2);color:var(--em4);padding:2px 8px;border-radius:20px;cursor:pointer;font-weight:500">GMP</span>
+        <span style="font-size:10px;background:var(--bg2);color:var(--ink3);padding:2px 8px;border-radius:20px;cursor:pointer">GDP</span>
+        <span style="font-size:10px;background:var(--bg2);color:var(--ink3);padding:2px 8px;border-radius:20px;cursor:pointer">Safety</span>
+        <span style="font-size:10px;background:var(--bg2);color:var(--ink3);padding:2px 8px;border-radius:20px;cursor:pointer">SOP</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:10px;color:var(--ink3)">
+        <span>Active: <strong style="color:var(--em4)">24</strong> · Draft: 3 · Total: 27</span>
+        <select style="font-size:10px;border:none;background:none;color:var(--ink3);cursor:pointer"><option>Newest First</option></select>
+      </div>
+
+      <!-- Question rows -->
+      <div class="q-item selected">
+        <input type="checkbox" checked style="flex-shrink:0;margin-top:2px">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:3px">What does GMP stand for?</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="diff-easy">Easy</span>
+            <span class="type-mcq">MCQ</span>
+            <span style="font-size:10px;background:var(--bg2);color:var(--ink3);padding:1px 6px;border-radius:4px">GMP</span>
+          </div>
+        </div>
+        <span style="font-size:10px;color:var(--ink3)">v1.1</span>
+      </div>
+      <div class="q-item">
+        <input type="checkbox" style="flex-shrink:0;margin-top:2px">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:3px">Which of the following is NOT a principle of GMP?</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="diff-med">Medium</span>
+            <span class="type-mcq">MCQ</span>
+            <span style="font-size:10px;background:var(--bg2);color:var(--ink3);padding:1px 6px;border-radius:4px">GMP</span>
+          </div>
+        </div>
+      </div>
+      <div class="q-item">
+        <input type="checkbox" style="flex-shrink:0;margin-top:2px">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:3px">True or False: PPE must be worn in production area.</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="diff-easy">Easy</span>
+            <span class="type-tf">T/F</span>
+            <span style="font-size:10px;background:var(--bg2);color:var(--ink3);padding:1px 6px;border-radius:4px">Safety</span>
+          </div>
+        </div>
+      </div>
+      <div class="q-item">
+        <input type="checkbox" style="flex-shrink:0;margin-top:2px">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:3px">Which documents must be signed after GMP training?</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="diff-hard">Hard</span>
+            <span class="type-ms">Multi</span>
+            <span style="background:var(--purbg);color:var(--pur);font-size:10px;padding:1px 6px;border-radius:4px">✦ AI Generated</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Assessment Config + Summary -->
+    <div style="flex:1;padding:14px;background:var(--bg);overflow-y:auto">
+      <div style="font-size:13px;font-weight:500;margin-bottom:12px">Assessment Configuration</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="card-sm">
+          <div class="field-label">Pass Mark</div>
+          <div style="font-size:22px;font-weight:500;color:var(--em);margin:4px 0">80%</div>
+          <div style="font-size:10px;color:var(--ink3)">Industry standard for GMP</div>
+        </div>
+        <div class="card-sm">
+          <div class="field-label">Time Limit</div>
+          <div style="font-size:22px;font-weight:500;color:var(--ink);margin:4px 0">20 min</div>
+          <div style="font-size:10px;color:var(--ink3)">Auto-submit on expiry</div>
+        </div>
+        <div class="card-sm">
+          <div class="field-label">Questions to Display</div>
+          <div style="font-size:22px;font-weight:500;color:var(--ink);margin:4px 0">10 of 24</div>
+          <div style="font-size:10px;color:var(--em4)">2.4× pool ratio ✓</div>
+        </div>
+        <div class="card-sm">
+          <div class="field-label">Max Attempts</div>
+          <div style="font-size:22px;font-weight:500;color:var(--ink);margin:4px 0">3</div>
+          <div style="font-size:10px;color:var(--ink3)">GMP recommendation</div>
+        </div>
+      </div>
+      <!-- Toggles -->
+      <div class="card-sm" style="margin-bottom:10px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span>Randomise question order</span>
+            <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span>Randomise answer order</span>
+            <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span>Show correct answers after</span>
+            <span style="font-size:11px;color:var(--ink3)">After all attempts</span>
+          </div>
+        </div>
+      </div>
+      <!-- Pool validation callout -->
+      <div class="banner blue" style="font-size:11px">
+        <span>🔒</span>
+        <div><strong>Anti-cheating rule (21 CFR):</strong> Questions displayed must be ≤ pool ÷ 2. With 24 questions and 10 displayed, ratio is 2.4× — COMPLIANT. Enforced server-side at assessment start.</div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:12px;font-weight:500;margin-bottom:8px">Difficulty breakdown</div>
+        <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+          <span style="width:36px;font-size:11px;color:var(--ink3)">Easy</span>
+          <div style="flex:1;height:6px;background:var(--bg2);border-radius:3px"><div style="width:50%;height:100%;background:var(--em);border-radius:3px"></div></div>
+          <span style="font-size:11px;color:var(--ink3);width:28px">50%</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+          <span style="width:36px;font-size:11px;color:var(--ink3)">Med</span>
+          <div style="flex:1;height:6px;background:var(--bg2);border-radius:3px"><div style="width:30%;height:100%;background:var(--amb);border-radius:3px"></div></div>
+          <span style="font-size:11px;color:var(--ink3);width:28px">30%</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="width:36px;font-size:11px;color:var(--ink3)">Hard</span>
+          <div style="flex:1;height:6px;background:var(--bg2);border-radius:3px"><div style="width:20%;height:100%;background:var(--red);border-radius:3px"></div></div>
+          <span style="font-size:11px;color:var(--ink3);width:28px">20%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WIREFRAME: QA WORKFLOW ══════════ -->
+<div id="pane-wf4" class="pane">
+  <div class="section-head" style="margin-bottom:4px">TRN-14 — QA Status & Feedback Hub</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:14px">Status-driven rendering: Under Review · QA Approved · Needs Revision · Rejected — all on one screen</div>
+
+  <!-- State selector -->
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="font-size:11px;color:var(--ink3);display:flex;align-items:center;gap:6px">Simulate state:</div>
+    <button class="btn-secondary" id="s-review" style="font-size:11px;padding:4px 10px" onclick="showQA('review')">Under Review</button>
+    <button class="btn-secondary" id="s-approved" style="font-size:11px;padding:4px 10px" onclick="showQA('approved')">QA Approved</button>
+    <button class="btn-primary" id="s-revision" style="font-size:11px;padding:4px 10px;background:var(--amb)" onclick="showQA('revision')">Needs Revision ← active</button>
+    <button class="btn-secondary" id="s-rejected" style="font-size:11px;padding:4px 10px" onclick="showQA('rejected')">Rejected</button>
+  </div>
+
+  <!-- QA states container -->
+  <div id="qa-state-container">
+    <!-- Needs Revision state (default) -->
+    <div id="qa-revision">
+      <!-- Header -->
+      <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:11px;color:var(--ink3)">My Courses <span style="color:var(--ink4)">›</span> <span style="color:var(--ink2);font-weight:500">GMP Fundamentals</span></div>
+        <div style="flex:1"></div>
+        <div class="stepper">
+          <div class="step done" style="font-size:10px">✏ Draft</div>
+          <div class="step-arrow">›</div>
+          <div class="step done" style="font-size:10px">👤 Under Review</div>
+          <div class="step-arrow">›</div>
+          <div class="step future" style="font-size:10px">✓ QA Approved</div>
+        </div>
+        <span class="badge b-revision" style="font-size:11px">⚠ NEEDS REVISION</span>
+      </div>
+      <!-- Content -->
+      <div style="border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;padding:14px;background:var(--bg)">
+        <div class="banner amber" style="margin-bottom:12px">
+          <span class="banner-icon">⚠</span>
+          <div><strong>QA has returned this course with 3 items requiring your attention.</strong><br><span style="font-size:10px">Reviewed by John Dawes · Compliance Officer · 16 Mar 2026 09:47 UTC</span></div>
+        </div>
+        <!-- Revision cycle -->
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:11px;color:var(--ink3)">
+          <span>Revision cycle: <strong>1</strong></span>
+          <span>·</span>
+          <span>0 of 3 items addressed</span>
+          <div style="flex:1;margin:0 8px">
+            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+          </div>
+          <button class="btn-ghost" style="font-size:11px" onclick="sendPrompt('Show me the QA Annotation Response Tracker slide-over in TRN-14')">Open tracker →</button>
+        </div>
+        <!-- Annotations -->
+        <div style="font-size:12px;font-weight:500;margin-bottom:8px">QA Feedback — 3 annotations</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+          <div style="border-radius:8px;border:1px solid #FDE68A;background:#fff;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+              <div>
+                <span style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Module 1 · Lesson 2: GMP Guidelines</span>
+                <span class="badge" style="background:#FEF2F2;color:var(--red);margin-left:6px">Major</span>
+              </div>
+              <button class="btn-primary" style="font-size:10px;padding:3px 8px" onclick="sendPrompt('How does the Fix This deep-link work in TRN-14 QA feedback?')">Fix This →</button>
+            </div>
+            <div style="font-size:11px;color:var(--ink2)">Answer explanation in Q3 ("Which documents must be signed after GMP training?") does not cite the specific regulatory clause (21 CFR §11.50). Required for QA approval of Critical courses.</div>
+          </div>
+          <div style="border-radius:8px;border:1px solid #FDE68A;background:#fff;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+              <div>
+                <span style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Assessment Configuration</span>
+                <span class="badge" style="background:#FFFBEB;color:var(--amb);margin-left:6px">Minor</span>
+              </div>
+              <button class="btn-primary" style="font-size:10px;padding:3px 8px" onclick="sendPrompt('Show me the TRN-12 Assessment Builder wireframe')">Fix This →</button>
+            </div>
+            <div style="font-size:11px;color:var(--ink2)">Time limit of 20 minutes is insufficient for 10 GMP questions at Medium/Hard difficulty. Recommend 30 minutes minimum per GMP training guidelines.</div>
+          </div>
+          <div style="border-radius:8px;border:1px solid var(--bdr);background:#fff;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+              <div>
+                <span style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ink3)">Module 1 · GMP Overview PDF</span>
+                <span class="badge" style="background:#EFF6FF;color:var(--blu);margin-left:6px">Minor</span>
+              </div>
+              <button class="btn-primary" style="font-size:10px;padding:3px 8px">Fix This →</button>
+            </div>
+            <div style="font-size:11px;color:var(--ink2)">PDF captions/alt text missing for figures on pages 4-6. Accessibility requirement for regulated training content per WCAG 2.1 AA.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" onclick="sendPrompt('Show me TRN-10 Course Builder wireframe for revising a course')">Start Revising →</button>
+          <button class="btn-secondary">View Full QA Review</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main card -->
+
+<script>
+function showPane(id, btn) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function showQA(state) {
+  const container = document.getElementById('qa-state-container');
+  const btns = {
+    review: document.getElementById('s-review'),
+    approved: document.getElementById('s-approved'),
+    revision: document.getElementById('s-revision'),
+    rejected: document.getElementById('s-rejected')
+  };
+  Object.values(btns).forEach(b => {
+    b.className = 'btn-secondary';
+    b.style.fontSize = '11px';
+    b.style.padding = '4px 10px';
+  });
+
+  const labels = {review:'Under Review ← active', approved:'QA Approved ← active', revision:'Needs Revision ← active', rejected:'Rejected ← active'};
+
+  if (state === 'review') {
+    btns.review.className = 'btn-primary'; btns.review.style.background = '#0D9488';
+    btns.review.textContent = labels.review;
+    container.innerHTML = `
+      <div>
+        <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:11px;color:var(--ink3)">My Courses › <strong style="color:var(--ink2)">GMP Fundamentals</strong></div>
+          <div style="flex:1"></div>
+          <span class="badge b-review" style="font-size:11px">⏳ UNDER QA REVIEW</span>
+        </div>
+        <div style="border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;padding:14px;background:var(--bg)">
+          <div class="banner blue">
+            <span class="banner-icon">ℹ</span>
+            <div><strong>Your course is currently being reviewed by the QA team.</strong> Typical review time: 2–5 business days. Submitted 16 Mar 2026 at 09:47 UTC by Dr. Emily Chen.<br><span style="font-size:10px">All editing is disabled while under QA review.</span></div>
+          </div>
+          <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-top:12px">
+            <div style="font-size:12px;font-weight:500;margin-bottom:6px">QA Reviewer assigned</div>
+            <div style="font-size:11px;color:var(--ink3)">Assigned to QA team — 4 QA reviewers can see this submission at Site A.</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:4px">Last activity: Review started by John Dawes · 10 minutes ago</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn-danger" style="font-size:11px" onclick="sendPrompt('What happens when a trainer withdraws a QA submission in TRN-14?')">Withdraw Submission</button>
+            <button class="btn-secondary" style="font-size:11px;margin-left:auto">Notify QA (SLA overdue)</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (state === 'approved') {
+    btns.approved.className = 'btn-primary';
+    btns.approved.textContent = labels.approved;
+    container.innerHTML = `
+      <div>
+        <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:11px;color:var(--ink3)">My Courses › <strong style="color:var(--ink2)">GMP Fundamentals</strong></div>
+          <div style="flex:1"></div>
+          <span class="badge b-approved" style="font-size:11px">✓ QA APPROVED</span>
+        </div>
+        <div style="border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;padding:14px;background:var(--bg)">
+          <div class="banner green">
+            <span class="banner-icon">✓</span>
+            <div><strong>GMP Fundamentals v2.0 has been approved by QA!</strong><br>Approved by John Dawes · Compliance Officer · 16 Mar 2026 11:02 UTC</div>
+          </div>
+          <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin:12px 0">
+            <div style="font-size:12px;font-weight:500;margin-bottom:6px">E-Signature Integrity</div>
+            <div style="background:var(--em2);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--em4)">🔐 HMAC-SHA256 Integrity: VERIFIED · Signature bound to course_version_id:cv-882 · 21 CFR §11.50</div>
+          </div>
+          <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:500;margin-bottom:6px">Next steps</div>
+            <div style="font-size:11px;color:var(--ink2);display:flex;flex-direction:column;gap:4px">
+              <div>1. Training Administrator can now assign this course to employees.</div>
+              <div>2. Employees will see it in their training dashboard.</div>
+              <div>3. You will receive analytics updates as employees complete the course.</div>
+              <div>4. To update content in the future, create a new version.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-primary" onclick="sendPrompt('Show me TRN-15 Version Management for creating a new course version')">Create New Version</button>
+            <button class="btn-secondary" onclick="sendPrompt('Show me TRN-17 Analytics and Reports for a QA approved course')">View Analytics</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (state === 'revision') {
+    btns.revision.className = 'btn-primary'; btns.revision.style.background = 'var(--amb)';
+    btns.revision.textContent = labels.revision;
+    container.innerHTML = document.getElementById('qa-revision')?.innerHTML || '';
+    // restore default content
+    container.innerHTML = `
+      <div id="qa-revision">
+        <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:11px;color:var(--ink3)">My Courses › <strong style="color:var(--ink2)">GMP Fundamentals</strong></div>
+          <div style="flex:1"></div>
+          <span class="badge b-revision" style="font-size:11px">⚠ NEEDS REVISION</span>
+        </div>
+        <div style="border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;padding:14px;background:var(--bg)">
+          <div class="banner amber" style="margin-bottom:12px"><span class="banner-icon">⚠</span><div><strong>QA returned with 3 items requiring attention.</strong><br><span style="font-size:10px">John Dawes · Compliance Officer · 16 Mar 2026</span></div></div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;display:flex;gap:8px;align-items:center">0 of 3 addressed <div style="flex:1"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div></div> <button class="btn-ghost" style="font-size:11px">Tracker →</button></div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+            <div style="border-radius:8px;border:1px solid #FDE68A;background:#fff;padding:10px 12px;display:flex;justify-content:space-between;align-items:start">
+              <div><span style="font-size:10px;font-weight:600;color:var(--ink3)">Module 1 · Lesson 2</span><span class="badge" style="background:#FEF2F2;color:var(--red);margin-left:6px">Major</span><br><span style="font-size:11px">Answer explanation missing 21 CFR §11.50 citation.</span></div>
+              <button class="btn-primary" style="font-size:10px;padding:3px 8px;white-space:nowrap">Fix This →</button>
+            </div>
+            <div style="border-radius:8px;border:1px solid #FDE68A;background:#fff;padding:10px 12px;display:flex;justify-content:space-between;align-items:start">
+              <div><span style="font-size:10px;font-weight:600;color:var(--ink3)">Assessment</span><span class="badge" style="background:#FFFBEB;color:var(--amb);margin-left:6px">Minor</span><br><span style="font-size:11px">Time limit 20min insufficient — recommend 30min.</span></div>
+              <button class="btn-primary" style="font-size:10px;padding:3px 8px;white-space:nowrap">Fix This →</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px"><button class="btn-primary">Start Revising →</button><button class="btn-secondary">View Full QA Review</button></div>
+        </div>
+      </div>`;
+  } else if (state === 'rejected') {
+    btns.rejected.className = 'btn-primary'; btns.rejected.style.background = 'var(--red)';
+    btns.rejected.textContent = labels.rejected;
+    container.innerHTML = `
+      <div>
+        <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:11px;color:var(--ink3)">My Courses › <strong style="color:var(--ink2)">GMP Fundamentals</strong></div>
+          <div style="flex:1"></div>
+          <span class="badge b-rejected" style="font-size:11px">✗ REJECTED</span>
+        </div>
+        <div style="border:1px solid var(--bdr);border-top:none;border-radius:0 0 8px 8px;padding:14px;background:var(--bg)">
+          <div class="banner red"><span class="banner-icon">✗</span><div><strong>This course version has been rejected by QA and cannot be resubmitted.</strong> You must create a new version to address the issues. VERSION 2.0 — REJECTED (permanent).</div></div>
+          <div style="background:var(--color-background-primary,#fff);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin:12px 0">
+            <div style="font-size:12px;font-weight:500;margin-bottom:6px;color:var(--red)">Rejection Reason — John Dawes · 16 Mar 2026</div>
+            <div style="font-size:11px;color:var(--ink2)">This course version contains 4 questions sourced from the AI Generator that have not been reviewed by a Subject Matter Expert. Per QA policy QA-POL-003, AI-generated content >50% of question bank requires dual QA sign-off before publication. The course must be returned to draft and resubmitted after all AI questions are reviewed and annotated with expert sign-off.</div>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:12px">Rejected CourseVersion is permanently locked — immutable historical record under 21 CFR Part 11.</div>
+          <button class="btn-primary" onclick="sendPrompt('Show me TRN-15 Version Management wireframe for creating a new version after rejection')">Create New Version →</button>
+        </div>
+      </div>`;
+  }
+}
+</script>

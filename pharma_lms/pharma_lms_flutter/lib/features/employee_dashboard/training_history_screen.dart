@@ -641,6 +641,26 @@ class _WalletFilterBar extends StatelessWidget {
   }
 }
 
+/// Convert enrollment status to human-readable label
+String _formatStatusLabel(String status) {
+  switch (status) {
+    case 'in_progress':
+      return 'In Progress';
+    case 'not_started':
+      return 'Not Started';
+    case 'completed':
+      return 'Completed';
+    case 'assigned':
+      return 'Assigned';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'overdue':
+      return 'Overdue';
+    default:
+      return status.replaceAll('_', ' ');
+  }
+}
+
 /// Premium credential card. Obsolete: grayscale + diagonal SUPERSEDED watermark (GxP).
 class _CertificateWalletCard extends StatelessWidget {
   const _CertificateWalletCard({
@@ -784,9 +804,7 @@ class _CertificateWalletCard extends StatelessWidget {
                         )
                       else
                         Text(
-                          enrollment.status
-                              .replaceAll('_', ' ')
-                              .toUpperCase(),
+                          _formatStatusLabel(enrollment.status),
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.warning,

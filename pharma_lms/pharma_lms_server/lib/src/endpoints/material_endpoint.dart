@@ -524,4 +524,52 @@ class MaterialEndpoint extends Endpoint {
       ),
     );
   }
+
+  /// Soft-delete material. Rejects if material is used in any active lesson.
+  Future<bool> deleteMaterial(
+    Session session, {
+    required int materialId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'material', action: 'write');
+    
+    final lessons = await Lesson.db.find(
+      session,
+      where: (t) => t.materialId.equals(materialId),
+    );
+    if (lessons.isNotEmpty) {
+      throw Exception('Cannot delete material: used in ${lessons.length} lesson(s)');
+    }
+    
+    final material = await Material.db.findById(session, materialId);
+    if (material == null) throw Exception('Material not found');
+    
+    await Material.db.deleteRow(session, material);
+    return true;
+  }
+
+  /// Get material with all its versions for Version History display.
+  Future<Map<String, dynamic>> getMaterialWithVersions(
+    Session session, {
+    required int materialId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return {};
+    await RbacHelper.requirePermission(session, resource: 'material', action: 'read');
+    
+    final material = await Material.db.findById(session, materialId);
+    if (material == null) throw Exception('Material not found');
+    
+    final versions = await MaterialVersion.db.find(
+      session,
+      where: (t) => t.materialId.equals(materialId),
+      orderBy: (t) => t.version,
+      orderDescending: true,
+    );
+    
+    return {
+      'material': material.toJson(),
+      'versions': versions.map((v) => v.toJson()).toList(),
+      'versionCount': versions.length,
+      'latestVersion': versions.isNotEmpty ? versions.first.version : 0,
+    };
+  }
 }

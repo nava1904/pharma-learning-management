@@ -298,6 +298,25 @@ class TrainingEndpoint extends Endpoint {
     );
   }
 
+  /// Get a training waiver by ID. Returns the waiver only if the current user is the waiver owner (employee view).
+  Future<TrainingWaiver?> getWaiverById(Session session, int waiverId) async {
+    final currentUser = await RbacHelper.getCurrentPharmaUser(session);
+    if (currentUser?.id == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return null;
+    final waiver = await TrainingWaiver.db.findById(
+      session,
+      waiverId,
+      include: TrainingWaiver.include(
+        user: PharmaUser.include(),
+        course: Course.include(),
+        requestedBy: PharmaUser.include(),
+        approvedBy: PharmaUser.include(),
+      ),
+    );
+    if (waiver == null || waiver.userId != currentUser!.id) return null;
+    return waiver;
+  }
+
   /// Get signature with integrity verification. Returns null signature if not found.
   /// integrityViolation is true when HMAC mismatch (tampering detected).
   Future<SignatureVerificationResult> getSignatureWithIntegrityCheck(
@@ -633,6 +652,242 @@ class TrainingEndpoint extends Endpoint {
       action: 'SignatureRevoked',
       newValueJson: '{"reason":"$reason","revokedBySignatureId":${revokingSignature.id}}',
       userId: revoker.id,
+    );
+  }
+
+  /// Self-enrollment for employee-initiated course enrollment.
+  /// Creates a "self" source assignment and associated enrollment.
+  /// Returns the created enrollment.
+  Future<Enrollment> selfEnroll(
+    Session session, {
+    required int userId,
+    required int courseVersionId,
+  }) async {
+    final user = await RbacHelper.getCurrentPharmaUser(session);
+    if (user == null) throw Exception('User not authenticated');
+    if (user.id != userId) throw Exception('Cannot enroll another user');
+
+    // Check if user already has an active enrollment
+    final hasActive = await TrainingAssignmentService.hasActiveEnrollment(
+      session,
+      userId: userId,
+      courseVersionId: courseVersionId,
+    );
+    if (hasActive) {
+      throw Exception('You are already enrolled in this course.');
+    }
+
+    // Create a self-assigned assignment with a default due date of 30 days
+    final dueDate = DateTime.now().add(const Duration(days: 30));
+    final assignment = await TrainingAssignmentService.assign(
+      session,
+      userId: userId,
+      courseVersionId: courseVersionId,
+      assignedById: userId, // Self-assigned
+      dueDate: dueDate,
+      priority: 'medium',
+      reason: 'Self-enrollment via course catalog',
+      source: 'self',
+    );
+
+    // Create the enrollment
+    final enrollment = await TrainingAssignmentService.createEnrollment(
+      session,
+      userId: userId,
+      courseVersionId: courseVersionId,
+      assignmentId: assignment.id!,
+    );
+
+    await AuditService.log(
+      session,
+      entityType: 'enrollment',
+      entityId: enrollment.id.toString(),
+      action: 'SelfEnrolled',
+      newValueJson: '{"courseVersionId":$courseVersionId,"assignmentId":${assignment.id}}',
+      userId: userId,
+    );
+
+    return enrollment;
+  }
+
+  /// Get all enrollments for a specific course version (trainer view).
+  Future<List<Enrollment>> getEnrollmentsForCourseVersion(
+    Session session,
+    int courseVersionId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+    return await Enrollment.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+  }
+
+  /// Get all assignments for a specific course version (trainer view).
+  Future<List<TrainingAssignment>> getAssignmentsForCourseVersion(
+    Session session,
+    int courseVersionId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+    return await TrainingAssignment.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+      include: TrainingAssignment.include(
+        user: PharmaUser.include(),
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+  }
+
+  /// Get all assignments across all courses in an organization (trainer overview).
+  Future<List<TrainingAssignment>> getAllAssignments(
+    Session session, {
+    int? organizationId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+    final assignments = await TrainingAssignment.db.find(
+      session,
+      include: TrainingAssignment.include(
+        user: PharmaUser.include(),
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    if (organizationId != null) {
+      return assignments.where((a) =>
+        a.courseVersion?.course?.organizationId == organizationId
+      ).toList();
+    }
+    return assignments;
+  }
+
+  /// Get training records for a specific course version (for analytics/learner progress).
+  Future<List<TrainingRecord>> getTrainingRecordsForCourseVersion(
+    Session session,
+    int courseVersionId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+    return await TrainingRecord.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+    );
+  }
+
+  /// Get enrollment progress as a fraction: completedLessons / totalLessons.
+  /// Returns a map with keys: completedLessons, totalLessons, progressPct.
+  Future<Map<String, dynamic>> getEnrollmentProgress(
+    Session session,
+    int enrollmentId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) {
+      return {'completedLessons': 0, 'totalLessons': 0, 'progressPct': 0.0};
+    }
+
+    final enrollment = await Enrollment.db.findById(session, enrollmentId);
+    if (enrollment == null) {
+      return {'completedLessons': 0, 'totalLessons': 0, 'progressPct': 0.0};
+    }
+
+    if (enrollment.status == 'completed') {
+      final modules = await Module.db.find(
+        session,
+        where: (t) => t.courseVersionId.equals(enrollment.courseVersionId),
+      );
+      var total = 0;
+      for (final m in modules) {
+        final lessons = await Lesson.db.find(
+          session,
+          where: (t) => t.moduleId.equals(m.id!),
+        );
+        total += lessons.length;
+      }
+      return {'completedLessons': total, 'totalLessons': total, 'progressPct': 100.0};
+    }
+
+    final modules = await Module.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(enrollment.courseVersionId),
+    );
+
+    var totalLessons = 0;
+    var completedLessons = 0;
+    for (final m in modules) {
+      final lessons = await Lesson.db.find(
+        session,
+        where: (t) => t.moduleId.equals(m.id!),
+      );
+      totalLessons += lessons.length;
+      for (final l in lessons) {
+        final progress = await MaterialProgress.db.findFirstRow(
+          session,
+          where: (t) =>
+              t.userId.equals(enrollment.userId) &
+              t.materialId.equals(l.materialId),
+        );
+        if (progress != null && (progress.progressPct ?? 0) >= 100) {
+          completedLessons++;
+        }
+      }
+    }
+
+    final pct = totalLessons > 0 ? (completedLessons / totalLessons * 100.0) : 0.0;
+    return {
+      'completedLessons': completedLessons,
+      'totalLessons': totalLessons,
+      'progressPct': pct,
+    };
+  }
+
+  /// Check if all lessons are completed for a course version by a user.
+  Future<bool> isCourseContentComplete(
+    Session session, {
+    required int userId,
+    required int courseVersionId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return false;
+
+    final modules = await Module.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+    );
+    for (final m in modules) {
+      final lessons = await Lesson.db.find(
+        session,
+        where: (t) => t.moduleId.equals(m.id!),
+      );
+      for (final l in lessons) {
+        final progress = await MaterialProgress.db.findFirstRow(
+          session,
+          where: (t) =>
+              t.userId.equals(userId) &
+              t.materialId.equals(l.materialId),
+        );
+        if (progress == null || (progress.progressPct ?? 0) < 100) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /// Get all certificates for a course version (trainer view).
+  Future<List<Certificate>> getCertificatesForCourseVersion(
+    Session session,
+    int courseVersionId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+    return await Certificate.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+      include: Certificate.include(
+        user: PharmaUser.include(),
+      ),
     );
   }
 }

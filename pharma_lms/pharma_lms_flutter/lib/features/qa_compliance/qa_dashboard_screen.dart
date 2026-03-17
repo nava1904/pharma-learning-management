@@ -35,6 +35,13 @@ final departmentComplianceSummaryProvider = FutureProvider<List<DepartmentCompli
   return await client.analytics.getDepartmentComplianceSummary();
 });
 
+// Compliance drop alert provider - departments below 90% threshold
+final complianceDropAlertsProvider = FutureProvider<List<DepartmentComplianceSummary>>((ref) async {
+  final summary = await client.analytics.getDepartmentComplianceSummary();
+  // Filter departments below 90% compliance (critical threshold)
+  return summary.where((dept) => dept.complianceRate < 90.0).toList();
+});
+
 class QACommandCenterScreen extends ConsumerWidget {
   const QACommandCenterScreen({super.key});
 
@@ -49,10 +56,12 @@ class QACommandCenterScreen extends ConsumerWidget {
           ref.invalidate(slaBreachesProvider);
           ref.invalidate(pendingDocumentApprovalsCountProvider);
           ref.invalidate(pendingCourseVersionsProvider);
+          ref.invalidate(complianceDropAlertsProvider);
         },
         child: CustomScrollView(
           slivers: [
             _buildHeroSliver(context, ref),
+            _buildComplianceDropAlerts(context, ref),
             _buildQuickActionsRow(context),
             _buildPendingCourseReviewsHeader(context),
             _buildPendingCourseReviews(context, ref),
@@ -132,6 +141,111 @@ class QACommandCenterScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildComplianceDropAlerts(BuildContext context, WidgetRef ref) {
+    final alertsAsync = ref.watch(complianceDropAlertsProvider);
+    
+    return alertsAsync.when(
+      data: (alerts) {
+        if (alerts.isEmpty) {
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
+        }
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.destructive.withValues(alpha: 0.1),
+                    AppColors.amber600.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.destructive.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.trending_down,
+                          color: AppColors.destructive,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Compliance Drop Alert',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.destructive,
+                              ),
+                            ),
+                            Text(
+                              '${alerts.length} department(s) below 90% compliance threshold',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.slate600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => context.push('/compliance-report'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.destructive.withValues(alpha: 0.2),
+                        ),
+                        child: const Text('View Report'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: alerts.map((dept) => Chip(
+                      avatar: CircleAvatar(
+                        backgroundColor: dept.complianceRate < 80 
+                            ? AppColors.destructive 
+                            : AppColors.amber600,
+                        child: Text(
+                          '${dept.complianceRate.toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      label: Text(dept.departmentName ?? 'Unknown'),
+                      backgroundColor: dept.complianceRate < 80
+                          ? AppColors.destructive.withValues(alpha: 0.1)
+                          : AppColors.amber600.withValues(alpha: 0.1),
+                    )).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+      error: (e, st) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+    );
+  }
+
   Widget _buildQuickActionsRow(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
@@ -159,6 +273,11 @@ class QACommandCenterScreen extends ConsumerWidget {
                 label: 'Audit Trail',
                 icon: Icons.track_changes,
                 onPressed: () => context.push('/audit-trail'),
+              ),
+              QuickActionButton(
+                label: 'Event Triggers',
+                icon: Icons.bolt,
+                onPressed: () => context.push('/event-triggers'),
               ),
             ],
           ),

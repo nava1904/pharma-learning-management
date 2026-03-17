@@ -76,9 +76,7 @@ class _NewCourseDialogState extends State<NewCourseDialog> {
         createdById: widget.createdById,
       );
 
-      // Parse the returned course from the map
-      final courseJson = result['course'] as Map<String, dynamic>;
-      final course = Course.fromJson(courseJson);
+      final course = result['course'] as Course;
 
       if (mounted) {
         Navigator.of(context).pop(course);

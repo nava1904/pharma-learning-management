@@ -456,7 +456,7 @@ class _InspectionManagementScreenState extends State<InspectionManagementScreen>
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<Organization>(
-                        value: _selectedOrg,
+                        initialValue: _selectedOrg,
                         decoration: InputDecoration(
                           labelText: 'Organization',
                           border: OutlineInputBorder(
@@ -478,7 +478,7 @@ class _InspectionManagementScreenState extends State<InspectionManagementScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<Site>(
-                        value: _selectedSite,
+                        initialValue: _selectedSite,
                         decoration: InputDecoration(
                           labelText: 'Site',
                           border: OutlineInputBorder(
@@ -499,7 +499,7 @@ class _InspectionManagementScreenState extends State<InspectionManagementScreen>
                 const SizedBox(height: 16),
                 // Inspection Type
                 DropdownButtonFormField<String>(
-                  value: _typeController.text,
+                  initialValue: _typeController.text,
                   decoration: InputDecoration(
                     labelText: 'Inspection Type',
                     border:
@@ -548,7 +548,7 @@ class _InspectionManagementScreenState extends State<InspectionManagementScreen>
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: _tokenHours,
+                        initialValue: _tokenHours,
                         decoration: InputDecoration(
                           labelText: 'Token Validity',
                           border: OutlineInputBorder(
@@ -1505,7 +1505,7 @@ class _SignPackageDialogState extends State<_SignPackageDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       contentPadding: EdgeInsets.zero,
-      content: Container(
+      content: SizedBox(
         width: 480,
         child: Column(
           mainAxisSize: MainAxisSize.min,

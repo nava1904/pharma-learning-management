@@ -209,4 +209,63 @@ class AssessmentEndpoint extends Endpoint {
     );
     return await QuestionBank.db.insertRow(session, bank);
   }
+
+  /// Generate a random assessment selection from a question bank using Fisher-Yates shuffle.
+  Future<List<Question>> generateRandomAssessment(
+    Session session, {
+    required int questionBankId,
+    required int count,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'read');
+    
+    final questions = await Question.db.find(
+      session,
+      where: (t) => t.questionBankId.equals(questionBankId),
+    );
+    
+    if (questions.isEmpty) return [];
+    final effectiveCount = count > questions.length ? questions.length : count;
+    
+    // Fisher-Yates shuffle
+    final shuffled = List<Question>.from(questions);
+    final random = DateTime.now().millisecondsSinceEpoch;
+    var seed = random;
+    for (var i = shuffled.length - 1; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      final j = seed % (i + 1);
+      final temp = shuffled[i];
+      shuffled[i] = shuffled[j];
+      shuffled[j] = temp;
+    }
+    
+    return shuffled.take(effectiveCount).toList();
+  }
+
+  /// Bulk import questions into a question bank.
+  Future<List<Question>> importQuestionsToBank(
+    Session session, {
+    required int targetBankId,
+    required List<Map<String, dynamic>> questions,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    
+    final imported = <Question>[];
+    for (final q in questions) {
+      final question = await Question.db.insertRow(
+        session,
+        Question(
+          questionBankId: targetBankId,
+          text: q['text'] as String? ?? '',
+          questionType: q['questionType'] as String? ?? 'multiple_choice',
+          optionsJson: q['optionsJson'] as String? ?? '[]',
+          correctAnswer: q['correctAnswer'] as String? ?? '0',
+          difficulty: q['difficulty'] as String?,
+          regulatoryTag: q['regulatoryTag'] as String?,
+        ),
+      );
+      imported.add(question);
+    }
+    return imported;
+  }
 }

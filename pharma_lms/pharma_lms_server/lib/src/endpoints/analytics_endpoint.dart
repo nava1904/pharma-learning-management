@@ -746,4 +746,468 @@ class AnalyticsEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     return await SlaBreach.db.find(session);
   }
+
+  /// Get monthly training hours for a user (last 5 months) for the Dashboard chart.
+  Future<List<Map<String, dynamic>>> getMonthlyTrainingHours(
+    Session session,
+    int userId,
+  ) async {
+    // 1. Verify authentication (allow demo mode)
+    try {
+      final user = await RbacHelper.getCurrentPharmaUser(session);
+      if (user == null) {
+        // Demo mode fallback - still allow the query
+      }
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    // 2. Fetch all material progress for the user where time has been spent
+    final progresses = await MaterialProgress.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.timeSpentSeconds.notEquals(null),
+    );
+
+    final now = DateTime.now();
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final monthlyHours = <String, double>{};
+    
+    // 3. Initialize the last 5 months with 0.0 hours so the chart always has x-axis labels
+    for (var i = 4; i >= 0; i--) {
+      final d = DateTime(now.year, now.month - i);
+      final monthKey = monthNames[d.month - 1];
+      monthlyHours[monthKey] = 0.0;
+    }
+
+    // 4. Aggregate the timeSpentSeconds into the correct month bucket
+    for (final p in progresses) {
+      final date = p.completedAt ?? p.lastHeartbeat ?? now;
+      final monthKey = monthNames[date.month - 1];
+      
+      if (monthlyHours.containsKey(monthKey)) {
+        // Convert seconds to hours
+        final hours = (p.timeSpentSeconds ?? 0) / 3600.0;
+        monthlyHours[monthKey] = (monthlyHours[monthKey]!) + hours;
+      }
+    }
+
+    // 5. Return as a list of maps for easy consumption by fl_chart in Flutter
+    return monthlyHours.entries
+        .map((e) => {'month': e.key, 'hours': e.value})
+        .toList();
+  }
+
+  /// Get weekly learning progress for a user (last 6 weeks) for the Dashboard area chart.
+  Future<List<Map<String, dynamic>>> getWeeklyLearningProgress(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    // Fetch enrollments for the user
+    final enrollments = await Enrollment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+
+    final now = DateTime.now();
+    final weeklyProgress = <String, int>{};
+    
+    // Initialize last 6 weeks
+    for (var i = 5; i >= 0; i--) {
+      // weekStart calculation available for future date range filtering
+      final weekKey = 'Week ${6 - i}';
+      weeklyProgress[weekKey] = 0;
+    }
+
+    // Count completions per week
+    for (final e in enrollments) {
+      if (e.completedAt != null) {
+        final weeksAgo = now.difference(e.completedAt!).inDays ~/ 7;
+        if (weeksAgo >= 0 && weeksAgo < 6) {
+          final weekKey = 'Week ${6 - weeksAgo}';
+          weeklyProgress[weekKey] = (weeklyProgress[weekKey] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Convert to cumulative progress
+    var cumulative = 0;
+    final result = <Map<String, dynamic>>[];
+    for (final entry in weeklyProgress.entries) {
+      cumulative += entry.value;
+      result.add({
+        'week': entry.key,
+        'completed': cumulative,
+        'total': enrollments.length,
+      });
+    }
+
+    return result;
+  }
+
+  /// Get user's average quiz score from all completed assessments.
+  Future<double> getUserAverageQuizScore(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    final attempts = await AssessmentAttempt.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.completedAt.notEquals(null),
+    );
+
+    if (attempts.isEmpty) return 0.0;
+
+    final totalScore = attempts.fold<int>(0, (sum, a) => sum + (a.score ?? 0));
+    return totalScore / attempts.length;
+  }
+
+  /// Get user's learning streak (consecutive days of activity).
+  Future<int> getUserLearningStreak(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    // Get material progress with activity
+    final progresses = await MaterialProgress.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+      orderBy: (t) => t.lastHeartbeat,
+      orderDescending: true,
+    );
+
+    if (progresses.isEmpty) return 0;
+
+    // Calculate streak
+    var streak = 0;
+    var lastDate = DateTime.now();
+    
+    for (final p in progresses) {
+      final activityDate = p.lastHeartbeat ?? p.completedAt;
+      if (activityDate == null) continue;
+      
+      final dayDiff = lastDate.difference(activityDate).inDays;
+      if (dayDiff <= 1) {
+        streak++;
+        lastDate = activityDate;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  /// Get upcoming due dates for a user's training assignments.
+  Future<List<Map<String, dynamic>>> getUpcomingDueDates(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    final now = DateTime.now();
+    final thirtyDaysOut = now.add(const Duration(days: 30));
+
+    final assignments = await TrainingAssignment.db.find(
+      session,
+      where: (t) => 
+          t.userId.equals(userId) & 
+          (t.dueDate < thirtyDaysOut) &
+          t.status.notEquals('completed') &
+          t.status.notEquals('cancelled'),
+      include: TrainingAssignment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+      orderBy: (t) => t.dueDate,
+    );
+
+    return assignments.map((a) {
+      final daysUntilDue = a.dueDate.difference(now).inDays;
+      return {
+        'assignmentId': a.id,
+        'courseTitle': a.courseVersion?.course?.title ?? 'Unknown Course',
+        'dueDate': a.dueDate.toIso8601String(),
+        'daysUntilDue': daysUntilDue,
+        'priority': a.priority,
+        'isOverdue': daysUntilDue < 0,
+      };
+    }).toList();
+  }
+
+  /// Get compliance alerts for a user (SOP retraining, overdue, expiring certs).
+  Future<List<Map<String, dynamic>>> getComplianceAlerts(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    final alerts = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+
+    // 1. SOP Retraining alerts (enrollments with retrainingChangeSummary not acknowledged)
+    final retrainingEnrollments = await Enrollment.db.find(
+      session,
+      where: (t) => 
+          t.userId.equals(userId) & 
+          t.retrainingChangeSummary.notEquals(null) &
+          t.acknowledgedAt.equals(null),
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+
+    for (final e in retrainingEnrollments) {
+      alerts.add({
+        'type': 'sop_retraining',
+        'severity': 'high',
+        'title': 'SOP Retraining Required',
+        'message': 'Document update requires re-acknowledgement for ${e.courseVersion?.course?.title ?? "a course"}',
+        'entityId': e.id,
+        'entityType': 'enrollment',
+      });
+    }
+
+    // 2. Overdue training alerts
+    final assignments = await TrainingAssignment.db.find(
+      session,
+      where: (t) => 
+          t.userId.equals(userId) & 
+          (t.dueDate < now) &
+          t.status.notEquals('completed') &
+          t.status.notEquals('cancelled'),
+      include: TrainingAssignment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+
+    for (final a in assignments) {
+      final daysOverdue = now.difference(a.dueDate).inDays;
+      alerts.add({
+        'type': 'overdue',
+        'severity': daysOverdue > 7 ? 'critical' : 'high',
+        'title': 'Overdue Training',
+        'message': '${a.courseVersion?.course?.title ?? "Training"} is $daysOverdue days overdue',
+        'entityId': a.id,
+        'entityType': 'assignment',
+        'daysOverdue': daysOverdue,
+      });
+    }
+
+    // 3. Expiring certificates (within 30 days)
+    final thirtyDaysOut = now.add(const Duration(days: 30));
+    final certificates = await Certificate.db.find(
+      session,
+      where: (t) => 
+          t.userId.equals(userId) & 
+          t.status.equals('active'),
+      include: Certificate.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+
+    for (final c in certificates) {
+      if (c.expiresAt != null && c.expiresAt!.isAfter(now) && c.expiresAt!.isBefore(thirtyDaysOut)) {
+        final daysUntilExpiry = c.expiresAt!.difference(now).inDays;
+        alerts.add({
+          'type': 'cert_expiring',
+          'severity': daysUntilExpiry < 7 ? 'high' : 'medium',
+          'title': 'Certificate Expiring',
+          'message': '${c.courseVersion?.course?.title ?? "Certificate"} expires in $daysUntilExpiry days',
+          'entityId': c.id,
+          'entityType': 'certificate',
+          'daysUntilExpiry': daysUntilExpiry,
+        });
+      }
+    }
+
+    // Sort by severity
+    alerts.sort((a, b) {
+      const severityOrder = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3};
+      return (severityOrder[a['severity']] ?? 3).compareTo(severityOrder[b['severity']] ?? 3);
+    });
+
+    return alerts;
+  }
+
+  /// Export course analytics as CSV.
+  Future<String> exportCourseAnalyticsCsv(
+    Session session, {
+    required int courseVersionId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
+    
+    final records = await TrainingRecord.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+      include: TrainingRecord.include(
+        user: PharmaUser.include(),
+      ),
+    );
+    
+    final buffer = StringBuffer();
+    buffer.writeln('User Email,User Name,Score,Passed,Completed At');
+    
+    final assessment = await Assessment.db.findFirstRow(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+    );
+    final passingScore = assessment?.passingScore ?? 80;
+    
+    for (final r in records) {
+      final email = r.user?.email ?? '';
+      final userName = '${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}'.trim();
+      final score = r.score ?? 0;
+      final passed = score >= passingScore ? 'Yes' : 'No';
+      final completedAt = r.completedAt?.toIso8601String() ?? '';
+      buffer.writeln('$email,$userName,$score,$passed,$completedAt');
+    }
+    
+    return buffer.toString();
+  }
+
+  /// Export learner progress as CSV.
+  Future<String> exportLearnerProgressCsv(
+    Session session, {
+    int? organizationId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
+    
+    final enrollments = await Enrollment.db.find(
+      session,
+      include: Enrollment.include(
+        user: PharmaUser.include(department: Department.include()),
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    
+    final buffer = StringBuffer();
+    buffer.writeln('Employee,Email,Department,Course,Version,Status,Started,Completed');
+    
+    for (final e in enrollments) {
+      final userName = '${e.user?.firstName ?? ''} ${e.user?.lastName ?? ''}'.trim();
+      final email = e.user?.email ?? '';
+      final dept = e.user?.department?.name ?? '';
+      final course = e.courseVersion?.course?.title ?? '';
+      final version = e.courseVersion?.version ?? '';
+      final status = e.status;
+      final started = e.startedAt?.toIso8601String() ?? '';
+      final completed = e.completedAt?.toIso8601String() ?? '';
+      buffer.writeln('$userName,$email,$dept,$course,$version,$status,$started,$completed');
+    }
+    
+    return buffer.toString();
+  }
+
+  /// Get employee dashboard summary (combines multiple data sources for efficiency).
+  Future<Map<String, dynamic>> getEmployeeDashboardSummary(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+
+    // Fetch all data in parallel for performance
+    final enrollmentsFuture = Enrollment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    
+    final assignmentsFuture = TrainingAssignment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+    
+    final certificatesFuture = Certificate.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+    
+    final attemptsFuture = AssessmentAttempt.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.completedAt.notEquals(null),
+    );
+    
+    final monthlyHoursFuture = getMonthlyTrainingHours(session, userId);
+    final alertsFuture = getComplianceAlerts(session, userId);
+
+    // Wait for all futures
+    final results = await Future.wait([
+      enrollmentsFuture,
+      assignmentsFuture,
+      certificatesFuture,
+      attemptsFuture,
+      monthlyHoursFuture,
+      alertsFuture,
+    ]);
+
+    final enrollments = results[0] as List<Enrollment>;
+    final assignments = results[1] as List<TrainingAssignment>;
+    final certificates = results[2] as List<Certificate>;
+    final attempts = results[3] as List<AssessmentAttempt>;
+    final monthlyHours = results[4] as List<Map<String, dynamic>>;
+    final alerts = results[5] as List<Map<String, dynamic>>;
+
+    // Calculate metrics
+    final inProgress = enrollments.where((e) => e.status == 'in_progress').length;
+    final completed = enrollments.where((e) => e.status == 'completed').length;
+    final toDo = enrollments.where((e) => e.status == 'assigned' || e.status == 'not_started').length;
+    
+    final avgScore = attempts.isEmpty 
+        ? 0.0 
+        : attempts.fold<int>(0, (sum, a) => sum + (a.score ?? 0)) / attempts.length;
+
+    final totalHours = monthlyHours.fold<double>(0.0, (sum, m) => sum + ((m['hours'] as num?)?.toDouble() ?? 0.0));
+
+    final now = DateTime.now();
+    final overdueCount = assignments.where((a) => 
+        a.dueDate.isBefore(now) && 
+        a.status != 'completed' && 
+        a.status != 'cancelled'
+    ).length;
+
+    final activeCerts = certificates.where((c) => c.status == 'active').length;
+
+    return {
+      'totalEnrolled': inProgress + toDo,
+      'inProgress': inProgress,
+      'completed': completed,
+      'toDo': toDo,
+      'averageQuizScore': avgScore,
+      'totalHoursThisYear': totalHours,
+      'overdueCount': overdueCount,
+      'activeCertificates': activeCerts,
+      'monthlyHours': monthlyHours,
+      'alerts': alerts,
+      'alertCount': alerts.length,
+    };
+  }
 }

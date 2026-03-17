@@ -222,7 +222,7 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen>
       description: _modules.isEmpty
           ? 'No modules created yet'
           : allModulesHaveLessons
-              ? '${_modules.length} module(s) with ${_totalLessons} lesson(s) total'
+              ? '${_modules.length} module(s) with $_totalLessons lesson(s) total'
               : 'Missing lessons in: ${modulesWithoutLessons.join(", ")}',
       passed: _modules.isNotEmpty && allModulesHaveLessons,
       icon: Icons.view_module_outlined,
@@ -245,7 +245,7 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen>
       description: _totalLessons == 0
           ? 'No lessons created yet'
           : allLessonsHaveMaterial
-              ? 'All ${_totalLessons} lesson(s) have content attached'
+              ? 'All $_totalLessons lesson(s) have content attached'
               : 'Missing material in: ${lessonsWithoutMaterial.take(3).join(", ")}${lessonsWithoutMaterial.length > 3 ? " (+${lessonsWithoutMaterial.length - 3} more)" : ""}',
       passed: _totalLessons > 0 && allLessonsHaveMaterial,
       icon: Icons.attach_file,
@@ -373,17 +373,16 @@ class _CourseBuilderScreenState extends State<CourseBuilderScreen>
       Navigator.of(context).pop(); // Close loading dialog
       
       // Convert backend validation results to UI format
-      final validationResults = validation['validationResults'] as List<dynamic>;
-      final rules = validationResults.map((r) => _ValidationRule(
-        title: r['rule'] as String,
-        description: r['detail'] as String,
-        passed: r['passed'] as bool,
-        icon: _getIconForRule(r['rule'] as String),
-        subtitle: r['description'] as String?,
+      final rules = validation.validationResults.map((r) => _ValidationRule(
+        title: r.rule,
+        description: r.detail,
+        passed: r.passed,
+        icon: _getIconForRule(r.rule),
+        subtitle: r.description,
       )).toList();
       
-      final allPass = validation['allPassed'] as bool;
-      final passedCount = validation['passedCount'] as int;
+      final allPass = validation.allPassed;
+      final passedCount = validation.passedCount;
       
       // Show Odoo-style modal bottom sheet with validation results
       final proceed = await showModalBottomSheet<bool>(

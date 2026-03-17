@@ -149,4 +149,50 @@ class AuditEndpoint extends Endpoint {
 
     return results.take(limit).toList();
   }
+
+  /// Export audit trail as CSV string. Logs the export per 21 CFR Part 11.
+  Future<String> exportAuditCsv(
+    Session session, {
+    String? entityType,
+    int? userId,
+    DateTime? from,
+    DateTime? to,
+    int limit = 1000,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'audit', action: 'read');
+    
+    final trails = await getAuditTrail(
+      session,
+      entityType: entityType,
+      userId: userId,
+      from: from,
+      to: to,
+      limit: limit,
+    );
+    
+    final buffer = StringBuffer();
+    buffer.writeln('Timestamp,Entity Type,Entity ID,Action,User ID,Reason,IP Address,Row Hash');
+    
+    for (final t in trails) {
+      final ts = t.timestamp.toIso8601String();
+      final et = t.entityType.replaceAll(',', ';');
+      final eid = t.entityId.replaceAll(',', ';');
+      final act = t.action.replaceAll(',', ';');
+      final uid = t.userId?.toString() ?? '';
+      final reason = (t.reason ?? '').replaceAll(',', ';').replaceAll('\n', ' ');
+      final ip = t.ipAddress ?? '';
+      final hash = t.rowHash ?? '';
+      buffer.writeln('$ts,$et,$eid,$act,$uid,$reason,$ip,$hash');
+    }
+    
+    await logReportExport(
+      session,
+      reportType: 'audit_trail_csv',
+      hashSha256: 'csv-export-${DateTime.now().millisecondsSinceEpoch}',
+      filterParamsJson: '{"entityType":"$entityType","userId":$userId,"limit":$limit}',
+      recordCount: trails.length,
+    );
+    
+    return buffer.toString();
+  }
 }

@@ -67,7 +67,7 @@ class MyLearningScreen extends ConsumerWidget {
                         status: item.status,
                         onTap: () {
                           context.push(
-                            '/course/${item.courseId}',
+                            '/employee/course/${item.courseId}',
                             extra: {
                               'courseVersionId': item.courseVersionId,
                               'enrollmentId': item.enrollmentId,
@@ -124,7 +124,7 @@ Future<List<_LearningItem>> _buildLearningItems(
         .firstOrNull;
     double? progress;
     if (enrollment != null) {
-      final records = await client.training.getTrainingRecordsForUser(a.userId ?? 0);
+      final records = await client.training.getTrainingRecordsForUser(a.userId);
       final completed = records.any((r) =>
           r.courseVersionId == a.courseVersionId);
       progress = completed ? 1.0 : 0.0;
@@ -153,7 +153,7 @@ Future<List<_LearningItem>> _buildLearningItems(
       title: version?.course?.title ?? 'Course',
       subtitle: 'In progress',
       progress: e.status == 'completed' ? 1.0 : 0.0,
-      status: e.status ?? 'in_progress',
+      status: e.status,
     ));
   }
 

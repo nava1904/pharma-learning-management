@@ -45,129 +45,139 @@ import 'course/competency.dart' as _i32;
 import 'course/course.dart' as _i33;
 import 'course/course_competency.dart' as _i34;
 import 'course/course_review.dart' as _i35;
-import 'course/course_version.dart' as _i36;
-import 'course/lesson.dart' as _i37;
-import 'course/module.dart' as _i38;
-import 'course/user_competency.dart' as _i39;
-import 'document/approval_workflow.dart' as _i40;
-import 'document/document.dart' as _i41;
-import 'document/document_lifecycle.dart' as _i42;
-import 'document/document_version.dart' as _i43;
-import 'events/dead_letter_queue.dart' as _i44;
-import 'events/domain_event.dart' as _i45;
-import 'events/outbox_message.dart' as _i46;
-import 'greetings/greeting.dart' as _i47;
-import 'infrastructure/audit_integrity_result.dart' as _i48;
-import 'infrastructure/feature_flag.dart' as _i49;
-import 'infrastructure/retention_archive.dart' as _i50;
-import 'infrastructure/retention_policy.dart' as _i51;
-import 'infrastructure/scheduled_job_log.dart' as _i52;
-import 'infrastructure/system_configuration.dart' as _i53;
-import 'material/material.dart' as _i54;
-import 'material/material_progress.dart' as _i55;
-import 'material/material_version.dart' as _i56;
-import 'material/media_asset.dart' as _i57;
-import 'mfa/mfa_enroll_result.dart' as _i58;
-import 'mfa/mfa_status_result.dart' as _i59;
-import 'mfa/mfa_verified_session.dart' as _i60;
-import 'mfa/user_mfa.dart' as _i61;
-import 'notifications/in_app_notification.dart' as _i62;
-import 'notifications/notification.dart' as _i63;
-import 'notifications/notification_log.dart' as _i64;
-import 'organization/department.dart' as _i65;
-import 'organization/job_role.dart' as _i66;
-import 'organization/organization.dart' as _i67;
-import 'organization/permission.dart' as _i68;
-import 'organization/role.dart' as _i69;
-import 'organization/site.dart' as _i70;
-import 'organization/user.dart' as _i71;
-import 'organization/user_role.dart' as _i72;
-import 'quality/capa.dart' as _i73;
-import 'quality/change_control.dart' as _i74;
-import 'quality/inspection_report.dart' as _i75;
-import 'quality/quality_event.dart' as _i76;
-import 'security/abac_policy.dart' as _i77;
-import 'security/delegated_authority.dart' as _i78;
-import 'shared/electronic_signature.dart' as _i79;
-import 'shared/signature_meaning.dart' as _i80;
-import 'shared/signature_verification_result.dart' as _i81;
-import 'training/certificate.dart' as _i82;
-import 'training/enrollment.dart' as _i83;
-import 'training/training_assignment.dart' as _i84;
-import 'training/training_expiration.dart' as _i85;
-import 'training/training_matrix.dart' as _i86;
-import 'training/training_record.dart' as _i87;
-import 'training/training_record_annotation.dart' as _i88;
-import 'training/training_waiver.dart' as _i89;
+import 'course/course_sop_link.dart' as _i36;
+import 'course/course_version.dart' as _i37;
+import 'course/lesson.dart' as _i38;
+import 'course/module.dart' as _i39;
+import 'course/qa_validation_result.dart' as _i40;
+import 'course/qa_validation_rule_result.dart' as _i41;
+import 'course/user_competency.dart' as _i42;
+import 'document/approval_workflow.dart' as _i43;
+import 'document/document.dart' as _i44;
+import 'document/document_lifecycle.dart' as _i45;
+import 'document/document_version.dart' as _i46;
+import 'events/dead_letter_queue.dart' as _i47;
+import 'events/domain_event.dart' as _i48;
+import 'events/outbox_message.dart' as _i49;
+import 'greetings/greeting.dart' as _i50;
+import 'infrastructure/audit_integrity_result.dart' as _i51;
+import 'infrastructure/feature_flag.dart' as _i52;
+import 'infrastructure/retention_archive.dart' as _i53;
+import 'infrastructure/retention_policy.dart' as _i54;
+import 'infrastructure/scheduled_job_log.dart' as _i55;
+import 'infrastructure/system_configuration.dart' as _i56;
+import 'material/material.dart' as _i57;
+import 'material/material_progress.dart' as _i58;
+import 'material/material_version.dart' as _i59;
+import 'material/media_asset.dart' as _i60;
+import 'mfa/mfa_enroll_result.dart' as _i61;
+import 'mfa/mfa_status_result.dart' as _i62;
+import 'mfa/mfa_verified_session.dart' as _i63;
+import 'mfa/user_mfa.dart' as _i64;
+import 'notifications/in_app_notification.dart' as _i65;
+import 'notifications/notification.dart' as _i66;
+import 'notifications/notification_log.dart' as _i67;
+import 'organization/department.dart' as _i68;
+import 'organization/job_role.dart' as _i69;
+import 'organization/organization.dart' as _i70;
+import 'organization/permission.dart' as _i71;
+import 'organization/role.dart' as _i72;
+import 'organization/site.dart' as _i73;
+import 'organization/user.dart' as _i74;
+import 'organization/user_preference.dart' as _i75;
+import 'organization/user_role.dart' as _i76;
+import 'quality/capa.dart' as _i77;
+import 'quality/change_control.dart' as _i78;
+import 'quality/inspection_report.dart' as _i79;
+import 'quality/quality_event.dart' as _i80;
+import 'security/abac_policy.dart' as _i81;
+import 'security/delegated_authority.dart' as _i82;
+import 'shared/electronic_signature.dart' as _i83;
+import 'shared/signature_meaning.dart' as _i84;
+import 'shared/signature_verification_result.dart' as _i85;
+import 'training/certificate.dart' as _i86;
+import 'training/enrollment.dart' as _i87;
+import 'training/training_assignment.dart' as _i88;
+import 'training/training_expiration.dart' as _i89;
+import 'training/training_matrix.dart' as _i90;
+import 'training/training_record.dart' as _i91;
+import 'training/training_record_annotation.dart' as _i92;
+import 'training/training_waiver.dart' as _i93;
 import 'package:pharma_lms_client/src/protocol/shared/signature_meaning.dart'
-    as _i90;
-import 'package:pharma_lms_client/src/protocol/training/training_assignment.dart'
-    as _i91;
-import 'package:pharma_lms_client/src/protocol/training/training_waiver.dart'
-    as _i92;
-import 'package:pharma_lms_client/src/protocol/analytics/department_compliance_summary.dart'
-    as _i93;
-import 'package:pharma_lms_client/src/protocol/analytics/report_definition.dart'
     as _i94;
-import 'package:pharma_lms_client/src/protocol/analytics/dashboard.dart'
+import 'package:pharma_lms_client/src/protocol/training/training_assignment.dart'
     as _i95;
-import 'package:pharma_lms_client/src/protocol/analytics/sla_breach.dart'
+import 'package:pharma_lms_client/src/protocol/training/training_waiver.dart'
     as _i96;
-import 'package:pharma_lms_client/src/protocol/organization/user.dart' as _i97;
-import 'package:pharma_lms_client/src/protocol/training/certificate.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/department_compliance_summary.dart'
+    as _i97;
+import 'package:pharma_lms_client/src/protocol/analytics/report_definition.dart'
     as _i98;
-import 'package:pharma_lms_client/src/protocol/quality/capa.dart' as _i99;
-import 'package:pharma_lms_client/src/protocol/assessment/question.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/dashboard.dart'
+    as _i99;
+import 'package:pharma_lms_client/src/protocol/analytics/sla_breach.dart'
     as _i100;
+import 'package:pharma_lms_client/src/protocol/organization/user.dart' as _i101;
+import 'package:pharma_lms_client/src/protocol/training/certificate.dart'
+    as _i102;
+import 'package:pharma_lms_client/src/protocol/quality/capa.dart' as _i103;
+import 'package:pharma_lms_client/src/protocol/assessment/question.dart'
+    as _i104;
 import 'package:pharma_lms_client/src/protocol/assessment/question_bank.dart'
-    as _i101;
-import 'package:pharma_lms_client/src/protocol/audit/audit_trail.dart' as _i102;
-import 'package:pharma_lms_client/src/protocol/audit/access_log.dart' as _i103;
-import 'package:pharma_lms_client/src/protocol/course/course.dart' as _i104;
-import 'package:pharma_lms_client/src/protocol/course/course_version.dart'
     as _i105;
-import 'package:pharma_lms_client/src/protocol/course/module.dart' as _i106;
-import 'package:pharma_lms_client/src/protocol/course/lesson.dart' as _i107;
-import 'package:pharma_lms_client/src/protocol/document/document.dart' as _i108;
-import 'package:pharma_lms_client/src/protocol/document/document_version.dart'
+import 'package:pharma_lms_client/src/protocol/audit/audit_trail.dart' as _i106;
+import 'package:pharma_lms_client/src/protocol/audit/access_log.dart' as _i107;
+import 'package:pharma_lms_client/src/protocol/course/course.dart' as _i108;
+import 'package:pharma_lms_client/src/protocol/course/course_version.dart'
     as _i109;
-import 'package:pharma_lms_client/src/protocol/document/document_lifecycle.dart'
-    as _i110;
-import 'package:pharma_lms_client/src/protocol/audit/inspection_record.dart'
-    as _i111;
-import 'package:pharma_lms_client/src/protocol/audit/auditor_page_log.dart'
-    as _i112;
-import 'package:pharma_lms_client/src/protocol/audit/inspection_package.dart'
+import 'package:pharma_lms_client/src/protocol/course/module.dart' as _i110;
+import 'package:pharma_lms_client/src/protocol/course/lesson.dart' as _i111;
+import 'package:pharma_lms_client/src/protocol/document/document.dart' as _i112;
+import 'package:pharma_lms_client/src/protocol/document/document_version.dart'
     as _i113;
-import 'package:pharma_lms_client/src/protocol/material/material_version.dart'
+import 'package:pharma_lms_client/src/protocol/document/document_lifecycle.dart'
     as _i114;
-import 'package:pharma_lms_client/src/protocol/material/material.dart' as _i115;
-import 'package:pharma_lms_client/src/protocol/notifications/in_app_notification.dart'
+import 'package:pharma_lms_client/src/protocol/audit/inspection_record.dart'
+    as _i115;
+import 'package:pharma_lms_client/src/protocol/audit/auditor_page_log.dart'
     as _i116;
-import 'package:pharma_lms_client/src/protocol/organization/organization.dart'
+import 'package:pharma_lms_client/src/protocol/audit/inspection_package.dart'
     as _i117;
-import 'package:pharma_lms_client/src/protocol/organization/site.dart' as _i118;
-import 'package:pharma_lms_client/src/protocol/organization/department.dart'
-    as _i119;
-import 'package:pharma_lms_client/src/protocol/organization/job_role.dart'
+import 'package:pharma_lms_client/src/protocol/material/material_version.dart'
+    as _i118;
+import 'package:pharma_lms_client/src/protocol/material/material.dart' as _i119;
+import 'package:pharma_lms_client/src/protocol/notifications/in_app_notification.dart'
     as _i120;
-import 'package:pharma_lms_client/src/protocol/quality/quality_event.dart'
+import 'package:pharma_lms_client/src/protocol/organization/organization.dart'
     as _i121;
-import 'package:pharma_lms_client/src/protocol/quality/inspection_report.dart'
-    as _i122;
-import 'package:pharma_lms_client/src/protocol/training/enrollment.dart'
+import 'package:pharma_lms_client/src/protocol/organization/site.dart' as _i122;
+import 'package:pharma_lms_client/src/protocol/organization/department.dart'
     as _i123;
-import 'package:pharma_lms_client/src/protocol/training/training_record.dart'
+import 'package:pharma_lms_client/src/protocol/organization/job_role.dart'
     as _i124;
-import 'package:pharma_lms_client/src/protocol/shared/electronic_signature.dart'
+import 'package:pharma_lms_client/src/protocol/course/course_review.dart'
     as _i125;
-import 'package:pharma_lms_client/src/protocol/training/training_record_annotation.dart'
+import 'package:pharma_lms_client/src/protocol/quality/quality_event.dart'
     as _i126;
-import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
+import 'package:pharma_lms_client/src/protocol/quality/inspection_report.dart'
     as _i127;
-import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
+import 'package:pharma_lms_client/src/protocol/course/course_sop_link.dart'
     as _i128;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i129;
+import 'package:pharma_lms_client/src/protocol/training/enrollment.dart'
+    as _i129;
+import 'package:pharma_lms_client/src/protocol/training/training_record.dart'
+    as _i130;
+import 'package:pharma_lms_client/src/protocol/shared/electronic_signature.dart'
+    as _i131;
+import 'package:pharma_lms_client/src/protocol/training/training_record_annotation.dart'
+    as _i132;
+import 'package:pharma_lms_client/src/protocol/organization/user_preference.dart'
+    as _i133;
+import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
+    as _i134;
+import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
+    as _i135;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i136;
 export 'admin/bulk_import_result.dart';
 export 'admin/import_log.dart';
 export 'analytics/analytics_event.dart';
@@ -202,9 +212,12 @@ export 'course/competency.dart';
 export 'course/course.dart';
 export 'course/course_competency.dart';
 export 'course/course_review.dart';
+export 'course/course_sop_link.dart';
 export 'course/course_version.dart';
 export 'course/lesson.dart';
 export 'course/module.dart';
+export 'course/qa_validation_result.dart';
+export 'course/qa_validation_rule_result.dart';
 export 'course/user_competency.dart';
 export 'document/approval_workflow.dart';
 export 'document/document.dart';
@@ -238,6 +251,7 @@ export 'organization/permission.dart';
 export 'organization/role.dart';
 export 'organization/site.dart';
 export 'organization/user.dart';
+export 'organization/user_preference.dart';
 export 'organization/user_role.dart';
 export 'quality/capa.dart';
 export 'quality/change_control.dart';
@@ -394,167 +408,179 @@ class Protocol extends _i1.SerializationManager {
     if (t == _i35.CourseReview) {
       return _i35.CourseReview.fromJson(data) as T;
     }
-    if (t == _i36.CourseVersion) {
-      return _i36.CourseVersion.fromJson(data) as T;
+    if (t == _i36.CourseSopLink) {
+      return _i36.CourseSopLink.fromJson(data) as T;
     }
-    if (t == _i37.Lesson) {
-      return _i37.Lesson.fromJson(data) as T;
+    if (t == _i37.CourseVersion) {
+      return _i37.CourseVersion.fromJson(data) as T;
     }
-    if (t == _i38.Module) {
-      return _i38.Module.fromJson(data) as T;
+    if (t == _i38.Lesson) {
+      return _i38.Lesson.fromJson(data) as T;
     }
-    if (t == _i39.UserCompetency) {
-      return _i39.UserCompetency.fromJson(data) as T;
+    if (t == _i39.Module) {
+      return _i39.Module.fromJson(data) as T;
     }
-    if (t == _i40.ApprovalWorkflow) {
-      return _i40.ApprovalWorkflow.fromJson(data) as T;
+    if (t == _i40.QaValidationResult) {
+      return _i40.QaValidationResult.fromJson(data) as T;
     }
-    if (t == _i41.Document) {
-      return _i41.Document.fromJson(data) as T;
+    if (t == _i41.QaValidationRuleResult) {
+      return _i41.QaValidationRuleResult.fromJson(data) as T;
     }
-    if (t == _i42.DocumentLifecycle) {
-      return _i42.DocumentLifecycle.fromJson(data) as T;
+    if (t == _i42.UserCompetency) {
+      return _i42.UserCompetency.fromJson(data) as T;
     }
-    if (t == _i43.DocumentVersion) {
-      return _i43.DocumentVersion.fromJson(data) as T;
+    if (t == _i43.ApprovalWorkflow) {
+      return _i43.ApprovalWorkflow.fromJson(data) as T;
     }
-    if (t == _i44.DeadLetterQueue) {
-      return _i44.DeadLetterQueue.fromJson(data) as T;
+    if (t == _i44.Document) {
+      return _i44.Document.fromJson(data) as T;
     }
-    if (t == _i45.DomainEvent) {
-      return _i45.DomainEvent.fromJson(data) as T;
+    if (t == _i45.DocumentLifecycle) {
+      return _i45.DocumentLifecycle.fromJson(data) as T;
     }
-    if (t == _i46.OutboxMessage) {
-      return _i46.OutboxMessage.fromJson(data) as T;
+    if (t == _i46.DocumentVersion) {
+      return _i46.DocumentVersion.fromJson(data) as T;
     }
-    if (t == _i47.Greeting) {
-      return _i47.Greeting.fromJson(data) as T;
+    if (t == _i47.DeadLetterQueue) {
+      return _i47.DeadLetterQueue.fromJson(data) as T;
     }
-    if (t == _i48.AuditIntegrityResult) {
-      return _i48.AuditIntegrityResult.fromJson(data) as T;
+    if (t == _i48.DomainEvent) {
+      return _i48.DomainEvent.fromJson(data) as T;
     }
-    if (t == _i49.FeatureFlag) {
-      return _i49.FeatureFlag.fromJson(data) as T;
+    if (t == _i49.OutboxMessage) {
+      return _i49.OutboxMessage.fromJson(data) as T;
     }
-    if (t == _i50.RetentionArchive) {
-      return _i50.RetentionArchive.fromJson(data) as T;
+    if (t == _i50.Greeting) {
+      return _i50.Greeting.fromJson(data) as T;
     }
-    if (t == _i51.RetentionPolicy) {
-      return _i51.RetentionPolicy.fromJson(data) as T;
+    if (t == _i51.AuditIntegrityResult) {
+      return _i51.AuditIntegrityResult.fromJson(data) as T;
     }
-    if (t == _i52.ScheduledJobLog) {
-      return _i52.ScheduledJobLog.fromJson(data) as T;
+    if (t == _i52.FeatureFlag) {
+      return _i52.FeatureFlag.fromJson(data) as T;
     }
-    if (t == _i53.SystemConfiguration) {
-      return _i53.SystemConfiguration.fromJson(data) as T;
+    if (t == _i53.RetentionArchive) {
+      return _i53.RetentionArchive.fromJson(data) as T;
     }
-    if (t == _i54.Material) {
-      return _i54.Material.fromJson(data) as T;
+    if (t == _i54.RetentionPolicy) {
+      return _i54.RetentionPolicy.fromJson(data) as T;
     }
-    if (t == _i55.MaterialProgress) {
-      return _i55.MaterialProgress.fromJson(data) as T;
+    if (t == _i55.ScheduledJobLog) {
+      return _i55.ScheduledJobLog.fromJson(data) as T;
     }
-    if (t == _i56.MaterialVersion) {
-      return _i56.MaterialVersion.fromJson(data) as T;
+    if (t == _i56.SystemConfiguration) {
+      return _i56.SystemConfiguration.fromJson(data) as T;
     }
-    if (t == _i57.MediaAsset) {
-      return _i57.MediaAsset.fromJson(data) as T;
+    if (t == _i57.Material) {
+      return _i57.Material.fromJson(data) as T;
     }
-    if (t == _i58.MfaEnrollResult) {
-      return _i58.MfaEnrollResult.fromJson(data) as T;
+    if (t == _i58.MaterialProgress) {
+      return _i58.MaterialProgress.fromJson(data) as T;
     }
-    if (t == _i59.MfaStatusResult) {
-      return _i59.MfaStatusResult.fromJson(data) as T;
+    if (t == _i59.MaterialVersion) {
+      return _i59.MaterialVersion.fromJson(data) as T;
     }
-    if (t == _i60.MfaVerifiedSession) {
-      return _i60.MfaVerifiedSession.fromJson(data) as T;
+    if (t == _i60.MediaAsset) {
+      return _i60.MediaAsset.fromJson(data) as T;
     }
-    if (t == _i61.UserMfa) {
-      return _i61.UserMfa.fromJson(data) as T;
+    if (t == _i61.MfaEnrollResult) {
+      return _i61.MfaEnrollResult.fromJson(data) as T;
     }
-    if (t == _i62.InAppNotification) {
-      return _i62.InAppNotification.fromJson(data) as T;
+    if (t == _i62.MfaStatusResult) {
+      return _i62.MfaStatusResult.fromJson(data) as T;
     }
-    if (t == _i63.Notification) {
-      return _i63.Notification.fromJson(data) as T;
+    if (t == _i63.MfaVerifiedSession) {
+      return _i63.MfaVerifiedSession.fromJson(data) as T;
     }
-    if (t == _i64.NotificationLog) {
-      return _i64.NotificationLog.fromJson(data) as T;
+    if (t == _i64.UserMfa) {
+      return _i64.UserMfa.fromJson(data) as T;
     }
-    if (t == _i65.Department) {
-      return _i65.Department.fromJson(data) as T;
+    if (t == _i65.InAppNotification) {
+      return _i65.InAppNotification.fromJson(data) as T;
     }
-    if (t == _i66.JobRole) {
-      return _i66.JobRole.fromJson(data) as T;
+    if (t == _i66.Notification) {
+      return _i66.Notification.fromJson(data) as T;
     }
-    if (t == _i67.Organization) {
-      return _i67.Organization.fromJson(data) as T;
+    if (t == _i67.NotificationLog) {
+      return _i67.NotificationLog.fromJson(data) as T;
     }
-    if (t == _i68.Permission) {
-      return _i68.Permission.fromJson(data) as T;
+    if (t == _i68.Department) {
+      return _i68.Department.fromJson(data) as T;
     }
-    if (t == _i69.Role) {
-      return _i69.Role.fromJson(data) as T;
+    if (t == _i69.JobRole) {
+      return _i69.JobRole.fromJson(data) as T;
     }
-    if (t == _i70.Site) {
-      return _i70.Site.fromJson(data) as T;
+    if (t == _i70.Organization) {
+      return _i70.Organization.fromJson(data) as T;
     }
-    if (t == _i71.PharmaUser) {
-      return _i71.PharmaUser.fromJson(data) as T;
+    if (t == _i71.Permission) {
+      return _i71.Permission.fromJson(data) as T;
     }
-    if (t == _i72.UserRole) {
-      return _i72.UserRole.fromJson(data) as T;
+    if (t == _i72.Role) {
+      return _i72.Role.fromJson(data) as T;
     }
-    if (t == _i73.Capa) {
-      return _i73.Capa.fromJson(data) as T;
+    if (t == _i73.Site) {
+      return _i73.Site.fromJson(data) as T;
     }
-    if (t == _i74.ChangeControl) {
-      return _i74.ChangeControl.fromJson(data) as T;
+    if (t == _i74.PharmaUser) {
+      return _i74.PharmaUser.fromJson(data) as T;
     }
-    if (t == _i75.InspectionReport) {
-      return _i75.InspectionReport.fromJson(data) as T;
+    if (t == _i75.UserPreference) {
+      return _i75.UserPreference.fromJson(data) as T;
     }
-    if (t == _i76.QualityEvent) {
-      return _i76.QualityEvent.fromJson(data) as T;
+    if (t == _i76.UserRole) {
+      return _i76.UserRole.fromJson(data) as T;
     }
-    if (t == _i77.AbacPolicy) {
-      return _i77.AbacPolicy.fromJson(data) as T;
+    if (t == _i77.Capa) {
+      return _i77.Capa.fromJson(data) as T;
     }
-    if (t == _i78.DelegatedAuthority) {
-      return _i78.DelegatedAuthority.fromJson(data) as T;
+    if (t == _i78.ChangeControl) {
+      return _i78.ChangeControl.fromJson(data) as T;
     }
-    if (t == _i79.ElectronicSignature) {
-      return _i79.ElectronicSignature.fromJson(data) as T;
+    if (t == _i79.InspectionReport) {
+      return _i79.InspectionReport.fromJson(data) as T;
     }
-    if (t == _i80.SignatureMeaning) {
-      return _i80.SignatureMeaning.fromJson(data) as T;
+    if (t == _i80.QualityEvent) {
+      return _i80.QualityEvent.fromJson(data) as T;
     }
-    if (t == _i81.SignatureVerificationResult) {
-      return _i81.SignatureVerificationResult.fromJson(data) as T;
+    if (t == _i81.AbacPolicy) {
+      return _i81.AbacPolicy.fromJson(data) as T;
     }
-    if (t == _i82.Certificate) {
-      return _i82.Certificate.fromJson(data) as T;
+    if (t == _i82.DelegatedAuthority) {
+      return _i82.DelegatedAuthority.fromJson(data) as T;
     }
-    if (t == _i83.Enrollment) {
-      return _i83.Enrollment.fromJson(data) as T;
+    if (t == _i83.ElectronicSignature) {
+      return _i83.ElectronicSignature.fromJson(data) as T;
     }
-    if (t == _i84.TrainingAssignment) {
-      return _i84.TrainingAssignment.fromJson(data) as T;
+    if (t == _i84.SignatureMeaning) {
+      return _i84.SignatureMeaning.fromJson(data) as T;
     }
-    if (t == _i85.TrainingExpiration) {
-      return _i85.TrainingExpiration.fromJson(data) as T;
+    if (t == _i85.SignatureVerificationResult) {
+      return _i85.SignatureVerificationResult.fromJson(data) as T;
     }
-    if (t == _i86.TrainingMatrix) {
-      return _i86.TrainingMatrix.fromJson(data) as T;
+    if (t == _i86.Certificate) {
+      return _i86.Certificate.fromJson(data) as T;
     }
-    if (t == _i87.TrainingRecord) {
-      return _i87.TrainingRecord.fromJson(data) as T;
+    if (t == _i87.Enrollment) {
+      return _i87.Enrollment.fromJson(data) as T;
     }
-    if (t == _i88.TrainingRecordAnnotation) {
-      return _i88.TrainingRecordAnnotation.fromJson(data) as T;
+    if (t == _i88.TrainingAssignment) {
+      return _i88.TrainingAssignment.fromJson(data) as T;
     }
-    if (t == _i89.TrainingWaiver) {
-      return _i89.TrainingWaiver.fromJson(data) as T;
+    if (t == _i89.TrainingExpiration) {
+      return _i89.TrainingExpiration.fromJson(data) as T;
+    }
+    if (t == _i90.TrainingMatrix) {
+      return _i90.TrainingMatrix.fromJson(data) as T;
+    }
+    if (t == _i91.TrainingRecord) {
+      return _i91.TrainingRecord.fromJson(data) as T;
+    }
+    if (t == _i92.TrainingRecordAnnotation) {
+      return _i92.TrainingRecordAnnotation.fromJson(data) as T;
+    }
+    if (t == _i93.TrainingWaiver) {
+      return _i93.TrainingWaiver.fromJson(data) as T;
     }
     if (t == _i1.getType<_i2.BulkImportResult?>()) {
       return (data != null ? _i2.BulkImportResult.fromJson(data) : null) as T;
@@ -666,202 +692,222 @@ class Protocol extends _i1.SerializationManager {
     if (t == _i1.getType<_i35.CourseReview?>()) {
       return (data != null ? _i35.CourseReview.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i36.CourseVersion?>()) {
-      return (data != null ? _i36.CourseVersion.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i36.CourseSopLink?>()) {
+      return (data != null ? _i36.CourseSopLink.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i37.Lesson?>()) {
-      return (data != null ? _i37.Lesson.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i37.CourseVersion?>()) {
+      return (data != null ? _i37.CourseVersion.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i38.Module?>()) {
-      return (data != null ? _i38.Module.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i38.Lesson?>()) {
+      return (data != null ? _i38.Lesson.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i39.UserCompetency?>()) {
-      return (data != null ? _i39.UserCompetency.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i39.Module?>()) {
+      return (data != null ? _i39.Module.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i40.ApprovalWorkflow?>()) {
-      return (data != null ? _i40.ApprovalWorkflow.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i41.Document?>()) {
-      return (data != null ? _i41.Document.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i42.DocumentLifecycle?>()) {
-      return (data != null ? _i42.DocumentLifecycle.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i43.DocumentVersion?>()) {
-      return (data != null ? _i43.DocumentVersion.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i44.DeadLetterQueue?>()) {
-      return (data != null ? _i44.DeadLetterQueue.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i45.DomainEvent?>()) {
-      return (data != null ? _i45.DomainEvent.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i46.OutboxMessage?>()) {
-      return (data != null ? _i46.OutboxMessage.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i47.Greeting?>()) {
-      return (data != null ? _i47.Greeting.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i48.AuditIntegrityResult?>()) {
-      return (data != null ? _i48.AuditIntegrityResult.fromJson(data) : null)
+    if (t == _i1.getType<_i40.QaValidationResult?>()) {
+      return (data != null ? _i40.QaValidationResult.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i49.FeatureFlag?>()) {
-      return (data != null ? _i49.FeatureFlag.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i50.RetentionArchive?>()) {
-      return (data != null ? _i50.RetentionArchive.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i51.RetentionPolicy?>()) {
-      return (data != null ? _i51.RetentionPolicy.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i52.ScheduledJobLog?>()) {
-      return (data != null ? _i52.ScheduledJobLog.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i53.SystemConfiguration?>()) {
-      return (data != null ? _i53.SystemConfiguration.fromJson(data) : null)
+    if (t == _i1.getType<_i41.QaValidationRuleResult?>()) {
+      return (data != null ? _i41.QaValidationRuleResult.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i54.Material?>()) {
-      return (data != null ? _i54.Material.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i42.UserCompetency?>()) {
+      return (data != null ? _i42.UserCompetency.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i55.MaterialProgress?>()) {
-      return (data != null ? _i55.MaterialProgress.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i43.ApprovalWorkflow?>()) {
+      return (data != null ? _i43.ApprovalWorkflow.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i56.MaterialVersion?>()) {
-      return (data != null ? _i56.MaterialVersion.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i44.Document?>()) {
+      return (data != null ? _i44.Document.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i57.MediaAsset?>()) {
-      return (data != null ? _i57.MediaAsset.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i45.DocumentLifecycle?>()) {
+      return (data != null ? _i45.DocumentLifecycle.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i58.MfaEnrollResult?>()) {
-      return (data != null ? _i58.MfaEnrollResult.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i46.DocumentVersion?>()) {
+      return (data != null ? _i46.DocumentVersion.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i59.MfaStatusResult?>()) {
-      return (data != null ? _i59.MfaStatusResult.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i47.DeadLetterQueue?>()) {
+      return (data != null ? _i47.DeadLetterQueue.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i60.MfaVerifiedSession?>()) {
-      return (data != null ? _i60.MfaVerifiedSession.fromJson(data) : null)
+    if (t == _i1.getType<_i48.DomainEvent?>()) {
+      return (data != null ? _i48.DomainEvent.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i49.OutboxMessage?>()) {
+      return (data != null ? _i49.OutboxMessage.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i50.Greeting?>()) {
+      return (data != null ? _i50.Greeting.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i51.AuditIntegrityResult?>()) {
+      return (data != null ? _i51.AuditIntegrityResult.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i61.UserMfa?>()) {
-      return (data != null ? _i61.UserMfa.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i52.FeatureFlag?>()) {
+      return (data != null ? _i52.FeatureFlag.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i62.InAppNotification?>()) {
-      return (data != null ? _i62.InAppNotification.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i53.RetentionArchive?>()) {
+      return (data != null ? _i53.RetentionArchive.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i63.Notification?>()) {
-      return (data != null ? _i63.Notification.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i54.RetentionPolicy?>()) {
+      return (data != null ? _i54.RetentionPolicy.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i64.NotificationLog?>()) {
-      return (data != null ? _i64.NotificationLog.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i55.ScheduledJobLog?>()) {
+      return (data != null ? _i55.ScheduledJobLog.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i65.Department?>()) {
-      return (data != null ? _i65.Department.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i66.JobRole?>()) {
-      return (data != null ? _i66.JobRole.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i67.Organization?>()) {
-      return (data != null ? _i67.Organization.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i68.Permission?>()) {
-      return (data != null ? _i68.Permission.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i69.Role?>()) {
-      return (data != null ? _i69.Role.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i70.Site?>()) {
-      return (data != null ? _i70.Site.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i71.PharmaUser?>()) {
-      return (data != null ? _i71.PharmaUser.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i72.UserRole?>()) {
-      return (data != null ? _i72.UserRole.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i73.Capa?>()) {
-      return (data != null ? _i73.Capa.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i74.ChangeControl?>()) {
-      return (data != null ? _i74.ChangeControl.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i75.InspectionReport?>()) {
-      return (data != null ? _i75.InspectionReport.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i76.QualityEvent?>()) {
-      return (data != null ? _i76.QualityEvent.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i77.AbacPolicy?>()) {
-      return (data != null ? _i77.AbacPolicy.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i78.DelegatedAuthority?>()) {
-      return (data != null ? _i78.DelegatedAuthority.fromJson(data) : null)
+    if (t == _i1.getType<_i56.SystemConfiguration?>()) {
+      return (data != null ? _i56.SystemConfiguration.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i79.ElectronicSignature?>()) {
-      return (data != null ? _i79.ElectronicSignature.fromJson(data) : null)
+    if (t == _i1.getType<_i57.Material?>()) {
+      return (data != null ? _i57.Material.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i58.MaterialProgress?>()) {
+      return (data != null ? _i58.MaterialProgress.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i59.MaterialVersion?>()) {
+      return (data != null ? _i59.MaterialVersion.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i60.MediaAsset?>()) {
+      return (data != null ? _i60.MediaAsset.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i61.MfaEnrollResult?>()) {
+      return (data != null ? _i61.MfaEnrollResult.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i62.MfaStatusResult?>()) {
+      return (data != null ? _i62.MfaStatusResult.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i63.MfaVerifiedSession?>()) {
+      return (data != null ? _i63.MfaVerifiedSession.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i80.SignatureMeaning?>()) {
-      return (data != null ? _i80.SignatureMeaning.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i64.UserMfa?>()) {
+      return (data != null ? _i64.UserMfa.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i81.SignatureVerificationResult?>()) {
+    if (t == _i1.getType<_i65.InAppNotification?>()) {
+      return (data != null ? _i65.InAppNotification.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i66.Notification?>()) {
+      return (data != null ? _i66.Notification.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i67.NotificationLog?>()) {
+      return (data != null ? _i67.NotificationLog.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i68.Department?>()) {
+      return (data != null ? _i68.Department.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i69.JobRole?>()) {
+      return (data != null ? _i69.JobRole.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i70.Organization?>()) {
+      return (data != null ? _i70.Organization.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i71.Permission?>()) {
+      return (data != null ? _i71.Permission.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i72.Role?>()) {
+      return (data != null ? _i72.Role.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i73.Site?>()) {
+      return (data != null ? _i73.Site.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i74.PharmaUser?>()) {
+      return (data != null ? _i74.PharmaUser.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i75.UserPreference?>()) {
+      return (data != null ? _i75.UserPreference.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i76.UserRole?>()) {
+      return (data != null ? _i76.UserRole.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i77.Capa?>()) {
+      return (data != null ? _i77.Capa.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i78.ChangeControl?>()) {
+      return (data != null ? _i78.ChangeControl.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i79.InspectionReport?>()) {
+      return (data != null ? _i79.InspectionReport.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i80.QualityEvent?>()) {
+      return (data != null ? _i80.QualityEvent.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i81.AbacPolicy?>()) {
+      return (data != null ? _i81.AbacPolicy.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i82.DelegatedAuthority?>()) {
+      return (data != null ? _i82.DelegatedAuthority.fromJson(data) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i83.ElectronicSignature?>()) {
+      return (data != null ? _i83.ElectronicSignature.fromJson(data) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i84.SignatureMeaning?>()) {
+      return (data != null ? _i84.SignatureMeaning.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i85.SignatureVerificationResult?>()) {
       return (data != null
-              ? _i81.SignatureVerificationResult.fromJson(data)
+              ? _i85.SignatureVerificationResult.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i82.Certificate?>()) {
-      return (data != null ? _i82.Certificate.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i86.Certificate?>()) {
+      return (data != null ? _i86.Certificate.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i83.Enrollment?>()) {
-      return (data != null ? _i83.Enrollment.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i87.Enrollment?>()) {
+      return (data != null ? _i87.Enrollment.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i84.TrainingAssignment?>()) {
-      return (data != null ? _i84.TrainingAssignment.fromJson(data) : null)
+    if (t == _i1.getType<_i88.TrainingAssignment?>()) {
+      return (data != null ? _i88.TrainingAssignment.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i85.TrainingExpiration?>()) {
-      return (data != null ? _i85.TrainingExpiration.fromJson(data) : null)
+    if (t == _i1.getType<_i89.TrainingExpiration?>()) {
+      return (data != null ? _i89.TrainingExpiration.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i86.TrainingMatrix?>()) {
-      return (data != null ? _i86.TrainingMatrix.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i90.TrainingMatrix?>()) {
+      return (data != null ? _i90.TrainingMatrix.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i87.TrainingRecord?>()) {
-      return (data != null ? _i87.TrainingRecord.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i91.TrainingRecord?>()) {
+      return (data != null ? _i91.TrainingRecord.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i88.TrainingRecordAnnotation?>()) {
+    if (t == _i1.getType<_i92.TrainingRecordAnnotation?>()) {
       return (data != null
-              ? _i88.TrainingRecordAnnotation.fromJson(data)
+              ? _i92.TrainingRecordAnnotation.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i89.TrainingWaiver?>()) {
-      return (data != null ? _i89.TrainingWaiver.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i93.TrainingWaiver?>()) {
+      return (data != null ? _i93.TrainingWaiver.fromJson(data) : null) as T;
     }
     if (t == List<String>) {
       return (data as List).map((e) => deserialize<String>(e)).toList() as T;
     }
-    if (t == List<_i90.SignatureMeaning>) {
+    if (t == List<_i41.QaValidationRuleResult>) {
       return (data as List)
-              .map((e) => deserialize<_i90.SignatureMeaning>(e))
+              .map((e) => deserialize<_i41.QaValidationRuleResult>(e))
               .toList()
           as T;
     }
-    if (t == List<_i91.TrainingAssignment>) {
+    if (t == List<_i94.SignatureMeaning>) {
       return (data as List)
-              .map((e) => deserialize<_i91.TrainingAssignment>(e))
+              .map((e) => deserialize<_i94.SignatureMeaning>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i95.TrainingAssignment>) {
+      return (data as List)
+              .map((e) => deserialize<_i95.TrainingAssignment>(e))
               .toList()
           as T;
     }
     if (t == List<int>) {
       return (data as List).map((e) => deserialize<int>(e)).toList() as T;
     }
-    if (t == List<_i92.TrainingWaiver>) {
+    if (t == List<_i96.TrainingWaiver>) {
       return (data as List)
-              .map((e) => deserialize<_i92.TrainingWaiver>(e))
+              .map((e) => deserialize<_i96.TrainingWaiver>(e))
               .toList()
           as T;
     }
@@ -877,47 +923,50 @@ class Protocol extends _i1.SerializationManager {
           )
           as T;
     }
-    if (t == List<_i93.DepartmentComplianceSummary>) {
+    if (t == List<_i97.DepartmentComplianceSummary>) {
       return (data as List)
-              .map((e) => deserialize<_i93.DepartmentComplianceSummary>(e))
+              .map((e) => deserialize<_i97.DepartmentComplianceSummary>(e))
               .toList()
           as T;
     }
-    if (t == List<_i94.ReportDefinition>) {
+    if (t == List<_i98.ReportDefinition>) {
       return (data as List)
-              .map((e) => deserialize<_i94.ReportDefinition>(e))
+              .map((e) => deserialize<_i98.ReportDefinition>(e))
               .toList()
           as T;
     }
-    if (t == List<_i95.Dashboard>) {
-      return (data as List).map((e) => deserialize<_i95.Dashboard>(e)).toList()
+    if (t == List<_i99.Dashboard>) {
+      return (data as List).map((e) => deserialize<_i99.Dashboard>(e)).toList()
           as T;
     }
-    if (t == List<_i96.SlaBreach>) {
-      return (data as List).map((e) => deserialize<_i96.SlaBreach>(e)).toList()
+    if (t == List<_i100.SlaBreach>) {
+      return (data as List).map((e) => deserialize<_i100.SlaBreach>(e)).toList()
           as T;
     }
-    if (t == List<_i97.PharmaUser>) {
-      return (data as List).map((e) => deserialize<_i97.PharmaUser>(e)).toList()
+    if (t == List<_i101.PharmaUser>) {
+      return (data as List)
+              .map((e) => deserialize<_i101.PharmaUser>(e))
+              .toList()
           as T;
     }
-    if (t == Map<String, List<_i98.Certificate>>) {
+    if (t == Map<String, List<_i102.Certificate>>) {
       return (data as Map).map(
             (k, v) => MapEntry(
               deserialize<String>(k),
-              deserialize<List<_i98.Certificate>>(v),
+              deserialize<List<_i102.Certificate>>(v),
             ),
           )
           as T;
     }
-    if (t == List<_i98.Certificate>) {
+    if (t == List<_i102.Certificate>) {
       return (data as List)
-              .map((e) => deserialize<_i98.Certificate>(e))
+              .map((e) => deserialize<_i102.Certificate>(e))
               .toList()
           as T;
     }
-    if (t == List<_i99.Capa>) {
-      return (data as List).map((e) => deserialize<_i99.Capa>(e)).toList() as T;
+    if (t == List<_i103.Capa>) {
+      return (data as List).map((e) => deserialize<_i103.Capa>(e)).toList()
+          as T;
     }
     if (t == List<Map<String, dynamic>>) {
       return (data as List)
@@ -925,63 +974,63 @@ class Protocol extends _i1.SerializationManager {
               .toList()
           as T;
     }
-    if (t == List<_i100.Question>) {
-      return (data as List).map((e) => deserialize<_i100.Question>(e)).toList()
+    if (t == List<_i104.Question>) {
+      return (data as List).map((e) => deserialize<_i104.Question>(e)).toList()
           as T;
     }
-    if (t == List<_i101.QuestionBank>) {
+    if (t == List<_i105.QuestionBank>) {
       return (data as List)
-              .map((e) => deserialize<_i101.QuestionBank>(e))
+              .map((e) => deserialize<_i105.QuestionBank>(e))
               .toList()
           as T;
     }
-    if (t == List<_i102.AuditTrail>) {
+    if (t == List<_i106.AuditTrail>) {
       return (data as List)
-              .map((e) => deserialize<_i102.AuditTrail>(e))
+              .map((e) => deserialize<_i106.AuditTrail>(e))
               .toList()
           as T;
     }
-    if (t == List<_i103.AccessLog>) {
-      return (data as List).map((e) => deserialize<_i103.AccessLog>(e)).toList()
+    if (t == List<_i107.AccessLog>) {
+      return (data as List).map((e) => deserialize<_i107.AccessLog>(e)).toList()
           as T;
     }
-    if (t == List<_i104.Course>) {
-      return (data as List).map((e) => deserialize<_i104.Course>(e)).toList()
+    if (t == List<_i108.Course>) {
+      return (data as List).map((e) => deserialize<_i108.Course>(e)).toList()
           as T;
     }
-    if (t == List<_i105.CourseVersion>) {
+    if (t == List<_i109.CourseVersion>) {
       return (data as List)
-              .map((e) => deserialize<_i105.CourseVersion>(e))
+              .map((e) => deserialize<_i109.CourseVersion>(e))
               .toList()
           as T;
     }
-    if (t == List<_i106.Module>) {
-      return (data as List).map((e) => deserialize<_i106.Module>(e)).toList()
+    if (t == List<_i110.Module>) {
+      return (data as List).map((e) => deserialize<_i110.Module>(e)).toList()
           as T;
     }
-    if (t == List<_i107.Lesson>) {
-      return (data as List).map((e) => deserialize<_i107.Lesson>(e)).toList()
+    if (t == List<_i111.Lesson>) {
+      return (data as List).map((e) => deserialize<_i111.Lesson>(e)).toList()
           as T;
     }
-    if (t == List<_i108.Document>) {
-      return (data as List).map((e) => deserialize<_i108.Document>(e)).toList()
+    if (t == List<_i112.Document>) {
+      return (data as List).map((e) => deserialize<_i112.Document>(e)).toList()
           as T;
     }
-    if (t == List<_i109.DocumentVersion>) {
+    if (t == List<_i113.DocumentVersion>) {
       return (data as List)
-              .map((e) => deserialize<_i109.DocumentVersion>(e))
+              .map((e) => deserialize<_i113.DocumentVersion>(e))
               .toList()
           as T;
     }
-    if (t == List<_i110.DocumentLifecycle>) {
+    if (t == List<_i114.DocumentLifecycle>) {
       return (data as List)
-              .map((e) => deserialize<_i110.DocumentLifecycle>(e))
+              .map((e) => deserialize<_i114.DocumentLifecycle>(e))
               .toList()
           as T;
     }
-    if (t == List<_i111.InspectionRecord>) {
+    if (t == List<_i115.InspectionRecord>) {
       return (data as List)
-              .map((e) => deserialize<_i111.InspectionRecord>(e))
+              .map((e) => deserialize<_i115.InspectionRecord>(e))
               .toList()
           as T;
     }
@@ -994,98 +1043,116 @@ class Protocol extends _i1.SerializationManager {
               : null)
           as T;
     }
-    if (t == List<_i112.AuditorPageLog>) {
+    if (t == List<_i116.AuditorPageLog>) {
       return (data as List)
-              .map((e) => deserialize<_i112.AuditorPageLog>(e))
+              .map((e) => deserialize<_i116.AuditorPageLog>(e))
               .toList()
           as T;
     }
-    if (t == List<_i113.InspectionPackage>) {
+    if (t == List<_i117.InspectionPackage>) {
       return (data as List)
-              .map((e) => deserialize<_i113.InspectionPackage>(e))
+              .map((e) => deserialize<_i117.InspectionPackage>(e))
               .toList()
           as T;
     }
-    if (t == List<_i114.MaterialVersion>) {
+    if (t == List<_i118.MaterialVersion>) {
       return (data as List)
-              .map((e) => deserialize<_i114.MaterialVersion>(e))
+              .map((e) => deserialize<_i118.MaterialVersion>(e))
               .toList()
           as T;
     }
-    if (t == List<_i115.Material>) {
-      return (data as List).map((e) => deserialize<_i115.Material>(e)).toList()
+    if (t == List<_i119.Material>) {
+      return (data as List).map((e) => deserialize<_i119.Material>(e)).toList()
           as T;
     }
-    if (t == List<_i116.InAppNotification>) {
+    if (t == List<_i120.InAppNotification>) {
       return (data as List)
-              .map((e) => deserialize<_i116.InAppNotification>(e))
+              .map((e) => deserialize<_i120.InAppNotification>(e))
               .toList()
           as T;
     }
-    if (t == List<_i117.Organization>) {
+    if (t == List<_i121.Organization>) {
       return (data as List)
-              .map((e) => deserialize<_i117.Organization>(e))
+              .map((e) => deserialize<_i121.Organization>(e))
               .toList()
           as T;
     }
-    if (t == List<_i118.Site>) {
-      return (data as List).map((e) => deserialize<_i118.Site>(e)).toList()
+    if (t == List<_i122.Site>) {
+      return (data as List).map((e) => deserialize<_i122.Site>(e)).toList()
           as T;
     }
-    if (t == List<_i119.Department>) {
+    if (t == List<_i123.Department>) {
       return (data as List)
-              .map((e) => deserialize<_i119.Department>(e))
+              .map((e) => deserialize<_i123.Department>(e))
               .toList()
           as T;
     }
-    if (t == List<_i120.JobRole>) {
-      return (data as List).map((e) => deserialize<_i120.JobRole>(e)).toList()
+    if (t == List<_i124.JobRole>) {
+      return (data as List).map((e) => deserialize<_i124.JobRole>(e)).toList()
           as T;
     }
-    if (t == List<_i121.QualityEvent>) {
+    if (t == List<_i125.CourseReview>) {
       return (data as List)
-              .map((e) => deserialize<_i121.QualityEvent>(e))
+              .map((e) => deserialize<_i125.CourseReview>(e))
               .toList()
           as T;
     }
-    if (t == List<_i122.InspectionReport>) {
+    if (t == List<_i126.QualityEvent>) {
       return (data as List)
-              .map((e) => deserialize<_i122.InspectionReport>(e))
+              .map((e) => deserialize<_i126.QualityEvent>(e))
               .toList()
           as T;
     }
-    if (t == List<_i123.Enrollment>) {
+    if (t == List<_i127.InspectionReport>) {
       return (data as List)
-              .map((e) => deserialize<_i123.Enrollment>(e))
+              .map((e) => deserialize<_i127.InspectionReport>(e))
               .toList()
           as T;
     }
-    if (t == List<_i124.TrainingRecord>) {
+    if (t == List<_i128.CourseSopLink>) {
       return (data as List)
-              .map((e) => deserialize<_i124.TrainingRecord>(e))
+              .map((e) => deserialize<_i128.CourseSopLink>(e))
               .toList()
           as T;
     }
-    if (t == List<_i125.ElectronicSignature>) {
+    if (t == List<_i129.Enrollment>) {
       return (data as List)
-              .map((e) => deserialize<_i125.ElectronicSignature>(e))
+              .map((e) => deserialize<_i129.Enrollment>(e))
               .toList()
           as T;
     }
-    if (t == List<_i126.TrainingRecordAnnotation>) {
+    if (t == List<_i130.TrainingRecord>) {
       return (data as List)
-              .map((e) => deserialize<_i126.TrainingRecordAnnotation>(e))
+              .map((e) => deserialize<_i130.TrainingRecord>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i131.ElectronicSignature>) {
+      return (data as List)
+              .map((e) => deserialize<_i131.ElectronicSignature>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i132.TrainingRecordAnnotation>) {
+      return (data as List)
+              .map((e) => deserialize<_i132.TrainingRecordAnnotation>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i133.UserPreference>) {
+      return (data as List)
+              .map((e) => deserialize<_i133.UserPreference>(e))
               .toList()
           as T;
     }
     try {
-      return _i127.Protocol().deserialize<T>(data, t);
+      return _i134.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     try {
-      return _i128.Protocol().deserialize<T>(data, t);
+      return _i135.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     try {
-      return _i129.Protocol().deserialize<T>(data, t);
+      return _i136.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     return super.deserialize<T>(data, t);
   }
@@ -1126,60 +1193,64 @@ class Protocol extends _i1.SerializationManager {
       _i33.Course => 'Course',
       _i34.CourseCompetency => 'CourseCompetency',
       _i35.CourseReview => 'CourseReview',
-      _i36.CourseVersion => 'CourseVersion',
-      _i37.Lesson => 'Lesson',
-      _i38.Module => 'Module',
-      _i39.UserCompetency => 'UserCompetency',
-      _i40.ApprovalWorkflow => 'ApprovalWorkflow',
-      _i41.Document => 'Document',
-      _i42.DocumentLifecycle => 'DocumentLifecycle',
-      _i43.DocumentVersion => 'DocumentVersion',
-      _i44.DeadLetterQueue => 'DeadLetterQueue',
-      _i45.DomainEvent => 'DomainEvent',
-      _i46.OutboxMessage => 'OutboxMessage',
-      _i47.Greeting => 'Greeting',
-      _i48.AuditIntegrityResult => 'AuditIntegrityResult',
-      _i49.FeatureFlag => 'FeatureFlag',
-      _i50.RetentionArchive => 'RetentionArchive',
-      _i51.RetentionPolicy => 'RetentionPolicy',
-      _i52.ScheduledJobLog => 'ScheduledJobLog',
-      _i53.SystemConfiguration => 'SystemConfiguration',
-      _i54.Material => 'Material',
-      _i55.MaterialProgress => 'MaterialProgress',
-      _i56.MaterialVersion => 'MaterialVersion',
-      _i57.MediaAsset => 'MediaAsset',
-      _i58.MfaEnrollResult => 'MfaEnrollResult',
-      _i59.MfaStatusResult => 'MfaStatusResult',
-      _i60.MfaVerifiedSession => 'MfaVerifiedSession',
-      _i61.UserMfa => 'UserMfa',
-      _i62.InAppNotification => 'InAppNotification',
-      _i63.Notification => 'Notification',
-      _i64.NotificationLog => 'NotificationLog',
-      _i65.Department => 'Department',
-      _i66.JobRole => 'JobRole',
-      _i67.Organization => 'Organization',
-      _i68.Permission => 'Permission',
-      _i69.Role => 'Role',
-      _i70.Site => 'Site',
-      _i71.PharmaUser => 'PharmaUser',
-      _i72.UserRole => 'UserRole',
-      _i73.Capa => 'Capa',
-      _i74.ChangeControl => 'ChangeControl',
-      _i75.InspectionReport => 'InspectionReport',
-      _i76.QualityEvent => 'QualityEvent',
-      _i77.AbacPolicy => 'AbacPolicy',
-      _i78.DelegatedAuthority => 'DelegatedAuthority',
-      _i79.ElectronicSignature => 'ElectronicSignature',
-      _i80.SignatureMeaning => 'SignatureMeaning',
-      _i81.SignatureVerificationResult => 'SignatureVerificationResult',
-      _i82.Certificate => 'Certificate',
-      _i83.Enrollment => 'Enrollment',
-      _i84.TrainingAssignment => 'TrainingAssignment',
-      _i85.TrainingExpiration => 'TrainingExpiration',
-      _i86.TrainingMatrix => 'TrainingMatrix',
-      _i87.TrainingRecord => 'TrainingRecord',
-      _i88.TrainingRecordAnnotation => 'TrainingRecordAnnotation',
-      _i89.TrainingWaiver => 'TrainingWaiver',
+      _i36.CourseSopLink => 'CourseSopLink',
+      _i37.CourseVersion => 'CourseVersion',
+      _i38.Lesson => 'Lesson',
+      _i39.Module => 'Module',
+      _i40.QaValidationResult => 'QaValidationResult',
+      _i41.QaValidationRuleResult => 'QaValidationRuleResult',
+      _i42.UserCompetency => 'UserCompetency',
+      _i43.ApprovalWorkflow => 'ApprovalWorkflow',
+      _i44.Document => 'Document',
+      _i45.DocumentLifecycle => 'DocumentLifecycle',
+      _i46.DocumentVersion => 'DocumentVersion',
+      _i47.DeadLetterQueue => 'DeadLetterQueue',
+      _i48.DomainEvent => 'DomainEvent',
+      _i49.OutboxMessage => 'OutboxMessage',
+      _i50.Greeting => 'Greeting',
+      _i51.AuditIntegrityResult => 'AuditIntegrityResult',
+      _i52.FeatureFlag => 'FeatureFlag',
+      _i53.RetentionArchive => 'RetentionArchive',
+      _i54.RetentionPolicy => 'RetentionPolicy',
+      _i55.ScheduledJobLog => 'ScheduledJobLog',
+      _i56.SystemConfiguration => 'SystemConfiguration',
+      _i57.Material => 'Material',
+      _i58.MaterialProgress => 'MaterialProgress',
+      _i59.MaterialVersion => 'MaterialVersion',
+      _i60.MediaAsset => 'MediaAsset',
+      _i61.MfaEnrollResult => 'MfaEnrollResult',
+      _i62.MfaStatusResult => 'MfaStatusResult',
+      _i63.MfaVerifiedSession => 'MfaVerifiedSession',
+      _i64.UserMfa => 'UserMfa',
+      _i65.InAppNotification => 'InAppNotification',
+      _i66.Notification => 'Notification',
+      _i67.NotificationLog => 'NotificationLog',
+      _i68.Department => 'Department',
+      _i69.JobRole => 'JobRole',
+      _i70.Organization => 'Organization',
+      _i71.Permission => 'Permission',
+      _i72.Role => 'Role',
+      _i73.Site => 'Site',
+      _i74.PharmaUser => 'PharmaUser',
+      _i75.UserPreference => 'UserPreference',
+      _i76.UserRole => 'UserRole',
+      _i77.Capa => 'Capa',
+      _i78.ChangeControl => 'ChangeControl',
+      _i79.InspectionReport => 'InspectionReport',
+      _i80.QualityEvent => 'QualityEvent',
+      _i81.AbacPolicy => 'AbacPolicy',
+      _i82.DelegatedAuthority => 'DelegatedAuthority',
+      _i83.ElectronicSignature => 'ElectronicSignature',
+      _i84.SignatureMeaning => 'SignatureMeaning',
+      _i85.SignatureVerificationResult => 'SignatureVerificationResult',
+      _i86.Certificate => 'Certificate',
+      _i87.Enrollment => 'Enrollment',
+      _i88.TrainingAssignment => 'TrainingAssignment',
+      _i89.TrainingExpiration => 'TrainingExpiration',
+      _i90.TrainingMatrix => 'TrainingMatrix',
+      _i91.TrainingRecord => 'TrainingRecord',
+      _i92.TrainingRecordAnnotation => 'TrainingRecordAnnotation',
+      _i93.TrainingWaiver => 'TrainingWaiver',
       _ => null,
     };
   }
@@ -1262,124 +1333,132 @@ class Protocol extends _i1.SerializationManager {
         return 'CourseCompetency';
       case _i35.CourseReview():
         return 'CourseReview';
-      case _i36.CourseVersion():
+      case _i36.CourseSopLink():
+        return 'CourseSopLink';
+      case _i37.CourseVersion():
         return 'CourseVersion';
-      case _i37.Lesson():
+      case _i38.Lesson():
         return 'Lesson';
-      case _i38.Module():
+      case _i39.Module():
         return 'Module';
-      case _i39.UserCompetency():
+      case _i40.QaValidationResult():
+        return 'QaValidationResult';
+      case _i41.QaValidationRuleResult():
+        return 'QaValidationRuleResult';
+      case _i42.UserCompetency():
         return 'UserCompetency';
-      case _i40.ApprovalWorkflow():
+      case _i43.ApprovalWorkflow():
         return 'ApprovalWorkflow';
-      case _i41.Document():
+      case _i44.Document():
         return 'Document';
-      case _i42.DocumentLifecycle():
+      case _i45.DocumentLifecycle():
         return 'DocumentLifecycle';
-      case _i43.DocumentVersion():
+      case _i46.DocumentVersion():
         return 'DocumentVersion';
-      case _i44.DeadLetterQueue():
+      case _i47.DeadLetterQueue():
         return 'DeadLetterQueue';
-      case _i45.DomainEvent():
+      case _i48.DomainEvent():
         return 'DomainEvent';
-      case _i46.OutboxMessage():
+      case _i49.OutboxMessage():
         return 'OutboxMessage';
-      case _i47.Greeting():
+      case _i50.Greeting():
         return 'Greeting';
-      case _i48.AuditIntegrityResult():
+      case _i51.AuditIntegrityResult():
         return 'AuditIntegrityResult';
-      case _i49.FeatureFlag():
+      case _i52.FeatureFlag():
         return 'FeatureFlag';
-      case _i50.RetentionArchive():
+      case _i53.RetentionArchive():
         return 'RetentionArchive';
-      case _i51.RetentionPolicy():
+      case _i54.RetentionPolicy():
         return 'RetentionPolicy';
-      case _i52.ScheduledJobLog():
+      case _i55.ScheduledJobLog():
         return 'ScheduledJobLog';
-      case _i53.SystemConfiguration():
+      case _i56.SystemConfiguration():
         return 'SystemConfiguration';
-      case _i54.Material():
+      case _i57.Material():
         return 'Material';
-      case _i55.MaterialProgress():
+      case _i58.MaterialProgress():
         return 'MaterialProgress';
-      case _i56.MaterialVersion():
+      case _i59.MaterialVersion():
         return 'MaterialVersion';
-      case _i57.MediaAsset():
+      case _i60.MediaAsset():
         return 'MediaAsset';
-      case _i58.MfaEnrollResult():
+      case _i61.MfaEnrollResult():
         return 'MfaEnrollResult';
-      case _i59.MfaStatusResult():
+      case _i62.MfaStatusResult():
         return 'MfaStatusResult';
-      case _i60.MfaVerifiedSession():
+      case _i63.MfaVerifiedSession():
         return 'MfaVerifiedSession';
-      case _i61.UserMfa():
+      case _i64.UserMfa():
         return 'UserMfa';
-      case _i62.InAppNotification():
+      case _i65.InAppNotification():
         return 'InAppNotification';
-      case _i63.Notification():
+      case _i66.Notification():
         return 'Notification';
-      case _i64.NotificationLog():
+      case _i67.NotificationLog():
         return 'NotificationLog';
-      case _i65.Department():
+      case _i68.Department():
         return 'Department';
-      case _i66.JobRole():
+      case _i69.JobRole():
         return 'JobRole';
-      case _i67.Organization():
+      case _i70.Organization():
         return 'Organization';
-      case _i68.Permission():
+      case _i71.Permission():
         return 'Permission';
-      case _i69.Role():
+      case _i72.Role():
         return 'Role';
-      case _i70.Site():
+      case _i73.Site():
         return 'Site';
-      case _i71.PharmaUser():
+      case _i74.PharmaUser():
         return 'PharmaUser';
-      case _i72.UserRole():
+      case _i75.UserPreference():
+        return 'UserPreference';
+      case _i76.UserRole():
         return 'UserRole';
-      case _i73.Capa():
+      case _i77.Capa():
         return 'Capa';
-      case _i74.ChangeControl():
+      case _i78.ChangeControl():
         return 'ChangeControl';
-      case _i75.InspectionReport():
+      case _i79.InspectionReport():
         return 'InspectionReport';
-      case _i76.QualityEvent():
+      case _i80.QualityEvent():
         return 'QualityEvent';
-      case _i77.AbacPolicy():
+      case _i81.AbacPolicy():
         return 'AbacPolicy';
-      case _i78.DelegatedAuthority():
+      case _i82.DelegatedAuthority():
         return 'DelegatedAuthority';
-      case _i79.ElectronicSignature():
+      case _i83.ElectronicSignature():
         return 'ElectronicSignature';
-      case _i80.SignatureMeaning():
+      case _i84.SignatureMeaning():
         return 'SignatureMeaning';
-      case _i81.SignatureVerificationResult():
+      case _i85.SignatureVerificationResult():
         return 'SignatureVerificationResult';
-      case _i82.Certificate():
+      case _i86.Certificate():
         return 'Certificate';
-      case _i83.Enrollment():
+      case _i87.Enrollment():
         return 'Enrollment';
-      case _i84.TrainingAssignment():
+      case _i88.TrainingAssignment():
         return 'TrainingAssignment';
-      case _i85.TrainingExpiration():
+      case _i89.TrainingExpiration():
         return 'TrainingExpiration';
-      case _i86.TrainingMatrix():
+      case _i90.TrainingMatrix():
         return 'TrainingMatrix';
-      case _i87.TrainingRecord():
+      case _i91.TrainingRecord():
         return 'TrainingRecord';
-      case _i88.TrainingRecordAnnotation():
+      case _i92.TrainingRecordAnnotation():
         return 'TrainingRecordAnnotation';
-      case _i89.TrainingWaiver():
+      case _i93.TrainingWaiver():
         return 'TrainingWaiver';
     }
-    className = _i127.Protocol().getClassNameForObject(data);
+    className = _i134.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth_core.$className';
     }
-    className = _i128.Protocol().getClassNameForObject(data);
+    className = _i135.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth_idp.$className';
     }
-    className = _i129.Protocol().getClassNameForObject(data);
+    className = _i136.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth.$className';
     }
@@ -1494,179 +1573,191 @@ class Protocol extends _i1.SerializationManager {
     if (dataClassName == 'CourseReview') {
       return deserialize<_i35.CourseReview>(data['data']);
     }
+    if (dataClassName == 'CourseSopLink') {
+      return deserialize<_i36.CourseSopLink>(data['data']);
+    }
     if (dataClassName == 'CourseVersion') {
-      return deserialize<_i36.CourseVersion>(data['data']);
+      return deserialize<_i37.CourseVersion>(data['data']);
     }
     if (dataClassName == 'Lesson') {
-      return deserialize<_i37.Lesson>(data['data']);
+      return deserialize<_i38.Lesson>(data['data']);
     }
     if (dataClassName == 'Module') {
-      return deserialize<_i38.Module>(data['data']);
+      return deserialize<_i39.Module>(data['data']);
+    }
+    if (dataClassName == 'QaValidationResult') {
+      return deserialize<_i40.QaValidationResult>(data['data']);
+    }
+    if (dataClassName == 'QaValidationRuleResult') {
+      return deserialize<_i41.QaValidationRuleResult>(data['data']);
     }
     if (dataClassName == 'UserCompetency') {
-      return deserialize<_i39.UserCompetency>(data['data']);
+      return deserialize<_i42.UserCompetency>(data['data']);
     }
     if (dataClassName == 'ApprovalWorkflow') {
-      return deserialize<_i40.ApprovalWorkflow>(data['data']);
+      return deserialize<_i43.ApprovalWorkflow>(data['data']);
     }
     if (dataClassName == 'Document') {
-      return deserialize<_i41.Document>(data['data']);
+      return deserialize<_i44.Document>(data['data']);
     }
     if (dataClassName == 'DocumentLifecycle') {
-      return deserialize<_i42.DocumentLifecycle>(data['data']);
+      return deserialize<_i45.DocumentLifecycle>(data['data']);
     }
     if (dataClassName == 'DocumentVersion') {
-      return deserialize<_i43.DocumentVersion>(data['data']);
+      return deserialize<_i46.DocumentVersion>(data['data']);
     }
     if (dataClassName == 'DeadLetterQueue') {
-      return deserialize<_i44.DeadLetterQueue>(data['data']);
+      return deserialize<_i47.DeadLetterQueue>(data['data']);
     }
     if (dataClassName == 'DomainEvent') {
-      return deserialize<_i45.DomainEvent>(data['data']);
+      return deserialize<_i48.DomainEvent>(data['data']);
     }
     if (dataClassName == 'OutboxMessage') {
-      return deserialize<_i46.OutboxMessage>(data['data']);
+      return deserialize<_i49.OutboxMessage>(data['data']);
     }
     if (dataClassName == 'Greeting') {
-      return deserialize<_i47.Greeting>(data['data']);
+      return deserialize<_i50.Greeting>(data['data']);
     }
     if (dataClassName == 'AuditIntegrityResult') {
-      return deserialize<_i48.AuditIntegrityResult>(data['data']);
+      return deserialize<_i51.AuditIntegrityResult>(data['data']);
     }
     if (dataClassName == 'FeatureFlag') {
-      return deserialize<_i49.FeatureFlag>(data['data']);
+      return deserialize<_i52.FeatureFlag>(data['data']);
     }
     if (dataClassName == 'RetentionArchive') {
-      return deserialize<_i50.RetentionArchive>(data['data']);
+      return deserialize<_i53.RetentionArchive>(data['data']);
     }
     if (dataClassName == 'RetentionPolicy') {
-      return deserialize<_i51.RetentionPolicy>(data['data']);
+      return deserialize<_i54.RetentionPolicy>(data['data']);
     }
     if (dataClassName == 'ScheduledJobLog') {
-      return deserialize<_i52.ScheduledJobLog>(data['data']);
+      return deserialize<_i55.ScheduledJobLog>(data['data']);
     }
     if (dataClassName == 'SystemConfiguration') {
-      return deserialize<_i53.SystemConfiguration>(data['data']);
+      return deserialize<_i56.SystemConfiguration>(data['data']);
     }
     if (dataClassName == 'Material') {
-      return deserialize<_i54.Material>(data['data']);
+      return deserialize<_i57.Material>(data['data']);
     }
     if (dataClassName == 'MaterialProgress') {
-      return deserialize<_i55.MaterialProgress>(data['data']);
+      return deserialize<_i58.MaterialProgress>(data['data']);
     }
     if (dataClassName == 'MaterialVersion') {
-      return deserialize<_i56.MaterialVersion>(data['data']);
+      return deserialize<_i59.MaterialVersion>(data['data']);
     }
     if (dataClassName == 'MediaAsset') {
-      return deserialize<_i57.MediaAsset>(data['data']);
+      return deserialize<_i60.MediaAsset>(data['data']);
     }
     if (dataClassName == 'MfaEnrollResult') {
-      return deserialize<_i58.MfaEnrollResult>(data['data']);
+      return deserialize<_i61.MfaEnrollResult>(data['data']);
     }
     if (dataClassName == 'MfaStatusResult') {
-      return deserialize<_i59.MfaStatusResult>(data['data']);
+      return deserialize<_i62.MfaStatusResult>(data['data']);
     }
     if (dataClassName == 'MfaVerifiedSession') {
-      return deserialize<_i60.MfaVerifiedSession>(data['data']);
+      return deserialize<_i63.MfaVerifiedSession>(data['data']);
     }
     if (dataClassName == 'UserMfa') {
-      return deserialize<_i61.UserMfa>(data['data']);
+      return deserialize<_i64.UserMfa>(data['data']);
     }
     if (dataClassName == 'InAppNotification') {
-      return deserialize<_i62.InAppNotification>(data['data']);
+      return deserialize<_i65.InAppNotification>(data['data']);
     }
     if (dataClassName == 'Notification') {
-      return deserialize<_i63.Notification>(data['data']);
+      return deserialize<_i66.Notification>(data['data']);
     }
     if (dataClassName == 'NotificationLog') {
-      return deserialize<_i64.NotificationLog>(data['data']);
+      return deserialize<_i67.NotificationLog>(data['data']);
     }
     if (dataClassName == 'Department') {
-      return deserialize<_i65.Department>(data['data']);
+      return deserialize<_i68.Department>(data['data']);
     }
     if (dataClassName == 'JobRole') {
-      return deserialize<_i66.JobRole>(data['data']);
+      return deserialize<_i69.JobRole>(data['data']);
     }
     if (dataClassName == 'Organization') {
-      return deserialize<_i67.Organization>(data['data']);
+      return deserialize<_i70.Organization>(data['data']);
     }
     if (dataClassName == 'Permission') {
-      return deserialize<_i68.Permission>(data['data']);
+      return deserialize<_i71.Permission>(data['data']);
     }
     if (dataClassName == 'Role') {
-      return deserialize<_i69.Role>(data['data']);
+      return deserialize<_i72.Role>(data['data']);
     }
     if (dataClassName == 'Site') {
-      return deserialize<_i70.Site>(data['data']);
+      return deserialize<_i73.Site>(data['data']);
     }
     if (dataClassName == 'PharmaUser') {
-      return deserialize<_i71.PharmaUser>(data['data']);
+      return deserialize<_i74.PharmaUser>(data['data']);
+    }
+    if (dataClassName == 'UserPreference') {
+      return deserialize<_i75.UserPreference>(data['data']);
     }
     if (dataClassName == 'UserRole') {
-      return deserialize<_i72.UserRole>(data['data']);
+      return deserialize<_i76.UserRole>(data['data']);
     }
     if (dataClassName == 'Capa') {
-      return deserialize<_i73.Capa>(data['data']);
+      return deserialize<_i77.Capa>(data['data']);
     }
     if (dataClassName == 'ChangeControl') {
-      return deserialize<_i74.ChangeControl>(data['data']);
+      return deserialize<_i78.ChangeControl>(data['data']);
     }
     if (dataClassName == 'InspectionReport') {
-      return deserialize<_i75.InspectionReport>(data['data']);
+      return deserialize<_i79.InspectionReport>(data['data']);
     }
     if (dataClassName == 'QualityEvent') {
-      return deserialize<_i76.QualityEvent>(data['data']);
+      return deserialize<_i80.QualityEvent>(data['data']);
     }
     if (dataClassName == 'AbacPolicy') {
-      return deserialize<_i77.AbacPolicy>(data['data']);
+      return deserialize<_i81.AbacPolicy>(data['data']);
     }
     if (dataClassName == 'DelegatedAuthority') {
-      return deserialize<_i78.DelegatedAuthority>(data['data']);
+      return deserialize<_i82.DelegatedAuthority>(data['data']);
     }
     if (dataClassName == 'ElectronicSignature') {
-      return deserialize<_i79.ElectronicSignature>(data['data']);
+      return deserialize<_i83.ElectronicSignature>(data['data']);
     }
     if (dataClassName == 'SignatureMeaning') {
-      return deserialize<_i80.SignatureMeaning>(data['data']);
+      return deserialize<_i84.SignatureMeaning>(data['data']);
     }
     if (dataClassName == 'SignatureVerificationResult') {
-      return deserialize<_i81.SignatureVerificationResult>(data['data']);
+      return deserialize<_i85.SignatureVerificationResult>(data['data']);
     }
     if (dataClassName == 'Certificate') {
-      return deserialize<_i82.Certificate>(data['data']);
+      return deserialize<_i86.Certificate>(data['data']);
     }
     if (dataClassName == 'Enrollment') {
-      return deserialize<_i83.Enrollment>(data['data']);
+      return deserialize<_i87.Enrollment>(data['data']);
     }
     if (dataClassName == 'TrainingAssignment') {
-      return deserialize<_i84.TrainingAssignment>(data['data']);
+      return deserialize<_i88.TrainingAssignment>(data['data']);
     }
     if (dataClassName == 'TrainingExpiration') {
-      return deserialize<_i85.TrainingExpiration>(data['data']);
+      return deserialize<_i89.TrainingExpiration>(data['data']);
     }
     if (dataClassName == 'TrainingMatrix') {
-      return deserialize<_i86.TrainingMatrix>(data['data']);
+      return deserialize<_i90.TrainingMatrix>(data['data']);
     }
     if (dataClassName == 'TrainingRecord') {
-      return deserialize<_i87.TrainingRecord>(data['data']);
+      return deserialize<_i91.TrainingRecord>(data['data']);
     }
     if (dataClassName == 'TrainingRecordAnnotation') {
-      return deserialize<_i88.TrainingRecordAnnotation>(data['data']);
+      return deserialize<_i92.TrainingRecordAnnotation>(data['data']);
     }
     if (dataClassName == 'TrainingWaiver') {
-      return deserialize<_i89.TrainingWaiver>(data['data']);
+      return deserialize<_i93.TrainingWaiver>(data['data']);
     }
     if (dataClassName.startsWith('serverpod_auth_core.')) {
       data['className'] = dataClassName.substring(20);
-      return _i127.Protocol().deserializeByClassName(data);
+      return _i134.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod_auth_idp.')) {
       data['className'] = dataClassName.substring(19);
-      return _i128.Protocol().deserializeByClassName(data);
+      return _i135.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod_auth.')) {
       data['className'] = dataClassName.substring(15);
-      return _i129.Protocol().deserializeByClassName(data);
+      return _i136.Protocol().deserializeByClassName(data);
     }
     return super.deserializeByClassName(data);
   }
@@ -1681,13 +1772,13 @@ class Protocol extends _i1.SerializationManager {
       return null;
     }
     try {
-      return _i127.Protocol().mapRecordToJson(record);
+      return _i134.Protocol().mapRecordToJson(record);
     } catch (_) {}
     try {
-      return _i128.Protocol().mapRecordToJson(record);
+      return _i135.Protocol().mapRecordToJson(record);
     } catch (_) {}
     try {
-      return _i129.Protocol().mapRecordToJson(record);
+      return _i136.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

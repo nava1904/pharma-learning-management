@@ -2,557 +2,260 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:serverpod/serverpod.dart';
+import 'package:serverpod_auth_idp_server/core.dart';
+import 'package:serverpod_auth_idp_server/providers/email.dart';
 
 import '../generated/protocol.dart';
 
+/// Default password for all seed/demo users.
+/// In production, users would register with their own passwords.
+const _seedPassword = 'Pharma@2024!Secure';
+
 /// Seed endpoint for development/demo data.
-/// Call runSeed() to populate organizations, sites, departments, users, courses.
-/// Call runMvpSeed() for full MVP dataset (32 users, 6 courses, 500+ audit entries).
+/// Provides comprehensive seed data for PharmaTech India with full FRD compliance.
 class SeedEndpoint extends Endpoint {
-  /// Seeds the database with sample data if empty. Idempotent - skips if org exists.
-  /// Signature meanings are always seeded if empty (for existing DBs).
+  /// Legacy seed method - delegates to comprehensive seed
   Future<String> runSeed(Session session) async {
-    // Always ensure RBAC roles exist (for existing DBs)
-    var roles = await Role.db.find(session);
-    if (roles.isEmpty) {
-      await Role.db.insertRow(session, Role(name: 'Admin', code: 'admin'));
-      await Role.db.insertRow(
-        session,
-        Role(name: 'QA Director', code: 'qa_director'),
-      );
-      await Role.db.insertRow(session, Role(name: 'QA', code: 'qa'));
-      await Role.db.insertRow(session, Role(name: 'Employee', code: 'employee'));
-      roles = await Role.db.find(session);
-    }
-    // Always ensure RBAC permissions exist (for existing DBs)
-    final existingPerms = await Permission.db.find(session);
-    if (existingPerms.isEmpty) {
-      Role? adminRole;
-      Role? qaDirRole;
-      Role? qaRole;
-      Role? employeeRole;
-      for (final r in roles) {
-        if (r.code == 'admin') adminRole = r;
-        if (r.code == 'qa_director') qaDirRole = r;
-        if (r.code == 'qa') qaRole = r;
-        if (r.code == 'employee') employeeRole = r;
-      }
-      if (adminRole?.id != null) {
-        await Permission.db.insertRow(
-          session,
-          Permission(roleId: adminRole!.id!, resource: '*', action: '*'),
-        );
-      }
-      for (final r in [qaDirRole, qaRole]) {
-        if (r?.id == null) continue;
-        for (final perm in [
-          ['training', 'read'],
-          ['training', 'assign'],
-          ['audit', 'read'],
-          ['compliance', 'read'],
-          ['analytics', 'read'],
-          ['course', 'read'],
-          ['course', 'write'],
-          ['assessment', 'read'],
-          ['assessment', 'write'],
-          ['document', 'read'],
-          ['document', 'write'],
-          ['quality_event', 'read'],
-          ['quality_event', 'write'],
-          ['inspection', 'read'],
-          ['inspection', 'write'],
-          ['organization', 'read'],
-          ['material', 'read'],
-          ['material', 'write'],
-        ]) {
-          await Permission.db.insertRow(
-            session,
-            Permission(roleId: r!.id!, resource: perm[0], action: perm[1]),
-          );
-        }
-      }
-      if (employeeRole?.id != null) {
-        for (final perm in [
-          ['training', 'read'],
-          ['course', 'read'],
-          ['assessment', 'read'],
-          ['organization', 'read'],
-          ['material', 'read'],
-          ['compliance', 'read'],
-          ['analytics', 'read'],
-        ]) {
-          await Permission.db.insertRow(
-            session,
-            Permission(roleId: employeeRole!.id!, resource: perm[0], action: perm[1]),
-          );
-        }
-      }
-    }
-    // Ensure admin user has QA Director role when seeding roles
-    final adminUser = await PharmaUser.db.findFirstRow(
-      session,
-      where: (t) => t.email.equals('admin@pharmacorp.demo'),
-    );
-    if (adminUser?.id != null) {
-      Role? adminRole;
-      Role? qaDirRole;
-      for (final r in roles) {
-        if (r.code == 'admin') adminRole = r;
-        if (r.code == 'qa_director') qaDirRole = r;
-      }
-      final existing = await UserRole.db.find(
-        session,
-        where: (t) => t.userId.equals(adminUser!.id!),
-      );
-      if (existing.isEmpty && adminRole != null && adminRole.id != null) {
-        await UserRole.db.insertRow(
-          session,
-          UserRole(userId: adminUser!.id!, roleId: adminRole.id!),
-        );
-      }
-      if (qaDirRole != null &&
-          qaDirRole.id != null &&
-          !existing.any((ur) => ur.roleId == qaDirRole!.id)) {
-        await UserRole.db.insertRow(
-          session,
-          UserRole(userId: adminUser!.id!, roleId: qaDirRole.id!),
-        );
-      }
-    }
-
-    // Always ensure signature meanings exist (for existing DBs upgrading)
-    final existingMeanings = await SignatureMeaning.db.find(session);
-    if (existingMeanings.isEmpty) {
-      await SignatureMeaning.db.insertRow(
-        session,
-        SignatureMeaning(
-          meaning: 'I have reviewed and approve',
-          isActive: true,
-          orderIndex: 0,
-        ),
-      );
-      await SignatureMeaning.db.insertRow(
-        session,
-        SignatureMeaning(
-          meaning: 'I have performed and verified',
-          isActive: true,
-          orderIndex: 1,
-        ),
-      );
-      await SignatureMeaning.db.insertRow(
-        session,
-        SignatureMeaning(
-          meaning: 'I have read, understood, and agree to comply',
-          isActive: true,
-          orderIndex: 2,
-        ),
-      );
-      await SignatureMeaning.db.insertRow(
-        session,
-        SignatureMeaning(
-          meaning: 'I have read and understood',
-          isActive: true,
-          orderIndex: 3,
-        ),
-      );
-    }
-
-    // Ensure employee role has compliance and analytics read (for employee dashboard).
-    Role? employeeRoleForUpgrade;
-    for (final r in roles) {
-      if (r.code == 'employee') {
-        employeeRoleForUpgrade = r;
-        break;
-      }
-    }
-    if (employeeRoleForUpgrade?.id != null) {
-      final empPerms = await Permission.db.find(
-        session,
-        where: (t) => t.roleId.equals(employeeRoleForUpgrade!.id!),
-      );
-      final hasCompliance = empPerms.any((p) => p.resource == 'compliance' && p.action == 'read');
-      final hasAnalytics = empPerms.any((p) => p.resource == 'analytics' && p.action == 'read');
-      if (!hasCompliance) {
-        await Permission.db.insertRow(
-          session,
-          Permission(roleId: employeeRoleForUpgrade!.id!, resource: 'compliance', action: 'read'),
-        );
-      }
-      if (!hasAnalytics) {
-        await Permission.db.insertRow(
-          session,
-          Permission(roleId: employeeRoleForUpgrade!.id!, resource: 'analytics', action: 'read'),
-        );
-      }
-    }
-
-    final existing = await Organization.db.find(session);
-    if (existing.isNotEmpty) {
-      return existingMeanings.isEmpty
-          ? 'Signature meanings seeded. Database already has org data, skipping full seed.'
-          : 'Database already has data, skipping seed. (${existing.length} orgs)';
-    }
-
-    // Organization
-    final org = await Organization.db.insertRow(
-      session,
-      Organization(name: 'PharmaCorp Demo', code: 'PHARMA'),
-    );
-
-    // Site
-    final site = await Site.db.insertRow(
-      session,
-      Site(
-        organizationId: org.id!,
-        name: 'HQ Manufacturing',
-        code: 'HQ',
-        timezone: 'America/New_York',
-      ),
-    );
-
-    // Departments
-    final deptQa = await Department.db.insertRow(
-      session,
-      Department(siteId: site.id!, name: 'Quality Assurance', code: 'QA'),
-    );
-    final deptProd = await Department.db.insertRow(
-      session,
-      Department(siteId: site.id!, name: 'Production', code: 'PROD'),
-    );
-
-    // RBAC roles (for UserRole - QA Director, Admin)
-    final roleAdmin = await Role.db.insertRow(
-      session,
-      Role(name: 'Admin', code: 'admin'),
-    );
-    final roleQaDirector = await Role.db.insertRow(
-      session,
-      Role(name: 'QA Director', code: 'qa_director'),
-    );
-    final roleQa = await Role.db.insertRow(
-      session,
-      Role(name: 'QA', code: 'qa'),
-    );
-    final roleEmployee = await Role.db.insertRow(
-      session,
-      Role(name: 'Employee', code: 'employee'),
-    );
-
-    // Job roles
-    final jobQa = await JobRole.db.insertRow(
-      session,
-      JobRole(
-        departmentId: deptQa.id!,
-        name: 'QA Specialist',
-        code: 'QA-SPEC',
-      ),
-    );
-    final jobOp = await JobRole.db.insertRow(
-      session,
-      JobRole(
-        departmentId: deptProd.id!,
-        name: 'Production Operator',
-        code: 'PROD-OP',
-      ),
-    );
-
-    // Users
-    final user1 = await PharmaUser.db.insertRow(
-      session,
-      PharmaUser(
-        email: 'admin@pharmacorp.demo',
-        firstName: 'Admin',
-        lastName: 'User',
-        departmentId: deptQa.id!,
-        jobRoleId: jobQa.id!,
-        siteId: site.id!,
-        organizationId: org.id!,
-      ),
-    );
-    await UserRole.db.insertRow(
-      session,
-      UserRole(userId: user1.id!, roleId: roleAdmin.id!),
-    );
-    await UserRole.db.insertRow(
-      session,
-      UserRole(userId: user1.id!, roleId: roleQaDirector.id!),
-    );
-    final user2 = await PharmaUser.db.insertRow(
-      session,
-      PharmaUser(
-        email: 'employee@pharmacorp.demo',
-        firstName: 'Jane',
-        lastName: 'Employee',
-        departmentId: deptProd.id!,
-        jobRoleId: jobOp.id!,
-        siteId: site.id!,
-        organizationId: org.id!,
-      ),
-    );
-    await UserRole.db.insertRow(
-      session,
-      UserRole(userId: user2.id!, roleId: roleEmployee.id!),
-    );
-
-    // Course (createdById required in DB - use user1)
-    final course = await Course.db.insertRow(
-      session,
-      Course(
-        title: 'GMP Basics - 21 CFR Part 11',
-        sopNumber: 'SOP-101',
-        description:
-            'Introduction to Good Manufacturing Practice and electronic records.',
-        status: 'approved',
-        createdById: user1.id,
-        organizationId: org.id!,
-      ),
-    );
-
-    // Course version
-    final courseVersion = await CourseVersion.db.insertRow(
-      session,
-      CourseVersion(
-        courseId: course.id!,
-        version: '1.0',
-        status: 'effective',
-      ),
-    );
-
-    // Material for lessons
-    final material1 = await Material.db.insertRow(
-      session,
-      Material(
-        title: 'GMP Introduction',
-        materialType: 'pdf',
-        storageKey: 'materials/gmp-intro.pdf',
-        organizationId: org.id!,
-      ),
-    );
-    final material2 = await Material.db.insertRow(
-      session,
-      Material(
-        title: '21 CFR Part 11 Overview',
-        materialType: 'pdf',
-        storageKey: 'materials/21cfr-part11.pdf',
-        organizationId: org.id!,
-      ),
-    );
-
-    // Module and lessons
-    final module1 = await Module.db.insertRow(
-      session,
-      Module(
-        courseVersionId: courseVersion.id!,
-        title: 'Module 1: GMP Basics',
-        orderIndex: 0,
-      ),
-    );
-    await Lesson.db.insertRow(
-      session,
-      Lesson(
-        moduleId: module1.id!,
-        title: 'Introduction to GMP',
-        orderIndex: 0,
-        materialId: material1.id!,
-        durationMinutes: 5,
-      ),
-    );
-    await Lesson.db.insertRow(
-      session,
-      Lesson(
-        moduleId: module1.id!,
-        title: '21 CFR Part 11',
-        orderIndex: 1,
-        materialId: material2.id!,
-        durationMinutes: 10,
-      ),
-    );
-
-    // Question bank and questions
-    final questionBank = await QuestionBank.db.insertRow(
-      session,
-      QuestionBank(
-        name: 'GMP Basics Quiz',
-        organizationId: org.id!,
-        tagsJson: '["GMP","21CFR"]',
-      ),
-    );
-
-    await Question.db.insertRow(
-      session,
-      Question(
-        questionBankId: questionBank.id!,
-        text: 'What does GMP stand for?',
-        questionType: 'multiple_choice',
-        optionsJson: '["Good Manufacturing Practice","General Medical Protocol","Global Manufacturing Process"]',
-        correctAnswer: '0',
-        difficulty: 'easy',
-      ),
-    );
-    await Question.db.insertRow(
-      session,
-      Question(
-        questionBankId: questionBank.id!,
-        text: '21 CFR Part 11 applies to electronic records.',
-        questionType: 'true_false',
-        optionsJson: '["true","false"]',
-        correctAnswer: 'true',
-        difficulty: 'easy',
-      ),
-    );
-
-    // Assessment
-    await Assessment.db.insertRow(
-      session,
-      Assessment(
-        courseVersionId: courseVersion.id!,
-        questionBankId: questionBank.id!,
-        passingScore: 80,
-        randomize: true,
-        timeLimitMinutes: 15,
-      ),
-    );
-
-    // Training assignment and enrollment for employee (user2)
-    if (user2.id != null) {
-      final assignment = await TrainingAssignment.db.insertRow(
-        session,
-        TrainingAssignment(
-          userId: user2.id!,
-          courseVersionId: courseVersion.id!,
-          assignedById: user1.id!,
-          assignedAt: DateTime.now(),
-          dueDate: DateTime.now().add(const Duration(days: 30)),
-          priority: 'medium',
-          source: 'manual',
-        ),
-      );
-      await Enrollment.db.insertRow(
-        session,
-        Enrollment(
-          userId: user2.id!,
-          courseVersionId: courseVersion.id!,
-          assignmentId: assignment.id!,
-          status: 'not_started',
-        ),
-      );
-    }
-
-    return 'Seed completed: 1 org, 1 site, 2 depts, 2 job roles, 2 users, 1 course, modules, lessons, assessment, signature meanings, assignment.';
+    return runComprehensiveSeed(session);
   }
 
-  /// Seeds the full MVP dataset: 32 users, 6 courses, 18 modules, 54 lessons,
-  /// 6 assessments, 120 questions, training matrix, assignments, enrollments,
-  /// e-signatures, certificates, quality events, CAPAs, waivers, audit trail, etc.
-  /// Idempotent - skips if org "PharmaCorp International Ltd" exists.
+  /// Legacy MVP seed method - delegates to comprehensive seed
   Future<String> runMvpSeed(Session session) async {
-    const baseDate = '2026-03-01T00:00:00.000Z';
-    DateTime dt(int offsetDays) {
-      final d = DateTime.parse(baseDate);
-      return d.add(Duration(days: offsetDays));
+    return runComprehensiveSeed(session);
+  }
+
+  /// Clear all seed data and re-run comprehensive seed
+  Future<String> clearAndReseed(Session session) async {
+    // Delete in reverse dependency order
+    final messages = <String>[];
+
+    // Delete existing PharmaTech organization and all related data
+    final existingOrg = await Organization.db.findFirstRow(
+      session,
+      where: (t) => t.name.equals('PharmaTech India Pvt Ltd'),
+    );
+
+    if (existingOrg != null) {
+      await _deleteExistingOrgData(session, existingOrg.id!);
+      messages.add('Deleted organization and all related data: PharmaTech India Pvt Ltd');
+    } else {
+      messages.add('No existing PharmaTech India organization found');
     }
 
+    // Now run the comprehensive seed
+    final seedResult = await runComprehensiveSeed(session);
+    messages.add(seedResult);
+
+    return messages.join('\\n');
+  }
+
+  /// Comprehensive seed with 100 learners, 15 trainers, 12 pharma courses,
+  /// Full compliance: HMAC signatures, assessment attempts,
+  /// training matrix, material progress tracking.
+  Future<String> runComprehensiveSeed(Session session) async {
+    final baseDate = DateTime(2026, 3, 14);
+    DateTime dt(int offsetDays) => baseDate.add(Duration(days: offsetDays));
+
+    // First delete existing data if organization exists
     final existing = await Organization.db.findFirstRow(
       session,
-      where: (t) => t.name.equals('PharmaCorp International Ltd'),
+      where: (t) => t.name.equals('PharmaTech India Pvt Ltd'),
     );
     if (existing != null) {
-      return 'MVP seed skipped: PharmaCorp International Ltd already exists.';
+      await _deleteExistingOrgData(session, existing.id!);
     }
 
-    // Phase 2: Core hierarchy
+    // HMAC secret for integrity hashes (FR-02-02 AC-06)
+    const hmacSecret = 'pharma-lms-super-secret-audit-key-2026';
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 1: Organization & Sites
+    // ═══════════════════════════════════════════════════════════════════════════
     final org = await Organization.db.insertRow(
       session,
-      Organization(name: 'PharmaCorp International Ltd', code: 'PHARMA'),
+      Organization(name: 'PharmaTech India Pvt Ltd', code: 'PTI'),
     );
     final orgId = org.id!;
 
-    final siteEu = await Site.db.insertRow(
-      session,
-      Site(
-        organizationId: orgId,
-        name: 'PharmaCorp EU (London)',
-        code: 'EU',
-        timezone: 'Europe/London',
-      ),
-    );
-    final siteUs = await Site.db.insertRow(
-      session,
-      Site(
-        organizationId: orgId,
-        name: 'PharmaCorp US (Boston)',
-        code: 'US',
-        timezone: 'America/New_York',
-      ),
-    );
-    final siteAp = await Site.db.insertRow(
-      session,
-      Site(
-        organizationId: orgId,
-        name: 'PharmaCorp APAC (Singapore)',
-        code: 'AP',
-        timezone: 'Asia/Singapore',
-      ),
-    );
-    final siteId = siteEu.id!;
+    final siteData = [
+      ['Mumbai HQ', 'MUM', 'Asia/Kolkata'],
+      ['Pune Manufacturing', 'PUN', 'Asia/Kolkata'],
+      ['Hyderabad R&D', 'HYD', 'Asia/Kolkata'],
+      ['Ahmedabad API', 'AHM', 'Asia/Kolkata'],
+      ['Bengaluru Biotech', 'BLR', 'Asia/Kolkata'],
+    ];
+    final siteIds = <int>[];
+    for (final s in siteData) {
+      final site = await Site.db.insertRow(
+        session,
+        Site(organizationId: orgId, name: s[0], code: s[1], timezone: s[2]),
+      );
+      siteIds.add(site.id!);
+    }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 2: Departments
+    // ═══════════════════════════════════════════════════════════════════════════
     final deptData = [
-      ['Manufacturing', 'MFG'],
-      ['Quality Control', 'QC'],
-      ['Regulatory Affairs', 'RA'],
-      ['Human Resources', 'HR'],
-      ['Engineering', 'ENG'],
-      ['Logistics & Supply Chain', 'LOG'],
-      ['Information Technology', 'IT'],
       ['Quality Assurance', 'QA'],
+      ['Quality Control', 'QC'],
+      ['Manufacturing', 'MFG'],
+      ['Regulatory Affairs', 'RA'],
+      ['Pharmacovigilance', 'PV'],
+      ['Research & Development', 'RD'],
+      ['Information Technology', 'IT'],
+      ['Learning & Development', 'LD'],
+      ['Supply Chain', 'SCM'],
+      ['Engineering', 'ENG'],
     ];
     final deptIds = <int>[];
     for (final d in deptData) {
       final dept = await Department.db.insertRow(
         session,
-        Department(siteId: siteId, name: d[0], code: d[1]),
+        Department(siteId: siteIds[0], name: d[0], code: d[1]),
       );
       deptIds.add(dept.id!);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 3: Roles
+    // ═══════════════════════════════════════════════════════════════════════════
     final roleData = [
       ['Admin', 'admin'],
       ['QA Director', 'qa_director'],
-      ['QA', 'qa'],
+      ['QA Manager', 'qa_manager'],
       ['Trainer', 'trainer'],
-      ['Analytics', 'analytics'],
+      ['SME', 'sme'],
       ['Employee', 'employee'],
       ['Auditor', 'auditor'],
     ];
     final roleIds = <String, int>{};
     for (final r in roleData) {
-      final role = await Role.db.insertRow(
-        session,
-        Role(name: r[0], code: r[1]),
-      );
-      roleIds[r[1]] = role.id!;
+      final existing =
+          await Role.db.findFirstRow(session, where: (t) => t.code.equals(r[1]));
+      if (existing != null) {
+        roleIds[r[1]] = existing.id!;
+      } else {
+        final role =
+            await Role.db.insertRow(session, Role(name: r[0], code: r[1]));
+        roleIds[r[1]] = role.id!;
+      }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 3b: Permissions (RBAC resource:action per role)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Format: [roleCode, resource, action]
+    final permissionData = <List<String>>[
+      // Admin — full access
+      ['admin', '*', '*'],
+
+      // QA Director — full read, write quality_event & compliance
+      ['qa_director', '*', 'read'],
+      ['qa_director', 'quality_event', 'write'],
+      ['qa_director', 'compliance', 'write'],
+      ['qa_director', 'course', 'write'],
+
+      // QA Manager — same as director
+      ['qa_manager', '*', 'read'],
+      ['qa_manager', 'quality_event', 'write'],
+      ['qa_manager', 'compliance', 'write'],
+      ['qa_manager', 'course', 'write'],
+
+      // Trainer — course, material, assessment, training, analytics, audit, document (SOP library)
+      ['trainer', 'course', 'read'],
+      ['trainer', 'course', 'write'],
+      ['trainer', 'material', 'read'],
+      ['trainer', 'material', 'write'],
+      ['trainer', 'assessment', 'read'],
+      ['trainer', 'assessment', 'write'],
+      ['trainer', 'training', 'read'],
+      ['trainer', 'training', 'write'],
+      ['trainer', 'training', 'assign'],
+      ['trainer', 'analytics', 'read'],
+      ['trainer', 'analytics', 'write'],
+      ['trainer', 'audit', 'read'],
+      ['trainer', 'organization', 'read'],
+      ['trainer', 'compliance', 'read'],
+      ['trainer', 'quality_event', 'read'],
+      ['trainer', 'document', 'read'],
+      ['trainer', 'document', 'write'],
+
+      // SME — same as trainer (including document for SOP library)
+      ['sme', 'course', 'read'],
+      ['sme', 'course', 'write'],
+      ['sme', 'material', 'read'],
+      ['sme', 'material', 'write'],
+      ['sme', 'assessment', 'read'],
+      ['sme', 'assessment', 'write'],
+      ['sme', 'training', 'read'],
+      ['sme', 'training', 'write'],
+      ['sme', 'training', 'assign'],
+      ['sme', 'analytics', 'read'],
+      ['sme', 'audit', 'read'],
+      ['sme', 'organization', 'read'],
+      ['sme', 'compliance', 'read'],
+      ['sme', 'document', 'read'],
+      ['sme', 'document', 'write'],
+
+      // Employee — read training, compliance, analytics, organization
+      ['employee', 'training', 'read'],
+      ['employee', 'compliance', 'read'],
+      ['employee', 'analytics', 'read'],
+      ['employee', 'organization', 'read'],
+      ['employee', 'course', 'read'],
+      ['employee', 'material', 'read'],
+      ['employee', 'assessment', 'read'],
+
+      // Auditor — read everything
+      ['auditor', '*', 'read'],
+      ['auditor', 'audit', 'read'],
+    ];
+
+    for (final p in permissionData) {
+      final roleId = roleIds[p[0]];
+      if (roleId != null) {
+        final exists = await Permission.db.findFirstRow(
+          session,
+          where: (t) =>
+              t.roleId.equals(roleId) &
+              t.resource.equals(p[1]) &
+              t.action.equals(p[2]),
+        );
+        if (exists == null) {
+          await Permission.db.insertRow(
+            session,
+            Permission(roleId: roleId, resource: p[1], action: p[2]),
+          );
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 4: Job Roles
+    // ═══════════════════════════════════════════════════════════════════════════
     final jobRoleData = [
-      ['Production Operator', 'PROD-OP', deptIds[0]],
-      ['QA Specialist', 'QA-SPEC', deptIds[7]],
-      ['QC Analyst', 'QC-ANAL', deptIds[1]],
-      ['Regulatory Affairs Manager', 'RA-MGR', deptIds[2]],
-      ['Warehouse Operator', 'WH-OP', deptIds[5]],
-      ['Equipment Engineer', 'ENG-EQ', deptIds[4]],
-      ['IT Engineer', 'IT-ENG', deptIds[6]],
-      ['Line Supervisor', 'LINE-SUP', deptIds[0]],
-      ['Pharmacist', 'PHARM', deptIds[1]],
-      ['Validation Engineer', 'VAL-ENG', deptIds[4]],
-      ['Logistics Coordinator', 'LOG-CO', deptIds[5]],
-      ['Training Coordinator', 'TRN-CO', deptIds[3]],
+      ['QA Specialist', 'QA-SPEC', 0],
+      ['QC Analyst', 'QC-ANAL', 1],
+      ['Production Operator', 'PROD-OP', 2],
+      ['Line Supervisor', 'LINE-SUP', 2],
+      ['Plant Manager', 'PLANT-MGR', 2],
+      ['Regulatory Manager', 'RA-MGR', 3],
+      ['PV Associate', 'PV-ASSOC', 4],
+      ['Research Scientist', 'RD-SCI', 5],
+      ['IT Engineer', 'IT-ENG', 6],
+      ['CSV Specialist', 'CSV-SPEC', 6],
+      ['Training Coordinator', 'TRN-COORD', 7],
+      ['Instructional Designer', 'INST-DES', 7],
+      ['Warehouse Operator', 'WH-OP', 8],
+      ['Validation Engineer', 'VAL-ENG', 9],
     ];
     final jobRoleIds = <int>[];
     for (final j in jobRoleData) {
       final jr = await JobRole.db.insertRow(
         session,
         JobRole(
-          departmentId: j[2] as int,
+          departmentId: deptIds[j[2] as int],
           name: j[0] as String,
           code: j[1] as String,
         ),
@@ -560,791 +263,1168 @@ class SeedEndpoint extends Endpoint {
       jobRoleIds.add(jr.id!);
     }
 
-    await SignatureMeaning.db.insertRow(
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 4b: Signature Meanings (FR-02-01)
+    // ═══════════════════════════════════════════════════════════════════════════
+    final meaningCompletion = await SignatureMeaning.db.insertRow(
       session,
       SignatureMeaning(
-        meaning:
-            'I have completed this training and attest that I have read, understood, and will apply the content to my work.',
+        meaning: 'I certify that I have completed this training and will apply the content to my work',
         isActive: true,
         orderIndex: 0,
-        applicableTo: 'training_completion',
       ),
     );
     await SignatureMeaning.db.insertRow(
       session,
       SignatureMeaning(
-        meaning:
-            'I have reviewed this training content and approve it as accurate, complete, and compliant with applicable GMP requirements.',
+        meaning: 'I approve this course version as accurate and compliant',
         isActive: true,
         orderIndex: 1,
-        applicableTo: 'course_approval',
       ),
     );
     await SignatureMeaning.db.insertRow(
       session,
       SignatureMeaning(
-        meaning:
-            'I certify that this Corrective and Preventive Action (CAPA) has been effectively implemented, verified, and is closed.',
+        meaning: 'I certify this CAPA is effectively closed and verified',
         isActive: true,
         orderIndex: 2,
-        applicableTo: 'capa_closure',
       ),
     );
     await SignatureMeaning.db.insertRow(
       session,
       SignatureMeaning(
-        meaning:
-            'I acknowledge that I have read and understood the contents of this document and will comply with its requirements.',
+        meaning: 'I approve this SOP document version',
         isActive: true,
         orderIndex: 3,
-        applicableTo: 'doc_acknowledgement',
-      ),
-    );
-    await SignatureMeaning.db.insertRow(
-      session,
-      SignatureMeaning(
-        meaning:
-            'I approve this training waiver as justified, documented, and compliant with applicable regulatory requirements.',
-        isActive: true,
-        orderIndex: 4,
-        applicableTo: 'waiver_approval',
-      ),
-    );
-    await SignatureMeaning.db.insertRow(
-      session,
-      SignatureMeaning(
-        meaning:
-            'I certify that this inspection package is accurate, complete, and represents the official compliance records for the stated scope.',
-        isActive: true,
-        orderIndex: 5,
-        applicableTo: 'course_approval',
       ),
     );
 
-    // Phase 3: Users
-    final userData = [
-      ['employee@pharmacorp.demo', 'Jane', 'Employee', 'EMP-DEMO', 'employee', deptIds[0], jobRoleIds[0], 'active', -400],
-      ['alice@pharmacorp.demo', 'Alice', 'Chen', 'EMP-001', 'employee', deptIds[0], jobRoleIds[0], 'active', -400],
-      ['bob@pharmacorp.demo', 'Bob', 'Martinez', 'EMP-002', 'employee', deptIds[1], jobRoleIds[2], 'active', -380],
-      ['carol@pharmacorp.demo', 'Carol', 'Williams', 'EMP-003', 'employee', deptIds[0], jobRoleIds[0], 'active', -7],
-      ['dave@pharmacorp.demo', 'Dave', 'Patel', 'EMP-004', 'employee', deptIds[5], jobRoleIds[4], 'active', -300],
-      ['emma@pharmacorp.demo', 'Emma', 'Thompson', 'EMP-005', 'employee', deptIds[4], jobRoleIds[5], 'active', -500],
-      ['admin@pharmacorp.demo', 'Sarah', 'Johnson', 'ADM-001', 'admin', deptIds[3], jobRoleIds[11], 'active', -600],
-      ['qa@pharmacorp.demo', "James", "O'Brien", 'QA-001', 'qa', deptIds[7], jobRoleIds[1], 'active', -550],
-      ['qa.director@pharmacorp.demo', 'Maria', 'Santos', 'QA-002', 'qa_director', deptIds[7], jobRoleIds[1], 'active', -700],
-      ['sme@pharmacorp.demo', 'Michael', 'Zhang', 'SME-001', 'trainer', deptIds[7], jobRoleIds[1], 'active', -450],
-      ['sme2@pharmacorp.demo', 'Rachel', 'Kumar', 'SME-002', 'trainer', deptIds[0], jobRoleIds[9], 'active', -420],
-      ['analytics@pharmacorp.demo', 'Thomas', 'Andersen', 'ANA-001', 'analytics', deptIds[2], jobRoleIds[3], 'active', -500],
-      ['it@pharmacorp.demo', 'Lisa', 'Park', 'IT-001', 'admin', deptIds[6], jobRoleIds[6], 'active', -480],
-      ['locked@pharmacorp.demo', 'Kevin', 'Brown', 'EMP-099', 'employee', deptIds[0], jobRoleIds[0], 'locked', -200],
-      ['ex.employee@pharmacorp.demo', 'Former', 'Employee', 'EMP-000', 'employee', deptIds[0], jobRoleIds[0], 'terminated', -800],
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 5: Trainers (15)
+    // ═══════════════════════════════════════════════════════════════════════════
+    final trainerData = [
+      ['rajesh.venkataraman@pharmatech.in', 'Dr. Rajesh', 'Venkataraman', 'TRN-001', 0, 0, 0],
+      ['sneha.krishnamurthy@pharmatech.in', 'Sneha', 'Krishnamurthy', 'TRN-002', 0, 7, 11],
+      ['kavitha.subramaniam@pharmatech.in', 'Dr. Kavitha', 'Subramaniam', 'TRN-003', 1, 2, 4],
+      ['arun.nair@pharmatech.in', 'Arun', 'Nair', 'TRN-004', 2, 3, 5],
+      ['priya.sharma@pharmatech.in', 'Priya', 'Sharma', 'TRN-005', 1, 2, 3],
+      ['vikram.reddy@pharmatech.in', 'Vikram', 'Reddy', 'TRN-006', 0, 6, 9],
+      ['meera.patel@pharmatech.in', 'Dr. Meera', 'Patel', 'TRN-007', 2, 4, 6],
+      ['ankit.joshi@pharmatech.in', 'Ankit', 'Joshi', 'TRN-008', 4, 7, 10],
+      ['lakshmi.iyer@pharmatech.in', 'Lakshmi', 'Iyer', 'TRN-009', 3, 0, 0],
+      ['rahul.deshmukh@pharmatech.in', 'Rahul', 'Deshmukh', 'TRN-010', 1, 1, 1],
+      ['deepa.menon@pharmatech.in', 'Deepa', 'Menon', 'TRN-011', 0, 7, 11],
+      ['suresh.kumar@pharmatech.in', 'Suresh', 'Kumar', 'TRN-012', 2, 5, 7],
+      ['anjali.rao@pharmatech.in', 'Anjali', 'Rao', 'TRN-013', 4, 9, 13],
+      ['karthik.pillai@pharmatech.in', 'Karthik', 'Pillai', 'TRN-014', 3, 2, 3],
+      ['divya.bhat@pharmatech.in', 'Divya', 'Bhat', 'TRN-015', 0, 3, 5],
     ];
-    final userIds = <String, int>{};
-    var adminId = 0;
-    var qaId = 0;
-    var smeId = 0;
-    for (final u in userData) {
-      final hireDate = dt(u[8] as int);
+    final trainerIds = <int>[];
+    for (final t in trainerData) {
       final user = await PharmaUser.db.insertRow(
         session,
         PharmaUser(
-          email: u[0] as String,
-          firstName: u[1] as String,
-          lastName: u[2] as String,
-          employeeId: u[3] as String,
-          departmentId: u[5] as int,
-          jobRoleId: u[6] as int,
-          siteId: siteId,
-          organizationId: orgId,
-          status: u[7] as String,
-          hireDate: hireDate,
-        ),
-      );
-      userIds[u[0] as String] = user.id!;
-      final roleType = u[4] as String;
-      final roleId = roleIds[roleType] ?? roleIds['employee']!;
-      await UserRole.db.insertRow(
-        session,
-        UserRole(userId: user.id!, roleId: roleId),
-      );
-      if (roleType == 'admin') adminId = user.id!;
-      if (roleType == 'qa' || roleType == 'qa_director') qaId = user.id!;
-      if (roleType == 'trainer') smeId = user.id!;
-    }
-    for (var i = 0; i < 18; i++) {
-      final email = 'employee${(i + 1).toString().padLeft(2, '0')}@pharmacorp.demo';
-      final user = await PharmaUser.db.insertRow(
-        session,
-        PharmaUser(
-          email: email,
-          firstName: 'Employee',
-          lastName: (i + 1).toString().padLeft(2, '0'),
-          employeeId: 'EMP-${(200 + i).toString().padLeft(3, '0')}',
-          departmentId: deptIds[i % 4],
-          jobRoleId: jobRoleIds[i % 4],
-          siteId: siteId,
+          email: t[0] as String,
+          firstName: t[1] as String,
+          lastName: t[2] as String,
+          employeeId: t[3] as String,
+          siteId: siteIds[t[4] as int],
+          departmentId: deptIds[t[5] as int],
+          jobRoleId: jobRoleIds[t[6] as int],
           organizationId: orgId,
           status: 'active',
-          hireDate: dt(-(100 + i * 15)),
+          hireDate: dt(-800 + trainerIds.length * 30),
         ),
       );
-      userIds[email] = user.id!;
+      trainerIds.add(user.id!);
+      await UserRole.db.insertRow(
+        session,
+        UserRole(userId: user.id!, roleId: roleIds['trainer']!),
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 6: Learners (100)
+    // ═══════════════════════════════════════════════════════════════════════════
+    final learnerNames = [
+      ['Ramesh', 'Gupta'], ['Priyanka', 'Singh'], ['Manoj', 'Verma'],
+      ['Sunita', 'Devi'], ['Arvind', 'Khanna'], ['Fatima', 'Khan'],
+      ['Sanjay', 'Patil'], ['Neha', 'Agarwal'], ['Vishal', 'Jain'],
+      ['Asha', 'Kumari'], ['Amit', 'Sharma'], ['Pooja', 'Patel'],
+      ['Ravi', 'Kumar'], ['Swati', 'Reddy'], ['Deepak', 'Nair'],
+      ['Kavita', 'Iyer'], ['Sunil', 'Rao'], ['Anjali', 'Mehta'],
+      ['Rajiv', 'Desai'], ['Shweta', 'Joshi'], ['Vinod', 'Pillai'],
+      ['Rekha', 'Menon'], ['Ashok', 'Bhat'], ['Nidhi', 'Gupta'],
+      ['Prakash', 'Singh'], ['Seema', 'Verma'], ['Anil', 'Chauhan'],
+      ['Geeta', 'Saxena'], ['Mohan', 'Tiwari'], ['Sarita', 'Pandey'],
+      ['Vikram', 'Malhotra'], ['Lalita', 'Kapoor'], ['Suresh', 'Bhatt'],
+      ['Rina', 'Shah'], ['Gaurav', 'Mishra'], ['Preeti', 'Sinha'],
+      ['Naresh', 'Yadav'], ['Usha', 'Tripathi'], ['Kishore', 'Chandra'],
+      ['Madhuri', 'Das'], ['Satish', 'Sen'], ['Padma', 'Roy'],
+      ['Dilip', 'Banerjee'], ['Manju', 'Ghosh'], ['Rakesh', 'Mukherjee'],
+      ['Veena', 'Dutta'], ['Harish', 'Paul'], ['Radha', 'Bose'],
+      ['Srinivas', 'Chakraborty'], ['Kamala', 'Chatterjee'],
+      ['Girish', 'Majumdar'], ['Lata', 'Sarkar'], ['Mahesh', 'Saha'],
+      ['Suman', 'Biswas'], ['Pankaj', 'De'], ['Anu', 'Kar'],
+      ['Vivek', 'Mitra'], ['Jaya', 'Dey'], ['Nitin', 'Ganguly'],
+      ['Sunanda', 'Lahiri'], ['Hemant', 'Nandy'], ['Asha', 'Bhattacharya'],
+      ['Alok', 'Sengupta'], ['Meenakshi', 'Basu'], ['Raghav', 'Ray'],
+      ['Sudha', 'Mandal'], ['Sanjiv', 'Goswami'], ['Urmila', 'Chowdhury'],
+      ['Vijay', 'Adhikari'], ['Chitra', 'Barman'], ['Ajay', 'Choudhury'],
+      ['Kiran', 'Haldar'], ['Manish', 'Bhowmik'], ['Shobha', 'Kundu'],
+      ['Dinesh', 'Mondal'], ['Anita', 'Jana'], ['Rohit', 'Ghosal'],
+      ['Pushpa', 'Pal'], ['Santosh', 'Hazra'], ['Mamta', 'Konar'],
+      ['Prem', 'Samanta'], ['Renu', 'Maity'], ['Ashish', 'Naskar'],
+      ['Beena', 'Shil'], ['Mukesh', 'Halder'], ['Saroj', 'Basak'],
+      ['Arvind', 'Debnath'], ['Kalpana', 'Sanyal'], ['Yogesh', 'Roychowdhury'],
+      ['Jyoti', 'Mukhopadhyay'],
+    ];
+    final learnerIds = <int>[];
+    for (var i = 0; i < 100; i++) {
+      final nameData = learnerNames[i < learnerNames.length ? i : i % learnerNames.length];
+      final user = await PharmaUser.db.insertRow(
+        session,
+        PharmaUser(
+          email: '${nameData[0].toLowerCase()}.${nameData[1].toLowerCase()}${i > 0 ? i : ''}@pharmatech.in',
+          firstName: nameData[0],
+          lastName: nameData[1],
+          employeeId: 'EMP-${(1000 + i).toString()}',
+          siteId: siteIds[i % 5],
+          departmentId: deptIds[i % 10],
+          jobRoleId: jobRoleIds[i % 14],
+          organizationId: orgId,
+          status: i == 99 ? 'terminated' : (i % 50 == 49 ? 'locked' : 'active'),
+          hireDate: dt(-1800 + i * 15),
+        ),
+      );
+      learnerIds.add(user.id!);
       await UserRole.db.insertRow(
         session,
         UserRole(userId: user.id!, roleId: roleIds['employee']!),
       );
     }
-    adminId = userIds['admin@pharmacorp.demo']!;
-    qaId = userIds['qa@pharmacorp.demo']!;
-    smeId = userIds['sme@pharmacorp.demo']!;
-    final qa2Id = userIds['qa.director@pharmacorp.demo']!;
-    final aliceId = userIds['alice@pharmacorp.demo']!;
-    final bobId = userIds['bob@pharmacorp.demo']!;
-    final carolId = userIds['carol@pharmacorp.demo']!;
-    final daveId = userIds['dave@pharmacorp.demo']!;
 
-    // Phase 4: Documents and Courses
-    final docData = [
-      ['Quality Control Testing Procedures', 'SOP-QC-001', 'SOP'],
-      ['Good Manufacturing Practice Handbook', 'SOP-GMP-002', 'SOP'],
-      ['Cold Chain & Temperature Management', 'SOP-CC-003', 'SOP'],
-      ['Aseptic Technique & Clean Room Entry', 'SOP-AS-004', 'SOP'],
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 6b: Demo Users (for development/testing login flow)
+    // These match the emails in auth_provider.dart demo mode
+    // ═══════════════════════════════════════════════════════════════════════════
+    final demoUsers = [
+      // [email, firstName, lastName, employeeId, roleCode]
+      ['employee@pharmacorp.demo', 'Demo', 'Employee', 'DEMO-EMP', 'employee'],
+      ['admin@pharmacorp.demo', 'Demo', 'Admin', 'DEMO-ADM', 'admin'],
+      ['qa@pharmacorp.demo', 'Demo', 'QA', 'DEMO-QA', 'qa_manager'],
+      ['trainer@pharmacorp.demo', 'Demo', 'Trainer', 'DEMO-TRN', 'trainer'],
+      ['auditor@pharmacorp.demo', 'Demo', 'Auditor', 'DEMO-AUD', 'auditor'],
+      ['analytics@pharmacorp.demo', 'Demo', 'Analytics', 'DEMO-ANA', 'admin'],
     ];
-    final docIds = <int>[];
-    for (final d in docData) {
-      final doc = await Document.db.insertRow(
+    
+    for (final d in demoUsers) {
+      // Check if demo user already exists
+      final existingDemo = await PharmaUser.db.findFirstRow(
         session,
-        Document(
-          title: d[0],
-          documentNumber: d[1],
-          documentType: d[2],
-          organizationId: orgId,
-        ),
+        where: (t) => t.email.equals(d[0]),
       );
-      docIds.add(doc.id!);
+      if (existingDemo == null) {
+        final demoUser = await PharmaUser.db.insertRow(
+          session,
+          PharmaUser(
+            email: d[0],
+            firstName: d[1],
+            lastName: d[2],
+            employeeId: d[3],
+            siteId: siteIds[0], // Mumbai HQ
+            departmentId: deptIds[0], // First department
+            jobRoleId: jobRoleIds[0], // First job role
+            organizationId: orgId,
+            status: 'active',
+            hireDate: dt(-365), // 1 year ago
+          ),
+        );
+        await UserRole.db.insertRow(
+          session,
+          UserRole(userId: demoUser.id!, roleId: roleIds[d[4]]!),
+        );
+      }
     }
 
-    final docVersionData = [
-      [docIds[0], '1.0', 'obsolete', -180, -14],
-      [docIds[0], '2.0', 'effective', -14, null],
-      [docIds[1], '1.0', 'effective', -180, null],
-      [docIds[2], '1.0', 'obsolete', -200, -90],
-      [docIds[2], '2.0', 'effective', -90, null],
-      [docIds[3], '1.0', 'effective', -200, null],
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 7: Courses (12)
+    // ═══════════════════════════════════════════════════════════════════════════
+    final courseConfigs = [
+      ['GMP Fundamentals', 'SOP-GMP-001', '21 CFR Part 211'],
+      ['21 CFR Part 11', 'SOP-EREC-002', 'Electronic records compliance'],
+      ['GCP — ICH E6 R2', 'SOP-GCP-003', 'Good Clinical Practice'],
+      ['GVP Modules', 'SOP-GVP-004', 'Good Pharmacovigilance Practice'],
+      ['Cold Chain Management', 'SOP-COLD-005', 'WHO TRS 961'],
+      ['Aseptic Technique', 'SOP-ASEP-006', 'EU GMP Annex 1'],
+      ['CAPA & Root Cause', 'SOP-CAPA-007', 'Corrective and Preventive Action'],
+      ['Data Integrity', 'SOP-DI-008', 'ALCOA+ principles'],
+      ['EHS Fundamentals', 'SOP-EHS-009', 'OSHA 29 CFR 1910'],
+      ['Stability Studies', 'SOP-STAB-010', 'ICH Q1A R2'],
+      ['Audit Readiness', 'SOP-AUDIT-011', 'FDA/EMA inspection prep'],
+      ['New Employee Induction', 'SOP-INDUCT-012', 'Company policies'],
     ];
-    final docVersionIds = <int>[];
-    for (final dv in docVersionData) {
-      final dvv = await DocumentVersion.db.insertRow(
-        session,
-        DocumentVersion(
-          documentId: dv[0] as int,
-          version: dv[1] as String,
-          storageKey: 'documents/${dv[0]}/${dv[1]}/document.pdf',
-          effectiveDate: dt(dv[3] as int),
-          obsoleteDate: dv[4] != null ? dt(dv[4] as int) : null,
-        ),
-      );
-      docVersionIds.add(dvv.id!);
-    }
+    final courseVersionIds = <int>[];
+    final assessmentIds = <int>[];
 
-    final courseData = [
-      ['GMP Fundamentals', 'published', 'SOP-GMP-002'],
-      ['Cold Chain & Temperature Monitoring', 'published', 'SOP-CC-003'],
-      ['Aseptic Technique & Clean Room Procedures', 'published', 'SOP-AS-004'],
-      ['Drug Safety Awareness & Pharmacovigilance', 'published', null],
-      ['Process Validation Fundamentals', 'draft', null],
-      ['Data Integrity & 21 CFR Part 11', 'under_review', null],
-    ];
-    final courseIds = <int>[];
-    for (final c in courseData) {
+    for (var i = 0; i < courseConfigs.length; i++) {
+      final c = courseConfigs[i];
       final course = await Course.db.insertRow(
         session,
         Course(
-          title: c[0] as String,
-          sopNumber: c[2],
-          description: 'Comprehensive pharma training on ${c[0]}.',
-          status: c[1] as String,
-          createdById: smeId,
+          title: c[0],
+          sopNumber: c[1],
+          description: c[2],
+          status: 'approved',
+          createdById: trainerIds[i % trainerIds.length],
           organizationId: orgId,
         ),
       );
-      courseIds.add(course.id!);
-    }
-
-    final cvData = [
-      [courseIds[0], '1.0', 'superseded', -240, -14, true],
-      [courseIds[0], '2.0', 'effective', -14, null, false],
-      [courseIds[1], '1.0', 'superseded', -180, -90, true],
-      [courseIds[1], '2.0', 'effective', -90, null, false],
-      [courseIds[2], '1.0', 'effective', -200, null, false],
-      [courseIds[3], '1.0', 'effective', -150, null, false],
-      [courseIds[4], '1.0', 'draft', null, null, false],
-      [courseIds[5], '1.0', 'under_review', null, null, false],
-    ];
-    final cvIds = <int>[];
-    int? cvGmpV2Id;
-    int? cvColdchainV2Id;
-    int? cvAsepticV1Id;
-    int? cvSafetyV1Id;
-    int? cvValidationV1Id;
-    int? cvDataintegV1Id;
-    for (var i = 0; i < cvData.length; i++) {
-      final cv = cvData[i];
-      final supersededById = null;
-      final cvRow = await CourseVersion.db.insertRow(
+      final cv = await CourseVersion.db.insertRow(
         session,
         CourseVersion(
-          courseId: cv[0] as int,
-          version: cv[1] as String,
-          status: cv[2] as String,
-          effectiveDate: cv[3] != null ? dt(cv[3] as int) : null,
-          obsoleteDate: cv[4] != null ? dt(cv[4] as int) : null,
-          supersededByVersionId: supersededById,
-          changeSummary: cv[1] == '1.0' ? 'Initial version' : 'Updated per SOP v2.0',
+          courseId: course.id!,
+          version: '1.0',
+          status: 'effective',
+          effectiveDate: dt(-180 + i * 10),
         ),
       );
-      cvIds.add(cvRow.id!);
-      if (i == 1) cvGmpV2Id = cvRow.id!;
-      if (i == 3) cvColdchainV2Id = cvRow.id!;
-      if (i == 4) cvAsepticV1Id = cvRow.id!;
-      if (i == 5) cvSafetyV1Id = cvRow.id!;
-      if (i == 6) cvValidationV1Id = cvRow.id!;
-      if (i == 7) cvDataintegV1Id = cvRow.id!;
-    }
-    cvGmpV2Id ??= cvIds[1];
-    cvColdchainV2Id ??= cvIds[3];
-    cvAsepticV1Id ??= cvIds[4];
-    cvSafetyV1Id ??= cvIds[5];
-    cvValidationV1Id ??= cvIds[6];
-    cvDataintegV1Id ??= cvIds[7];
+      courseVersionIds.add(cv.id!);
 
-    final publishedCvs = [cvGmpV2Id, cvColdchainV2Id, cvAsepticV1Id, cvSafetyV1Id];
-    final moduleConfigs = [
-      ['Introduction to GMP', 'What is GMP and Why It Matters', 'Regulatory Framework Overview (FDA/EMA)', 'Key GMP Principles and ALCOA+'],
-      ['Documentation & Data Integrity', 'Good Documentation Practices', 'Electronic Records Under 21 CFR Part 11', 'Data Integrity Failures — Case Studies'],
-      ['Quality Systems & CAPA', 'Deviation Management', 'CAPA Lifecycle', 'Effectiveness Monitoring'],
-      ['Cold Chain Fundamentals', 'Temperature Sensitivity of Drug Products', 'Cold Chain Infrastructure', 'Monitoring Equipment'],
-      ['Temperature Excursions', 'Identifying an Excursion', 'Risk Assessment Protocol', 'Reporting Requirements'],
-      ['Transportation & Storage', 'Qualified Container Systems', 'Storage Room SOPs', 'Chain of Custody Documentation'],
-      ['Clean Room Classification', 'ISO Classifications Explained', 'Gowning Requirements per Classification', 'Environmental Monitoring'],
-      ['Aseptic Technique', 'Core Aseptic Principles', 'Contamination Control Strategies', 'Aseptic Process Simulation'],
-      ['Practical Assessment Module', 'Gowning Practical Checklist', 'Clean Room Entry/Exit Procedure', 'Video: Correct Aseptic Technique Demonstration'],
-      ['Pharmacovigilance Basics', 'Drug Safety Reporting Obligations', 'Adverse Event Classification', 'MedWatch and EudraVigilance'],
-      ['Signal Detection', 'Spontaneous Reporting Systems', 'Signal Evaluation Methodology', 'Case Studies: Major Drug Withdrawals'],
-      ['Internal Reporting Procedures', 'Internal SAE Reporting Flow', 'Time-Critical Submissions', 'Practical Exercise: Report Completion'],
-    ];
-    final moduleIds = <int>[];
-    final lessonIds = <List<int>>[];
-    final materialIds = <int>[];
-    var modIdx = 0;
-    for (final cvId in publishedCvs) {
-      final numMods = 3;
-      for (var mi = 0; mi < numMods; mi++) {
-        final config = moduleConfigs[modIdx++];
-        final mod = await Module.db.insertRow(
-          session,
-          Module(
-            courseVersionId: cvId,
-            title: config[0],
-            orderIndex: mi + 1,
-          ),
-        );
-        moduleIds.add(mod.id!);
-        final lessons = <int>[];
-        for (var li = 1; li <= 3; li++) {
-          final mat = await Material.db.insertRow(
-            session,
-            Material(
-              title: config[li],
-              materialType: li % 3 == 0 ? 'video' : 'pdf',
-              storageKey: 'materials/lesson-$cvId-${mod.id}-$li/content.pdf',
-              organizationId: orgId,
-            ),
-          );
-          materialIds.add(mat.id!);
-          final lesson = await Lesson.db.insertRow(
-            session,
-            Lesson(
-              moduleId: mod.id!,
-              title: config[li],
-              orderIndex: li,
-              materialId: mat.id!,
-              durationMinutes: 10 + (li * 2),
-            ),
-          );
-          lessons.add(lesson.id!);
-        }
-        lessonIds.add(lessons);
-      }
-    }
-
-    // Phase 5: Assessments
-    final gmpQuestions = [
-      ['What does GMP stand for in pharmaceutical manufacturing?', '["Good Manufacturing Practice","General Manufacturing Procedure","Good Medical Protocol","Guided Manufacturing Process"]', '0'],
-      ['Which regulation governs electronic records and signatures in the US?', '["21 CFR Part 210","21 CFR Part 211","21 CFR Part 11","EU GMP Annex 11"]', '2'],
-      ['What is ALCOA+ in the context of data integrity?', '["An FDA inspection checklist","Principles for data integrity: Attributable, Legible, Contemporaneous, Original, Accurate","An antivirus standard","A GAMP 5 validation framework"]', '1'],
-    ];
-    final assessCvs = [
-      [cvGmpV2Id, 80, 45],
-      [cvColdchainV2Id, 75, 30],
-      [cvAsepticV1Id, 85, 60],
-      [cvSafetyV1Id, 75, 30],
-    ];
-    final assessIds = <int>[];
-    final questionIdsByAssess = <int, List<int>>{};
-    for (final ac in assessCvs) {
-      final qb = await QuestionBank.db.insertRow(
-        session,
-        QuestionBank(
-          name: 'Assessment for CV ${ac[0]}',
-          organizationId: orgId,
-          tagsJson: '["GMP","21CFR"]',
-        ),
-      );
-      final qIds = <int>[];
-      for (var q = 0; q < 20; q++) {
-        final gq = gmpQuestions[q % gmpQuestions.length];
-        final qu = await Question.db.insertRow(
-          session,
-          Question(
-            questionBankId: qb.id!,
-            text: gq[0],
-            questionType: q % 5 == 4 ? 'true_false' : 'multiple_choice',
-            optionsJson: gq[1],
-            correctAnswer: gq[2],
-            difficulty: ['easy', 'medium', 'hard'][q % 3],
-          ),
-        );
-        qIds.add(qu.id!);
-      }
-      final assess = await Assessment.db.insertRow(
-        session,
-        Assessment(
-          courseVersionId: ac[0],
-          questionBankId: qb.id!,
-          passingScore: ac[1],
-          randomize: true,
-          timeLimitMinutes: ac[2],
-        ),
-      );
-      assessIds.add(assess.id!);
-      questionIdsByAssess[assess.id!] = qIds;
-    }
-
-    // Phase 6: Training matrix
-    final matrixData = [
-      [jobRoleIds[0], courseIds[0], true, 7],
-      [jobRoleIds[0], courseIds[2], true, 14],
-      [jobRoleIds[0], courseIds[1], false, 30],
-      [jobRoleIds[7], courseIds[0], true, 7],
-      [jobRoleIds[7], courseIds[2], true, 14],
-      [jobRoleIds[7], courseIds[3], true, 30],
-      [jobRoleIds[1], courseIds[0], true, 7],
-      [jobRoleIds[1], courseIds[3], true, 14],
-      [jobRoleIds[1], courseIds[5], true, 14],
-      [jobRoleIds[2], courseIds[0], true, 7],
-      [jobRoleIds[2], courseIds[3], true, 14],
-      [jobRoleIds[2], courseIds[1], true, 30],
-      [jobRoleIds[4], courseIds[0], true, 14],
-      [jobRoleIds[4], courseIds[1], true, 7],
-      [jobRoleIds[5], courseIds[0], true, 14],
-      [jobRoleIds[5], courseIds[4], true, 30],
-      [jobRoleIds[9], courseIds[0], true, 7],
-      [jobRoleIds[9], courseIds[4], true, 14],
-      [jobRoleIds[9], courseIds[5], true, 14],
-      [jobRoleIds[8], courseIds[0], true, 7],
-      [jobRoleIds[8], courseIds[3], true, 7],
-      [jobRoleIds[8], courseIds[1], true, 14],
-      [jobRoleIds[3], courseIds[3], true, 14],
-      [jobRoleIds[10], courseIds[1], true, 14],
-    ];
-    for (final m in matrixData) {
+      // Training Matrix
       await TrainingMatrix.db.insertRow(
         session,
         TrainingMatrix(
-          jobRoleId: m[0] as int,
-          courseId: m[1] as int,
-          siteId: siteId,
-          isMandatory: m[2] as bool,
-          dueDaysFromHire: m[3] as int,
-          approvedById: qaId,
+          jobRoleId: jobRoleIds[i % jobRoleIds.length],
+          courseId: course.id!,
+          isMandatory: true,
+          dueDaysFromHire: 30,
           effectiveDate: dt(-180),
         ),
       );
-    }
 
-    // Phase 6: Training assignments and enrollments
-    final enrollData = [
-      [aliceId, cvGmpV2Id, 'in_progress', -20, 10, 'onboarding'],
-      [aliceId, cvColdchainV2Id, 'overdue', -40, -8, 'onboarding'],
-      [aliceId, cvAsepticV1Id, 'completed', -320, -290, 'onboarding', -310],
-      [aliceId, cvGmpV2Id, 'not_started', null, 14, 'sop_update'],
-      [bobId, cvGmpV2Id, 'completed', -200, -180, 'onboarding', -195],
-      [bobId, cvColdchainV2Id, 'completed', -180, -150, 'onboarding', -170],
-      [bobId, cvSafetyV1Id, 'completed', -160, -130, 'onboarding', -155],
-      [carolId, cvGmpV2Id, 'not_started', null, 0, 'onboarding'],
-      [carolId, cvAsepticV1Id, 'not_started', null, 7, 'onboarding'],
-      [daveId, cvColdchainV2Id, 'in_progress', -30, -5, 'onboarding'],
-      [daveId, cvGmpV2Id, 'completed', -280, -250, 'onboarding', -270],
-    ];
-    final enrollmentIds = <int>[];
-    final assignmentIds = <int>[];
-    for (var i = 0; i < enrollData.length; i++) {
-      final e = enrollData[i];
-      final dueDate = dt(e[4] as int);
-      final startedAt = e[3] != null ? dt(e[3] as int) : null;
-      final completedAt = e.length > 6 ? dt(e[6] as int) : null;
-      final assignedById = e[5] == 'sop_update' ? adminId : adminId;
-      final assign = await TrainingAssignment.db.insertRow(
+      // Question Bank & Assessment
+      final qb = await QuestionBank.db.insertRow(
         session,
-        TrainingAssignment(
-          userId: e[0] as int,
-          courseVersionId: e[1] as int,
-          assignedById: assignedById,
-          assignedAt: dt(-30 - i),
-          dueDate: dueDate,
-          priority: e[2] == 'overdue' ? 'high' : 'medium',
-          source: e[5] as String,
-          reason: e[5] == 'sop_update' ? 'SOP updated to v2.0 — retraining required' : 'Required per training matrix',
-        ),
+        QuestionBank(name: '${c[0]} Quiz', organizationId: orgId),
       );
-      assignmentIds.add(assign.id!);
-      final enr = await Enrollment.db.insertRow(
-        session,
-        Enrollment(
-          userId: e[0] as int,
-          courseVersionId: e[1] as int,
-          assignmentId: assign.id!,
-          status: e[2] as String,
-          startedAt: startedAt,
-          completedAt: completedAt,
-        ),
-      );
-      enrollmentIds.add(enr.id!);
-    }
-    final aliceEnrGmp = enrollmentIds[0];
-    final aliceEnrAseptic = enrollmentIds[2];
-    final bobEnrGmp = enrollmentIds[4];
-    final bobEnrCc = enrollmentIds[5];
-    final bobEnrSafety = enrollmentIds[6];
-    final daveEnrGmp = enrollmentIds[10];
-    final daveEnrCc = enrollmentIds[9];
-
-    for (var i = 0; i < 18; i++) {
-      final uid = userIds['employee${(i + 1).toString().padLeft(2, '0')}@pharmacorp.demo']!;
-      final statuses = ['completed', 'completed', 'completed', 'in_progress', 'overdue', 'not_started', 'overdue', 'completed', 'completed', 'in_progress'];
-      final s = statuses[i % statuses.length];
-      final dueDate = s == 'overdue' ? dt(-3) : dt(15);
-      final startedAt = s != 'not_started' ? dt(-(30 + i * 5)) : null;
-      final completedAt = s == 'completed' ? dt(-(20 + i * 3)) : null;
-      final assign = await TrainingAssignment.db.insertRow(
-        session,
-        TrainingAssignment(
-          userId: uid,
-          courseVersionId: cvGmpV2Id,
-          assignedById: adminId,
-          assignedAt: dt(-30 - i),
-          dueDate: dueDate,
-          source: 'onboarding',
-        ),
-      );
-      await Enrollment.db.insertRow(
-        session,
-        Enrollment(
-          userId: uid,
-          courseVersionId: cvGmpV2Id,
-          assignmentId: assign.id!,
-          status: s,
-          startedAt: startedAt,
-          completedAt: completedAt,
-        ),
-      );
-    }
-
-    // Phase 6: Assessment attempts
-    const hmacSecret = 'DEMO_HMAC_SECRET_KEY_NOT_FOR_PRODUCTION_2026';
-    String hmac(String data) {
-      final key = utf8.encode(hmacSecret);
-      final bytes = utf8.encode(data);
-      final digest = Hmac(sha256, key).convert(bytes);
-      return digest.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    }
-
-    final attemptData = [
-      [aliceId, assessIds[2], aliceEnrAseptic, 90, true, -311],
-      [bobId, assessIds[0], bobEnrGmp, 85, true, -196],
-      [bobId, assessIds[1], bobEnrCc, 80, true, -171],
-      [bobId, assessIds[3], bobEnrSafety, 92, true, -156],
-      [daveId, assessIds[0], daveEnrGmp, 82, true, -271],
-      [daveId, assessIds[1], daveEnrCc, 60, false, -20],
-      [daveId, assessIds[1], daveEnrCc, 70, false, -10],
-    ];
-    final attemptIds = <int>[];
-    for (final a in attemptData) {
-      final att = await AssessmentAttempt.db.insertRow(
-        session,
-        AssessmentAttempt(
-          userId: a[0] as int,
-          assessmentId: a[1] as int,
-          enrollmentId: a[2] as int,
-          startedAt: dt(a[5] as int),
-          completedAt: dt(a[5] as int),
-          score: a[3] as int,
-        ),
-      );
-      attemptIds.add(att.id!);
-      final qIds = questionIdsByAssess[a[1] as int] ?? [];
-      for (var qi = 0; qi < 10 && qi < qIds.length; qi++) {
-        final correct = qi < (a[3] as int) ~/ 10;
-        await AssessmentResult.db.insertRow(
+      for (var qi = 0; qi < 5; qi++) {
+        await Question.db.insertRow(
           session,
-          AssessmentResult(
-            attemptId: att.id!,
-            questionId: qIds[qi],
-            answer: correct ? '0' : '1',
-            correct: correct,
+          Question(
+            questionBankId: qb.id!,
+            text: 'Question ${qi + 1} for ${c[0]}',
+            questionType: qi % 2 == 0 ? 'multiple_choice' : 'true_false',
+            optionsJson: qi % 2 == 0 ? '["A","B","C","D"]' : '["True","False"]',
+            correctAnswer: '0',
+            difficulty: ['easy', 'medium', 'hard'][qi % 3],
+            regulatoryTag: 'GMP',
+          ),
+        );
+      }
+      final assessment = await Assessment.db.insertRow(
+        session,
+        Assessment(
+          courseVersionId: cv.id!,
+          questionBankId: qb.id!,
+          passingScore: 80,
+          timeLimitMinutes: 30,
+          maxAttempts: 3,
+        ),
+      );
+      assessmentIds.add(assessment.id!);
+
+      // Modules & Lessons
+      for (var mi = 0; mi < 3; mi++) {
+        final mod = await Module.db.insertRow(
+          session,
+          Module(courseVersionId: cv.id!, title: 'Module ${mi + 1}', orderIndex: mi),
+        );
+        for (var li = 0; li < 3; li++) {
+          final mat = await Material.db.insertRow(
+            session,
+            Material(
+              title: 'Lesson ${li + 1} Material',
+              materialType: li == 2 ? 'video' : 'pdf',
+              storageKey: 's3://pharma-lms/${c[1]}/m${mi + 1}/l${li + 1}.${li == 2 ? 'mp4' : 'pdf'}',
+              organizationId: orgId,
+            ),
+          );
+          await Lesson.db.insertRow(
+            session,
+            Lesson(
+              moduleId: mod.id!,
+              title: 'Lesson ${li + 1}',
+              orderIndex: li,
+              materialId: mat.id!,
+              durationMinutes: 10 + li * 5,
+            ),
+          );
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 8: Enrollments & Certificates
+    // ═══════════════════════════════════════════════════════════════════════════
+    var assignmentCount = 0;
+    var completedCount = 0;
+    var overdueCount = 0;
+    final enrollmentIds = <int>[];
+    var certificateCount = 0;
+
+    for (var ui = 0; ui < 50; ui++) {
+      final userId = learnerIds[ui];
+      final assignerId = trainerIds[ui % trainerIds.length];
+
+      for (var ci = 0; ci < courseVersionIds.length; ci++) {
+        final cvId = courseVersionIds[ci];
+        final daysOffset = -90 + (ui % 60) - ci * 5;
+        final statusRoll = (ui * 7 + ci * 13) % 100;
+        final isCompleted = statusRoll < 40;
+        final isInProgress = statusRoll >= 40 && statusRoll < 65;
+        final isOverdue = statusRoll >= 85;
+
+        if (isOverdue) overdueCount++;
+        if (isCompleted) completedCount++;
+
+        final completedAt = isCompleted ? dt(daysOffset + 15) : null;
+
+        final assignment = await TrainingAssignment.db.insertRow(
+          session,
+          TrainingAssignment(
+            userId: userId,
+            courseVersionId: cvId,
+            assignedById: assignerId,
+            assignedAt: dt(daysOffset),
+            dueDate: dt(daysOffset + 30),
+            priority: ci < 3 ? 'high' : (ci < 6 ? 'medium' : 'low'),
+            source: ci == 0 ? 'job_role' : 'manual',
+            reason: 'Training matrix assignment',
+          ),
+        );
+
+        final enrollment = await Enrollment.db.insertRow(
+          session,
+          Enrollment(
+            userId: userId,
+            courseVersionId: cvId,
+            assignmentId: assignment.id!,
+            status: isCompleted ? 'completed' : isInProgress ? 'in_progress' : 'not_started',
+            startedAt: (isCompleted || isInProgress) ? dt(daysOffset + 1) : null,
+            completedAt: completedAt,
+          ),
+        );
+        enrollmentIds.add(enrollment.id!);
+        assignmentCount++;
+
+        if (isCompleted) {
+          await AssessmentAttempt.db.insertRow(
+            session,
+            AssessmentAttempt(
+              userId: userId,
+              assessmentId: assessmentIds[ci],
+              enrollmentId: enrollment.id!,
+              startedAt: completedAt!.subtract(const Duration(minutes: 20)),
+              completedAt: completedAt,
+              score: 85 + (ui % 15),
+            ),
+          );
+
+          final sigPayload = '$userId-cert-$cvId-${completedAt.toIso8601String()}';
+          final hmac = Hmac(sha256, utf8.encode(hmacSecret));
+          final integrityHash = hmac.convert(utf8.encode(sigPayload)).toString();
+
+          final esig = await ElectronicSignature.db.insertRow(
+            session,
+            ElectronicSignature(
+              userId: userId,
+              signatureMeaning: meaningCompletion.meaning,
+              entityType: 'Certificate',
+              entityId: 'cert-$userId-$cvId',
+              timestamp: completedAt,
+              ipAddress: '10.0.${ui % 5}.${100 + (userId % 155)}',
+              integrityHash: integrityHash,
+            ),
+          );
+
+          final trainRec = await TrainingRecord.db.insertRow(
+            session,
+            TrainingRecord(
+              userId: userId,
+              courseVersionId: cvId,
+              enrollmentId: enrollment.id!,
+              esignatureId: esig.id!,
+              completedAt: completedAt,
+              score: 85 + (ui % 15),
+            ),
+          );
+
+          final certHash = sha256.convert(utf8.encode('cert-$userId-$cvId-${completedAt.toIso8601String()}')).toString();
+          await Certificate.db.insertRow(
+            session,
+            Certificate(
+              userId: userId,
+              courseVersionId: cvId,
+              trainingRecordId: trainRec.id!,
+              esignatureId: esig.id!,
+              issuedAt: completedAt,
+              expiresAt: completedAt.add(const Duration(days: 365)),
+              qrCode: certHash,
+              status: 'active',
+            ),
+          );
+          certificateCount++;
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 8b: DEMO EMPLOYEE — Rich data for testing ALL employee portal features
+    // Login with "Employee" button → employee@pharmacorp.demo
+    // ═══════════════════════════════════════════════════════════════════════════
+    final demoEmployee = await PharmaUser.db.findFirstRow(
+      session,
+      where: (t) => t.email.equals('employee@pharmacorp.demo'),
+    );
+    var demoCertCount = 0;
+    if (demoEmployee != null) {
+      final demoUid = demoEmployee.id!;
+      final demoAssigner = trainerIds[0];
+
+      // ── 1. COMPLETED courses (4) — shows in Training History, Certifications ──
+      for (var ci = 0; ci < 4; ci++) {
+        final cvId = courseVersionIds[ci];
+        final completedDate = dt(-60 + ci * 10);
+
+        final demoAssignment = await TrainingAssignment.db.insertRow(
+          session,
+          TrainingAssignment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignedById: demoAssigner,
+            assignedAt: dt(-120 + ci * 10),
+            dueDate: dt(-30 + ci * 10),
+            priority: 'high',
+            source: 'job_role',
+            reason: 'Mandatory GxP training',
+          ),
+        );
+        final demoEnrollment = await Enrollment.db.insertRow(
+          session,
+          Enrollment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignmentId: demoAssignment.id!,
+            status: 'completed',
+            startedAt: dt(-100 + ci * 10),
+            completedAt: completedDate,
+          ),
+        );
+        enrollmentIds.add(demoEnrollment.id!);
+        assignmentCount++;
+        completedCount++;
+
+        // Assessment attempt with passing score
+        await AssessmentAttempt.db.insertRow(
+          session,
+          AssessmentAttempt(
+            userId: demoUid,
+            assessmentId: assessmentIds[ci],
+            enrollmentId: demoEnrollment.id!,
+            startedAt: completedDate.subtract(const Duration(minutes: 25)),
+            completedAt: completedDate,
+            score: 88 + ci * 3,
+          ),
+        );
+
+        // E-signature + Certificate
+        final sigPayload = '$demoUid-cert-$cvId-${completedDate.toIso8601String()}';
+        final hmac = Hmac(sha256, utf8.encode(hmacSecret));
+        final integrityHash = hmac.convert(utf8.encode(sigPayload)).toString();
+
+        final esig = await ElectronicSignature.db.insertRow(
+          session,
+          ElectronicSignature(
+            userId: demoUid,
+            signatureMeaning: meaningCompletion.meaning,
+            entityType: 'Certificate',
+            entityId: 'cert-$demoUid-$cvId',
+            timestamp: completedDate,
+            ipAddress: '10.0.1.200',
+            integrityHash: integrityHash,
+          ),
+        );
+
+        final demoTrainRec = await TrainingRecord.db.insertRow(
+          session,
+          TrainingRecord(
+            userId: demoUid,
+            courseVersionId: cvId,
+            enrollmentId: demoEnrollment.id!,
+            esignatureId: esig.id!,
+            completedAt: completedDate,
+            score: 88 + ci * 3,
+          ),
+        );
+
+        final certHash = sha256.convert(utf8.encode('cert-$demoUid-$cvId-${completedDate.toIso8601String()}')).toString();
+        final expiresAt = ci == 0
+            ? DateTime.now().add(const Duration(days: 25))
+            : completedDate.add(const Duration(days: 365));
+        await Certificate.db.insertRow(
+          session,
+          Certificate(
+            userId: demoUid,
+            courseVersionId: cvId,
+            trainingRecordId: demoTrainRec.id!,
+            esignatureId: esig.id!,
+            issuedAt: completedDate,
+            expiresAt: expiresAt,
+            qrCode: certHash,
+            status: 'active',
+          ),
+        );
+        demoCertCount++;
+        certificateCount++;
+      }
+
+      // ── 2. IN-PROGRESS courses (3) — shows on Dashboard "Continue Learning" ──
+      for (var ci = 4; ci < 7; ci++) {
+        final cvId = courseVersionIds[ci];
+        final demoAssignment = await TrainingAssignment.db.insertRow(
+          session,
+          TrainingAssignment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignedById: demoAssigner,
+            assignedAt: dt(-30),
+            dueDate: dt(14 + ci), // Due in ~2-3 weeks
+            priority: ci == 4 ? 'high' : 'medium',
+            source: 'manual',
+            reason: 'Annual refresher training',
+          ),
+        );
+        final demoEnrollment = await Enrollment.db.insertRow(
+          session,
+          Enrollment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignmentId: demoAssignment.id!,
+            status: 'in_progress',
+            startedAt: dt(-15),
+          ),
+        );
+        enrollmentIds.add(demoEnrollment.id!);
+        assignmentCount++;
+      }
+
+      // ── 3. NOT-STARTED / ASSIGNED courses (3) — shows in My Learning "To Do" ──
+      for (var ci = 7; ci < 10; ci++) {
+        final cvId = courseVersionIds[ci];
+        final demoAssignment = await TrainingAssignment.db.insertRow(
+          session,
+          TrainingAssignment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignedById: demoAssigner,
+            assignedAt: dt(-5),
+            dueDate: dt(25 + ci), // Due in ~1 month
+            priority: 'low',
+            source: 'manual',
+            reason: 'New SOP revision training',
+          ),
+        );
+        await Enrollment.db.insertRow(
+          session,
+          Enrollment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignmentId: demoAssignment.id!,
+            status: 'not_started',
+          ),
+        );
+        assignmentCount++;
+      }
+
+      // ── 4. OVERDUE courses (2) — triggers overdue alerts + notifications ──
+      for (var ci = 10; ci < 12; ci++) {
+        final cvId = courseVersionIds[ci];
+        final demoAssignment = await TrainingAssignment.db.insertRow(
+          session,
+          TrainingAssignment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignedById: demoAssigner,
+            assignedAt: dt(-60),
+            dueDate: dt(-5 - ci), // Already past due
+            priority: 'high',
+            source: 'job_role',
+            reason: 'Compliance requirement — overdue',
+          ),
+        );
+        await Enrollment.db.insertRow(
+          session,
+          Enrollment(
+            userId: demoUid,
+            courseVersionId: cvId,
+            assignmentId: demoAssignment.id!,
+            status: 'not_started',
+          ),
+        );
+        assignmentCount++;
+        overdueCount++;
+      }
+
+      // ── 5. Audit trail entries for demo employee ──
+      final demoAuditActions = [
+        ['LOGIN', 'User', 'login', -3],
+        ['LESSON_OPENED', 'Lesson', 'lesson_opened', -3],
+        ['LESSON_COMPLETED', 'Lesson', 'lesson_completed', -2],
+        ['ASSESSMENT_STARTED', 'Assessment', 'assessment_started', -2],
+        ['ASSESSMENT_SUBMITTED', 'Assessment', 'assessment_submitted', -2],
+        ['CERTIFICATE_GENERATED', 'Certificate', 'certificate_generated', -2],
+        ['LOGIN', 'User', 'login', -1],
+        ['LESSON_OPENED', 'Lesson', 'lesson_opened', -1],
+        ['LOGIN', 'User', 'login', 0],
+      ];
+      for (var ai = 0; ai < demoAuditActions.length; ai++) {
+        final a = demoAuditActions[ai];
+        final ts = dt(a[3] as int);
+        final rowPayload = 'User-$demoUid-${a[0]}-${ts.toIso8601String()}';
+        final hmac = Hmac(sha256, utf8.encode(hmacSecret));
+        final rowHash = hmac.convert(utf8.encode(rowPayload)).toString();
+        await AuditTrail.db.insertRow(
+          session,
+          AuditTrail(
+            entityType: a[1] as String,
+            entityId: 'demo-${ai + 1}',
+            action: a[2] as String,
+            timestamp: ts,
+            userId: demoUid,
+            ipAddress: '10.0.1.200',
+            rowHash: rowHash,
           ),
         );
       }
     }
 
-    // Phase 7: E-signatures, certificates, training records
-    final meaningTraining = 'I have completed this training and attest that I have read, understood, and will apply the content to my work.';
-    final esigData = [
-      [aliceId, aliceEnrAseptic, meaningTraining, -310, false],
-      [bobId, bobEnrGmp, meaningTraining, -195, false],
-      [bobId, bobEnrCc, meaningTraining, -170, false],
-      [bobId, bobEnrSafety, meaningTraining, -155, false],
-      [daveId, daveEnrGmp, meaningTraining, -270, false],
-      [aliceId, aliceEnrAseptic, meaningTraining, -100, true],
-    ];
-    final esigIds = <int>[];
-    for (final e in esigData) {
-      final ts = dt(e[3] as int);
-      final tampered = e[4] as bool;
-      final data = '${e[0]}:${e[1]}:$ts:enrollment';
-      final hash = tampered ? '${hmac(data)}x' : hmac(data);
-      final esig = await ElectronicSignature.db.insertRow(
-        session,
-        ElectronicSignature(
-          userId: e[0] as int,
-          timestamp: ts,
-          signatureMeaning: e[2] as String,
-          entityType: 'enrollment',
-          entityId: (e[1] as int).toString(),
-          ipAddress: '10.0.1.100',
-          integrityHash: hash,
-        ),
-      );
-      esigIds.add(esig.id!);
-    }
-    final esigAliceAseptic = esigIds[0];
-    final esigTampered = esigIds[5];
-
-    final trData = [
-      [aliceEnrAseptic, aliceId, cvAsepticV1Id, esigAliceAseptic, -310, 90],
-      [bobEnrGmp, bobId, cvGmpV2Id, esigIds[1], -195, 85],
-      [bobEnrCc, bobId, cvColdchainV2Id, esigIds[2], -170, 80],
-      [bobEnrSafety, bobId, cvSafetyV1Id, esigIds[3], -155, 92],
-      [daveEnrGmp, daveId, cvGmpV2Id, esigIds[4], -270, 82],
-    ];
-    final trIds = <int>[];
-    for (final t in trData) {
-      final tr = await TrainingRecord.db.insertRow(
-        session,
-        TrainingRecord(
-          enrollmentId: t[0],
-          userId: t[1],
-          courseVersionId: t[2],
-          completedAt: dt(t[4]),
-          score: t[5],
-          esignatureId: t[3],
-        ),
-      );
-      trIds.add(tr.id!);
-    }
-
-    final certData = [
-      [aliceId, cvAsepticV1Id, trIds[0], esigAliceAseptic, -310, 55, 'active'],
-      [aliceId, cvIds[0], null, esigTampered, -100, null, 'obsolete'],
-      [bobId, cvGmpV2Id, trIds[1], esigIds[1], -195, 170, 'active'],
-      [bobId, cvColdchainV2Id, trIds[2], esigIds[2], -170, 195, 'active'],
-      [bobId, cvSafetyV1Id, trIds[3], esigIds[3], -155, 210, 'active'],
-      [daveId, cvGmpV2Id, trIds[4], esigIds[4], -270, 95, 'active'],
-    ];
-    for (final c in certData) {
-      await Certificate.db.insertRow(
-        session,
-        Certificate(
-          userId: c[0] as int,
-          courseVersionId: c[1] as int,
-          trainingRecordId: (c[2] as int?) ?? trIds[0],
-          esignatureId: c[3] as int,
-          issuedAt: dt(c[4] as int),
-          expiresAt: c[5] != null ? dt(c[5] as int) : null,
-          status: c[6] as String,
-        ),
-      );
-    }
-
-    // Phase 8: Quality events, CAPAs, waivers, inspection
-    final qeData = [
-      ['Temperature Excursion in Cold Storage Unit 3', 'deviation', 'critical', dt(-20)],
-      ['OOS Result: Batch 2024-MFG-007 Potency Test', 'oos', 'major', dt(-35)],
-      ['Gowning Procedure Non-Compliance — Clean Room Entry', 'deviation', 'critical', dt(-5)],
-      ['Label Reconciliation Discrepancy — Batch 2024-PKG-012', 'deviation', 'minor', dt(-60)],
-      ['Equipment Calibration Overdue — Spectrophotometer', 'deviation', 'major', dt(-45)],
-      ['SOP Non-Compliance: Aseptic Fill Line Procedure', 'deviation', 'critical', dt(-90)],
-      ['Data Entry Error in Batch Record 2024-QC-018', 'deviation', 'minor', dt(-15)],
-      ['Customer Complaint: Foreign Particle in Product', 'complaint', 'critical', dt(-3)],
-    ];
-    final qeIds = <int>[];
-    for (final q in qeData) {
-      final qe = await QualityEvent.db.insertRow(
-        session,
-        QualityEvent(
-          eventType: q[1] as String,
-          title: q[0] as String,
-          status: 'open',
-          siteId: siteId,
-          createdAt: q[3] as DateTime,
-        ),
-      );
-      qeIds.add(qe.id!);
-    }
-
-    final capaData = [
-      [qeIds[1], 'ActionPlanApproved'],
-      [qeIds[4], 'Verification'],
-      [qeIds[5], 'Closed'],
-      [qeIds[0], 'Initiation'],
-    ];
-    for (final capa in capaData) {
-      await Capa.db.insertRow(
-        session,
-        Capa(
-          qualityEventId: capa[0] as int,
-          status: capa[1] as String,
-          description: 'Root cause: insufficient training. Corrective action: retraining assigned.',
-          rootCause: 'Insufficient training on updated SOP',
-          trainingRequired: true,
-        ),
-      );
-    }
-
-    await TrainingWaiver.db.insertRow(
-      session,
-      TrainingWaiver(
-        userId: bobId,
-        courseId: courseIds[2],
-        requestedById: adminId,
-        requestReason: 'Equivalent qualification from previous employer — BSc Pharmacy, RQAP-GCP certified.',
-        evidenceStoragePath: 'waivers/waiver-001/evidence.pdf',
-        status: 'approved',
-        approvedById: qaId,
-        approvedAt: dt(-80),
-        expiresAt: dt(285),
-      ),
-    );
-
-    final insp = await InspectionRecord.db.insertRow(
-      session,
-      InspectionRecord(
-        inspectionType: 'fda',
-        inspectorNames: 'Inspector John Smith',
-        scopeDescription: 'Training Records, Electronic Signatures, CAPA, Data Integrity',
-        siteId: siteId,
-        status: 'active',
-        inspectionAccessToken: 'DEMO_TOKEN_2026',
-        tokenExpiresAt: dt(1),
-        briefingPackHash: 'sha256-inspection-briefing',
-        createdById: adminId,
-        createdAt: dt(-5),
-      ),
-    );
-
-    await AuditorSession.db.insertRow(
-      session,
-      AuditorSession(
-        inspectionRecordId: insp.id!,
-        accessType: 'token',
-        accessToken: 'DEMO_TOKEN_2026',
-        tokenIssuedAt: dt(0),
-        tokenExpiresAt: dt(1),
-        isActive: true,
-        pagesViewedCount: 0,
-      ),
-    );
-
-    // Phase 9: DLQ, scheduled jobs, audit trail, notifications
-    await DeadLetterQueue.db.insertRow(
-      session,
-      DeadLetterQueue(
-        failureReason: 'Kafka broker connection timeout after 3 retries.',
-        retryCount: 3,
-        manuallyResolved: false,
-        failedAt: dt(-14),
-      ),
-    );
-
-    final now = dt(0);
-    final jobData = [
-      ['ComplianceCalc', now.add(const Duration(minutes: -2)), 'completed', 312, 28, null],
-      ['CertExpiryCheck', now.add(const Duration(minutes: -2)), 'completed', 156, 3, null],
-      ['NotificationWorker', now.add(const Duration(minutes: -1)), 'completed', 88, 12, null],
-      ['AuditTrailIntegrityCheck', now.add(const Duration(minutes: -2)), 'completed', 512, 0, null],
-      ['CapaEffectivenessCheck', now.add(const Duration(minutes: -2)), 'completed', 4, 1, null],
-      ['HRISSync', now.add(const Duration(minutes: -2)), 'failed', 45, 0, 'Connection timeout to HRIS API'],
-    ];
-    for (final j in jobData) {
-      await ScheduledJobLog.db.insertRow(
-        session,
-        ScheduledJobLog(
-          jobName: j[0] as String,
-          startedAt: j[1] as DateTime,
-          completedAt: (j[1] as DateTime).add(const Duration(minutes: 2)),
-          status: j[2] as String,
-          recordsProcessed: j[3] as int,
-          recordsAffected: j[4] as int,
-          errorDetails: j[5] as String?,
-        ),
-      );
-    }
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 9: Audit Trail with Row Hashes
+    // ═══════════════════════════════════════════════════════════════════════════
+    final auditActions = ['LOGIN', 'LOGOUT', 'LESSON_OPENED', 'LESSON_COMPLETED',
+      'ASSESSMENT_STARTED', 'ASSESSMENT_SUBMITTED', 'CERTIFICATE_GENERATED'];
 
     for (var i = 0; i < 100; i++) {
+      final auditUserId = learnerIds[i % learnerIds.length];
+      final action = auditActions[i % auditActions.length];
+      final timestamp = dt(-30 + (i ~/ 10));
+      final rowPayload = 'User-$auditUserId-$action-${timestamp.toIso8601String()}';
+      final hmac = Hmac(sha256, utf8.encode(hmacSecret));
+      final rowHash = hmac.convert(utf8.encode(rowPayload)).toString();
+
       await AuditTrail.db.insertRow(
         session,
         AuditTrail(
-          entityType: ['Enrollment', 'Certificate', 'MaterialProgress', 'Notification', 'Report'][i % 5],
-          entityId: 'entity-${i.toString().padLeft(4, '0')}',
-          action: ['page_view', 'data_export', 'report_generated', 'notification_sent', 'enrollment_updated'][i % 5],
-          timestamp: dt(-(i ~/ 2)),
-          userId: [aliceId, bobId, adminId, qaId, smeId][i % 5],
-          ipAddress: '10.0.1.${100 + (i % 50)}',
+          entityType: action.contains('LESSON') ? 'Lesson' : 'User',
+          entityId: 'entity-${(i + 1).toString().padLeft(4, '0')}',
+          action: action.toLowerCase(),
+          timestamp: timestamp,
+          userId: auditUserId,
+          ipAddress: '10.0.${(i % 5) + 1}.${100 + (i % 155)}',
+          rowHash: rowHash,
         ),
       );
     }
 
-    final notifData = [
-      [aliceId, 'assignment', aliceEnrGmp, dt(-30), 'delivered'],
-      [aliceId, 'overdue_employee', enrollmentIds[1], dt(-7), 'delivered'],
-      [carolId, 'assignment', enrollmentIds[7], dt(-7), 'delivered'],
-      [daveId, 'assessment_failed', daveEnrCc, dt(-10), 'delivered'],
-    ];
-    for (final n in notifData) {
+    // Notifications
+    for (var i = 0; i < overdueCount && i < enrollmentIds.length; i++) {
       await Notification.db.insertRow(
         session,
         Notification(
-          userId: n[0] as int,
-          type: n[1] as String,
-          enrollmentId: n[2] as int,
-          sentAt: n[3] as DateTime,
-          deliveryStatus: n[4] as String,
+          userId: learnerIds[i % learnerIds.length],
+          type: i % 3 == 0 ? 'overdue_employee' : 'reminder',
+          enrollmentId: enrollmentIds[i],
+          sentAt: dt(-7 + (i % 14)),
+          deliveryStatus: 'delivered',
           channel: 'email',
         ),
       );
     }
 
-    return 'MVP seed completed: 1 org, 3 sites, 8 depts, 12 job roles, 32 users, 6 courses, 18 modules, 54 lessons, 6 assessments, training matrix, assignments, enrollments, e-signatures, certificates, quality events, CAPAs, waivers, audit trail, notifications.';
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 11: SOP Documents & Versions (for trainer SOP library + linkage)
+    // ═══════════════════════════════════════════════════════════════════════════
+    final sopConfigs = [
+      ['GMP Manufacturing Procedures', 'SOP-GMP-001', 'sop', true],
+      ['Cleaning Validation Protocol', 'SOP-CLN-002', 'sop', true],
+      ['Equipment Calibration', 'SOP-CAL-003', 'sop', false],
+      ['Environmental Monitoring', 'SOP-ENV-004', 'sop', true],
+      ['Change Control Procedure', 'SOP-CHG-005', 'sop', true],
+      ['Aseptic Processing Guidelines', 'SOP-ASEP-006', 'sop', true],
+      ['CAPA Management', 'SOP-CAPA-007', 'sop', true],
+      ['Data Integrity Policy', 'SOP-DI-008', 'policy', true],
+      ['EHS Safety Manual', 'SOP-EHS-009', 'manual', false],
+      ['Stability Study Protocol', 'SOP-STAB-010', 'sop', true],
+      ['Audit Readiness Checklist', 'SOP-AUDIT-011', 'checklist', false],
+      ['Employee Induction Guide', 'SOP-INDUCT-012', 'guide', false],
+    ];
+
+    for (var i = 0; i < sopConfigs.length; i++) {
+      final s = sopConfigs[i];
+      final doc = await Document.db.insertRow(
+        session,
+        Document(
+          title: s[0] as String,
+          documentNumber: s[1] as String,
+          documentType: s[2] as String,
+          organizationId: orgId,
+          trainingRequiredByQa: (s[3] as bool) ? 'training_required' : 'no_training_required',
+        ),
+      );
+
+      await DocumentVersion.db.insertRow(
+        session,
+        DocumentVersion(
+          documentId: doc.id!,
+          version: '1.0',
+          storageKey: 's3://pharma-lms/docs/${s[1]}/v1.0.pdf',
+          versionMajor: 1,
+          versionMinor: 0,
+          isMajorVersion: true,
+          effectiveDate: dt(-180 + i * 5),
+        ),
+      );
+
+      if (i < 4) {
+        await DocumentVersion.db.insertRow(
+          session,
+          DocumentVersion(
+            documentId: doc.id!,
+            version: '2.0',
+            storageKey: 's3://pharma-lms/docs/${s[1]}/v2.0.pdf',
+            versionMajor: 2,
+            versionMinor: 0,
+            isMajorVersion: true,
+            effectiveDate: dt(-30 + i * 3),
+          ),
+        );
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 12: Draft & Under-Review Course Versions (for trainer workflows)
+    // ═══════════════════════════════════════════════════════════════════════════
+    final existingCourses = await Course.db.find(
+      session,
+      where: (t) => t.organizationId.equals(orgId),
+    );
+
+    final firstMaterial = await Material.db.findFirstRow(session);
+    final defaultMaterialId = firstMaterial?.id ?? 1;
+
+    var draftVersionCount = 0;
+    for (var i = 0; i < existingCourses.length && i < 6; i++) {
+      final course = existingCourses[i];
+      final statuses = ['draft', 'under_review', 'draft', 'needs_revision', 'under_review', 'draft'];
+      final ver = await CourseVersion.db.insertRow(
+        session,
+        CourseVersion(
+          courseId: course.id!,
+          version: '2.0',
+          status: statuses[i],
+        ),
+      );
+
+      final mod = await Module.db.insertRow(
+        session,
+        Module(
+          courseVersionId: ver.id!,
+          title: '${course.title} – Advanced Topics',
+          orderIndex: 0,
+        ),
+      );
+
+      await Lesson.db.insertRow(
+        session,
+        Lesson(
+          moduleId: mod.id!,
+          title: 'Advanced Concepts',
+          materialId: defaultMaterialId,
+          orderIndex: 0,
+          durationMinutes: 45,
+        ),
+      );
+
+      draftVersionCount++;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 13: Training Records (for analytics/learner progress)
+    // Uses completed enrollments + creates e-signatures for the records
+    // ═══════════════════════════════════════════════════════════════════════════
+    var trainingRecordCount = 0;
+    for (var i = 0; i < enrollmentIds.length && i < completedCount; i++) {
+      final learnerId = learnerIds[i % learnerIds.length];
+      final cvId = courseVersionIds[i % courseVersionIds.length];
+      final score = 70 + (i * 3 % 30);
+
+      final esig = await ElectronicSignature.db.insertRow(
+        session,
+        ElectronicSignature(
+          userId: learnerId,
+          signatureMeaning: 'training_completion',
+          entityType: 'enrollment',
+          entityId: enrollmentIds[i].toString(),
+        ),
+      );
+
+      await TrainingRecord.db.insertRow(
+        session,
+        TrainingRecord(
+          userId: learnerId,
+          courseVersionId: cvId,
+          enrollmentId: enrollmentIds[i],
+          esignatureId: esig.id!,
+          completedAt: dt(-60 + i),
+          score: score,
+        ),
+      );
+      trainingRecordCount++;
+    }
+
+    // ═══ PHASE: Trainer Portal Seed Data ═══
+
+    // 1. Course versions with pending_approval and needs_revision statuses
+    final pendingApprovalVersions = await CourseVersion.db.find(
+      session,
+      where: (t) => t.status.equals('under_review'),
+    );
+    for (final v in pendingApprovalVersions) {
+      await CourseVersion.db.updateRow(
+        session,
+        v.copyWith(status: 'pending_approval'),
+      );
+    }
+
+    // 2. CourseReview records for QA history
+    var courseReviewCount = 0;
+    final effectiveVersions = await CourseVersion.db.find(
+      session,
+      where: (t) => t.status.equals('effective'),
+      limit: 4,
+    );
+    if (effectiveVersions.length >= 4) {
+      await CourseReview.db.insertRow(session, CourseReview(
+        courseVersionId: effectiveVersions[0].id!,
+        reviewerId: trainerIds[0],
+        decision: 'approved',
+        comments: 'Content meets GMP requirements. Assessment pool adequate.',
+        reviewChecklistJson: '{"contentAccuracy":true,"regulatoryCompliance":true,"assessmentValidity":true}',
+      ));
+      courseReviewCount++;
+
+      await CourseReview.db.insertRow(session, CourseReview(
+        courseVersionId: effectiveVersions[1].id!,
+        reviewerId: trainerIds[1],
+        decision: 'approved',
+        comments: 'Approved after revision. All issues addressed.',
+      ));
+      courseReviewCount++;
+
+      await CourseReview.db.insertRow(session, CourseReview(
+        courseVersionId: effectiveVersions[2].id!,
+        reviewerId: trainerIds[2],
+        decision: 'returned_for_changes',
+        comments: 'Module 2 needs updated SOP references. Question pool insufficient.',
+      ));
+      courseReviewCount++;
+
+      await CourseReview.db.insertRow(session, CourseReview(
+        courseVersionId: effectiveVersions[3].id!,
+        reviewerId: trainerIds[0],
+        decision: 'rejected',
+        comments: 'Does not meet 21 CFR Part 11 requirements. Major revision needed.',
+      ));
+      courseReviewCount++;
+    }
+
+    // 3. Trainer-specific audit events
+    final allCourses = await Course.db.find(session, where: (t) => t.organizationId.equals(orgId));
+    final allCourseIds = allCourses.map((c) => c.id!).toList();
+    final trainerAuditActions = [
+      'CourseCreated', 'CourseVersionCreated', 'ModuleCreated',
+      'LessonCreated', 'MaterialUploaded', 'CourseSubmittedForQA',
+      'DraftSaved', 'AssessmentCreated',
+    ];
+    for (var i = 0; i < trainerAuditActions.length; i++) {
+      await AuditTrail.db.insertRow(session, AuditTrail(
+        entityType: 'course',
+        entityId: '${allCourseIds[i % allCourseIds.length]}',
+        action: trainerAuditActions[i],
+        timestamp: dt(-30 + i),
+        userId: trainerIds[i % trainerIds.length],
+        ipAddress: '10.0.1.${100 + i}',
+      ));
+    }
+
+    // 4. Trainer in-app notifications
+    for (var i = 0; i < 5; i++) {
+      await Notification.db.insertRow(session, Notification(
+        userId: trainerIds[i % trainerIds.length],
+        type: i % 3 == 0 ? 'qa_approved' : i % 3 == 1 ? 'qa_returned' : 'sop_update',
+        sentAt: dt(-i),
+        deliveryStatus: 'delivered',
+        channel: 'in_app',
+      ));
+    }
+
+    // 5. Standalone question banks (not tied to courses)
+    final standaloneBank1 = await QuestionBank.db.insertRow(session, QuestionBank(
+      name: 'General GMP Knowledge Pool',
+      organizationId: orgId,
+      tagsJson: '["GMP","General","Cross-training"]',
+    ));
+    final standaloneBank2 = await QuestionBank.db.insertRow(session, QuestionBank(
+      name: 'Regulatory Compliance Masters',
+      organizationId: orgId,
+      tagsJson: '["FDA","EMA","ICH","Regulatory"]',
+    ));
+    for (var i = 0; i < 15; i++) {
+      await Question.db.insertRow(session, Question(
+        questionBankId: i < 8 ? standaloneBank1.id! : standaloneBank2.id!,
+        text: 'Standalone Q${i + 1}: ${i < 8 ? "GMP" : "Regulatory"} knowledge question',
+        questionType: i % 2 == 0 ? 'multiple_choice' : 'true_false',
+        optionsJson: i % 2 == 0 ? '["Option A","Option B","Option C","Option D"]' : '["True","False"]',
+        correctAnswer: '0',
+        difficulty: i % 3 == 0 ? 'easy' : i % 3 == 1 ? 'medium' : 'hard',
+        regulatoryTag: i < 8 ? 'GMP' : 'FDA',
+      ));
+    }
+
+    // 6. CourseSopLink records (explicit SOP-course links)
+    var sopLinkCount = 0;
+    final sopDocs = await Document.db.find(session, limit: 6);
+    for (var i = 0; i < sopDocs.length && i < allCourseIds.length; i++) {
+      await CourseSopLink.db.insertRow(session, CourseSopLink(
+        courseId: allCourseIds[i],
+        documentId: sopDocs[i].id!,
+        linkedById: trainerIds[i % trainerIds.length],
+      ));
+      sopLinkCount++;
+    }
+
+    // 7. UserPreference records for demo trainer
+    final demoTrainer = await PharmaUser.db.findFirstRow(
+      session,
+      where: (t) => t.email.equals('trainer@pharmacorp.demo'),
+    );
+    if (demoTrainer != null) {
+      await UserPreference.db.insertRow(session, UserPreference(
+        userId: demoTrainer.id!,
+        preferenceKey: 'email_notifications',
+        preferenceValue: 'true',
+      ));
+      await UserPreference.db.insertRow(session, UserPreference(
+        userId: demoTrainer.id!,
+        preferenceKey: 'auto_save_drafts',
+        preferenceValue: 'true',
+      ));
+      await UserPreference.db.insertRow(session, UserPreference(
+        userId: demoTrainer.id!,
+        preferenceKey: 'dark_mode',
+        preferenceValue: 'false',
+      ));
+    }
+
+    var result = '''
+COMPREHENSIVE SEED COMPLETED
+═══════════════════════════════════════════════════════════════════════════════
+Organization:  PharmaTech India Pvt Ltd
+Sites:         5
+Departments:   10
+Job Roles:     14
+Trainers:      15
+Learners:      100
+Courses:       12
+Modules:       36
+Lessons:       108
+Assessments:   12
+Training Matrix: 12 entries
+Assignments:   $assignmentCount
+Completed:     $completedCount
+Overdue:       $overdueCount
+Certificates:  $certificateCount
+Audit Events:  100 (with HMAC row hashes)
+SOP Documents: ${sopConfigs.length}
+Draft Versions: $draftVersionCount
+Training Recs: $trainingRecordCount
+CourseReviews: $courseReviewCount
+SOP Links: $sopLinkCount
+Standalone Question Banks: 2 (23 questions)
+Trainer Audit Events: ${trainerAuditActions.length}
+Trainer Notifications: 5
+UserPreferences: 3
+
+DEMO EMPLOYEE (employee@pharmacorp.demo):
+  Completed:   4 courses (with certs + e-sigs + quiz scores)
+  In Progress: 3 courses (due in 2-3 weeks)
+  Not Started: 3 courses (assigned, due in 1 month)
+  Overdue:     2 courses (triggers alerts)
+  Certs:       $demoCertCount (1 expiring within 30 days)
+  Audit Trail: 9 entries
+═══════════════════════════════════════════════════════════════════════════════
+''';
+
+    // Provision Serverpod auth accounts so users can sign in with email/password.
+    try {
+      final authResult = await provisionAuthAccounts(session);
+      result += '\n$authResult';
+    } catch (e) {
+      result += '\nAuth provisioning failed: $e';
+    }
+
+    return result;
+  }
+
+  /// Provisions Serverpod auth accounts for all PharmaUser records.
+  /// Uses [_seedPassword] as the default password for all accounts.
+  /// Skips users that already have an email auth account.
+  Future<String> provisionAuthAccounts(Session session) async {
+    final users = await PharmaUser.db.find(session);
+    if (users.isEmpty) return 'No users found. Run seed first.';
+
+    var created = 0;
+    var skipped = 0;
+    final emailIdp = AuthServices.instance.emailIdp;
+    final admin = emailIdp.admin;
+
+    for (final user in users) {
+      if (user.id == null) continue;
+      try {
+        final existing = await admin.findAccount(session, email: user.email);
+        if (existing != null) {
+          skipped++;
+          continue;
+        }
+
+        final authUser = await AuthServices.instance.authUsers.create(session);
+
+        await admin.createEmailAuthentication(
+          session,
+          authUserId: authUser.id,
+          email: user.email,
+          password: _seedPassword,
+        );
+
+        // Also create a profile so _onAuthenticated can read email from it
+        await session.db.unsafeQuery(
+          r'''INSERT INTO serverpod_auth_core_profile ("authUserId", email, "userName", "fullName")
+              VALUES (@authUserId::uuid, @email, @userName, @fullName)
+              ON CONFLICT ("authUserId") DO NOTHING''',
+          parameters: QueryParameters.named({
+            'authUserId': authUser.id.toString(),
+            'email': user.email,
+            'userName': user.email.split('@').first,
+            'fullName': '${user.firstName} ${user.lastName}',
+          }),
+        );
+
+        created++;
+      } catch (e) {
+        session.log('Auth provision failed for ${user.email}: $e');
+        skipped++;
+      }
+    }
+
+    return 'Auth provisioned: $created created, $skipped skipped. Default password: $_seedPassword';
+  }
+
+  /// Helper method to delete all data related to an organization.
+  /// Temporarily disables FK checks to avoid complex dependency ordering.
+  Future<void> _deleteExistingOrgData(Session session, int orgId) async {
+    await session.db.unsafeQuery("SET session_replication_role = 'replica'");
+
+    try {
+      final p = QueryParameters.named({'orgId': orgId});
+      const u = 'SELECT id FROM pharma_user WHERE "organizationId" = @orgId';
+      const c = 'SELECT id FROM course WHERE "organizationId" = @orgId';
+      const cv = 'SELECT id FROM course_version WHERE "courseId" IN ($c)';
+      const sit = 'SELECT id FROM site WHERE "organizationId" = @orgId';
+      const dep = 'SELECT id FROM department WHERE "siteId" IN ($sit)';
+
+      // Tables with "userId" column
+      for (final t in [
+        'access_log', 'audit_trail', 'assessment_attempt', 'certificate',
+        'electronic_signature', 'enrollment', 'material_progress',
+        'notification', 'training_assignment', 'training_record',
+        'training_waiver', 'user_competency', 'user_preference',
+        'user_role', 'user_session',
+      ]) {
+        await session.db.unsafeQuery('DELETE FROM $t WHERE "userId" IN ($u)', parameters: p);
+      }
+
+      // Tables referencing users via other column names
+      await session.db.unsafeQuery('DELETE FROM approval_workflow WHERE "approverId" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM auditor_session WHERE "auditorUserId" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM course_review WHERE "reviewerId" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM course_sop_link WHERE "linkedById" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM delegated_authority WHERE "delegatorId" IN ($u) OR "delegateeId" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM import_log WHERE "importedById" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM inspection_package WHERE "generatedById" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM inspection_record WHERE "createdById" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM report_export WHERE "exportedById" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM training_record_annotation WHERE "authorId" IN ($u)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM document_lifecycle WHERE "changedById" IN ($u)', parameters: p);
+
+      // Grandchild tables
+      await session.db.unsafeQuery('DELETE FROM notification_log WHERE "notificationId" IN (SELECT id FROM notification WHERE "userId" IN ($u))', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM assessment_result WHERE "attemptId" IN (SELECT id FROM assessment_attempt WHERE "userId" IN ($u))', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM training_expiration WHERE "certificateId" IN (SELECT id FROM certificate WHERE "userId" IN ($u))', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM capa WHERE "trainingAssignmentId" IN (SELECT id FROM training_assignment WHERE "userId" IN ($u))', parameters: p);
+
+      // Users
+      await session.db.unsafeQuery('DELETE FROM pharma_user WHERE "organizationId" = @orgId', parameters: p);
+
+      // Documents
+      await session.db.unsafeQuery('DELETE FROM change_control WHERE "documentVersionId" IN (SELECT id FROM document_version WHERE "documentId" IN (SELECT id FROM document WHERE "organizationId" = @orgId))', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM document_version WHERE "documentId" IN (SELECT id FROM document WHERE "organizationId" = @orgId)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM document WHERE "organizationId" = @orgId', parameters: p);
+
+      // Course content
+      await session.db.unsafeQuery('DELETE FROM lesson WHERE "moduleId" IN (SELECT id FROM module WHERE "courseVersionId" IN ($cv))', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM module WHERE "courseVersionId" IN ($cv)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM question WHERE "questionBankId" IN (SELECT "questionBankId" FROM assessment WHERE "courseVersionId" IN ($cv))', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM assessment WHERE "courseVersionId" IN ($cv)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM course_version WHERE "courseId" IN ($c)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM course_competency WHERE "courseId" IN ($c)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM training_matrix WHERE "courseId" IN ($c)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM course WHERE "organizationId" = @orgId', parameters: p);
+
+      // Org structure
+      await session.db.unsafeQuery('DELETE FROM department_compliance_snapshot WHERE "departmentId" IN ($dep)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM job_role WHERE "departmentId" IN ($dep)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM department WHERE "siteId" IN ($sit)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM quality_event WHERE "siteId" IN ($sit)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM inspection_report WHERE "organizationId" = @orgId', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM site WHERE "organizationId" = @orgId', parameters: p);
+
+      // Materials
+      await session.db.unsafeQuery('DELETE FROM material_version WHERE "materialId" IN (SELECT id FROM material WHERE "organizationId" = @orgId)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM material WHERE "organizationId" = @orgId', parameters: p);
+
+      // Question banks
+      await session.db.unsafeQuery('DELETE FROM question WHERE "questionBankId" IN (SELECT id FROM question_bank WHERE "organizationId" = @orgId)', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM question_bank WHERE "organizationId" = @orgId', parameters: p);
+
+      // Misc org-level tables
+      await session.db.unsafeQuery('DELETE FROM feature_flag WHERE "organizationId" = @orgId', parameters: p);
+      await session.db.unsafeQuery('DELETE FROM system_configuration WHERE "organizationId" = @orgId', parameters: p);
+
+      // Organization itself
+      await session.db.unsafeQuery('DELETE FROM organization WHERE id = @orgId', parameters: p);
+    } finally {
+      await session.db.unsafeQuery("SET session_replication_role = 'origin'");
+    }
   }
 }

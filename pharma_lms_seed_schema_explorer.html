@@ -1,0 +1,540 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:13px}
+.root{padding:16px}
+
+.kpi-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.kpi{padding:10px 12px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);text-align:center}
+.kpi-n{font-size:22px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-l{font-size:10px;color:var(--color-text-tertiary);margin-top:3px}
+
+.tabs{display:flex;gap:0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:14px}
+.tab{padding:7px 14px;border:none;background:none;font-family:inherit;font-size:12px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s}
+.tab.active{color:var(--color-text-info);border-bottom-color:var(--color-text-info)}
+.panel{display:none}.panel.active{display:block}
+
+.tbl-wrap{overflow-x:auto;margin-bottom:16px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--color-background-secondary);color:var(--color-text-secondary);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+td{padding:7px 12px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--color-background-secondary)}
+.tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:100px;font-weight:500}
+.tag-pk{background:var(--color-background-info);color:var(--color-text-info)}
+.tag-fk{background:var(--color-background-warning);color:var(--color-text-warning)}
+.tag-req{background:var(--color-background-danger);color:var(--color-text-danger)}
+.tag-ok{background:var(--color-background-success);color:var(--color-text-success)}
+.tag-miss{background:var(--color-background-danger);color:var(--color-text-danger)}
+.tag-part{background:var(--color-background-warning);color:var(--color-text-warning)}
+.tag-mono{font-family:var(--font-mono);font-size:10px;color:var(--color-text-secondary)}
+.tbl-title{font-size:13px;font-weight:500;color:var(--color-text-primary);padding:10px 12px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:8px}
+
+.gap-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.gap-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px}
+.gap-card.miss{border-color:var(--color-border-danger);background:var(--color-background-danger)}
+.gap-card.part{border-color:var(--color-border-warning);background:var(--color-background-warning)}
+.gap-card.ok{border-color:var(--color-border-success);background:var(--color-background-success)}
+.gap-title{font-size:12px;font-weight:500;margin-bottom:6px}
+.gap-title.miss{color:var(--color-text-danger)}
+.gap-title.part{color:var(--color-text-warning)}
+.gap-title.ok{color:var(--color-text-success)}
+.gap-item{font-size:11.5px;color:var(--color-text-secondary);padding:3px 0;border-bottom:0.5px solid var(--color-border-tertiary);line-height:1.5}
+.gap-item:last-child{border-bottom:none}
+.missing-col{color:var(--color-text-danger);font-family:var(--font-mono);font-size:10.5px}
+.present-col{color:var(--color-text-success);font-family:var(--font-mono);font-size:10.5px}
+
+.phase-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:100px;margin-right:6px}
+.ph-seed{background:var(--color-background-success);color:var(--color-text-success)}
+.ph-miss{background:var(--color-background-danger);color:var(--color-text-danger)}
+.ph-part{background:var(--color-background-warning);color:var(--color-text-warning)}
+
+.sql-block{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:10px;white-space:pre-wrap}
+.sql-kw{color:var(--color-text-info);font-weight:500}
+.sql-type{color:var(--color-text-warning)}
+.sql-comment{color:var(--color-text-tertiary)}
+.sql-str{color:var(--color-text-success)}
+</style>
+
+<div class="root">
+
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-n" style="color:var(--color-text-success)">12</div><div class="kpi-l">Tables seeded</div></div>
+  <div class="kpi"><div class="kpi-n" style="color:var(--color-text-danger)">11</div><div class="kpi-l">Tables missing</div></div>
+  <div class="kpi"><div class="kpi-n">115</div><div class="kpi-l">Users (15+100)</div></div>
+  <div class="kpi"><div class="kpi-n">~771</div><div class="kpi-l">Assignments</div></div>
+  <div class="kpi"><div class="kpi-n">600</div><div class="kpi-l">Audit events</div></div>
+  <div class="kpi"><div class="kpi-n" style="color:var(--color-text-danger)">~65%</div><div class="kpi-l">FRD coverage</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('seeded',this)">Seeded tables</button>
+  <button class="tab" onclick="sw('missing',this)">Missing tables</button>
+  <button class="tab" onclick="sw('gaps',this)">Column gaps</button>
+  <button class="tab" onclick="sw('samples',this)">Sample data rows</button>
+  <button class="tab" onclick="sw('sql',this)">Missing SQL</button>
+  <button class="tab" onclick="sw('verdict',this)">Test verdict</button>
+</div>
+
+<div class="panel active" id="p-seeded">
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>organizations — 1 row</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Seed value</th><th>FRD required?</th></tr>
+<tr><td><span class="tag tag-pk">PK</span> id</td><td class="tag-mono">BIGSERIAL</td><td>auto</td><td><span class="tag tag-ok">present</span></td></tr>
+<tr><td>name</td><td class="tag-mono">TEXT</td><td>'PharmaTech India Pvt Ltd'</td><td><span class="tag tag-ok">present</span></td></tr>
+<tr><td>code</td><td class="tag-mono">TEXT</td><td>'PTI'</td><td><span class="tag tag-ok">present</span></td></tr>
+<tr><td class="missing-col">country_code</td><td class="tag-mono">CHAR(2)</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-01 AC-01</span></td></tr>
+<tr><td class="missing-col">default_regulatory_body</td><td class="tag-mono">ENUM</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-01 AC-01</span></td></tr>
+<tr><td class="missing-col">subscription_tier</td><td class="tag-mono">ENUM</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-01 AC-06</span></td></tr>
+<tr><td class="missing-col">max_users</td><td class="tag-mono">INT</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-01 AC-05</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>sites — 5 rows</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Sample value</th><th>FRD status</th></tr>
+<tr><td><span class="tag tag-pk">PK</span> id</td><td class="tag-mono">BIGSERIAL</td><td>1–5</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td><span class="tag tag-fk">FK</span> organization_id</td><td class="tag-mono">BIGINT</td><td>orgId</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>name</td><td class="tag-mono">TEXT</td><td>'Mumbai HQ'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>code</td><td class="tag-mono">TEXT</td><td>'MUM'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>timezone</td><td class="tag-mono">TEXT</td><td>'Asia/Kolkata'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td class="missing-col">gmp_classification</td><td class="tag-mono">ENUM</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-02 AC-01</span></td></tr>
+<tr><td class="missing-col">regulatory_body</td><td class="tag-mono">ENUM</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-02 AC-01</span></td></tr>
+<tr><td class="missing-col">country_code</td><td class="tag-mono">CHAR(2)</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-02 AC-01</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>pharma_users — 115 rows (15 trainers + 100 learners)</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Sample value</th><th>FRD status</th></tr>
+<tr><td><span class="tag tag-pk">PK</span> id</td><td class="tag-mono">BIGSERIAL</td><td>auto</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>email</td><td class="tag-mono">TEXT</td><td>'rajesh.venkataraman@pharmatech.in'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>first_name</td><td class="tag-mono">TEXT</td><td>'Dr. Rajesh'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>last_name</td><td class="tag-mono">TEXT</td><td>'Venkataraman'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>employee_id</td><td class="tag-mono">TEXT</td><td>'TRN-001', 'EMP-1000'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td><span class="tag tag-fk">FK</span> site_id</td><td class="tag-mono">BIGINT</td><td>siteIds[0..4]</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td><span class="tag tag-fk">FK</span> department_id</td><td class="tag-mono">BIGINT</td><td>deptIds[0..9]</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td><span class="tag tag-fk">FK</span> job_role_id</td><td class="tag-mono">BIGINT</td><td>jobRoleIds[0..13]</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>status</td><td class="tag-mono">ENUM</td><td>'active'/'terminated'/'locked'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>hire_date</td><td class="tag-mono">DATE</td><td>dt(-800) to dt(-300)</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td class="missing-col">password_hash</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-01-01 — cannot login</span></td></tr>
+<tr><td class="missing-col">termination_date</td><td class="tag-mono">DATE</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-01-06 AC-01</span></td></tr>
+<tr><td class="missing-col">manager_id</td><td class="tag-mono">BIGINT FK</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-03 AC-01</span></td></tr>
+<tr><td class="missing-col">preferred_language</td><td class="tag-mono">CHAR(2)</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-04-03 AC-08</span></td></tr>
+<tr><td class="missing-col">deactivated_at</td><td class="tag-mono">TIMESTAMP</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-01-06 AC-05</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>courses — 12 rows + course_versions — 12 rows</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Sample value</th><th>FRD status</th></tr>
+<tr><td><span class="tag tag-pk">PK</span> id</td><td class="tag-mono">BIGSERIAL</td><td>auto</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>title</td><td class="tag-mono">TEXT</td><td>'GMP Fundamentals'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>sop_number</td><td class="tag-mono">TEXT</td><td>'SOP-GMP-001'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>version (on CourseVersion)</td><td class="tag-mono">TEXT</td><td>'1.0'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>status (on CourseVersion)</td><td class="tag-mono">ENUM</td><td>'effective'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td class="missing-col">passing_score</td><td class="tag-mono">INT</td><td class="missing-col">NOT ON COURSE — only on assessment</td><td><span class="tag tag-part">FR-08-01 AC-01</span></td></tr>
+<tr><td class="missing-col">change_summary</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED (mandatory >v1.0)</td><td><span class="tag tag-req">FR-05-01 AC-04</span></td></tr>
+<tr><td class="missing-col">superseded_by_version_id</td><td class="tag-mono">BIGINT FK</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-05-01 AC-05</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>enrollments — ~771 rows</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Sample value</th><th>FRD status</th></tr>
+<tr><td>status</td><td class="tag-mono">ENUM</td><td>'completed'/'in_progress'/'not_started'</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>started_at</td><td class="tag-mono">TIMESTAMP</td><td>dt(daysOffset+1)</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>completed_at</td><td class="tag-mono">TIMESTAMP</td><td>dt(daysOffset+15)</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td class="missing-col">completion_percent</td><td class="tag-mono">INT</td><td class="missing-col">NOT SEEDED — computed in Dart but not persisted</td><td><span class="tag tag-req">FR-07-03 AC-01</span></td></tr>
+<tr><td class="missing-col">last_lesson_id</td><td class="tag-mono">BIGINT FK</td><td class="missing-col">NOT SEEDED — resume not possible</td><td><span class="tag tag-req">FR-07-03 AC-02</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>electronic_signatures — rows for completed+passed certs</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Sample / problem</th><th>FRD status</th></tr>
+<tr><td>user_id, entity_type, timestamp, ip_address</td><td class="tag-mono">various</td><td>seeded</td><td><span class="tag tag-ok">ok (basic)</span></td></tr>
+<tr><td class="missing-col">integrity_hash</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED — no HMAC-SHA256</td><td><span class="tag tag-req">FR-02-02 AC-06 CRITICAL</span></td></tr>
+<tr><td class="missing-col">meaning_id FK</td><td class="tag-mono">BIGINT</td><td class="missing-col">NOT SEEDED — free text meaning instead</td><td><span class="tag tag-req">FR-02-01 AC-01</span></td></tr>
+<tr><td class="missing-col">session_id</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-02-02 AC-07</span></td></tr>
+<tr><td class="missing-col">user_agent</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-02-02 AC-07</span></td></tr>
+<tr><td>signature_meaning</td><td class="tag-mono">TEXT</td><td>Free text — legally non-compliant (FR-02-01 forbids free text)</td><td><span class="tag tag-req">VIOLATION</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title"><span class="phase-badge ph-seed">Seeded</span>audit_trail — 600 rows</div>
+<table>
+<tr><th>Column</th><th>Type</th><th>Sample / problem</th><th>FRD status</th></tr>
+<tr><td>entity_type, entity_id, action, timestamp, user_id, ip_address</td><td class="tag-mono">various</td><td>seeded</td><td><span class="tag tag-ok">basic fields present</span></td></tr>
+<tr><td class="missing-col">row_hash</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED — no SHA-256 per row</td><td><span class="tag tag-req">FR-03-01 AC-03 CRITICAL</span></td></tr>
+<tr><td class="missing-col">old_value_json</td><td class="tag-mono">JSONB</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-03-01 AC-04</span></td></tr>
+<tr><td class="missing-col">new_value_json</td><td class="tag-mono">JSONB</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-03-01 AC-04</span></td></tr>
+<tr><td class="missing-col">changed_fields[]</td><td class="tag-mono">TEXT[]</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-03-01 AC-04</span></td></tr>
+<tr><td class="missing-col">session_id</td><td class="tag-mono">TEXT</td><td class="missing-col">NOT SEEDED</td><td><span class="tag tag-req">FR-03-01 AC-04</span></td></tr>
+<tr><td class="missing-col">actor_type</td><td class="tag-mono">ENUM</td><td class="missing-col">NOT SEEDED (system vs user)</td><td><span class="tag tag-req">FR-03-01 AC-05</span></td></tr>
+<tr><td class="missing-col">DB immutability trigger</td><td class="tag-mono">TRIGGER</td><td class="missing-col">NOT EXISTS — rows can be updated/deleted</td><td><span class="tag tag-req">FR-03-01 AC-01 CRITICAL</span></td></tr>
+</table>
+</div>
+
+</div>
+
+<div class="panel" id="p-missing">
+
+<div class="gap-grid">
+  <div class="gap-card miss">
+    <div class="gap-title miss">esignature_meanings</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-02-01: controlled vocabulary table</div>
+    <div class="gap-item">meaning_text, applicable_to ENUM, is_active, approved_by_id, approved_at</div>
+    <div class="gap-item">Without this: all e-signatures use free text — 21 CFR 11 violation</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">user_sessions</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-01-04: every session must be individually tracked</div>
+    <div class="gap-item">Required: id, user_id, started_at_utc, ended_at, ip_address, user_agent, is_mfa_verified, end_reason</div>
+    <div class="gap-item">Without this: cannot test session timeout, concurrent limits, admin revocation</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">training_matrix</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-06-01: job_role_id + course_id + due_days_from_hire + retraining_interval_days</div>
+    <div class="gap-item">Assignments use hardcoded loops — not driven by matrix</div>
+    <div class="gap-item">Cannot test auto-onboarding, role transfer delta, SOP retraining</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">document_affected_roles (M2M)</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-05-06: course ↔ document ↔ role M2M tables</div>
+    <div class="gap-item">Currently: affectedRoleIdsJson text field (SQL cannot query it)</div>
+    <div class="gap-item">Cannot test targeted SOP retraining workflow at all</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">material_progress</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-07-03: per-lesson progress tracking with resume</div>
+    <div class="gap-item">Required: status, started_at, completed_at, time_spent_seconds, last_position, read_time_met per material_version_id per enrollment</div>
+    <div class="gap-item">Cannot test min engagement time, resume from last position, multi-device sync</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">notification_log</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-11-02: every notification delivery attempt logged</div>
+    <div class="gap-item">Required: notification_id, sent_at, delivery_status, provider_message_id, failure_reason, retry_count</div>
+    <div class="gap-item">Current: only 'delivered' status — no retry, no failure tracking</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">assessment_attempts</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE TABLE MISSING</span></div>
+    <div class="gap-item">FRD FR-08-03: every attempt = immutable record with question snapshot</div>
+    <div class="gap-item">Required: attempt_number, questions_presented_json, answers_given_json, score_percent, pass_mark_at_time, started_at, submitted_at, ip_address, session_id</div>
+    <div class="gap-item">Cannot test assessment scoring, retakes, or compliance audit of results</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">quality_events + capa</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE DOMAIN MISSING</span></div>
+    <div class="gap-item">FRD FR-10-01, FR-10-02: ICH Q10 quality event classification and 6-stage CAPA</div>
+    <div class="gap-item">Cannot test CAPA-linked training assignments</div>
+    <div class="gap-item">Cannot test effectiveness verification or closure e-signature</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">sop_documents + approval_workflows</div>
+    <div class="gap-item"><span class="missing-col">ENTIRE DOMAIN MISSING</span></div>
+    <div class="gap-item">FRD FR-09-01, FR-09-02: SOP lifecycle + multi-step approval</div>
+    <div class="gap-item">Cannot test SOP update → retraining trigger workflow</div>
+    <div class="gap-item">Cannot test document ↔ course linking</div>
+  </div>
+  <div class="gap-card part">
+    <div class="gap-title part">certificates — partially seeded</div>
+    <div class="gap-item">Seeded: user_id, course_version_id, issued_at, expires_at, qr_code</div>
+    <div class="gap-item"><span class="missing-col">Missing: status ENUM (active/expired/obsolete/revoked)</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: obsolete_reason TEXT</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: revoked_at, revoked_by_id, revocation_reason</span></div>
+    <div class="gap-item">qr_code uses MD5 not SHA-256 — FRD requires SHA-256</div>
+  </div>
+  <div class="gap-card part">
+    <div class="gap-title part">questions — partially seeded</div>
+    <div class="gap-item">Seeded: text, type, options_json, correct_answer, difficulty</div>
+    <div class="gap-item"><span class="missing-col">Missing: regulatory_tag ENUM (GMP/GDP/safety/SOP)</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: explanation TEXT</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: ai_generated BOOLEAN, reviewed_by_id</span></div>
+    <div class="gap-item">All questions generic ('Question 1 for GMP Fundamentals') — no real pharma question text</div>
+  </div>
+  <div class="gap-card part">
+    <div class="gap-title part">materials — partially seeded</div>
+    <div class="gap-item">Seeded: title, material_type, storage_key</div>
+    <div class="gap-item"><span class="missing-col">Missing: file_hash (SHA-256)</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: virus_scan_status ENUM</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: file_size_bytes, mime_type</span></div>
+    <div class="gap-item"><span class="missing-col">Missing: minimum_time_seconds (server-enforced engagement)</span></div>
+  </div>
+</div>
+
+</div>
+
+<div class="panel" id="p-gaps">
+<div class="tbl-wrap">
+<div class="tbl-title">All seeded tables — column coverage vs FRD requirements</div>
+<table>
+<tr><th>Table</th><th>Seeded cols</th><th>Missing critical cols</th><th>FRD refs</th><th>Test status</th></tr>
+<tr><td>organizations</td><td class="present-col">id, name, code</td><td class="missing-col">country_code, default_regulatory_body, subscription_tier, max_users, feature_flags</td><td>FR-04-01</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>sites</td><td class="present-col">id, org_id, name, code, timezone</td><td class="missing-col">gmp_classification, regulatory_body, country_code, address</td><td>FR-04-02</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>departments</td><td class="present-col">id, site_id, name, code</td><td class="missing-col">parent_department_id, head_user_id</td><td>FR-04-02</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>job_roles</td><td class="present-col">id, dept_id, name, code</td><td class="missing-col">criticality ENUM (standard/high/critical)</td><td>FR-04-02 AC-03</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>pharma_users</td><td class="present-col">id, email, names, emp_id, site/dept/role FKs, status, hire_date</td><td class="missing-col">password_hash, manager_id, termination_date, preferred_language, deactivated_at, deactivated_by_id</td><td>FR-04-03, FR-01-01</td><td><span class="tag tag-part">partial — cannot login</span></td></tr>
+<tr><td>courses</td><td class="present-col">id, title, sop_number, description, status, org_id</td><td class="missing-col">passing_score (should be on assessment not course)</td><td>FR-05-01</td><td><span class="tag tag-ok">mostly ok</span></td></tr>
+<tr><td>course_versions</td><td class="present-col">id, course_id, version, status, effective_date</td><td class="missing-col">change_summary, superseded_by_version_id, approved_by_id, approval_esignature_id</td><td>FR-05-01</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>modules</td><td class="present-col">id, course_version_id, title, order_index</td><td class="missing-col">prerequisites, mandatory flag</td><td>FR-05-02</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>lessons</td><td class="present-col">id, module_id, title, order_index, material_id, duration_minutes</td><td class="missing-col">minimum_time_seconds, lesson_type ENUM</td><td>FR-05-02 AC-06</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>materials</td><td class="present-col">id, title, material_type, storage_key, org_id</td><td class="missing-col">file_hash, virus_scan_status, file_size_bytes, mime_type, version_number, uploaded_by_id</td><td>FR-05-03</td><td><span class="tag tag-miss">incomplete</span></td></tr>
+<tr><td>training_assignments</td><td class="present-col">id, user_id, course_version_id, assigned_by_id, assigned_at, due_date, priority, source</td><td class="missing-col">reason (mandatory per FR-06-04 AC-03), reason_category</td><td>FR-06-04</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>enrollments</td><td class="present-col">id, user_id, course_version_id, assignment_id, status, started_at, completed_at</td><td class="missing-col">completion_percent, last_lesson_id, retraining_change_summary, acknowledged_at</td><td>FR-07-03</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>question_banks</td><td class="present-col">id, name, org_id</td><td class="missing-col">linked_course_version_id</td><td>FR-08-02</td><td><span class="tag tag-ok">ok</span></td></tr>
+<tr><td>questions</td><td class="present-col">id, bank_id, text, type, options_json, correct_answer, difficulty</td><td class="missing-col">regulatory_tag, explanation, is_active, ai_generated, reviewed_by_id</td><td>FR-08-02</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>assessments</td><td class="present-col">id, course_version_id, question_bank_id, passing_score, time_limit_minutes</td><td class="missing-col">max_attempts, questions_to_display, randomise_questions, randomise_options, cooldown_minutes, show_correct_on_fail</td><td>FR-08-01</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>electronic_signatures</td><td class="present-col">id, user_id, signature_meaning (text!), entity_type, entity_id, timestamp, ip_address</td><td class="missing-col">integrity_hash (CRITICAL), meaning_id FK, session_id, user_agent, training_record_id FK</td><td>FR-02-02</td><td><span class="tag tag-miss">non-compliant</span></td></tr>
+<tr><td>certificates</td><td class="present-col">id, user_id, course_version_id, training_record_id, esignature_id, issued_at, expires_at, qr_code</td><td class="missing-col">status ENUM, obsolete_reason, revoked_at, revoked_by_id, revocation_reason</td><td>FR-07-05</td><td><span class="tag tag-part">partial</span></td></tr>
+<tr><td>audit_trail</td><td class="present-col">id, entity_type, entity_id, action, timestamp, user_id, ip_address</td><td class="missing-col">row_hash (CRITICAL), old_value_json, new_value_json, changed_fields[], session_id, actor_type, system_process, user_agent, reason</td><td>FR-03-01</td><td><span class="tag tag-miss">non-compliant</span></td></tr>
+<tr><td>notifications</td><td class="present-col">id, user_id, type, enrollment_id, sent_at, delivery_status, channel</td><td class="missing-col">escalation_level INT, recipient_role (for manager/dept head copies), retry_count, provider_message_id, failure_reason</td><td>FR-11-01, FR-11-02</td><td><span class="tag tag-part">partial</span></td></tr>
+</table>
+</div>
+</div>
+
+<div class="panel" id="p-samples">
+
+<div class="tbl-wrap">
+<div class="tbl-title">Sample: pharma_users (first 5 trainers + 3 learners with personas)</div>
+<table>
+<tr><th>id</th><th>employee_id</th><th>first_name</th><th>last_name</th><th>email</th><th>site</th><th>dept</th><th>status</th><th>hire_date</th></tr>
+<tr><td>1</td><td>TRN-001</td><td>Dr. Rajesh</td><td>Venkataraman</td><td>rajesh.venkataraman@pharmatech.in</td><td>Mumbai HQ</td><td>QA</td><td><span class="tag tag-ok">active</span></td><td>2023-10-30</td></tr>
+<tr><td>2</td><td>TRN-002</td><td>Sneha</td><td>Krishnamurthy</td><td>sneha.krishnamurthy@pharmatech.in</td><td>Mumbai HQ</td><td>L&D</td><td><span class="tag tag-ok">active</span></td><td>2023-11-29</td></tr>
+<tr><td>3</td><td>TRN-003</td><td>Dr. Kavitha</td><td>Subramaniam</td><td>kavitha.subramaniam@pharmatech.in</td><td>Pune Mfg</td><td>MFG</td><td><span class="tag tag-ok">active</span></td><td>2023-12-29</td></tr>
+<tr><td>16</td><td>EMP-1000</td><td>Ramesh</td><td>Gupta</td><td>ramesh.gupta@pharmatech.in</td><td>Mumbai HQ</td><td>QA</td><td><span class="tag tag-ok">active</span></td><td>2020-12-01</td></tr>
+<tr><td>17</td><td>EMP-1001</td><td>Priyanka</td><td>Singh</td><td>priyanka.singh1@pharmatech.in</td><td>Pune Mfg</td><td>QC</td><td><span class="tag tag-ok">active</span></td><td>2021-01-15</td></tr>
+<tr><td>115</td><td>EMP-1099</td><td>Asha</td><td>Kumari</td><td>asha.kumari99@pharmatech.in</td><td>Bengaluru</td><td>QA</td><td><span class="tag tag-miss">terminated</span></td><td>2021-03-31</td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title">Sample: training_assignments (first 6 rows for learner EMP-1000)</div>
+<table>
+<tr><th>id</th><th>user_id</th><th>course_version_id</th><th>due_date</th><th>priority</th><th>source</th><th>status via enrollment</th></tr>
+<tr><td>1</td><td>16 (Ramesh Gupta)</td><td>1 (GMP Fund v1.0)</td><td>2026-01-23</td><td>high</td><td>job_role</td><td><span class="tag tag-miss">overdue</span></td></tr>
+<tr><td>2</td><td>16</td><td>2 (21 CFR Part 11 v1.0)</td><td>2026-01-18</td><td>high</td><td>sop_update</td><td><span class="tag tag-ok">completed</span></td></tr>
+<tr><td>3</td><td>16</td><td>3 (GCP v1.0)</td><td>2026-01-13</td><td>high</td><td>manual</td><td><span class="tag tag-part">in_progress</span></td></tr>
+<tr><td>4</td><td>16</td><td>4 (GVP v1.0)</td><td>2026-01-08</td><td>medium</td><td>manual</td><td><span class="tag tag-ok">completed</span></td></tr>
+<tr><td>5</td><td>16</td><td>5 (Cold Chain v1.0)</td><td>2026-01-03</td><td>medium</td><td>manual</td><td><span class="tag tag-miss">not_started</span></td></tr>
+<tr><td>6</td><td>16</td><td>6 (Aseptic v1.0)</td><td>2025-12-29</td><td>medium</td><td>manual</td><td><span class="tag tag-ok">completed</span></td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title">Sample: audit_trail (first 9 rows — showing column gaps)</div>
+<table>
+<tr><th>id</th><th>entity_type</th><th>action</th><th>timestamp</th><th>user_id</th><th>ip_address</th><th class="missing-col">row_hash</th><th class="missing-col">old_value_json</th><th class="missing-col">session_id</th></tr>
+<tr><td>1</td><td>Lesson</td><td>lesson_opened</td><td>2025-12-14</td><td>16</td><td>10.0.1.116</td><td class="missing-col">NULL</td><td class="missing-col">NULL</td><td class="missing-col">NULL</td></tr>
+<tr><td>2</td><td>Assessment</td><td>assessment_started</td><td>2025-12-15</td><td>17</td><td>10.0.2.117</td><td class="missing-col">NULL</td><td class="missing-col">NULL</td><td class="missing-col">NULL</td></tr>
+<tr><td>3</td><td>User</td><td>login</td><td>2025-12-16</td><td>18</td><td>10.0.3.118</td><td class="missing-col">NULL</td><td class="missing-col">NULL</td><td class="missing-col">NULL</td></tr>
+</table>
+</div>
+
+<div class="tbl-wrap">
+<div class="tbl-title">Sample: electronic_signatures — showing the critical compliance violation</div>
+<table>
+<tr><th>id</th><th>user_id</th><th class="missing-col">meaning_id FK</th><th>signature_meaning (free text)</th><th class="missing-col">integrity_hash</th><th>timestamp</th></tr>
+<tr><td>1</td><td>16</td><td class="missing-col">NULL — no FK</td><td style="font-size:11px;max-width:200px">'I have completed this training and attest that I have read, understood...'</td><td class="missing-col">NULL — no HMAC</td><td>2026-01-09</td></tr>
+<tr><td>2</td><td>17</td><td class="missing-col">NULL</td><td style="font-size:11px;max-width:200px">same free text</td><td class="missing-col">NULL</td><td>2026-01-10</td></tr>
+</table>
+</div>
+
+</div>
+
+<div class="panel" id="p-sql">
+
+<div style="margin-bottom:10px;font-size:12px;color:var(--color-text-secondary)">Critical SQL to add to your seed — the 5 tables most needed for compliance testing:</div>
+
+<div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em">1. Immutable audit trail trigger (FR-03-01 AC-01 — CRITICAL)</div>
+<div class="sql-block"><span class="sql-kw">CREATE OR REPLACE FUNCTION</span> enforce_audit_immutability()
+<span class="sql-kw">RETURNS TRIGGER AS</span> <span class="sql-str">$$</span>
+<span class="sql-kw">BEGIN</span>
+  <span class="sql-kw">RAISE EXCEPTION</span> <span class="sql-str">'Audit trail records are immutable and cannot be modified or deleted'</span>;
+<span class="sql-kw">END;</span>
+<span class="sql-str">$$</span> <span class="sql-kw">LANGUAGE</span> plpgsql;
+
+<span class="sql-kw">CREATE TRIGGER</span> audit_trail_immutable
+<span class="sql-kw">BEFORE UPDATE OR DELETE ON</span> audit_trail
+<span class="sql-kw">FOR EACH ROW EXECUTE FUNCTION</span> enforce_audit_immutability();
+
+<span class="sql-comment">-- Add missing columns to audit_trail:</span>
+<span class="sql-kw">ALTER TABLE</span> audit_trail
+  <span class="sql-kw">ADD COLUMN</span> row_hash <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> old_value_json <span class="sql-type">JSONB</span>,
+  <span class="sql-kw">ADD COLUMN</span> new_value_json <span class="sql-type">JSONB</span>,
+  <span class="sql-kw">ADD COLUMN</span> changed_fields <span class="sql-type">TEXT[]</span>,
+  <span class="sql-kw">ADD COLUMN</span> session_id <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> actor_type <span class="sql-type">TEXT DEFAULT</span> <span class="sql-str">'user'</span>,
+  <span class="sql-kw">ADD COLUMN</span> system_process <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> user_agent <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> reason <span class="sql-type">TEXT</span>;</div>
+
+<div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em">2. E-signature meanings table (FR-02-01 AC-01)</div>
+<div class="sql-block"><span class="sql-kw">CREATE TABLE</span> esignature_meanings (
+  id          <span class="sql-type">BIGSERIAL PRIMARY KEY</span>,
+  meaning_text <span class="sql-type">TEXT NOT NULL</span>,
+  applicable_to <span class="sql-type">TEXT NOT NULL</span>, <span class="sql-comment">-- 'training_completion' | 'course_approval' | 'capa_closure' etc.</span>
+  is_active   <span class="sql-type">BOOLEAN DEFAULT TRUE</span>,
+  approved_by_id <span class="sql-type">BIGINT REFERENCES pharma_users(id)</span>,
+  approved_at <span class="sql-type">TIMESTAMPTZ</span>
+);
+
+<span class="sql-comment">-- Seed the required meanings:</span>
+<span class="sql-kw">INSERT INTO</span> esignature_meanings (meaning_text, applicable_to, is_active) <span class="sql-kw">VALUES</span>
+(<span class="sql-str">'I certify that I have completed this training and will apply the content to my work'</span>, <span class="sql-str">'training_completion'</span>, <span class="sql-type">TRUE</span>),
+(<span class="sql-str">'I approve this course version as accurate and compliant'</span>, <span class="sql-str">'course_approval'</span>, <span class="sql-type">TRUE</span>),
+(<span class="sql-str">'I certify this CAPA is effectively closed and verified'</span>, <span class="sql-str">'capa_closure'</span>, <span class="sql-type">TRUE</span>),
+(<span class="sql-str">'I approve this SOP document version'</span>, <span class="sql-str">'document_approval'</span>, <span class="sql-type">TRUE</span>);
+
+<span class="sql-comment">-- Add integrity_hash to electronic_signatures:</span>
+<span class="sql-kw">ALTER TABLE</span> electronic_signatures
+  <span class="sql-kw">ADD COLUMN</span> meaning_id <span class="sql-type">BIGINT REFERENCES</span> esignature_meanings(id),
+  <span class="sql-kw">ADD COLUMN</span> integrity_hash <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> session_id <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> user_agent <span class="sql-type">TEXT</span>,
+  <span class="sql-kw">ADD COLUMN</span> training_record_id <span class="sql-type">BIGINT REFERENCES</span> enrollments(id);</div>
+
+<div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em">3. Assessment attempts table (FR-08-03 — CRITICAL)</div>
+<div class="sql-block"><span class="sql-kw">CREATE TABLE</span> assessment_attempts (
+  id                  <span class="sql-type">BIGSERIAL PRIMARY KEY</span>,
+  enrollment_id       <span class="sql-type">BIGINT NOT NULL REFERENCES</span> enrollments(id),
+  assessment_id       <span class="sql-type">BIGINT NOT NULL REFERENCES</span> assessments(id),
+  attempt_number      <span class="sql-type">INT NOT NULL</span>,
+  questions_presented_json <span class="sql-type">JSONB NOT NULL</span>, <span class="sql-comment">-- snapshot at attempt creation</span>
+  answers_given_json  <span class="sql-type">JSONB</span>,               <span class="sql-comment">-- immutable after submit</span>
+  score_percent       <span class="sql-type">NUMERIC(5,2)</span>,       <span class="sql-comment">-- computed server-side ONLY</span>
+  pass_mark_at_time   <span class="sql-type">INT NOT NULL</span>,       <span class="sql-comment">-- snapshotted at creation</span>
+  passed              <span class="sql-type">BOOLEAN</span>,
+  started_at          <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+  submitted_at        <span class="sql-type">TIMESTAMPTZ</span>,
+  time_taken_seconds  <span class="sql-type">INT</span>,
+  auto_submitted      <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+  ip_address          <span class="sql-type">TEXT</span>,
+  user_agent          <span class="sql-type">TEXT</span>,
+  session_id          <span class="sql-type">TEXT</span>
+);</div>
+
+<div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em">4. Training matrix table (FR-06-01)</div>
+<div class="sql-block"><span class="sql-kw">CREATE TABLE</span> training_matrix (
+  id                     <span class="sql-type">BIGSERIAL PRIMARY KEY</span>,
+  organization_id        <span class="sql-type">BIGINT NOT NULL REFERENCES</span> organizations(id),
+  job_role_id            <span class="sql-type">BIGINT NOT NULL REFERENCES</span> job_roles(id),
+  course_id              <span class="sql-type">BIGINT NOT NULL REFERENCES</span> courses(id),
+  site_id                <span class="sql-type">BIGINT REFERENCES</span> sites(id), <span class="sql-comment">-- NULL = all sites</span>
+  is_mandatory           <span class="sql-type">BOOLEAN DEFAULT TRUE</span>,
+  due_days_from_hire     <span class="sql-type">INT NOT NULL</span>,
+  retraining_interval_days <span class="sql-type">INT</span>,
+  effective_date         <span class="sql-type">DATE NOT NULL DEFAULT CURRENT_DATE</span>,
+  archived_at            <span class="sql-type">TIMESTAMPTZ</span>, <span class="sql-comment">-- NULL = active</span>
+  matrix_approval_esig_id <span class="sql-type">BIGINT REFERENCES</span> electronic_signatures(id)
+);
+
+<span class="sql-comment">-- Seed matrix entries for all job roles × mandatory courses:</span>
+<span class="sql-kw">INSERT INTO</span> training_matrix (org_id, job_role_id, course_id, is_mandatory, due_days_from_hire)
+<span class="sql-kw">VALUES</span>
+  (1, 1, 1, <span class="sql-type">TRUE</span>, 30),  <span class="sql-comment">-- QA Specialist → GMP Fundamentals due 30 days</span>
+  (1, 1, 2, <span class="sql-type">TRUE</span>, 30),  <span class="sql-comment">-- QA Specialist → 21 CFR Part 11</span>
+  (1, 1, 7, <span class="sql-type">TRUE</span>, 60),  <span class="sql-comment">-- QA Specialist → CAPA</span>
+  (1, 2, 1, <span class="sql-type">TRUE</span>, 30),  <span class="sql-comment">-- QC Analyst → GMP</span>
+  (1, 3, 1, <span class="sql-type">TRUE</span>, 14),  <span class="sql-comment">-- Production Operator → GMP (14 days, critical role)</span>
+  (1, 3, 6, <span class="sql-type">TRUE</span>, 14); <span class="sql-comment">-- Production Operator → Aseptic</span></div>
+
+<div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em">5. Material progress (FR-07-03) and user sessions (FR-01-04)</div>
+<div class="sql-block"><span class="sql-kw">CREATE TABLE</span> material_progress (
+  id                  <span class="sql-type">BIGSERIAL PRIMARY KEY</span>,
+  enrollment_id       <span class="sql-type">BIGINT NOT NULL REFERENCES</span> enrollments(id),
+  material_version_id <span class="sql-type">BIGINT NOT NULL REFERENCES</span> materials(id),
+  status              <span class="sql-type">TEXT DEFAULT</span> <span class="sql-str">'not_started'</span>,
+  started_at          <span class="sql-type">TIMESTAMPTZ</span>,
+  completed_at        <span class="sql-type">TIMESTAMPTZ</span>,
+  active_seconds      <span class="sql-type">INT DEFAULT 0</span>,       <span class="sql-comment">-- server-accumulated only</span>
+  last_position       <span class="sql-type">TEXT</span>,                   <span class="sql-comment">-- video timestamp or scroll %</span>
+  read_time_met       <span class="sql-type">BOOLEAN DEFAULT FALSE</span>, <span class="sql-comment">-- set by server ONLY</span>
+  <span class="sql-kw">UNIQUE</span>(enrollment_id, material_version_id)
+);
+
+<span class="sql-kw">CREATE TABLE</span> user_sessions (
+  id            <span class="sql-type">BIGSERIAL PRIMARY KEY</span>,
+  user_id       <span class="sql-type">BIGINT NOT NULL REFERENCES</span> pharma_users(id),
+  session_token <span class="sql-type">TEXT NOT NULL UNIQUE</span>,
+  started_at    <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+  last_active_at <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+  ended_at      <span class="sql-type">TIMESTAMPTZ</span>,
+  ip_address    <span class="sql-type">TEXT</span>,
+  user_agent    <span class="sql-type">TEXT</span>,
+  is_mfa_verified <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+  end_reason    <span class="sql-type">TEXT</span>  <span class="sql-comment">-- 'timeout' | 'logout' | 'admin_revoke' | 'expired'</span>
+);</div>
+
+</div>
+
+<div class="panel" id="p-verdict">
+<div class="gap-grid">
+  <div class="gap-card ok">
+    <div class="gap-title ok">What you CAN test right now</div>
+    <div class="gap-item">Basic employee dashboard — 115 users with sites, depts, roles</div>
+    <div class="gap-item">Course catalog — 12 real pharma courses with modules and lessons</div>
+    <div class="gap-item">Training list — 771 assignments with statuses (40% complete, 25% in-progress, 15% overdue)</div>
+    <div class="gap-item">Credentials wallet — certificates for ~120 passed completions</div>
+    <div class="gap-item">Navigation flows — login → dashboard → training → course viewer</div>
+    <div class="gap-item">Persona testing — 10 different learner archetypes across 5 sites</div>
+    <div class="gap-item">Basic audit trail — 600 events for compliance dashboard counts</div>
+    <div class="gap-item">Notification feed — overdue reminders for failed/missing completions</div>
+  </div>
+  <div class="gap-card miss">
+    <div class="gap-title miss">What you CANNOT test (missing data)</div>
+    <div class="gap-item">Login — no password_hash seeded → cannot authenticate</div>
+    <div class="gap-item">E-signature compliance — free text + no HMAC → 21 CFR 11 fail on audit</div>
+    <div class="gap-item">Assessment taking — no assessment_attempts table</div>
+    <div class="gap-item">Minimum read time — no material_progress table</div>
+    <div class="gap-item">Course resume — no last_position stored</div>
+    <div class="gap-item">Session management — no user_sessions table</div>
+    <div class="gap-item">SOP retraining workflow — no training_matrix, no M2M tables</div>
+    <div class="gap-item">CAPA-linked training — quality_events domain missing entirely</div>
+    <div class="gap-item">Audit trail integrity — no row_hash, no DB trigger → rows can be edited</div>
+    <div class="gap-item">Certificate verification — QR uses MD5 not SHA-256</div>
+  </div>
+  <div class="gap-card part">
+    <div class="gap-title part">3 things to fix first (highest impact)</div>
+    <div class="gap-item">1. Add password_hash to PharmaUser seed — bcrypt('Training@2026', 12) for all users — without this nothing is testable at all</div>
+    <div class="gap-item">2. Add assessment_attempts table + seed 2-3 attempts per completed enrollment — unlocks entire assessment testing flow</div>
+    <div class="gap-item">3. Add integrity_hash (HMAC-SHA256) to electronic_signatures + esignature_meanings table — turns the e-sig system from legally non-compliant to compliant</div>
+  </div>
+  <div class="gap-card part">
+    <div class="gap-title part">Overall verdict</div>
+    <div class="gap-item">Seed covers ~65% of FRD requirements by table count</div>
+    <div class="gap-item">Covers ~40% of Phase 1 compliance requirements by AC count</div>
+    <div class="gap-item">Sufficient for UI/UX testing and basic flow demo</div>
+    <div class="gap-item">NOT sufficient for a GxP validation test (IQ/OQ/PQ)</div>
+    <div class="gap-item">NOT sufficient for FDA inspector review</div>
+    <div class="gap-item">Add the 5 SQL blocks in the "Missing SQL" tab to reach ~80% Phase 1 coverage</div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<script>
+function sw(id,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('p-'+id).classList.add('active');
+}
+</script>

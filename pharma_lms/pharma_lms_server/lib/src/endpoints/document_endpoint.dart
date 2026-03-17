@@ -13,12 +13,15 @@ class DocumentEndpoint extends Endpoint {
     int? organizationId,
     String? documentType,
   }) async {
-    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    final user = await RbacHelper.getCurrentPharmaUser(session);
+    if (user == null) return [];
     await RbacHelper.requirePermission(session, resource: 'document', action: 'read');
-    if (organizationId != null) {
+    // Use provided organizationId, or fall back to authenticated user's org (avoids dev-bypass orgId=0 returning wrong scope)
+    final effectiveOrgId = organizationId ?? (user.organizationId > 0 ? user.organizationId : null);
+    if (effectiveOrgId != null) {
       var results = await Document.db.find(
         session,
-        where: (t) => t.organizationId.equals(organizationId),
+        where: (t) => t.organizationId.equals(effectiveOrgId),
       );
       if (documentType != null) {
         results = results.where((d) => d.documentType == documentType).toList();

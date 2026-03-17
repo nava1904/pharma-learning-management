@@ -33,9 +33,9 @@ String emailForRole(AppRole role) {
   }
 }
 
-/// Maps email to role for real auth (known demo emails or default employee).
-/// Includes MVP seed users: alice, bob, carol, dave, emma, sme, sme2, etc.
-AppRole roleForEmail(String email) {
+/// Maps email to role using known demo emails as fast lookup.
+/// For unknown emails, returns null so the caller can query the backend.
+AppRole? roleForEmailLocal(String email) {
   final lower = email.toLowerCase();
   switch (lower) {
     case 'admin@pharmacorp.demo':
@@ -55,6 +55,7 @@ AppRole roleForEmail(String email) {
       return AppRole.qa;
     case 'sme@pharmacorp.demo':
     case 'sme2@pharmacorp.demo':
+    case 'trainer@pharmacorp.demo':
       return AppRole.trainer;
     case 'auditor@pharmacorp.demo':
       return AppRole.auditor;
@@ -64,8 +65,49 @@ AppRole roleForEmail(String email) {
       if (lower.startsWith('employee') && lower.endsWith('@pharmacorp.demo')) {
         return AppRole.employee;
       }
+      return null;
+  }
+}
+
+/// Maps a backend role code string to AppRole.
+AppRole _roleCodeToAppRole(String code) {
+  switch (code) {
+    case 'admin':
+      return AppRole.admin;
+    case 'qa_director':
+    case 'qa_manager':
+      return AppRole.qa;
+    case 'trainer':
+    case 'sme':
+      return AppRole.trainer;
+    case 'auditor':
+      return AppRole.auditor;
+    case 'employee':
+      return AppRole.employee;
+    default:
       return AppRole.employee;
   }
+}
+
+/// Resolves AppRole from email. Tries local lookup first, then queries backend.
+Future<AppRole> resolveRoleForEmail(String email) async {
+  final local = roleForEmailLocal(email);
+  if (local != null) return local;
+
+  try {
+    final roleCode = await client.user.getUserRoleByEmail(email);
+    if (roleCode != null) {
+      return _roleCodeToAppRole(roleCode);
+    }
+  } catch (_) {
+    // Backend unavailable – fall through to default
+  }
+  return AppRole.employee;
+}
+
+/// Synchronous fallback used by quick-login buttons (always known demo emails).
+AppRole roleForEmail(String email) {
+  return roleForEmailLocal(email) ?? AppRole.employee;
 }
 
 /// Path for role dashboard.
@@ -179,12 +221,13 @@ void logout(WidgetRef ref, BuildContext context) {
 }
 
 /// Log in with real auth (email/password). Call after SignInWidget/EmailSignInWidget succeeds.
+/// Resolves the user's role from the backend so seed-data users route to the correct portal.
 Future<void> loginWithAuthEmail(
   WidgetRef ref,
   BuildContext context,
   String email,
 ) async {
-  final role = roleForEmail(email);
+  final role = await resolveRoleForEmail(email);
   ref.read(selectedRoleProvider.notifier).state = role;
   ref.read(authenticatedUserEmailProvider.notifier).state = email;
   context.go(pathForRole(role));

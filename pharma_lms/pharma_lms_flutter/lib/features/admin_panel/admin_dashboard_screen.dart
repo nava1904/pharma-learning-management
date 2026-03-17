@@ -230,7 +230,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                           // Target Selection
                           if (targetType == 'individual') ...[
                             DropdownButtonFormField<protocol.PharmaUser>(
-                              value: user,
+                              initialValue: user,
                               decoration: InputDecoration(
                                 labelText: 'Select Employee',
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -244,7 +244,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                             ),
                           ] else if (targetType == 'department') ...[
                             DropdownButtonFormField<protocol.Department>(
-                              value: dept,
+                              initialValue: dept,
                               decoration: InputDecoration(
                                 labelText: 'Select Department',
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -284,7 +284,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                           Text('Course', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<protocol.Course>(
-                            value: course,
+                            initialValue: course,
                             decoration: InputDecoration(
                               labelText: 'Select Course',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -312,7 +312,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                           ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<protocol.CourseVersion>(
-                            value: version,
+                            initialValue: version,
                             decoration: InputDecoration(
                               labelText: 'Version',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -345,7 +345,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                               const SizedBox(width: 12),
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  value: priority,
+                                  initialValue: priority,
                                   decoration: InputDecoration(
                                     labelText: 'Priority',
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -363,7 +363,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                           ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
-                            value: assignmentCategory,
+                            initialValue: assignmentCategory,
                             decoration: InputDecoration(
                               labelText: 'Category (FR-06-04)',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -724,7 +724,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
           build: (ctx) => [
             pw.Header(
               level: 0,
-              child: pw.Text('Pharma LMS Compliance Report',
+              child: pw.Text('Vyuh LMS Compliance Report',
                   style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
             ),
             pw.Paragraph(text: 'Report Type: ${_getReportTemplateName(_reportTemplate)}'),
@@ -1711,7 +1711,7 @@ class _SystemComplianceTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: reportTemplate,
+                initialValue: reportTemplate,
                 decoration: InputDecoration(
                   labelText: 'Report Template',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -1853,6 +1853,15 @@ class _SystemComplianceTab extends StatelessWidget {
                   backgroundColor: const Color(0xFFE0E7FF),
                   borderColor: const Color(0xFFA5B4FC),
                   iconColor: const Color(0xFF4F46E5),
+                ),
+                QuickActionButton(
+                  label: 'Event Triggers',
+                  subtitle: 'Workflow automation',
+                  icon: Icons.bolt,
+                  onPressed: () => context.push('/event-triggers'),
+                  backgroundColor: const Color(0xFFFEE2E2),
+                  borderColor: const Color(0xFFFCA5A5),
+                  iconColor: const Color(0xFFDC2626),
                 ),
               ],
             );

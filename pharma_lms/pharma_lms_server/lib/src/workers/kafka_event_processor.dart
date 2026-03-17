@@ -204,8 +204,8 @@ class KafkaEventProcessor extends FutureCall {
       where: (t) => t.userId.equals(uid) & t.status.equals('active'),
     );
     for (final c in certs) {
-      final cv = await CourseVersion.db.findById(session, c.courseVersionId!);
-      if (cv?.courseId != null) completedCourseIds.add(cv!.courseId!);
+      final cv = await CourseVersion.db.findById(session, c.courseVersionId);
+      if (cv?.courseId != null) completedCourseIds.add(cv!.courseId);
         }
     final toAssign = requiredCourseIds.difference(completedCourseIds);
     if (toAssign.isEmpty) return;

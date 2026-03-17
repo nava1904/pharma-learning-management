@@ -186,4 +186,116 @@ class CourseEndpoint extends Endpoint {
       include: Lesson.include(material: Material.include()),
     );
   }
+
+  /// Search courses by title, description, or SOP number.
+  Future<List<Course>> searchCourses(
+    Session session, {
+    required String query,
+    int? organizationId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return [];
+    
+    final trimmed = query.trim().toLowerCase();
+    if (trimmed.isEmpty) return [];
+    
+    var courses = await Course.db.find(session);
+    if (organizationId != null) {
+      courses = courses.where((c) => c.organizationId == organizationId).toList();
+    }
+    
+    return courses.where((c) {
+      final title = c.title.toLowerCase();
+      final desc = (c.description ?? '').toLowerCase();
+      final sop = (c.sopNumber ?? '').toLowerCase();
+      return title.contains(trimmed) || desc.contains(trimmed) || sop.contains(trimmed);
+    }).toList();
+  }
+
+  /// Update course metadata (title, description, sopNumber).
+  Future<Course> updateCourse(
+    Session session, {
+    required int courseId,
+    String? title,
+    String? description,
+    String? sopNumber,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    final course = await Course.db.findById(session, courseId);
+    if (course == null) throw Exception('Course not found');
+    
+    final updated = course.copyWith(
+      title: title ?? course.title,
+      description: description ?? course.description,
+      sopNumber: sopNumber ?? course.sopNumber,
+    );
+    
+    final result = await Course.db.updateRow(session, updated);
+    
+    await AuditService.log(
+      session,
+      entityType: 'course',
+      entityId: courseId.toString(),
+      action: 'CourseUpdated',
+      oldValueJson: '{"title":"${course.title}"}',
+      newValueJson: '{"title":"${updated.title}"}',
+    );
+    
+    return result;
+  }
+
+  /// Delete a draft course with no enrollments.
+  Future<bool> deleteCourse(
+    Session session, {
+    required int courseId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
+    final course = await Course.db.findById(session, courseId);
+    if (course == null) throw Exception('Course not found');
+    if (course.status != 'draft') {
+      throw Exception('Only draft courses can be deleted');
+    }
+    
+    final versions = await CourseVersion.db.find(
+      session,
+      where: (t) => t.courseId.equals(courseId),
+    );
+    for (final v in versions) {
+      final enrollments = await Enrollment.db.find(
+        session,
+        where: (t) => t.courseVersionId.equals(v.id!),
+      );
+      if (enrollments.isNotEmpty) {
+        throw Exception('Cannot delete course: has enrollments');
+      }
+    }
+    
+    for (final v in versions) {
+      final modules = await Module.db.find(
+        session,
+        where: (t) => t.courseVersionId.equals(v.id!),
+      );
+      for (final m in modules) {
+        final lessons = await Lesson.db.find(
+          session,
+          where: (t) => t.moduleId.equals(m.id!),
+        );
+        for (final l in lessons) {
+          await Lesson.db.deleteRow(session, l);
+        }
+        await Module.db.deleteRow(session, m);
+      }
+      await CourseVersion.db.deleteRow(session, v);
+    }
+    await Course.db.deleteRow(session, course);
+    
+    await AuditService.log(
+      session,
+      entityType: 'course',
+      entityId: courseId.toString(),
+      action: 'CourseDeleted',
+      oldValueJson: '{"title":"${course.title}"}',
+    );
+    return true;
+  }
 }
