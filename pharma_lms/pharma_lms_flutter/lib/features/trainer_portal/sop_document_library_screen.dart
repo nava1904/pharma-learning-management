@@ -32,6 +32,7 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
   String _searchQuery = '';
   String _filterType = 'All';
   String _filterQaStatus = 'All';
+  Document? _selectedDocument;
 
   final Map<int, List<DocumentVersion>> _versionCache = {};
   final Map<int, List<CourseSopLink>> _linkedCoursesCache = {};
@@ -77,7 +78,19 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
             const SizedBox(height: 16),
             _buildFilters(docTypes),
             const SizedBox(height: 16),
-            _buildTable(filtered),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildTable(filtered)),
+                if (_selectedDocument != null) ...[
+                  const SizedBox(width: 24),
+                  SizedBox(
+                    width: 360,
+                    child: _buildDocumentDetailPanel(_selectedDocument!),
+                  ),
+                ],
+              ],
+            ),
           ],
         );
       },
@@ -178,29 +191,34 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
   Widget _buildTable(List<Document> filtered) {
     if (filtered.isEmpty) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(48),
         decoration: BoxDecoration(
           color: PharmaColors.cardBg,
           borderRadius: PharmaRadius.cardRadius,
           border: Border.all(color: PharmaColors.borderLight),
         ),
-        child: Center(
-          child: Column(children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Icon(Icons.policy_outlined, size: 48, color: PharmaColors.gray300),
             const SizedBox(height: 8),
             Text('No documents match your filters', style: PharmaTypography.bodyMedium),
-          ]),
+          ],
         ),
       );
     }
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
-      child: DataTable(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
         headingRowHeight: 44,
         dataRowMinHeight: 52,
         dataRowMaxHeight: 60,
@@ -220,8 +238,11 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
           DataColumn(label: Text('ACTIONS')),
         ],
         rows: filtered.map((doc) => DataRow(cells: [
-          DataCell(Text(doc.documentNumber,
-              style: PharmaTypography.bodyMedium.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.w600))),
+          DataCell(
+            Text(doc.documentNumber,
+                style: PharmaTypography.bodyMedium.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+            onTap: () => setState(() => _selectedDocument = doc),
+          ),
           DataCell(
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 300),
@@ -258,6 +279,80 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
             ),
           ])),
         ])).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentDetailPanel(Document doc) {
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Document details',
+                  style: PharmaTypography.headingSmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _selectedDocument = null),
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(doc.documentNumber,
+              style: PharmaTypography.bodyMedium.copyWith(
+                  fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(doc.title, style: PharmaTypography.body),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: PharmaColors.gray100,
+              borderRadius: PharmaRadius.pillRadius,
+            ),
+            child: Text(doc.documentType.toUpperCase(),
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
+          ),
+          const SizedBox(height: 8),
+          _QaStatusChip(qaStatus: doc.trainingRequiredByQa),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () => _showDocumentVersions(doc),
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('View versions'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PharmaColors.emerald700,
+              side: const BorderSide(color: PharmaColors.emerald200),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _linkToCourse(context, doc.id!),
+            icon: Icon(Icons.link, size: 18, color: PharmaColors.emerald600),
+            label: const Text('Link to course'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PharmaColors.emerald700,
+              side: const BorderSide(color: PharmaColors.emerald200),
+            ),
+          ),
+        ],
       ),
     );
   }

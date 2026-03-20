@@ -130,21 +130,23 @@ class _QuestionBankLibraryScreenState extends ConsumerState<QuestionBankLibraryS
 
   Widget _buildEmptyState() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(48),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
-      child: Center(
-        child: Column(children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           Icon(Icons.quiz_outlined, size: 48, color: PharmaColors.gray300),
           const SizedBox(height: 8),
           Text('No question banks found', style: PharmaTypography.bodyMedium),
           const SizedBox(height: 4),
           Text('Question banks will appear here once created.',
               style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
-        ]),
+        ],
       ),
     );
   }

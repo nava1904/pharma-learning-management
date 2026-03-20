@@ -38,6 +38,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../design_system/pharma_components.dart';
 import '../design_system/pharma_design_system.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
@@ -310,25 +311,13 @@ class _TrainerSidebar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: PharmaColors.emerald600,
-                    borderRadius: BorderRadius.circular(PharmaRadius.sm),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
+                VyuhLogo(height: 32, width: 32),
                 const SizedBox(width: PharmaSpacing.md),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'VyuhLMS',
+                      PharmaBrand.name,
                       style: PharmaTypography.headingMedium.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
@@ -427,6 +416,13 @@ class _TrainerSidebar extends StatelessWidget {
                     route: '/trainer/question-bank',
                     currentPath: currentPath,
                   ),
+                  _TrainerNavItem(
+                    icon: Icons.description_outlined,
+                    activeIcon: Icons.description_rounded,
+                    label: 'Exam generator',
+                    route: '/trainer/exam-generator',
+                    currentPath: currentPath,
+                  ),
 
                   const SizedBox(height: PharmaSpacing.md),
 
@@ -437,6 +433,13 @@ class _TrainerSidebar extends StatelessWidget {
                     activeIcon: Icons.assignment_ind_rounded,
                     label: 'Assignments',
                     route: '/trainer/assignments',
+                    currentPath: currentPath,
+                  ),
+                  _TrainerNavItem(
+                    icon: Icons.summarize_outlined,
+                    activeIcon: Icons.summarize_rounded,
+                    label: 'Reports',
+                    route: '/trainer/reports',
                     currentPath: currentPath,
                   ),
                   _TrainerNavItem(

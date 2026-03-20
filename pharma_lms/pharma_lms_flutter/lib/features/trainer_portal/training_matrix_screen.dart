@@ -217,9 +217,20 @@ class _TrainingMatrixScreenState extends ConsumerState<TrainingMatrixScreen> {
   }
 
   Widget _buildMatrix() {
-    if (_roles.isEmpty || _courses.isEmpty) return Center(child: Text('No roles or courses available', style: PharmaTypography.body));
+    if (_roles.isEmpty || _courses.isEmpty) {
+      return SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Center(
+            child: Text('No roles or courses available', style: PharmaTypography.body),
+          ),
+        ),
+      );
+    }
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(color: PharmaColors.cardBg, borderRadius: PharmaRadius.cardRadius, border: Border.all(color: PharmaColors.borderLight)),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

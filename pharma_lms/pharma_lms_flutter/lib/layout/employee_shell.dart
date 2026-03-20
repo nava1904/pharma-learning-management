@@ -30,6 +30,8 @@ import 'package:go_router/go_router.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import '../core/client.dart';
+import '../design_system/pharma_components.dart';
+import '../design_system/pharma_design_system.dart';
 import '../providers/dashboard_providers.dart';
 import '../providers/user_provider.dart';
 
@@ -189,10 +191,10 @@ class _TopBar extends ConsumerWidget {
           ],
           
           // Logo
-          _LogoMark(),
+          VyuhLogo(height: 28, width: 28),
           const SizedBox(width: 10),
           Text(
-            'Vyuh LMS',
+            PharmaBrand.name,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

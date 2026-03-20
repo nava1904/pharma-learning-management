@@ -63,6 +63,7 @@ import '../features/trainer_portal/assessment_builder_v2_screen.dart';
 import '../features/trainer_portal/qa_review_screen.dart';
 import '../features/trainer_portal/sop_linkage_screen.dart';
 import '../features/trainer_portal/ai_question_generation_screen.dart';
+import '../features/trainer_portal/exam_generator_screen.dart';
 import '../features/trainer_portal/course_analytics_v2_screen.dart';
 import '../features/trainer_portal/sop_document_library_screen.dart';
 import '../features/trainer_portal/question_bank_library_screen.dart';
@@ -75,8 +76,10 @@ import '../features/trainer_portal/analytics_overview_screen.dart';
 import '../features/trainer_portal/qa_dashboard_screen.dart' as trainer_qa;
 import '../features/trainer_portal/compliance_screen.dart';
 import '../features/trainer_portal/notification_centre_screen.dart';
+import '../features/trainer_portal/trainer_reports_screen.dart';
 import '../features/my_learning/my_learning_screen.dart';
 import '../features/training_timeline/training_timeline_screen.dart';
+import '../features/not_found/not_found_screen.dart';
 import '../layout/app_layout.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auditor_watermark_wrapper.dart';
@@ -115,6 +118,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       return null;
     },
+    errorBuilder: (context, state) => NotFoundScreen(uri: state.uri),
     routes: _buildRoutes,
   );
 });
@@ -450,6 +454,10 @@ List<RouteBase> get _buildRoutes => [
               path: 'assessments/ai-generate',
               builder: (context, state) => const AiQuestionGenerationScreen(),
             ),
+            GoRoute(
+              path: 'exam-generator',
+              builder: (context, state) => const ExamGeneratorScreen(),
+            ),
             // Legacy: materials route (fallback)
             GoRoute(
               path: 'materials',
@@ -475,10 +483,16 @@ List<RouteBase> get _buildRoutes => [
               path: 'assignments',
               builder: (context, state) => const TrainingAssignmentsScreen(),
             ),
-            // TRN-15: Learner Progress Report
+            // Reports hub + Learner Progress
             GoRoute(
-              path: 'reports/learner-progress',
-              builder: (context, state) => const LearnerProgressScreen(),
+              path: 'reports',
+              builder: (context, state) => const TrainerReportsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'learner-progress',
+                  builder: (context, state) => const LearnerProgressScreen(),
+                ),
+              ],
             ),
             // TRN-16: Audit Log Viewer
             GoRoute(

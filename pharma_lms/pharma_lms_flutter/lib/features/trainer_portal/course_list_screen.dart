@@ -31,6 +31,7 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
   String _filter = 'all';
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  Course? _selectedCourse;
 
   @override
   void initState() {
@@ -145,19 +146,24 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
 
         const SizedBox(height: PharmaSpacing.sectionGap),
 
-        // ── FILTER TABS + SEARCH ──
-        Container(
-          padding: const EdgeInsets.all(PharmaSpacing.lg),
-          decoration: BoxDecoration(
-            color: PharmaColors.cardBg,
-            borderRadius: PharmaRadius.cardRadius,
-            border: Border.all(color: PharmaColors.borderLight),
-            boxShadow: PharmaShadows.sm,
-          ),
-          child: Column(
-            children: [
-              // Filter tabs
-              Row(
+        // ── TABLE + SIDE PANEL ──
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(PharmaSpacing.lg),
+                decoration: BoxDecoration(
+                  color: PharmaColors.cardBg,
+                  borderRadius: PharmaRadius.cardRadius,
+                  border: Border.all(color: PharmaColors.borderLight),
+                  boxShadow: PharmaShadows.sm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Filter tabs
+                    Row(
                 children: [
                   _FilterTab('All', 'all'),
                   _FilterTab('My Courses', 'mine'),
@@ -197,17 +203,22 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
               const SizedBox(height: PharmaSpacing.lg),
               Divider(height: 1, color: PharmaColors.borderLight),
 
-              // ── TABLE ──
+              // ── TABLE (full width) ──
               if (_loading)
-                const Padding(
-                  padding: EdgeInsets.all(48),
-                  child: Center(child: CircularProgressIndicator()),
+                const SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
                 )
               else if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.all(48),
-                  child: Center(
+                SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 48),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(_error!, style: TextStyle(color: PharmaColors.danger)),
                         const SizedBox(height: 12),
@@ -217,27 +228,128 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
                   ),
                 )
               else if (_filteredCourses.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(48),
-                  child: Column(
-                    children: [
-                      Icon(Icons.menu_book_outlined, size: 48, color: PharmaColors.gray300),
-                      const SizedBox(height: 12),
-                      Text('No courses found', style: PharmaTypography.headingSmall),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Create your first course to get started.',
-                        style: PharmaTypography.body,
-                      ),
-                    ],
+                PharmaEmptyState(
+                  icon: Icons.menu_book_outlined,
+                  title: 'No courses found',
+                  subtitle: 'Create your first course to get started.',
+                  action: FilledButton.icon(
+                    onPressed: _createNewCourse,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Create Course'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: PharmaColors.emerald600,
+                      foregroundColor: PharmaColors.cardBg,
+                    ),
                   ),
                 )
               else
-                _buildCourseTable(),
+                SizedBox(
+                  width: double.infinity,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: _buildCourseTable(),
+                  ),
+                ),
+                  ],
+                ),
+              ),
+            ),
+            if (_selectedCourse != null) ...[
+              const SizedBox(width: 24),
+              SizedBox(
+                width: 360,
+                child: _buildCourseDetailPanel(_selectedCourse!),
+              ),
             ],
-          ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildCourseDetailPanel(Course course) {
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Course details',
+                  style: PharmaTypography.headingSmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _selectedCourse = null),
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            course.title,
+            style: PharmaTypography.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (course.sopNumber != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'SOP #${course.sopNumber}',
+              style: PharmaTypography.caption.copyWith(
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          _StatusChip(status: course.status),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.go('/trainer/courses/${course.id}/builder'),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('Open builder'),
+              style: FilledButton.styleFrom(
+                backgroundColor: PharmaColors.emerald600,
+                foregroundColor: PharmaColors.cardBg,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => context.go('/trainer/courses/${course.id}/versions'),
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('Versions'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PharmaColors.emerald700,
+              side: const BorderSide(color: PharmaColors.emerald200),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => context.go('/trainer/courses/${course.id}/analytics'),
+            icon: const Icon(Icons.analytics_outlined, size: 18),
+            label: const Text('Analytics'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PharmaColors.emerald700,
+              side: const BorderSide(color: PharmaColors.emerald200),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -300,7 +412,7 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              onTap: () => context.go('/trainer/courses/${course.id}/builder'),
+              onTap: () => setState(() => _selectedCourse = course),
             ),
             // SOP Number
             DataCell(
@@ -376,9 +488,13 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
   Future<void> _confirmDeleteCourse(Course course) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Course'),
-        content: Text('Are you sure you want to delete "${course.title}"? This cannot be undone.'),
+      builder: (ctx) => PharmaDialog(
+        title: 'Delete Course',
+        titleIcon: Icons.delete_outline,
+        content: Text(
+          'Are you sure you want to delete "${course.title}"? This cannot be undone.',
+          style: PharmaTypography.body,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),

@@ -35,6 +35,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
   bool _loading = true;
   String? _error;
   List<AuditTrail> _entries = [];
+  AuditTrail? _selectedEntry;
 
   static const int _pageSize = 100;
 
@@ -138,8 +139,77 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
         else if (_error != null)
           _buildErrorCard()
         else
-          _buildTable(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildTable()),
+              if (_selectedEntry != null) ...[
+                const SizedBox(width: 24),
+                SizedBox(
+                  width: 360,
+                  child: _buildEntryDetailPanel(_selectedEntry!),
+                ),
+              ],
+            ],
+          ),
       ],
+    );
+  }
+
+  Widget _buildEntryDetailPanel(AuditTrail e) {
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Audit entry',
+                  style: PharmaTypography.headingSmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _selectedEntry = null),
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(_formatTimestamp(e.timestamp),
+              style: PharmaTypography.caption.copyWith(
+                  fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(_formatUser(e), style: PharmaTypography.bodyMedium),
+          const SizedBox(height: 4),
+          Text('${e.action} · ${e.entityType} · ${e.entityId}',
+              style: PharmaTypography.caption
+                  .copyWith(color: PharmaColors.textTertiary)),
+          if (e.reason != null && e.reason!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('Reason', style: PharmaTypography.labelMedium),
+            const SizedBox(height: 4),
+            Text(e.reason!, style: PharmaTypography.body),
+          ],
+          if (e.ipAddress != null && e.ipAddress!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('IP: ${e.ipAddress}',
+                style: PharmaTypography.caption
+                    .copyWith(fontFamily: 'monospace')),
+          ],
+        ],
+      ),
     );
   }
 
@@ -423,6 +493,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
 
     if (filtered.isEmpty) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(40),
         decoration: BoxDecoration(
           color: PharmaColors.cardBg,
@@ -430,6 +501,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
           border: Border.all(color: PharmaColors.borderLight),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.search_off,
@@ -454,6 +526,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
     }
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -507,6 +580,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
                               fontSize: 11,
                             ),
                           ),
+                          onTap: () => setState(() => _selectedEntry = e),
                         ),
                         DataCell(
                           Text(

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import '../../core/client.dart';
+import '../../design_system/pharma_components.dart';
+import '../../design_system/pharma_design_system.dart';
 import '../../providers/auth_provider.dart';
 import 'oidc_sign_in_widget.dart';
 
@@ -758,18 +760,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Column(
       children: [
         const SizedBox(height: s2),
-        _buildLogoMark(),
+        VyuhLogo(height: 48),
         const SizedBox(height: s2),
-        const Text(
-          'Vyuh LMS',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.5,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 4),
         Text(
           'Enterprise Edition',
           style: TextStyle(
@@ -863,30 +855,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             // Logo
             Row(
               children: [
-                _buildLogoMark(),
+                VyuhLogo(height: 28),
                 const SizedBox(width: s2),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Vyuh LMS',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.3,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Enterprise Edition',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0.02,
-                        color: Colors.white.withValues(alpha: 0.36),
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Enterprise Edition',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.02,
+                    color: Colors.white.withValues(alpha: 0.36),
+                  ),
                 ),
               ],
             ),

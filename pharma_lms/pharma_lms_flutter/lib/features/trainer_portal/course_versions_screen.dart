@@ -93,13 +93,28 @@ class _CourseVersionsScreenState extends State<CourseVersionsScreen> {
 
         const SizedBox(height: PharmaSpacing.sectionGap),
 
-        // Content
+        // Content (full width)
         if (_loading)
-          const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator()))
+          const SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          )
         else if (_error != null)
-          Center(child: Text(_error!, style: TextStyle(color: PharmaColors.danger)))
+          SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Text(_error!, style: TextStyle(color: PharmaColors.danger)),
+              ),
+            ),
+          )
         else
           Container(
+            width: double.infinity,
             decoration: BoxDecoration(
               color: PharmaColors.cardBg,
               borderRadius: PharmaRadius.cardRadius,
@@ -110,6 +125,7 @@ class _CourseVersionsScreenState extends State<CourseVersionsScreen> {
                 ? Padding(
                     padding: const EdgeInsets.all(48),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.history, size: 48, color: PharmaColors.gray300),
                         const SizedBox(height: 12),
@@ -117,7 +133,9 @@ class _CourseVersionsScreenState extends State<CourseVersionsScreen> {
                       ],
                     ),
                   )
-                : DataTable(
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
                     headingRowHeight: 44,
                     dataRowMinHeight: 56,
                     dataRowMaxHeight: 64,
@@ -175,6 +193,7 @@ class _CourseVersionsScreenState extends State<CourseVersionsScreen> {
                         ],
                       )),
                     ])).toList(),
+                    ),
                   ),
           ),
       ],

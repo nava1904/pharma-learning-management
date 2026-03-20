@@ -274,28 +274,43 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
   }
 
   Widget _buildMaterialsTable() {
-    if (_loading) return const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator()));
+    if (_loading) {
+      return const SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
     if (_filtered.isEmpty) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(48),
         decoration: BoxDecoration(
           color: PharmaColors.cardBg, borderRadius: PharmaRadius.cardRadius,
           border: Border.all(color: PharmaColors.borderLight),
         ),
-        child: Column(children: [
-          Icon(Icons.folder_off, size: 48, color: PharmaColors.gray300),
-          const SizedBox(height: 8),
-          Text('No materials found', style: PharmaTypography.headingSmall),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.folder_off, size: 48, color: PharmaColors.gray300),
+            const SizedBox(height: 8),
+            Text('No materials found', style: PharmaTypography.headingSmall),
+          ],
+        ),
       );
     }
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg, borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
-      child: DataTable(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
         headingRowHeight: 44,
         dataRowMinHeight: 52,
         dataRowMaxHeight: 60,
@@ -336,6 +351,7 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
             ),
           ])),
         ])).toList(),
+        ),
       ),
     );
   }

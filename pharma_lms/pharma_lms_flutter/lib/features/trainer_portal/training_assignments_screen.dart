@@ -54,6 +54,7 @@ class _TrainingAssignmentsScreenState
     extends ConsumerState<TrainingAssignmentsScreen> {
   String _filterStatus = 'All';
   String _searchQuery = '';
+  TrainingAssignment? _selectedAssignment;
 
   List<TrainingAssignment> _applyFilters(List<TrainingAssignment> all) {
     return all.where((a) {
@@ -125,25 +126,112 @@ class _TrainingAssignmentsScreenState
           const SizedBox(height: 16),
           _buildFilters(),
           const SizedBox(height: 16),
-          ...filtered.map((a) => _buildAssignmentCard(a)),
-          if (filtered.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(48),
-              decoration: BoxDecoration(
-                color: PharmaColors.cardBg,
-                borderRadius: PharmaRadius.cardRadius,
-                border: Border.all(color: PharmaColors.borderLight),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...filtered.map((a) => _buildAssignmentCard(a)),
+                            if (filtered.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(48),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.cardBg,
+                          borderRadius: PharmaRadius.cardRadius,
+                          border: Border.all(color: PharmaColors.borderLight),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.assignment_outlined,
+                                size: 48, color: PharmaColors.gray300),
+                            const SizedBox(height: 8),
+                            Text('No assignments match filters',
+                                style: PharmaTypography.bodyMedium),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              child: Center(
-                child: Column(children: [
-                  Icon(Icons.assignment_outlined,
-                      size: 48, color: PharmaColors.gray300),
-                  const SizedBox(height: 8),
-                  Text('No assignments match filters',
-                      style: PharmaTypography.bodyMedium),
-                ]),
+              if (_selectedAssignment != null) ...[
+                const SizedBox(width: 24),
+                SizedBox(
+                  width: 360,
+                  child: _buildAssignmentDetailPanel(_selectedAssignment!),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssignmentDetailPanel(TrainingAssignment a) {
+    final courseName =
+        a.courseVersion?.course?.title ?? 'Course #${a.courseVersionId}';
+    final userName =
+        '${a.user?.firstName ?? ''} ${a.user?.lastName ?? ''}'.trim();
+    final assigneeName = userName.isNotEmpty ? userName : 'User #${a.userId}';
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Assignment details',
+                  style: PharmaTypography.headingSmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
+              IconButton(
+                onPressed: () => setState(() => _selectedAssignment = null),
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(courseName,
+              style: PharmaTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Assigned to: $assigneeName',
+              style: PharmaTypography.caption
+                  .copyWith(color: PharmaColors.textTertiary)),
+          const SizedBox(height: 8),
+          Text(
+            'Due: ${DateFormat('MMM d, yyyy').format(a.dueDate)}',
+            style: PharmaTypography.body,
+          ),
+          if (a.reason != null && a.reason!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Reason: ${a.reason}',
+                style: PharmaTypography.caption),
+          ],
+          const SizedBox(height: 20),
+          if (a.status == 'active' || a.status == 'completed') ...[
+            OutlinedButton(
+              onPressed: () => _onAssignmentAction('extend', a),
+              child: const Text('Extend deadline'),
             ),
+            const SizedBox(height: 8),
+          ],
         ],
       ),
     );
@@ -334,18 +422,22 @@ class _TrainingAssignmentsScreenState
 
     final dueDateStr = DateFormat('MMM d, yyyy').format(a.dueDate);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: PharmaColors.cardBg,
-        borderRadius: PharmaRadius.cardRadius,
-        border: Border.all(
-            color: resolvedStatus == 'overdue'
-                ? PharmaColors.danger.withValues(alpha: 0.3)
-                : PharmaColors.borderLight),
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: () => setState(() => _selectedAssignment = a),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: PharmaColors.cardBg,
+          borderRadius: PharmaRadius.cardRadius,
+          border: Border.all(
+              color: resolvedStatus == 'overdue'
+                  ? PharmaColors.danger.withValues(alpha: 0.3)
+                  : _selectedAssignment?.id == a.id
+                      ? PharmaColors.emerald600
+                      : PharmaColors.borderLight),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
@@ -441,6 +533,7 @@ class _TrainingAssignmentsScreenState
               ),
           ]),
         ],
+      ),
       ),
     );
   }

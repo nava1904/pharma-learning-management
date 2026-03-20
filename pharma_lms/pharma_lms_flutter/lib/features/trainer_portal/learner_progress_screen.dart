@@ -13,6 +13,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 import 'package:intl/intl.dart';
 
 import '../../core/client.dart';
+import '../../design_system/pharma_components.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
 
@@ -230,15 +231,11 @@ class _LearnerProgressScreenState
       if (!mounted) return;
       showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Row(children: [
-            const Icon(Icons.download_done, size: 20),
-            const SizedBox(width: 8),
-            const Text('Learner Progress Report'),
-          ]),
+        builder: (ctx) => PharmaDialog(
+          title: 'Learner Progress Report',
+          titleIcon: Icons.download_done,
+          maxWidth: 640,
           content: SizedBox(
-            width: 600,
             height: 400,
             child: SelectableText(
               csv,
@@ -255,7 +252,11 @@ class _LearnerProgressScreenState
               },
               child: const Text('Copy to Clipboard'),
             ),
-            FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600),
+              child: const Text('Close'),
+            ),
           ],
         ),
       );
@@ -403,31 +404,36 @@ class _LearnerProgressScreenState
   Widget _buildLearnersTable(List<_LearnerSummary> filtered) {
     if (filtered.isEmpty) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(48),
         decoration: BoxDecoration(
           color: PharmaColors.cardBg,
           borderRadius: PharmaRadius.cardRadius,
           border: Border.all(color: PharmaColors.borderLight),
         ),
-        child: Center(
-          child: Column(children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Icon(Icons.people_outline,
                 size: 48, color: PharmaColors.gray300),
             const SizedBox(height: 8),
             Text('No learners match filters',
                 style: PharmaTypography.bodyMedium),
-          ]),
+          ],
         ),
       );
     }
 
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
-      child: DataTable(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
         headingRowHeight: 44,
         dataRowMinHeight: 52,
         dataRowMaxHeight: 60,
@@ -501,6 +507,7 @@ class _LearnerProgressScreenState
                   ],
                 ))
             .toList(),
+        ),
       ),
     );
   }

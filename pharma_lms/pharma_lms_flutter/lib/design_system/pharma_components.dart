@@ -13,6 +13,39 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import 'pharma_design_system.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// VYUH LOGO — Design system brand logo (use on login, shells, app layout)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Vyuh brand logo image. Use wherever "Vyuh LMS" branding is shown (login, sidebar, top bar).
+class VyuhLogo extends StatelessWidget {
+  const VyuhLogo({
+    super.key,
+    this.height,
+    this.width,
+    this.fit = BoxFit.contain,
+  });
+
+  final double? height;
+  final double? width;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      PharmaBrand.logoAssetPath,
+      height: height,
+      width: width,
+      fit: fit,
+      errorBuilder: (_, __, ___) => Icon(
+        Icons.school_rounded,
+        size: height ?? width ?? 32,
+        color: PharmaColors.emerald600,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PHARMA CARD
 // Standard card component with border and subtle shadow
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -456,49 +489,129 @@ class PharmaEmptyState extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.action,
+    this.fullBleed = false,
   });
 
   final IconData icon;
   final String title;
   final String? subtitle;
   final Widget? action;
+  /// When true, fills the available space (no side gaps) with content centered.
+  final bool fullBleed;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 64,
-              color: PharmaColors.textTertiary,
-            ),
-            const SizedBox(height: PharmaSpacing.lg),
+    final content = Padding(
+      padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 64,
+            color: PharmaColors.textTertiary,
+          ),
+          const SizedBox(height: PharmaSpacing.lg),
+          Text(
+            title,
+            style: PharmaTypography.headingSmall,
+            textAlign: TextAlign.center,
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 8),
             Text(
-              title,
-              style: PharmaTypography.headingSmall,
+              subtitle!,
+              style: PharmaTypography.body.copyWith(
+                color: PharmaColors.textSecondary,
+              ),
               textAlign: TextAlign.center,
             ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                subtitle!,
-                style: PharmaTypography.body.copyWith(
-                  color: PharmaColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (action != null) ...[
-              const SizedBox(height: PharmaSpacing.xxl),
-              action!,
-            ],
           ],
-        ),
+          if (action != null) ...[
+            const SizedBox(height: PharmaSpacing.xxl),
+            action!,
+          ],
+        ],
       ),
+    );
+
+    if (fullBleed) {
+      return SizedBox.expand(
+        child: Container(
+          color: PharmaColors.pageBg,
+          child: Center(child: content),
+        ),
+      );
+    }
+    return Center(child: content);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA DIALOG
+// Design-system dialog: consistent title, padding, radius, actions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaDialog extends StatelessWidget {
+  const PharmaDialog({
+    super.key,
+    this.title,
+    this.titleIcon,
+    this.content,
+    this.actions,
+    this.maxWidth = 480,
+  });
+
+  final String? title;
+  final IconData? titleIcon;
+  final Widget? content;
+  final List<Widget>? actions;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: PharmaRadius.cardRadius,
+      ),
+      title: title != null
+          ? Row(
+              children: [
+                if (titleIcon != null) ...[
+                  Icon(
+                    titleIcon,
+                    size: 22,
+                    color: PharmaColors.emerald600,
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Text(
+                    title!,
+                    style: PharmaTypography.headingSmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : null,
+      content: content != null
+          ? SizedBox(
+              width: double.infinity,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: content,
+              ),
+            )
+          : null,
+      actions: actions != null
+          ? [
+              for (final a in actions!) a,
+            ]
+          : null,
+      actionsAlignment: MainAxisAlignment.end,
+      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
     );
   }
 }

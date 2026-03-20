@@ -42,6 +42,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../design_system/pharma_components.dart';
+import '../design_system/pharma_design_system.dart';
 import '../design_system/tokens.dart';
 import '../providers/auth_provider.dart';
 
@@ -116,7 +118,7 @@ class AppLayout extends StatelessWidget {
       body: Column(
         children: [
           _AdminTopBar(
-            title: title ?? 'Vyuh LMS',
+            title: title ?? PharmaBrand.name,
             breadcrumbItems: _resolvedBreadcrumb,
           ),
           Expanded(
@@ -178,10 +180,10 @@ class _AdminTopBar extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _LogoMark(),
+                VyuhLogo(height: 28),
                 const SizedBox(width: AppSpacing.s2),
                 Text(
-                  'Vyuh LMS',
+                  PharmaBrand.name,
                   style: AppTypography.headline.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.n900,

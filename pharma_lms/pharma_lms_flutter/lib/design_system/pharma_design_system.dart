@@ -133,6 +133,20 @@ abstract class PharmaColors {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// BRAND — Vyuh LMS (logo asset, name)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+abstract class PharmaBrand {
+  PharmaBrand._();
+
+  /// Asset path for the Vyuh logo image (use with Image.asset or VyuhLogo widget).
+  static const String logoAssetPath = 'assets/images/logo_vyuh.png';
+
+  /// Display name for the product.
+  static const String name = 'Vyuh LMS';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SPACING — 8pt Grid System (Tailwind spacing)
 // ═══════════════════════════════════════════════════════════════════════════════
 
