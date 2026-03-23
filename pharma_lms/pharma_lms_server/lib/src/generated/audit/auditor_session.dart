@@ -735,7 +735,7 @@ class AuditorSessionRepository {
   /// );
   /// ```
   Future<List<AuditorSession>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditorSessionTable>? where,
     int? limit,
     int? offset,
@@ -779,7 +779,7 @@ class AuditorSessionRepository {
   /// );
   /// ```
   Future<AuditorSession?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditorSessionTable>? where,
     int? offset,
     _i1.OrderByBuilder<AuditorSessionTable>? orderBy,
@@ -805,7 +805,7 @@ class AuditorSessionRepository {
 
   /// Finds a single [AuditorSession] by its [id] or null if no such row exists.
   Future<AuditorSession?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AuditorSessionInclude? include,
@@ -832,7 +832,7 @@ class AuditorSessionRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AuditorSession>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditorSession> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -848,7 +848,7 @@ class AuditorSessionRepository {
   ///
   /// The returned [AuditorSession] will have its `id` field set.
   Future<AuditorSession> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorSession row, {
     _i1.Transaction? transaction,
   }) async {
@@ -864,7 +864,7 @@ class AuditorSessionRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AuditorSession>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditorSession> rows, {
     _i1.ColumnSelections<AuditorSessionTable>? columns,
     _i1.Transaction? transaction,
@@ -880,7 +880,7 @@ class AuditorSessionRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AuditorSession> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorSession row, {
     _i1.ColumnSelections<AuditorSessionTable>? columns,
     _i1.Transaction? transaction,
@@ -895,7 +895,7 @@ class AuditorSessionRepository {
   /// Updates a single [AuditorSession] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AuditorSession?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AuditorSessionUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -910,7 +910,7 @@ class AuditorSessionRepository {
   /// Updates all [AuditorSession]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AuditorSession>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AuditorSessionUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<AuditorSessionTable> where,
     int? limit,
@@ -936,7 +936,7 @@ class AuditorSessionRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AuditorSession>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditorSession> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -948,7 +948,7 @@ class AuditorSessionRepository {
 
   /// Deletes a single [AuditorSession].
   Future<AuditorSession> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorSession row, {
     _i1.Transaction? transaction,
   }) async {
@@ -960,7 +960,7 @@ class AuditorSessionRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AuditorSession>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditorSessionTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -973,7 +973,7 @@ class AuditorSessionRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditorSessionTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -987,7 +987,7 @@ class AuditorSessionRepository {
 
   /// Acquires row-level locks on [AuditorSession] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditorSessionTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -1008,7 +1008,7 @@ class AuditorSessionAttachRowRepository {
   /// Creates a relation between the given [AuditorSession] and [InspectionRecord]
   /// by setting the [AuditorSession]'s foreign key `inspectionRecordId` to refer to the [InspectionRecord].
   Future<void> inspectionRecord(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorSession auditorSession,
     _i2.InspectionRecord inspectionRecord, {
     _i1.Transaction? transaction,
@@ -1033,7 +1033,7 @@ class AuditorSessionAttachRowRepository {
   /// Creates a relation between the given [AuditorSession] and [PharmaUser]
   /// by setting the [AuditorSession]'s foreign key `auditorUserId` to refer to the [PharmaUser].
   Future<void> auditorUser(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorSession auditorSession,
     _i3.PharmaUser auditorUser, {
     _i1.Transaction? transaction,
@@ -1065,7 +1065,7 @@ class AuditorSessionDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> auditorUser(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorSession auditorSession, {
     _i1.Transaction? transaction,
   }) async {

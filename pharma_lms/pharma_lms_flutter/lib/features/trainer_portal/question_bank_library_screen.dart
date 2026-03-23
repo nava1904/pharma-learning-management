@@ -11,7 +11,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart' hide Material;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
@@ -528,7 +527,7 @@ class _QuestionBankLibraryScreenState extends ConsumerState<QuestionBankLibraryS
                 Row(children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
                       items: ['multiple_choice', 'true_false']
                           .map((t) => DropdownMenuItem(value: t, child: Text(t == 'multiple_choice' ? 'Multiple Choice' : 'True/False')))
@@ -539,7 +538,7 @@ class _QuestionBankLibraryScreenState extends ConsumerState<QuestionBankLibraryS
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedDifficulty,
+                      initialValue: selectedDifficulty,
                       decoration: const InputDecoration(labelText: 'Difficulty', border: OutlineInputBorder()),
                       items: ['easy', 'medium', 'hard']
                           .map((d) => DropdownMenuItem(value: d, child: Text(d[0].toUpperCase() + d.substring(1))))
@@ -633,7 +632,7 @@ class _QuestionBankLibraryScreenState extends ConsumerState<QuestionBankLibraryS
                 Row(children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
                       items: ['multiple_choice', 'true_false']
                           .map((t) => DropdownMenuItem(value: t, child: Text(t == 'multiple_choice' ? 'Multiple Choice' : 'True/False')))
@@ -644,7 +643,7 @@ class _QuestionBankLibraryScreenState extends ConsumerState<QuestionBankLibraryS
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedDifficulty,
+                      initialValue: selectedDifficulty,
                       decoration: const InputDecoration(labelText: 'Difficulty', border: OutlineInputBorder()),
                       items: ['easy', 'medium', 'hard']
                           .map((d) => DropdownMenuItem(value: d, child: Text(d[0].toUpperCase() + d.substring(1))))

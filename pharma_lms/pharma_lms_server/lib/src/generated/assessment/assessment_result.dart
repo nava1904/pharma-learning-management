@@ -420,7 +420,7 @@ class AssessmentResultRepository {
   /// );
   /// ```
   Future<List<AssessmentResult>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AssessmentResultTable>? where,
     int? limit,
     int? offset,
@@ -464,7 +464,7 @@ class AssessmentResultRepository {
   /// );
   /// ```
   Future<AssessmentResult?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AssessmentResultTable>? where,
     int? offset,
     _i1.OrderByBuilder<AssessmentResultTable>? orderBy,
@@ -490,7 +490,7 @@ class AssessmentResultRepository {
 
   /// Finds a single [AssessmentResult] by its [id] or null if no such row exists.
   Future<AssessmentResult?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AssessmentResultInclude? include,
@@ -517,7 +517,7 @@ class AssessmentResultRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AssessmentResult>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AssessmentResult> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -533,7 +533,7 @@ class AssessmentResultRepository {
   ///
   /// The returned [AssessmentResult] will have its `id` field set.
   Future<AssessmentResult> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AssessmentResult row, {
     _i1.Transaction? transaction,
   }) async {
@@ -549,7 +549,7 @@ class AssessmentResultRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AssessmentResult>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AssessmentResult> rows, {
     _i1.ColumnSelections<AssessmentResultTable>? columns,
     _i1.Transaction? transaction,
@@ -565,7 +565,7 @@ class AssessmentResultRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AssessmentResult> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AssessmentResult row, {
     _i1.ColumnSelections<AssessmentResultTable>? columns,
     _i1.Transaction? transaction,
@@ -580,7 +580,7 @@ class AssessmentResultRepository {
   /// Updates a single [AssessmentResult] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AssessmentResult?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AssessmentResultUpdateTable>
     columnValues,
@@ -596,7 +596,7 @@ class AssessmentResultRepository {
   /// Updates all [AssessmentResult]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AssessmentResult>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AssessmentResultUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<AssessmentResultTable> where,
@@ -623,7 +623,7 @@ class AssessmentResultRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AssessmentResult>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AssessmentResult> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -635,7 +635,7 @@ class AssessmentResultRepository {
 
   /// Deletes a single [AssessmentResult].
   Future<AssessmentResult> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AssessmentResult row, {
     _i1.Transaction? transaction,
   }) async {
@@ -647,7 +647,7 @@ class AssessmentResultRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AssessmentResult>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AssessmentResultTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -660,7 +660,7 @@ class AssessmentResultRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AssessmentResultTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -674,7 +674,7 @@ class AssessmentResultRepository {
 
   /// Acquires row-level locks on [AssessmentResult] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AssessmentResultTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -695,7 +695,7 @@ class AssessmentResultAttachRowRepository {
   /// Creates a relation between the given [AssessmentResult] and [AssessmentAttempt]
   /// by setting the [AssessmentResult]'s foreign key `attemptId` to refer to the [AssessmentAttempt].
   Future<void> attempt(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AssessmentResult assessmentResult,
     _i2.AssessmentAttempt attempt, {
     _i1.Transaction? transaction,
@@ -718,7 +718,7 @@ class AssessmentResultAttachRowRepository {
   /// Creates a relation between the given [AssessmentResult] and [Question]
   /// by setting the [AssessmentResult]'s foreign key `questionId` to refer to the [Question].
   Future<void> question(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AssessmentResult assessmentResult,
     _i3.Question question, {
     _i1.Transaction? transaction,

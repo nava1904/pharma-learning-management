@@ -22,7 +22,7 @@ class VyuhLogo extends StatelessWidget {
     super.key,
     this.height,
     this.width,
-    this.fit = BoxFit.contain,
+    this.fit = BoxFit.contain, required Color color,
   });
 
   final double? height;

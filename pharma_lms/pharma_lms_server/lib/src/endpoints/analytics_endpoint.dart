@@ -1081,7 +1081,7 @@ class AnalyticsEndpoint extends Endpoint {
       final userName = '${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}'.trim();
       final score = r.score ?? 0;
       final passed = score >= passingScore ? 'Yes' : 'No';
-      final completedAt = r.completedAt?.toIso8601String() ?? '';
+      final completedAt = r.completedAt.toIso8601String() ?? '';
       buffer.writeln('$email,$userName,$score,$passed,$completedAt');
     }
     

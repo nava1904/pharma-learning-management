@@ -1,0 +1,28 @@
+### Notification template for system notifications. GMP compliant.
+class: NotificationTemplate
+
+table: notification_template
+
+fields:
+  ### Organization this template belongs to.
+  organization: Organization?, relation
+  ### Template name/title.
+  name: String
+  ### Type: assignment, reminder, overdue, certificate, compliance, broadcast.
+  type: String
+  ### Channel: email, push, sms, in_app.
+  channel: String, default='email'
+  ### Trigger event or condition description.
+  triggerEvent: String?
+  ### Subject line (for email).
+  subject: String?
+  ### Template body content with variables like {{userName}}, {{courseTitle}}, {{dueDate}}.
+  bodyTemplate: String
+  ### Status: active, draft, inactive.
+  status: String, default='draft'
+  ### Created by user.
+  createdBy: PharmaUser?, relation
+  ### Created timestamp.
+  createdAt: DateTime, default=now
+  ### Last updated timestamp.
+  updatedAt: DateTime?

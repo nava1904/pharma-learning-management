@@ -34,3 +34,13 @@ fields:
   preferredLanguage: String?
   ### User timezone (e.g., America/New_York).
   timezone: String?, default='UTC'
+  ### Last login timestamp.
+  lastLogin: DateTime?
+  ### Authentication type (e.g., SSO, Local).
+  authType: String?
+  ### Whether MFA is enabled for this user.
+  mfaEnabled: bool?, default=false
+  ### Compliance percent (0-100).
+  compliancePercent: double?, default=0.0
+  ### List of roles assigned to the user.
+  roles: List<String>?

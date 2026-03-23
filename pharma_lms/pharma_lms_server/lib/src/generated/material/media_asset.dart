@@ -342,7 +342,7 @@ class MediaAssetRepository {
   /// );
   /// ```
   Future<List<MediaAsset>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MediaAssetTable>? where,
     int? limit,
     int? offset,
@@ -386,7 +386,7 @@ class MediaAssetRepository {
   /// );
   /// ```
   Future<MediaAsset?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MediaAssetTable>? where,
     int? offset,
     _i1.OrderByBuilder<MediaAssetTable>? orderBy,
@@ -412,7 +412,7 @@ class MediaAssetRepository {
 
   /// Finds a single [MediaAsset] by its [id] or null if no such row exists.
   Future<MediaAsset?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     MediaAssetInclude? include,
@@ -439,7 +439,7 @@ class MediaAssetRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<MediaAsset>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MediaAsset> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -455,7 +455,7 @@ class MediaAssetRepository {
   ///
   /// The returned [MediaAsset] will have its `id` field set.
   Future<MediaAsset> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MediaAsset row, {
     _i1.Transaction? transaction,
   }) async {
@@ -471,7 +471,7 @@ class MediaAssetRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<MediaAsset>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MediaAsset> rows, {
     _i1.ColumnSelections<MediaAssetTable>? columns,
     _i1.Transaction? transaction,
@@ -487,7 +487,7 @@ class MediaAssetRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<MediaAsset> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MediaAsset row, {
     _i1.ColumnSelections<MediaAssetTable>? columns,
     _i1.Transaction? transaction,
@@ -502,7 +502,7 @@ class MediaAssetRepository {
   /// Updates a single [MediaAsset] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<MediaAsset?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<MediaAssetUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -517,7 +517,7 @@ class MediaAssetRepository {
   /// Updates all [MediaAsset]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<MediaAsset>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<MediaAssetUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<MediaAssetTable> where,
     int? limit,
@@ -543,7 +543,7 @@ class MediaAssetRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<MediaAsset>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MediaAsset> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -555,7 +555,7 @@ class MediaAssetRepository {
 
   /// Deletes a single [MediaAsset].
   Future<MediaAsset> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MediaAsset row, {
     _i1.Transaction? transaction,
   }) async {
@@ -567,7 +567,7 @@ class MediaAssetRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<MediaAsset>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MediaAssetTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -580,7 +580,7 @@ class MediaAssetRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MediaAssetTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -594,7 +594,7 @@ class MediaAssetRepository {
 
   /// Acquires row-level locks on [MediaAsset] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MediaAssetTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -615,7 +615,7 @@ class MediaAssetAttachRowRepository {
   /// Creates a relation between the given [MediaAsset] and [Material]
   /// by setting the [MediaAsset]'s foreign key `materialId` to refer to the [Material].
   Future<void> material(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MediaAsset mediaAsset,
     _i2.Material material, {
     _i1.Transaction? transaction,

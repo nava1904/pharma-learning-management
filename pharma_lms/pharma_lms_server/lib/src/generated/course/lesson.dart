@@ -416,7 +416,7 @@ class LessonRepository {
   /// );
   /// ```
   Future<List<Lesson>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<LessonTable>? where,
     int? limit,
     int? offset,
@@ -460,7 +460,7 @@ class LessonRepository {
   /// );
   /// ```
   Future<Lesson?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<LessonTable>? where,
     int? offset,
     _i1.OrderByBuilder<LessonTable>? orderBy,
@@ -486,7 +486,7 @@ class LessonRepository {
 
   /// Finds a single [Lesson] by its [id] or null if no such row exists.
   Future<Lesson?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     LessonInclude? include,
@@ -513,7 +513,7 @@ class LessonRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Lesson>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Lesson> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -529,7 +529,7 @@ class LessonRepository {
   ///
   /// The returned [Lesson] will have its `id` field set.
   Future<Lesson> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Lesson row, {
     _i1.Transaction? transaction,
   }) async {
@@ -545,7 +545,7 @@ class LessonRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Lesson>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Lesson> rows, {
     _i1.ColumnSelections<LessonTable>? columns,
     _i1.Transaction? transaction,
@@ -561,7 +561,7 @@ class LessonRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Lesson> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Lesson row, {
     _i1.ColumnSelections<LessonTable>? columns,
     _i1.Transaction? transaction,
@@ -576,7 +576,7 @@ class LessonRepository {
   /// Updates a single [Lesson] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Lesson?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<LessonUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -591,7 +591,7 @@ class LessonRepository {
   /// Updates all [Lesson]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Lesson>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<LessonUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<LessonTable> where,
     int? limit,
@@ -617,7 +617,7 @@ class LessonRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Lesson>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Lesson> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -629,7 +629,7 @@ class LessonRepository {
 
   /// Deletes a single [Lesson].
   Future<Lesson> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Lesson row, {
     _i1.Transaction? transaction,
   }) async {
@@ -641,7 +641,7 @@ class LessonRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Lesson>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<LessonTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -654,7 +654,7 @@ class LessonRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<LessonTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -668,7 +668,7 @@ class LessonRepository {
 
   /// Acquires row-level locks on [Lesson] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<LessonTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -689,7 +689,7 @@ class LessonAttachRowRepository {
   /// Creates a relation between the given [Lesson] and [Module]
   /// by setting the [Lesson]'s foreign key `moduleId` to refer to the [Module].
   Future<void> module(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Lesson lesson,
     _i2.Module module, {
     _i1.Transaction? transaction,
@@ -712,7 +712,7 @@ class LessonAttachRowRepository {
   /// Creates a relation between the given [Lesson] and [Material]
   /// by setting the [Lesson]'s foreign key `materialId` to refer to the [Material].
   Future<void> material(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Lesson lesson,
     _i3.Material material, {
     _i1.Transaction? transaction,

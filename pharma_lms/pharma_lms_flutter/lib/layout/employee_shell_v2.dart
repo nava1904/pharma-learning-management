@@ -361,6 +361,13 @@ class _SidebarV2 extends StatelessWidget {
                     route: '/employee/assessments',
                     currentPath: currentPath,
                   ),
+                  _NavItemV2(
+                    icon: Icons.groups_outlined,
+                    activeIcon: Icons.groups_rounded,
+                    label: 'Training Sessions',
+                    route: '/employee/sessions',
+                    currentPath: currentPath,
+                  ),
 
                   const SizedBox(height: PharmaSpacing.md),
 

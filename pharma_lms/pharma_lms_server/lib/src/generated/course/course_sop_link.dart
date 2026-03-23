@@ -466,7 +466,7 @@ class CourseSopLinkRepository {
   /// );
   /// ```
   Future<List<CourseSopLink>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseSopLinkTable>? where,
     int? limit,
     int? offset,
@@ -510,7 +510,7 @@ class CourseSopLinkRepository {
   /// );
   /// ```
   Future<CourseSopLink?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseSopLinkTable>? where,
     int? offset,
     _i1.OrderByBuilder<CourseSopLinkTable>? orderBy,
@@ -536,7 +536,7 @@ class CourseSopLinkRepository {
 
   /// Finds a single [CourseSopLink] by its [id] or null if no such row exists.
   Future<CourseSopLink?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     CourseSopLinkInclude? include,
@@ -563,7 +563,7 @@ class CourseSopLinkRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<CourseSopLink>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseSopLink> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -579,7 +579,7 @@ class CourseSopLinkRepository {
   ///
   /// The returned [CourseSopLink] will have its `id` field set.
   Future<CourseSopLink> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseSopLink row, {
     _i1.Transaction? transaction,
   }) async {
@@ -595,7 +595,7 @@ class CourseSopLinkRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<CourseSopLink>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseSopLink> rows, {
     _i1.ColumnSelections<CourseSopLinkTable>? columns,
     _i1.Transaction? transaction,
@@ -611,7 +611,7 @@ class CourseSopLinkRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<CourseSopLink> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseSopLink row, {
     _i1.ColumnSelections<CourseSopLinkTable>? columns,
     _i1.Transaction? transaction,
@@ -626,7 +626,7 @@ class CourseSopLinkRepository {
   /// Updates a single [CourseSopLink] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<CourseSopLink?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<CourseSopLinkUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -641,7 +641,7 @@ class CourseSopLinkRepository {
   /// Updates all [CourseSopLink]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<CourseSopLink>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<CourseSopLinkUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<CourseSopLinkTable> where,
     int? limit,
@@ -667,7 +667,7 @@ class CourseSopLinkRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<CourseSopLink>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseSopLink> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -679,7 +679,7 @@ class CourseSopLinkRepository {
 
   /// Deletes a single [CourseSopLink].
   Future<CourseSopLink> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseSopLink row, {
     _i1.Transaction? transaction,
   }) async {
@@ -691,7 +691,7 @@ class CourseSopLinkRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<CourseSopLink>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CourseSopLinkTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -704,7 +704,7 @@ class CourseSopLinkRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseSopLinkTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -718,7 +718,7 @@ class CourseSopLinkRepository {
 
   /// Acquires row-level locks on [CourseSopLink] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CourseSopLinkTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -739,7 +739,7 @@ class CourseSopLinkAttachRowRepository {
   /// Creates a relation between the given [CourseSopLink] and [Course]
   /// by setting the [CourseSopLink]'s foreign key `courseId` to refer to the [Course].
   Future<void> course(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseSopLink courseSopLink,
     _i2.Course course, {
     _i1.Transaction? transaction,
@@ -762,7 +762,7 @@ class CourseSopLinkAttachRowRepository {
   /// Creates a relation between the given [CourseSopLink] and [Document]
   /// by setting the [CourseSopLink]'s foreign key `documentId` to refer to the [Document].
   Future<void> document(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseSopLink courseSopLink,
     _i3.Document document, {
     _i1.Transaction? transaction,
@@ -785,7 +785,7 @@ class CourseSopLinkAttachRowRepository {
   /// Creates a relation between the given [CourseSopLink] and [PharmaUser]
   /// by setting the [CourseSopLink]'s foreign key `linkedById` to refer to the [PharmaUser].
   Future<void> linkedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseSopLink courseSopLink,
     _i4.PharmaUser linkedBy, {
     _i1.Transaction? transaction,

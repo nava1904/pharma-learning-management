@@ -40,9 +40,16 @@ abstract class PharmaUser implements _i1.SerializableModel {
     this.managerId,
     this.preferredLanguage,
     String? timezone,
+    this.lastLogin,
+    this.authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    this.roles,
   }) : status = status ?? 'active',
        createdAt = createdAt ?? DateTime.now(),
-       timezone = timezone ?? 'UTC';
+       timezone = timezone ?? 'UTC',
+       mfaEnabled = mfaEnabled ?? false,
+       compliancePercent = compliancePercent ?? 0.0;
 
   factory PharmaUser({
     int? id,
@@ -65,6 +72,11 @@ abstract class PharmaUser implements _i1.SerializableModel {
     int? managerId,
     String? preferredLanguage,
     String? timezone,
+    DateTime? lastLogin,
+    String? authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    List<String>? roles,
   }) = _PharmaUserImpl;
 
   factory PharmaUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -107,6 +119,20 @@ abstract class PharmaUser implements _i1.SerializableModel {
       managerId: jsonSerialization['managerId'] as int?,
       preferredLanguage: jsonSerialization['preferredLanguage'] as String?,
       timezone: jsonSerialization['timezone'] as String?,
+      lastLogin: jsonSerialization['lastLogin'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['lastLogin']),
+      authType: jsonSerialization['authType'] as String?,
+      mfaEnabled: jsonSerialization['mfaEnabled'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['mfaEnabled']),
+      compliancePercent: (jsonSerialization['compliancePercent'] as num?)
+          ?.toDouble(),
+      roles: jsonSerialization['roles'] == null
+          ? null
+          : _i6.Protocol().deserialize<List<String>>(
+              jsonSerialization['roles'],
+            ),
     );
   }
 
@@ -168,6 +194,21 @@ abstract class PharmaUser implements _i1.SerializableModel {
   /// User timezone (e.g., America/New_York).
   String? timezone;
 
+  /// Last login timestamp.
+  DateTime? lastLogin;
+
+  /// Authentication type (e.g., SSO, Local).
+  String? authType;
+
+  /// Whether MFA is enabled for this user.
+  bool? mfaEnabled;
+
+  /// Compliance percent (0-100).
+  double? compliancePercent;
+
+  /// List of roles assigned to the user.
+  List<String>? roles;
+
   /// Returns a shallow copy of this [PharmaUser]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -192,6 +233,11 @@ abstract class PharmaUser implements _i1.SerializableModel {
     int? managerId,
     String? preferredLanguage,
     String? timezone,
+    DateTime? lastLogin,
+    String? authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    List<String>? roles,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -217,6 +263,11 @@ abstract class PharmaUser implements _i1.SerializableModel {
       if (managerId != null) 'managerId': managerId,
       if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
       if (timezone != null) 'timezone': timezone,
+      if (lastLogin != null) 'lastLogin': lastLogin?.toJson(),
+      if (authType != null) 'authType': authType,
+      if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
+      if (compliancePercent != null) 'compliancePercent': compliancePercent,
+      if (roles != null) 'roles': roles?.toJson(),
     };
   }
 
@@ -250,6 +301,11 @@ class _PharmaUserImpl extends PharmaUser {
     int? managerId,
     String? preferredLanguage,
     String? timezone,
+    DateTime? lastLogin,
+    String? authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    List<String>? roles,
   }) : super._(
          id: id,
          email: email,
@@ -271,6 +327,11 @@ class _PharmaUserImpl extends PharmaUser {
          managerId: managerId,
          preferredLanguage: preferredLanguage,
          timezone: timezone,
+         lastLogin: lastLogin,
+         authType: authType,
+         mfaEnabled: mfaEnabled,
+         compliancePercent: compliancePercent,
+         roles: roles,
        );
 
   /// Returns a shallow copy of this [PharmaUser]
@@ -298,6 +359,11 @@ class _PharmaUserImpl extends PharmaUser {
     Object? managerId = _Undefined,
     Object? preferredLanguage = _Undefined,
     Object? timezone = _Undefined,
+    Object? lastLogin = _Undefined,
+    Object? authType = _Undefined,
+    Object? mfaEnabled = _Undefined,
+    Object? compliancePercent = _Undefined,
+    Object? roles = _Undefined,
   }) {
     return PharmaUser(
       id: id is int? ? id : this.id,
@@ -326,6 +392,15 @@ class _PharmaUserImpl extends PharmaUser {
           ? preferredLanguage
           : this.preferredLanguage,
       timezone: timezone is String? ? timezone : this.timezone,
+      lastLogin: lastLogin is DateTime? ? lastLogin : this.lastLogin,
+      authType: authType is String? ? authType : this.authType,
+      mfaEnabled: mfaEnabled is bool? ? mfaEnabled : this.mfaEnabled,
+      compliancePercent: compliancePercent is double?
+          ? compliancePercent
+          : this.compliancePercent,
+      roles: roles is List<String>?
+          ? roles
+          : this.roles?.map((e0) => e0).toList(),
     );
   }
 }

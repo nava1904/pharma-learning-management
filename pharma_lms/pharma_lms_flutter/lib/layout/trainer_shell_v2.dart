@@ -311,7 +311,7 @@ class _TrainerSidebar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                VyuhLogo(height: 32, width: 32),
+                VyuhLogo(height: 32, width: 32, color: Colors.white),
                 const SizedBox(width: PharmaSpacing.md),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,6 +429,13 @@ class _TrainerSidebar extends StatelessWidget {
                   // ── MANAGEMENT ──
                   _SidebarSection(label: 'MANAGEMENT'),
                   _TrainerNavItem(
+                    icon: Icons.groups_outlined,
+                    activeIcon: Icons.groups_rounded,
+                    label: 'My Batches',
+                    route: '/trainer/batches',
+                    currentPath: currentPath,
+                  ),
+                  _TrainerNavItem(
                     icon: Icons.assignment_ind_outlined,
                     activeIcon: Icons.assignment_ind_rounded,
                     label: 'Assignments',
@@ -533,7 +540,6 @@ class _TrainerNavItem extends StatefulWidget {
     required this.label,
     required this.route,
     required this.currentPath,
-    this.badge,
     this.matchExact = false,
   });
 
@@ -542,7 +548,6 @@ class _TrainerNavItem extends StatefulWidget {
   final String label;
   final String route;
   final String currentPath;
-  final int? badge;
   final bool matchExact;
 
   @override
@@ -604,25 +609,6 @@ class _TrainerNavItemState extends State<_TrainerNavItem> {
                       : PharmaTypography.navItem,
                 ),
               ),
-              if (widget.badge != null && widget.badge! > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: PharmaColors.warningBg,
-                    borderRadius: PharmaRadius.pillRadius,
-                  ),
-                  child: Text(
-                    '${widget.badge}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: PharmaColors.warningText,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

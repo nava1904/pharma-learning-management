@@ -341,7 +341,7 @@ class SiteRepository {
   /// );
   /// ```
   Future<List<Site>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SiteTable>? where,
     int? limit,
     int? offset,
@@ -385,7 +385,7 @@ class SiteRepository {
   /// );
   /// ```
   Future<Site?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SiteTable>? where,
     int? offset,
     _i1.OrderByBuilder<SiteTable>? orderBy,
@@ -411,7 +411,7 @@ class SiteRepository {
 
   /// Finds a single [Site] by its [id] or null if no such row exists.
   Future<Site?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     SiteInclude? include,
@@ -438,7 +438,7 @@ class SiteRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Site>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Site> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -454,7 +454,7 @@ class SiteRepository {
   ///
   /// The returned [Site] will have its `id` field set.
   Future<Site> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Site row, {
     _i1.Transaction? transaction,
   }) async {
@@ -470,7 +470,7 @@ class SiteRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Site>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Site> rows, {
     _i1.ColumnSelections<SiteTable>? columns,
     _i1.Transaction? transaction,
@@ -486,7 +486,7 @@ class SiteRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Site> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Site row, {
     _i1.ColumnSelections<SiteTable>? columns,
     _i1.Transaction? transaction,
@@ -501,7 +501,7 @@ class SiteRepository {
   /// Updates a single [Site] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Site?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<SiteUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -516,7 +516,7 @@ class SiteRepository {
   /// Updates all [Site]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Site>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<SiteUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<SiteTable> where,
     int? limit,
@@ -542,7 +542,7 @@ class SiteRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Site>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Site> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -554,7 +554,7 @@ class SiteRepository {
 
   /// Deletes a single [Site].
   Future<Site> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Site row, {
     _i1.Transaction? transaction,
   }) async {
@@ -566,7 +566,7 @@ class SiteRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Site>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SiteTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -579,7 +579,7 @@ class SiteRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SiteTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -593,7 +593,7 @@ class SiteRepository {
 
   /// Acquires row-level locks on [Site] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SiteTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -614,7 +614,7 @@ class SiteAttachRowRepository {
   /// Creates a relation between the given [Site] and [Organization]
   /// by setting the [Site]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Site site,
     _i2.Organization organization, {
     _i1.Transaction? transaction,

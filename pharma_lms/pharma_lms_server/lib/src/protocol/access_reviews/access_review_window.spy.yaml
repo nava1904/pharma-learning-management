@@ -1,0 +1,22 @@
+### Access Review Window (quarterly/periodic review instance)
+class: AccessReviewWindow
+
+table: access_review_window
+
+fields:
+  ### Unique window ID
+  windowId: int
+  ### Open date
+  openDate: DateTime
+  ### Close date
+  closeDate: DateTime
+  ### Total records in this window
+  totalRecords: int
+  ### Triggering job ID
+  jobId: String?
+  ### Status (ACTIVE, CLOSED)
+  status: String, default='ACTIVE'
+  ### Created at
+  createdAt: DateTime, default=now
+  ### Temporary migration marker - remove after migration applied
+  migrationMarker: String?

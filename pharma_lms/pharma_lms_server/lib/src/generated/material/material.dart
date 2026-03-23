@@ -341,7 +341,7 @@ class MaterialRepository {
   /// );
   /// ```
   Future<List<Material>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MaterialTable>? where,
     int? limit,
     int? offset,
@@ -385,7 +385,7 @@ class MaterialRepository {
   /// );
   /// ```
   Future<Material?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MaterialTable>? where,
     int? offset,
     _i1.OrderByBuilder<MaterialTable>? orderBy,
@@ -411,7 +411,7 @@ class MaterialRepository {
 
   /// Finds a single [Material] by its [id] or null if no such row exists.
   Future<Material?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     MaterialInclude? include,
@@ -438,7 +438,7 @@ class MaterialRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Material>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Material> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -454,7 +454,7 @@ class MaterialRepository {
   ///
   /// The returned [Material] will have its `id` field set.
   Future<Material> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Material row, {
     _i1.Transaction? transaction,
   }) async {
@@ -470,7 +470,7 @@ class MaterialRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Material>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Material> rows, {
     _i1.ColumnSelections<MaterialTable>? columns,
     _i1.Transaction? transaction,
@@ -486,7 +486,7 @@ class MaterialRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Material> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Material row, {
     _i1.ColumnSelections<MaterialTable>? columns,
     _i1.Transaction? transaction,
@@ -501,7 +501,7 @@ class MaterialRepository {
   /// Updates a single [Material] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Material?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<MaterialUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -516,7 +516,7 @@ class MaterialRepository {
   /// Updates all [Material]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Material>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<MaterialUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<MaterialTable> where,
     int? limit,
@@ -542,7 +542,7 @@ class MaterialRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Material>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Material> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -554,7 +554,7 @@ class MaterialRepository {
 
   /// Deletes a single [Material].
   Future<Material> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Material row, {
     _i1.Transaction? transaction,
   }) async {
@@ -566,7 +566,7 @@ class MaterialRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Material>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MaterialTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -579,7 +579,7 @@ class MaterialRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MaterialTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -593,7 +593,7 @@ class MaterialRepository {
 
   /// Acquires row-level locks on [Material] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MaterialTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -614,7 +614,7 @@ class MaterialAttachRowRepository {
   /// Creates a relation between the given [Material] and [Organization]
   /// by setting the [Material]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Material material,
     _i2.Organization organization, {
     _i1.Transaction? transaction,

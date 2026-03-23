@@ -570,7 +570,7 @@ class MaterialProgressRepository {
   /// );
   /// ```
   Future<List<MaterialProgress>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MaterialProgressTable>? where,
     int? limit,
     int? offset,
@@ -614,7 +614,7 @@ class MaterialProgressRepository {
   /// );
   /// ```
   Future<MaterialProgress?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MaterialProgressTable>? where,
     int? offset,
     _i1.OrderByBuilder<MaterialProgressTable>? orderBy,
@@ -640,7 +640,7 @@ class MaterialProgressRepository {
 
   /// Finds a single [MaterialProgress] by its [id] or null if no such row exists.
   Future<MaterialProgress?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     MaterialProgressInclude? include,
@@ -667,7 +667,7 @@ class MaterialProgressRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<MaterialProgress>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MaterialProgress> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -683,7 +683,7 @@ class MaterialProgressRepository {
   ///
   /// The returned [MaterialProgress] will have its `id` field set.
   Future<MaterialProgress> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MaterialProgress row, {
     _i1.Transaction? transaction,
   }) async {
@@ -699,7 +699,7 @@ class MaterialProgressRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<MaterialProgress>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MaterialProgress> rows, {
     _i1.ColumnSelections<MaterialProgressTable>? columns,
     _i1.Transaction? transaction,
@@ -715,7 +715,7 @@ class MaterialProgressRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<MaterialProgress> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MaterialProgress row, {
     _i1.ColumnSelections<MaterialProgressTable>? columns,
     _i1.Transaction? transaction,
@@ -730,7 +730,7 @@ class MaterialProgressRepository {
   /// Updates a single [MaterialProgress] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<MaterialProgress?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<MaterialProgressUpdateTable>
     columnValues,
@@ -746,7 +746,7 @@ class MaterialProgressRepository {
   /// Updates all [MaterialProgress]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<MaterialProgress>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<MaterialProgressUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<MaterialProgressTable> where,
@@ -773,7 +773,7 @@ class MaterialProgressRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<MaterialProgress>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MaterialProgress> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -785,7 +785,7 @@ class MaterialProgressRepository {
 
   /// Deletes a single [MaterialProgress].
   Future<MaterialProgress> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MaterialProgress row, {
     _i1.Transaction? transaction,
   }) async {
@@ -797,7 +797,7 @@ class MaterialProgressRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<MaterialProgress>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MaterialProgressTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -810,7 +810,7 @@ class MaterialProgressRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MaterialProgressTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -824,7 +824,7 @@ class MaterialProgressRepository {
 
   /// Acquires row-level locks on [MaterialProgress] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MaterialProgressTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -845,7 +845,7 @@ class MaterialProgressAttachRowRepository {
   /// Creates a relation between the given [MaterialProgress] and [PharmaUser]
   /// by setting the [MaterialProgress]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MaterialProgress materialProgress,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -868,7 +868,7 @@ class MaterialProgressAttachRowRepository {
   /// Creates a relation between the given [MaterialProgress] and [Material]
   /// by setting the [MaterialProgress]'s foreign key `materialId` to refer to the [Material].
   Future<void> material(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MaterialProgress materialProgress,
     _i3.Material material, {
     _i1.Transaction? transaction,

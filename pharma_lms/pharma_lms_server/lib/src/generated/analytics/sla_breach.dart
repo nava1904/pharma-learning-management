@@ -321,7 +321,7 @@ class SlaBreachRepository {
   /// );
   /// ```
   Future<List<SlaBreach>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SlaBreachTable>? where,
     int? limit,
     int? offset,
@@ -365,7 +365,7 @@ class SlaBreachRepository {
   /// );
   /// ```
   Future<SlaBreach?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SlaBreachTable>? where,
     int? offset,
     _i1.OrderByBuilder<SlaBreachTable>? orderBy,
@@ -391,7 +391,7 @@ class SlaBreachRepository {
 
   /// Finds a single [SlaBreach] by its [id] or null if no such row exists.
   Future<SlaBreach?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     SlaBreachInclude? include,
@@ -418,7 +418,7 @@ class SlaBreachRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<SlaBreach>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SlaBreach> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -434,7 +434,7 @@ class SlaBreachRepository {
   ///
   /// The returned [SlaBreach] will have its `id` field set.
   Future<SlaBreach> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaBreach row, {
     _i1.Transaction? transaction,
   }) async {
@@ -450,7 +450,7 @@ class SlaBreachRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<SlaBreach>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SlaBreach> rows, {
     _i1.ColumnSelections<SlaBreachTable>? columns,
     _i1.Transaction? transaction,
@@ -466,7 +466,7 @@ class SlaBreachRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<SlaBreach> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaBreach row, {
     _i1.ColumnSelections<SlaBreachTable>? columns,
     _i1.Transaction? transaction,
@@ -481,7 +481,7 @@ class SlaBreachRepository {
   /// Updates a single [SlaBreach] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<SlaBreach?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<SlaBreachUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -496,7 +496,7 @@ class SlaBreachRepository {
   /// Updates all [SlaBreach]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<SlaBreach>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<SlaBreachUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<SlaBreachTable> where,
     int? limit,
@@ -522,7 +522,7 @@ class SlaBreachRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<SlaBreach>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SlaBreach> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -534,7 +534,7 @@ class SlaBreachRepository {
 
   /// Deletes a single [SlaBreach].
   Future<SlaBreach> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaBreach row, {
     _i1.Transaction? transaction,
   }) async {
@@ -546,7 +546,7 @@ class SlaBreachRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<SlaBreach>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SlaBreachTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -559,7 +559,7 @@ class SlaBreachRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SlaBreachTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -573,7 +573,7 @@ class SlaBreachRepository {
 
   /// Acquires row-level locks on [SlaBreach] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SlaBreachTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -594,7 +594,7 @@ class SlaBreachAttachRowRepository {
   /// Creates a relation between the given [SlaBreach] and [SlaPolicy]
   /// by setting the [SlaBreach]'s foreign key `slaPolicyId` to refer to the [SlaPolicy].
   Future<void> slaPolicy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaBreach slaBreach,
     _i2.SlaPolicy slaPolicy, {
     _i1.Transaction? transaction,

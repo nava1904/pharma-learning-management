@@ -345,7 +345,7 @@ class _AssessmentBuilderV2ScreenState
       }
       final bank = await client.assessmentBuilder.createQuestionBank(
         name: result,
-        organizationId: user!.organizationId!,
+        organizationId: user!.organizationId,
       );
       setState(() {
         _allQuestionBanks.add(bank);
@@ -850,7 +850,7 @@ class _AssessmentBuilderV2ScreenState
               const SizedBox(height: 16),
               _configLabel('Maximum Attempts'),
               DropdownButtonFormField<int>(
-                value: _maxAttempts,
+                initialValue: _maxAttempts,
                 items: [1, 2, 3, 5, 10]
                     .map((a) => DropdownMenuItem(
                         value: a, child: Text('$a attempts')))
@@ -935,7 +935,7 @@ class _AssessmentBuilderV2ScreenState
                 title: Text('Shuffle Questions',
                     style: PharmaTypography.bodyMedium),
                 contentPadding: EdgeInsets.zero,
-                activeColor: PharmaColors.emerald600,
+                activeThumbColor: PharmaColors.emerald600,
               ),
               SwitchListTile(
                 value: _showFeedback,
@@ -944,7 +944,7 @@ class _AssessmentBuilderV2ScreenState
                 title: Text('Show Answer Feedback',
                     style: PharmaTypography.bodyMedium),
                 contentPadding: EdgeInsets.zero,
-                activeColor: PharmaColors.emerald600,
+                activeThumbColor: PharmaColors.emerald600,
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -1184,7 +1184,7 @@ class _AssessmentBuilderV2ScreenState
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: questionType,
+                          initialValue: questionType,
                           items: ['multiple_choice', 'true_false']
                               .map((t) => DropdownMenuItem(
                                   value: t, child: Text(t)))
@@ -1204,7 +1204,7 @@ class _AssessmentBuilderV2ScreenState
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: difficulty,
+                          initialValue: difficulty,
                           items: ['easy', 'medium', 'hard']
                               .map((d) => DropdownMenuItem(
                                   value: d, child: Text(_capitalize(d))))
@@ -1225,7 +1225,7 @@ class _AssessmentBuilderV2ScreenState
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: category,
+                    initialValue: category,
                     items: [
                       'GMP',
                       'Data Integrity',
@@ -1352,7 +1352,7 @@ class _AssessmentBuilderV2ScreenState
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: questionType,
+                          initialValue: questionType,
                           items: ['multiple_choice', 'true_false']
                               .map((t) => DropdownMenuItem(
                                   value: t, child: Text(t)))
@@ -1372,7 +1372,7 @@ class _AssessmentBuilderV2ScreenState
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: difficulty,
+                          initialValue: difficulty,
                           items: ['easy', 'medium', 'hard']
                               .map((d) => DropdownMenuItem(
                                   value: d, child: Text(_capitalize(d))))

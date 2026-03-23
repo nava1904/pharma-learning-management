@@ -456,7 +456,7 @@ class UserSessionRepository {
   /// );
   /// ```
   Future<List<UserSession>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserSessionTable>? where,
     int? limit,
     int? offset,
@@ -500,7 +500,7 @@ class UserSessionRepository {
   /// );
   /// ```
   Future<UserSession?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserSessionTable>? where,
     int? offset,
     _i1.OrderByBuilder<UserSessionTable>? orderBy,
@@ -526,7 +526,7 @@ class UserSessionRepository {
 
   /// Finds a single [UserSession] by its [id] or null if no such row exists.
   Future<UserSession?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     UserSessionInclude? include,
@@ -553,7 +553,7 @@ class UserSessionRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<UserSession>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserSession> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -569,7 +569,7 @@ class UserSessionRepository {
   ///
   /// The returned [UserSession] will have its `id` field set.
   Future<UserSession> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserSession row, {
     _i1.Transaction? transaction,
   }) async {
@@ -585,7 +585,7 @@ class UserSessionRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<UserSession>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserSession> rows, {
     _i1.ColumnSelections<UserSessionTable>? columns,
     _i1.Transaction? transaction,
@@ -601,7 +601,7 @@ class UserSessionRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<UserSession> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserSession row, {
     _i1.ColumnSelections<UserSessionTable>? columns,
     _i1.Transaction? transaction,
@@ -616,7 +616,7 @@ class UserSessionRepository {
   /// Updates a single [UserSession] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<UserSession?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<UserSessionUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -631,7 +631,7 @@ class UserSessionRepository {
   /// Updates all [UserSession]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<UserSession>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<UserSessionUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<UserSessionTable> where,
     int? limit,
@@ -657,7 +657,7 @@ class UserSessionRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<UserSession>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserSession> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -669,7 +669,7 @@ class UserSessionRepository {
 
   /// Deletes a single [UserSession].
   Future<UserSession> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserSession row, {
     _i1.Transaction? transaction,
   }) async {
@@ -681,7 +681,7 @@ class UserSessionRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<UserSession>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserSessionTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -694,7 +694,7 @@ class UserSessionRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserSessionTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -708,7 +708,7 @@ class UserSessionRepository {
 
   /// Acquires row-level locks on [UserSession] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserSessionTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -729,7 +729,7 @@ class UserSessionAttachRowRepository {
   /// Creates a relation between the given [UserSession] and [PharmaUser]
   /// by setting the [UserSession]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserSession userSession,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,

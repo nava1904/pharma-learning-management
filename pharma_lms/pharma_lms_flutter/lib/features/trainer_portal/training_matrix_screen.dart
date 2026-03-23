@@ -106,8 +106,11 @@ class _TrainingMatrixScreenState extends ConsumerState<TrainingMatrixScreen> {
       _hasChanges = true;
       _pending.putIfAbsent(roleId, () => {});
       final current = _getCellStatus(roleId, courseId);
-      if (current == 'none') _pending[roleId]![courseId] = true;
-      else _pending[roleId]![courseId] = false;
+      if (current == 'none') {
+        _pending[roleId]![courseId] = true;
+      } else {
+        _pending[roleId]![courseId] = false;
+      }
     });
   }
 
@@ -129,8 +132,11 @@ class _TrainingMatrixScreenState extends ConsumerState<TrainingMatrixScreen> {
         final pendingForRole = _pending[roleId] ?? {};
         final finalSet = {...original};
         for (final entry in pendingForRole.entries) {
-          if (entry.value) finalSet.add(entry.key);
-          else finalSet.remove(entry.key);
+          if (entry.value) {
+            finalSet.add(entry.key);
+          } else {
+            finalSet.remove(entry.key);
+          }
         }
         final jsonStr = jsonEncode(finalSet.toList());
         await client.admin.updateJobRoleTrainingMatrix(jobRoleId: roleId, trainingMatrixJson: jsonStr);
@@ -149,7 +155,8 @@ class _TrainingMatrixScreenState extends ConsumerState<TrainingMatrixScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Column(
+    if (_error != null) {
+      return Center(child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(_error!, style: TextStyle(color: PharmaColors.danger)),
@@ -157,6 +164,7 @@ class _TrainingMatrixScreenState extends ConsumerState<TrainingMatrixScreen> {
         FilledButton(onPressed: _loadData, child: const Text('Retry')),
       ],
     ));
+    }
 
     return ListView(
       padding: const EdgeInsets.all(PharmaSpacing.pagePadding),

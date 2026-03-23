@@ -437,7 +437,7 @@ class DocumentRepository {
   /// );
   /// ```
   Future<List<Document>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DocumentTable>? where,
     int? limit,
     int? offset,
@@ -481,7 +481,7 @@ class DocumentRepository {
   /// );
   /// ```
   Future<Document?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DocumentTable>? where,
     int? offset,
     _i1.OrderByBuilder<DocumentTable>? orderBy,
@@ -507,7 +507,7 @@ class DocumentRepository {
 
   /// Finds a single [Document] by its [id] or null if no such row exists.
   Future<Document?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     DocumentInclude? include,
@@ -534,7 +534,7 @@ class DocumentRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Document>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Document> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -550,7 +550,7 @@ class DocumentRepository {
   ///
   /// The returned [Document] will have its `id` field set.
   Future<Document> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Document row, {
     _i1.Transaction? transaction,
   }) async {
@@ -566,7 +566,7 @@ class DocumentRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Document>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Document> rows, {
     _i1.ColumnSelections<DocumentTable>? columns,
     _i1.Transaction? transaction,
@@ -582,7 +582,7 @@ class DocumentRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Document> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Document row, {
     _i1.ColumnSelections<DocumentTable>? columns,
     _i1.Transaction? transaction,
@@ -597,7 +597,7 @@ class DocumentRepository {
   /// Updates a single [Document] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Document?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<DocumentUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -612,7 +612,7 @@ class DocumentRepository {
   /// Updates all [Document]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Document>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<DocumentUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<DocumentTable> where,
     int? limit,
@@ -638,7 +638,7 @@ class DocumentRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Document>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Document> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -650,7 +650,7 @@ class DocumentRepository {
 
   /// Deletes a single [Document].
   Future<Document> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Document row, {
     _i1.Transaction? transaction,
   }) async {
@@ -662,7 +662,7 @@ class DocumentRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Document>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DocumentTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -675,7 +675,7 @@ class DocumentRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DocumentTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -689,7 +689,7 @@ class DocumentRepository {
 
   /// Acquires row-level locks on [Document] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DocumentTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -710,7 +710,7 @@ class DocumentAttachRowRepository {
   /// Creates a relation between the given [Document] and [Organization]
   /// by setting the [Document]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Document document,
     _i2.Organization organization, {
     _i1.Transaction? transaction,

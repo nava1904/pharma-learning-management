@@ -681,7 +681,7 @@ class TrainingWaiverRepository {
   /// );
   /// ```
   Future<List<TrainingWaiver>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingWaiverTable>? where,
     int? limit,
     int? offset,
@@ -725,7 +725,7 @@ class TrainingWaiverRepository {
   /// );
   /// ```
   Future<TrainingWaiver?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingWaiverTable>? where,
     int? offset,
     _i1.OrderByBuilder<TrainingWaiverTable>? orderBy,
@@ -751,7 +751,7 @@ class TrainingWaiverRepository {
 
   /// Finds a single [TrainingWaiver] by its [id] or null if no such row exists.
   Future<TrainingWaiver?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     TrainingWaiverInclude? include,
@@ -778,7 +778,7 @@ class TrainingWaiverRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<TrainingWaiver>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingWaiver> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -794,7 +794,7 @@ class TrainingWaiverRepository {
   ///
   /// The returned [TrainingWaiver] will have its `id` field set.
   Future<TrainingWaiver> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver row, {
     _i1.Transaction? transaction,
   }) async {
@@ -810,7 +810,7 @@ class TrainingWaiverRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<TrainingWaiver>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingWaiver> rows, {
     _i1.ColumnSelections<TrainingWaiverTable>? columns,
     _i1.Transaction? transaction,
@@ -826,7 +826,7 @@ class TrainingWaiverRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<TrainingWaiver> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver row, {
     _i1.ColumnSelections<TrainingWaiverTable>? columns,
     _i1.Transaction? transaction,
@@ -841,7 +841,7 @@ class TrainingWaiverRepository {
   /// Updates a single [TrainingWaiver] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<TrainingWaiver?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<TrainingWaiverUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -856,7 +856,7 @@ class TrainingWaiverRepository {
   /// Updates all [TrainingWaiver]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<TrainingWaiver>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<TrainingWaiverUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<TrainingWaiverTable> where,
     int? limit,
@@ -882,7 +882,7 @@ class TrainingWaiverRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<TrainingWaiver>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingWaiver> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -894,7 +894,7 @@ class TrainingWaiverRepository {
 
   /// Deletes a single [TrainingWaiver].
   Future<TrainingWaiver> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver row, {
     _i1.Transaction? transaction,
   }) async {
@@ -906,7 +906,7 @@ class TrainingWaiverRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<TrainingWaiver>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingWaiverTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -919,7 +919,7 @@ class TrainingWaiverRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingWaiverTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -933,7 +933,7 @@ class TrainingWaiverRepository {
 
   /// Acquires row-level locks on [TrainingWaiver] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingWaiverTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -954,7 +954,7 @@ class TrainingWaiverAttachRowRepository {
   /// Creates a relation between the given [TrainingWaiver] and [PharmaUser]
   /// by setting the [TrainingWaiver]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver trainingWaiver,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -977,7 +977,7 @@ class TrainingWaiverAttachRowRepository {
   /// Creates a relation between the given [TrainingWaiver] and [Course]
   /// by setting the [TrainingWaiver]'s foreign key `courseId` to refer to the [Course].
   Future<void> course(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver trainingWaiver,
     _i3.Course course, {
     _i1.Transaction? transaction,
@@ -1000,7 +1000,7 @@ class TrainingWaiverAttachRowRepository {
   /// Creates a relation between the given [TrainingWaiver] and [PharmaUser]
   /// by setting the [TrainingWaiver]'s foreign key `requestedById` to refer to the [PharmaUser].
   Future<void> requestedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver trainingWaiver,
     _i2.PharmaUser requestedBy, {
     _i1.Transaction? transaction,
@@ -1025,7 +1025,7 @@ class TrainingWaiverAttachRowRepository {
   /// Creates a relation between the given [TrainingWaiver] and [PharmaUser]
   /// by setting the [TrainingWaiver]'s foreign key `approvedById` to refer to the [PharmaUser].
   Future<void> approvedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver trainingWaiver,
     _i2.PharmaUser approvedBy, {
     _i1.Transaction? transaction,
@@ -1055,7 +1055,7 @@ class TrainingWaiverDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> approvedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingWaiver trainingWaiver, {
     _i1.Transaction? transaction,
   }) async {

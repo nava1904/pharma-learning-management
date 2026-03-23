@@ -451,7 +451,7 @@ class ImportLogRepository {
   /// );
   /// ```
   Future<List<ImportLog>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ImportLogTable>? where,
     int? limit,
     int? offset,
@@ -495,7 +495,7 @@ class ImportLogRepository {
   /// );
   /// ```
   Future<ImportLog?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ImportLogTable>? where,
     int? offset,
     _i1.OrderByBuilder<ImportLogTable>? orderBy,
@@ -521,7 +521,7 @@ class ImportLogRepository {
 
   /// Finds a single [ImportLog] by its [id] or null if no such row exists.
   Future<ImportLog?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     ImportLogInclude? include,
@@ -548,7 +548,7 @@ class ImportLogRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ImportLog>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ImportLog> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -564,7 +564,7 @@ class ImportLogRepository {
   ///
   /// The returned [ImportLog] will have its `id` field set.
   Future<ImportLog> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ImportLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -580,7 +580,7 @@ class ImportLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ImportLog>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ImportLog> rows, {
     _i1.ColumnSelections<ImportLogTable>? columns,
     _i1.Transaction? transaction,
@@ -596,7 +596,7 @@ class ImportLogRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ImportLog> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ImportLog row, {
     _i1.ColumnSelections<ImportLogTable>? columns,
     _i1.Transaction? transaction,
@@ -611,7 +611,7 @@ class ImportLogRepository {
   /// Updates a single [ImportLog] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ImportLog?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ImportLogUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -626,7 +626,7 @@ class ImportLogRepository {
   /// Updates all [ImportLog]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ImportLog>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ImportLogUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<ImportLogTable> where,
     int? limit,
@@ -652,7 +652,7 @@ class ImportLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ImportLog>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ImportLog> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -664,7 +664,7 @@ class ImportLogRepository {
 
   /// Deletes a single [ImportLog].
   Future<ImportLog> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ImportLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -676,7 +676,7 @@ class ImportLogRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ImportLog>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ImportLogTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -689,7 +689,7 @@ class ImportLogRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ImportLogTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -703,7 +703,7 @@ class ImportLogRepository {
 
   /// Acquires row-level locks on [ImportLog] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ImportLogTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -724,7 +724,7 @@ class ImportLogAttachRowRepository {
   /// Creates a relation between the given [ImportLog] and [PharmaUser]
   /// by setting the [ImportLog]'s foreign key `importedById` to refer to the [PharmaUser].
   Future<void> importedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ImportLog importLog,
     _i2.PharmaUser importedBy, {
     _i1.Transaction? transaction,

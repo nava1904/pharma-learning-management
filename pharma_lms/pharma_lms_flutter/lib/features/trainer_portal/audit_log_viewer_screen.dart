@@ -11,12 +11,10 @@
 import 'package:flutter/material.dart' hide Material;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
-import '../../providers/user_provider.dart';
 
 class AuditLogViewerScreen extends ConsumerStatefulWidget {
   const AuditLogViewerScreen({super.key});
@@ -312,7 +310,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
   void _showPrintableAuditLog() {
     final filtered = _filtered;
     final buffer = StringBuffer();
-    buffer.writeln('AUDIT LOG — ${_dateRange}');
+    buffer.writeln('AUDIT LOG — $_dateRange');
     buffer.writeln('Generated: ${_formatTimestamp(DateTime.now())}');
     buffer.writeln('=' * 80);
     buffer.writeln('');

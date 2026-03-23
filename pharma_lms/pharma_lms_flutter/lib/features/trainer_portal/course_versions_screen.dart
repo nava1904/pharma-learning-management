@@ -247,7 +247,7 @@ class _CourseVersionsScreenState extends State<CourseVersionsScreen> {
                       title: Text(r.decision ?? 'Pending'),
                       subtitle: Text(r.comments ?? ''),
                       trailing: Text(
-                        r.reviewedAt?.toString().substring(0, 10) ?? '',
+                        r.reviewedAt.toString().substring(0, 10) ?? '',
                         style: PharmaTypography.caption,
                       ),
                     )).toList(),

@@ -314,7 +314,7 @@ class SlaPolicyRepository {
   /// );
   /// ```
   Future<List<SlaPolicy>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SlaPolicyTable>? where,
     int? limit,
     int? offset,
@@ -358,7 +358,7 @@ class SlaPolicyRepository {
   /// );
   /// ```
   Future<SlaPolicy?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SlaPolicyTable>? where,
     int? offset,
     _i1.OrderByBuilder<SlaPolicyTable>? orderBy,
@@ -384,7 +384,7 @@ class SlaPolicyRepository {
 
   /// Finds a single [SlaPolicy] by its [id] or null if no such row exists.
   Future<SlaPolicy?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     SlaPolicyInclude? include,
@@ -411,7 +411,7 @@ class SlaPolicyRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<SlaPolicy>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SlaPolicy> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -427,7 +427,7 @@ class SlaPolicyRepository {
   ///
   /// The returned [SlaPolicy] will have its `id` field set.
   Future<SlaPolicy> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaPolicy row, {
     _i1.Transaction? transaction,
   }) async {
@@ -443,7 +443,7 @@ class SlaPolicyRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<SlaPolicy>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SlaPolicy> rows, {
     _i1.ColumnSelections<SlaPolicyTable>? columns,
     _i1.Transaction? transaction,
@@ -459,7 +459,7 @@ class SlaPolicyRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<SlaPolicy> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaPolicy row, {
     _i1.ColumnSelections<SlaPolicyTable>? columns,
     _i1.Transaction? transaction,
@@ -474,7 +474,7 @@ class SlaPolicyRepository {
   /// Updates a single [SlaPolicy] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<SlaPolicy?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<SlaPolicyUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -489,7 +489,7 @@ class SlaPolicyRepository {
   /// Updates all [SlaPolicy]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<SlaPolicy>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<SlaPolicyUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<SlaPolicyTable> where,
     int? limit,
@@ -515,7 +515,7 @@ class SlaPolicyRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<SlaPolicy>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SlaPolicy> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -527,7 +527,7 @@ class SlaPolicyRepository {
 
   /// Deletes a single [SlaPolicy].
   Future<SlaPolicy> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaPolicy row, {
     _i1.Transaction? transaction,
   }) async {
@@ -539,7 +539,7 @@ class SlaPolicyRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<SlaPolicy>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SlaPolicyTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -552,7 +552,7 @@ class SlaPolicyRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SlaPolicyTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -566,7 +566,7 @@ class SlaPolicyRepository {
 
   /// Acquires row-level locks on [SlaPolicy] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SlaPolicyTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -587,7 +587,7 @@ class SlaPolicyAttachRowRepository {
   /// Creates a relation between the given [SlaPolicy] and [Role]
   /// by setting the [SlaPolicy]'s foreign key `alertRoleId` to refer to the [Role].
   Future<void> alertRole(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SlaPolicy slaPolicy,
     _i2.Role alertRole, {
     _i1.Transaction? transaction,

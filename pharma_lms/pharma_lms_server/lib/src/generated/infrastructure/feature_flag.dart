@@ -322,7 +322,7 @@ class FeatureFlagRepository {
   /// );
   /// ```
   Future<List<FeatureFlag>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<FeatureFlagTable>? where,
     int? limit,
     int? offset,
@@ -366,7 +366,7 @@ class FeatureFlagRepository {
   /// );
   /// ```
   Future<FeatureFlag?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<FeatureFlagTable>? where,
     int? offset,
     _i1.OrderByBuilder<FeatureFlagTable>? orderBy,
@@ -392,7 +392,7 @@ class FeatureFlagRepository {
 
   /// Finds a single [FeatureFlag] by its [id] or null if no such row exists.
   Future<FeatureFlag?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     FeatureFlagInclude? include,
@@ -419,7 +419,7 @@ class FeatureFlagRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<FeatureFlag>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<FeatureFlag> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -435,7 +435,7 @@ class FeatureFlagRepository {
   ///
   /// The returned [FeatureFlag] will have its `id` field set.
   Future<FeatureFlag> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     FeatureFlag row, {
     _i1.Transaction? transaction,
   }) async {
@@ -451,7 +451,7 @@ class FeatureFlagRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<FeatureFlag>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<FeatureFlag> rows, {
     _i1.ColumnSelections<FeatureFlagTable>? columns,
     _i1.Transaction? transaction,
@@ -467,7 +467,7 @@ class FeatureFlagRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<FeatureFlag> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     FeatureFlag row, {
     _i1.ColumnSelections<FeatureFlagTable>? columns,
     _i1.Transaction? transaction,
@@ -482,7 +482,7 @@ class FeatureFlagRepository {
   /// Updates a single [FeatureFlag] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<FeatureFlag?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<FeatureFlagUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -497,7 +497,7 @@ class FeatureFlagRepository {
   /// Updates all [FeatureFlag]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<FeatureFlag>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<FeatureFlagUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<FeatureFlagTable> where,
     int? limit,
@@ -523,7 +523,7 @@ class FeatureFlagRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<FeatureFlag>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<FeatureFlag> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -535,7 +535,7 @@ class FeatureFlagRepository {
 
   /// Deletes a single [FeatureFlag].
   Future<FeatureFlag> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     FeatureFlag row, {
     _i1.Transaction? transaction,
   }) async {
@@ -547,7 +547,7 @@ class FeatureFlagRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<FeatureFlag>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<FeatureFlagTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -560,7 +560,7 @@ class FeatureFlagRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<FeatureFlagTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -574,7 +574,7 @@ class FeatureFlagRepository {
 
   /// Acquires row-level locks on [FeatureFlag] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<FeatureFlagTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -595,7 +595,7 @@ class FeatureFlagAttachRowRepository {
   /// Creates a relation between the given [FeatureFlag] and [Organization]
   /// by setting the [FeatureFlag]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     FeatureFlag featureFlag,
     _i2.Organization organization, {
     _i1.Transaction? transaction,
@@ -625,7 +625,7 @@ class FeatureFlagDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     FeatureFlag featureFlag, {
     _i1.Transaction? transaction,
   }) async {

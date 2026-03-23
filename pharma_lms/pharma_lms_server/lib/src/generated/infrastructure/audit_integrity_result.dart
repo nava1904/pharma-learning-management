@@ -438,7 +438,7 @@ class AuditIntegrityResultRepository {
   /// );
   /// ```
   Future<List<AuditIntegrityResult>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditIntegrityResultTable>? where,
     int? limit,
     int? offset,
@@ -482,7 +482,7 @@ class AuditIntegrityResultRepository {
   /// );
   /// ```
   Future<AuditIntegrityResult?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditIntegrityResultTable>? where,
     int? offset,
     _i1.OrderByBuilder<AuditIntegrityResultTable>? orderBy,
@@ -508,7 +508,7 @@ class AuditIntegrityResultRepository {
 
   /// Finds a single [AuditIntegrityResult] by its [id] or null if no such row exists.
   Future<AuditIntegrityResult?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AuditIntegrityResultInclude? include,
@@ -535,7 +535,7 @@ class AuditIntegrityResultRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AuditIntegrityResult>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditIntegrityResult> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -551,7 +551,7 @@ class AuditIntegrityResultRepository {
   ///
   /// The returned [AuditIntegrityResult] will have its `id` field set.
   Future<AuditIntegrityResult> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditIntegrityResult row, {
     _i1.Transaction? transaction,
   }) async {
@@ -567,7 +567,7 @@ class AuditIntegrityResultRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AuditIntegrityResult>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditIntegrityResult> rows, {
     _i1.ColumnSelections<AuditIntegrityResultTable>? columns,
     _i1.Transaction? transaction,
@@ -583,7 +583,7 @@ class AuditIntegrityResultRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AuditIntegrityResult> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditIntegrityResult row, {
     _i1.ColumnSelections<AuditIntegrityResultTable>? columns,
     _i1.Transaction? transaction,
@@ -598,7 +598,7 @@ class AuditIntegrityResultRepository {
   /// Updates a single [AuditIntegrityResult] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AuditIntegrityResult?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AuditIntegrityResultUpdateTable>
     columnValues,
@@ -614,7 +614,7 @@ class AuditIntegrityResultRepository {
   /// Updates all [AuditIntegrityResult]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AuditIntegrityResult>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AuditIntegrityResultUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<AuditIntegrityResultTable> where,
@@ -641,7 +641,7 @@ class AuditIntegrityResultRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AuditIntegrityResult>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditIntegrityResult> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -653,7 +653,7 @@ class AuditIntegrityResultRepository {
 
   /// Deletes a single [AuditIntegrityResult].
   Future<AuditIntegrityResult> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditIntegrityResult row, {
     _i1.Transaction? transaction,
   }) async {
@@ -665,7 +665,7 @@ class AuditIntegrityResultRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AuditIntegrityResult>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditIntegrityResultTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -678,7 +678,7 @@ class AuditIntegrityResultRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditIntegrityResultTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -692,7 +692,7 @@ class AuditIntegrityResultRepository {
 
   /// Acquires row-level locks on [AuditIntegrityResult] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditIntegrityResultTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -713,7 +713,7 @@ class AuditIntegrityResultAttachRowRepository {
   /// Creates a relation between the given [AuditIntegrityResult] and [ScheduledJobLog]
   /// by setting the [AuditIntegrityResult]'s foreign key `scheduledJobLogId` to refer to the [ScheduledJobLog].
   Future<void> scheduledJobLog(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditIntegrityResult auditIntegrityResult,
     _i2.ScheduledJobLog scheduledJobLog, {
     _i1.Transaction? transaction,
@@ -745,7 +745,7 @@ class AuditIntegrityResultDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> scheduledJobLog(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditIntegrityResult auditIntegrityResult, {
     _i1.Transaction? transaction,
   }) async {

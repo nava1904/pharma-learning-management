@@ -180,7 +180,7 @@ class _AdminTopBar extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                VyuhLogo(height: 28),
+                  VyuhLogo(height: 28, width: 32, color: Colors.white),
                 const SizedBox(width: AppSpacing.s2),
                 Text(
                   PharmaBrand.name,

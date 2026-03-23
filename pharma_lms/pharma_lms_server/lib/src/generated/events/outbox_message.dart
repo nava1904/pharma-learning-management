@@ -380,7 +380,7 @@ class OutboxMessageRepository {
   /// );
   /// ```
   Future<List<OutboxMessage>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OutboxMessageTable>? where,
     int? limit,
     int? offset,
@@ -422,7 +422,7 @@ class OutboxMessageRepository {
   /// );
   /// ```
   Future<OutboxMessage?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OutboxMessageTable>? where,
     int? offset,
     _i1.OrderByBuilder<OutboxMessageTable>? orderBy,
@@ -446,7 +446,7 @@ class OutboxMessageRepository {
 
   /// Finds a single [OutboxMessage] by its [id] or null if no such row exists.
   Future<OutboxMessage?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -471,7 +471,7 @@ class OutboxMessageRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<OutboxMessage>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<OutboxMessage> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -487,7 +487,7 @@ class OutboxMessageRepository {
   ///
   /// The returned [OutboxMessage] will have its `id` field set.
   Future<OutboxMessage> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     OutboxMessage row, {
     _i1.Transaction? transaction,
   }) async {
@@ -503,7 +503,7 @@ class OutboxMessageRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<OutboxMessage>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<OutboxMessage> rows, {
     _i1.ColumnSelections<OutboxMessageTable>? columns,
     _i1.Transaction? transaction,
@@ -519,7 +519,7 @@ class OutboxMessageRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<OutboxMessage> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     OutboxMessage row, {
     _i1.ColumnSelections<OutboxMessageTable>? columns,
     _i1.Transaction? transaction,
@@ -534,7 +534,7 @@ class OutboxMessageRepository {
   /// Updates a single [OutboxMessage] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<OutboxMessage?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<OutboxMessageUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -549,7 +549,7 @@ class OutboxMessageRepository {
   /// Updates all [OutboxMessage]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<OutboxMessage>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<OutboxMessageUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<OutboxMessageTable> where,
     int? limit,
@@ -575,7 +575,7 @@ class OutboxMessageRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<OutboxMessage>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<OutboxMessage> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -587,7 +587,7 @@ class OutboxMessageRepository {
 
   /// Deletes a single [OutboxMessage].
   Future<OutboxMessage> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     OutboxMessage row, {
     _i1.Transaction? transaction,
   }) async {
@@ -599,7 +599,7 @@ class OutboxMessageRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<OutboxMessage>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<OutboxMessageTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -612,7 +612,7 @@ class OutboxMessageRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OutboxMessageTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -626,7 +626,7 @@ class OutboxMessageRepository {
 
   /// Acquires row-level locks on [OutboxMessage] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<OutboxMessageTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

@@ -6,7 +6,6 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_components.dart';
-import '../../design_system/pharma_design_system.dart';
 import '../../providers/auth_provider.dart';
 import 'oidc_sign_in_widget.dart';
 

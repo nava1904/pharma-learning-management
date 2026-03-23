@@ -699,7 +699,7 @@ class InspectionRecordRepository {
   /// );
   /// ```
   Future<List<InspectionRecord>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionRecordTable>? where,
     int? limit,
     int? offset,
@@ -743,7 +743,7 @@ class InspectionRecordRepository {
   /// );
   /// ```
   Future<InspectionRecord?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionRecordTable>? where,
     int? offset,
     _i1.OrderByBuilder<InspectionRecordTable>? orderBy,
@@ -769,7 +769,7 @@ class InspectionRecordRepository {
 
   /// Finds a single [InspectionRecord] by its [id] or null if no such row exists.
   Future<InspectionRecord?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     InspectionRecordInclude? include,
@@ -796,7 +796,7 @@ class InspectionRecordRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<InspectionRecord>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionRecord> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -812,7 +812,7 @@ class InspectionRecordRepository {
   ///
   /// The returned [InspectionRecord] will have its `id` field set.
   Future<InspectionRecord> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord row, {
     _i1.Transaction? transaction,
   }) async {
@@ -828,7 +828,7 @@ class InspectionRecordRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<InspectionRecord>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionRecord> rows, {
     _i1.ColumnSelections<InspectionRecordTable>? columns,
     _i1.Transaction? transaction,
@@ -844,7 +844,7 @@ class InspectionRecordRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<InspectionRecord> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord row, {
     _i1.ColumnSelections<InspectionRecordTable>? columns,
     _i1.Transaction? transaction,
@@ -859,7 +859,7 @@ class InspectionRecordRepository {
   /// Updates a single [InspectionRecord] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<InspectionRecord?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<InspectionRecordUpdateTable>
     columnValues,
@@ -875,7 +875,7 @@ class InspectionRecordRepository {
   /// Updates all [InspectionRecord]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<InspectionRecord>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<InspectionRecordUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<InspectionRecordTable> where,
@@ -902,7 +902,7 @@ class InspectionRecordRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<InspectionRecord>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionRecord> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -914,7 +914,7 @@ class InspectionRecordRepository {
 
   /// Deletes a single [InspectionRecord].
   Future<InspectionRecord> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord row, {
     _i1.Transaction? transaction,
   }) async {
@@ -926,7 +926,7 @@ class InspectionRecordRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<InspectionRecord>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<InspectionRecordTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -939,7 +939,7 @@ class InspectionRecordRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionRecordTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -953,7 +953,7 @@ class InspectionRecordRepository {
 
   /// Acquires row-level locks on [InspectionRecord] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<InspectionRecordTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -974,7 +974,7 @@ class InspectionRecordAttachRowRepository {
   /// Creates a relation between the given [InspectionRecord] and [Site]
   /// by setting the [InspectionRecord]'s foreign key `siteId` to refer to the [Site].
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord inspectionRecord,
     _i2.Site site, {
     _i1.Transaction? transaction,
@@ -997,7 +997,7 @@ class InspectionRecordAttachRowRepository {
   /// Creates a relation between the given [InspectionRecord] and [PharmaUser]
   /// by setting the [InspectionRecord]'s foreign key `createdById` to refer to the [PharmaUser].
   Future<void> createdBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord inspectionRecord,
     _i3.PharmaUser createdBy, {
     _i1.Transaction? transaction,
@@ -1029,7 +1029,7 @@ class InspectionRecordDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord inspectionRecord, {
     _i1.Transaction? transaction,
   }) async {
@@ -1051,7 +1051,7 @@ class InspectionRecordDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> createdBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionRecord inspectionRecord, {
     _i1.Transaction? transaction,
   }) async {

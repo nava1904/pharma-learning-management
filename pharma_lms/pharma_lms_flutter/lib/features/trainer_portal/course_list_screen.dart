@@ -162,43 +162,46 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Filter tabs
-                    Row(
-                children: [
-                  _FilterTab('All', 'all'),
-                  _FilterTab('My Courses', 'mine'),
-                  _FilterTab('Under Review', 'under_review'),
-                  _FilterTab('Published', 'published'),
-                  _FilterTab('Archived', 'archived'),
-                  const Spacer(),
-                  // Search
-                  SizedBox(
-                    width: 250,
-                    height: 36,
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (v) => setState(() => _searchQuery = v),
-                      decoration: InputDecoration(
-                        hintText: 'Search by title or SOP...',
-                        hintStyle: PharmaTypography.caption,
-                        prefixIcon: const Icon(Icons.search, size: 18),
-                        filled: true,
-                        fillColor: PharmaColors.pageBg,
-                        border: OutlineInputBorder(
-                          borderRadius: PharmaRadius.inputRadius,
-                          borderSide: BorderSide(color: PharmaColors.borderLight),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: PharmaRadius.inputRadius,
-                          borderSide: BorderSide(color: PharmaColors.borderLight),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    // Filter tabs with search
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _FilterTab('All', 'all'),
+                          _FilterTab('My Courses', 'mine'),
+                          _FilterTab('Under Review', 'under_review'),
+                          _FilterTab('Published', 'published'),
+                          _FilterTab('Archived', 'archived'),
+                          const SizedBox(width: PharmaSpacing.lg),
+                          // Search
+                          SizedBox(
+                            width: 250,
+                            height: 36,
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (v) => setState(() => _searchQuery = v),
+                              decoration: InputDecoration(
+                                hintText: 'Search by title or SOP...',
+                                hintStyle: PharmaTypography.caption,
+                                prefixIcon: const Icon(Icons.search, size: 18),
+                                filled: true,
+                                fillColor: PharmaColors.pageBg,
+                                border: OutlineInputBorder(
+                                  borderRadius: PharmaRadius.inputRadius,
+                                  borderSide: BorderSide(color: PharmaColors.borderLight),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: PharmaRadius.inputRadius,
+                                  borderSide: BorderSide(color: PharmaColors.borderLight),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                              ),
+                              style: PharmaTypography.body.copyWith(fontSize: 13),
+                            ),
+                          ),
+                        ],
                       ),
-                      style: PharmaTypography.body.copyWith(fontSize: 13),
                     ),
-                  ),
-                ],
-              ),
 
               const SizedBox(height: PharmaSpacing.lg),
               Divider(height: 1, color: PharmaColors.borderLight),

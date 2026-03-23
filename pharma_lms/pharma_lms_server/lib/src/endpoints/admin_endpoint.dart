@@ -1,12 +1,18 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart';
+import 'package:serverpod_auth_idp_server/core.dart';
+import 'package:serverpod_auth_idp_server/providers/email.dart';
 
 import '../audit_event_types.dart';
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
+import '../services/email_service.dart';
 import '../services/event_service.dart';
+import '../services/password_policy_service.dart';
 import '../services/rbac_helper.dart';
 import '../services/training_assignment_service.dart';
 
@@ -98,7 +104,261 @@ class AdminEndpoint extends Endpoint {
     return assignments;
   }
 
-  /// Bulk import users from CSV (base64). Columns: email,firstName,lastName,departmentId,siteId,organizationId,jobRoleId
+  /// Real admin "creates trainer" flow (US-ADM-USR-001).
+  ///
+  /// Creates the `pharma_user`, assigns a portal `role` via `user_role`,
+  /// provisions Serverpod auth (email + temporary password) and sends the welcome email,
+  /// logs an immutable audit trail entry, and creates onboarding enrollments from the
+  /// selected training-matrix `jobRoleId`.
+  Future<PharmaUser> createUserWithRole(
+    Session session, {
+    required String employeeId,
+    required String email,
+    required String firstName,
+    required String lastName,
+    required int departmentId,
+    required int siteId,
+    required int organizationId,
+    required int jobRoleId,
+    required String roleCode,
+    required int assignedById,
+    int? managerId,
+    DateTime? dueDate,
+  }) async {
+    await RbacHelper.requirePermission(
+      session,
+      resource: 'training',
+      action: 'assign',
+    );
+
+    final normalizedEmail = email.trim().toLowerCase();
+    final normalizedRoleCode = roleCode.trim().toLowerCase();
+    final normalizedEmployeeId = employeeId.trim();
+
+    if (normalizedEmployeeId.isEmpty) {
+      throw Exception('employeeId is required');
+    }
+    if (normalizedEmail.isEmpty) {
+      throw Exception('email is required');
+    }
+
+    final existing = await PharmaUser.db.findFirstRow(
+      session,
+      where: (t) => t.employeeId.equals(normalizedEmployeeId),
+    );
+    if (existing != null) {
+      throw Exception('User with employeeId=$normalizedEmployeeId already exists');
+    }
+
+    final role = await Role.db.findFirstRow(
+      session,
+      where: (t) => t.code.equals(normalizedRoleCode),
+    );
+    if (role == null) {
+      throw Exception('Role not found for code="$normalizedRoleCode"');
+    }
+
+    final fullName = '${firstName.trim()} ${lastName.trim()}'.trim();
+
+    final user = await PharmaUser.db.insertRow(
+      session,
+      PharmaUser(
+        email: normalizedEmail,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        employeeId: normalizedEmployeeId,
+        managerId: managerId,
+        departmentId: departmentId,
+        jobRoleId: jobRoleId,
+        siteId: siteId,
+        organizationId: organizationId,
+        status: 'active',
+        hireDate: DateTime.now(),
+      ),
+    );
+
+    if (user.id == null) {
+      throw Exception('Failed to create user');
+    }
+
+    // Assign portal access role.
+    await UserRole.db.insertRow(
+      session,
+      UserRole(userId: user.id!, roleId: role.id!),
+    );
+
+    // Provision auth + send welcome email with random temp credentials.
+    final tempPassword = _generateTemporaryPassword();
+    await _provisionAuthAndSendWelcome(
+      session,
+      email: normalizedEmail,
+      fullName: fullName,
+      tempPassword: tempPassword,
+    );
+
+    // In-app onboarding entry (used by trainer/employee notification center).
+    await Notification.db.insertRow(
+      session,
+      Notification(
+        userId: user.id!,
+        type: 'onboarding_welcome',
+        channel: 'in_app',
+      ),
+    );
+
+    // Create onboarding enrollments from the jobRole training matrix.
+    final curriculum = await getRoleBasedCurriculum(session, jobRoleId);
+    final due = dueDate ?? DateTime.now().add(const Duration(days: 30));
+    for (final courseVersionId in curriculum) {
+      final hasActive = await TrainingAssignmentService.hasActiveEnrollment(
+        session,
+        userId: user.id!,
+        courseVersionId: courseVersionId,
+      );
+      if (hasActive) continue;
+
+      final assignment = await TrainingAssignmentService.assign(
+        session,
+        userId: user.id!,
+        courseVersionId: courseVersionId,
+        assignedById: assignedById,
+        dueDate: due,
+        reason: 'onboarding',
+        source: 'onboarding',
+      );
+      await TrainingAssignmentService.createEnrollment(
+        session,
+        userId: user.id!,
+        courseVersionId: courseVersionId,
+        assignmentId: assignment.id!,
+      );
+    }
+
+    // Immutable audit record (21 CFR Part 11).
+    await AuditService.log(
+      session,
+      entityType: 'pharma_user',
+      entityId: user.id!.toString(),
+      action: AuditEventType.userCreated,
+      newValueJson: jsonEncode({
+        'employeeId': normalizedEmployeeId,
+        'email': normalizedEmail,
+        'fullName': fullName,
+        'departmentId': departmentId,
+        'siteId': siteId,
+        'organizationId': organizationId,
+        'jobRoleId': jobRoleId,
+        'roleCode': normalizedRoleCode,
+      }),
+      userId: assignedById,
+      reason: 'Admin created user account',
+      ipAddress: null,
+    );
+
+    return user;
+  }
+
+  /// Generates a PBKDF2/argonsafe temporary password that satisfies PasswordPolicyService.
+  /// In production, admins typically send a one-time link instead of passwords.
+  String _generateTemporaryPassword() {
+    final rnd = Random.secure();
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    const special = PasswordPolicyService.specialChars;
+
+    // Start with one char of each required category.
+    final required = <String>[
+      lower[rnd.nextInt(lower.length)],
+      upper[rnd.nextInt(upper.length)],
+      digits[rnd.nextInt(digits.length)],
+      special[rnd.nextInt(special.length)],
+    ];
+
+    final all = '$lower$upper$digits$special';
+    while (required.length < PasswordPolicyService.defaultMinLength) {
+      required.add(all[rnd.nextInt(all.length)]);
+    }
+
+    required.shuffle(rnd);
+    final password = required.join();
+
+    // Safety net: if policy ever changes, regenerate until valid.
+    if (!PasswordPolicyService.validate(password)) {
+      return _generateTemporaryPassword();
+    }
+    return password;
+  }
+
+  Future<void> _provisionAuthAndSendWelcome(
+    Session session, {
+    required String email,
+    required String fullName,
+    required String tempPassword,
+  }) async {
+    final emailIdp = AuthServices.instance.emailIdp;
+    final admin = emailIdp.admin;
+
+    final existing = await admin.findAccount(session, email: email);
+    if (existing != null) {
+      // Auth already exists; do not overwrite credentials or re-email.
+      return;
+    }
+
+    final authUser = await AuthServices.instance.authUsers.create(session);
+
+    await admin.createEmailAuthentication(
+      session,
+      authUserId: authUser.id,
+      email: email,
+      password: tempPassword,
+    );
+
+    // Ensure `serverpod_auth_core_profile` exists so RbacHelper can map authUserId -> email.
+    await session.db.unsafeQuery(
+      r'''INSERT INTO serverpod_auth_core_profile ("authUserId", email, "userName", "fullName")
+              VALUES (@authUserId::uuid, @email, @userName, @fullName)
+              ON CONFLICT ("authUserId") DO NOTHING''',
+      parameters: QueryParameters.named({
+        'authUserId': authUser.id.toString(),
+        'email': email,
+        'userName': email.split('@').first,
+        'fullName': fullName,
+      }),
+    );
+
+    // Direct email delivery (pragmatic mapping to US-ADM-USR-001).
+    final subject = 'Pharma LMS - Temporary Login Credentials';
+    final body = '''
+Hello $fullName,
+
+An administrator created your Pharma LMS account.
+
+Temporary password: $tempPassword
+
+Next step: Please log in and change your password immediately.
+
+Regards,
+Pharma LMS Admin
+''';
+
+    unawaited(
+      EmailService.sendNotificationEmail(
+        session,
+        email: email,
+        subject: subject,
+        body: body,
+      ),
+    );
+  }
+
+  /// Bulk import users from CSV (base64).
+  ///
+  /// Pragmatic production mapping aligned to US-ADM-USR-001/002:
+  /// - employeeId (conflict key)
+  /// - role (portal role code; e.g. trainer)
+  /// - email/firstName/lastName
+  /// - departmentId/siteId/organizationId/jobRoleId (training matrix scoping)
   Future<BulkImportResult> bulkImportUsers(
     Session session, {
     required String csvBase64,
@@ -112,6 +372,7 @@ class AdminEndpoint extends Endpoint {
     if (lines.isEmpty) return BulkImportResult(imported: 0, errors: []);
 
     final headerParts = lines.first.split(',').map((s) => s.trim().toLowerCase()).toList();
+    final employeeIdx = _colIndex(headerParts, 'employeeid');
     final emailIdx = _colIndex(headerParts, 'email');
     final firstIdx = _colIndex(headerParts, 'firstname');
     final lastIdx = _colIndex(headerParts, 'lastname');
@@ -119,6 +380,7 @@ class AdminEndpoint extends Endpoint {
     final siteIdx = _colIndex(headerParts, 'siteid');
     final orgIdx = _colIndex(headerParts, 'organizationid');
     final jobIdx = _colIndex(headerParts, 'jobroleid');
+    final roleIdx = _colIndex(headerParts, 'role');
 
     var imported = 0;
     final errors = <String>[];
@@ -128,9 +390,22 @@ class AdminEndpoint extends Endpoint {
       final cols = _parseCsvLine(lines[i]);
       if (cols.isEmpty) continue;
 
+      final employeeId = employeeIdx != null && employeeIdx < cols.length ? cols[employeeIdx].trim() : '';
+      if (employeeId.isEmpty) {
+        errors.add('Row ${i + 1}: missing employeeId');
+        continue;
+      }
+
       final email = emailIdx != null && emailIdx < cols.length ? cols[emailIdx].trim() : '';
       if (email.isEmpty) {
         errors.add('Row ${i + 1}: missing email');
+        continue;
+      }
+
+      final roleCodeRaw = roleIdx != null && roleIdx < cols.length ? cols[roleIdx].trim() : '';
+      final roleCode = roleCodeRaw.toLowerCase();
+      if (roleCode.isEmpty) {
+        errors.add('Row ${i + 1}: missing role');
         continue;
       }
 
@@ -146,44 +421,107 @@ class AdminEndpoint extends Endpoint {
 
       final existing = await PharmaUser.db.findFirstRow(
         session,
-        where: (t) => t.email.equals(email),
+        where: (t) => t.employeeId.equals(employeeId),
       );
-      if (existing != null) {
-        errors.add('Row ${i + 1}: user $email already exists');
-        continue;
-      }
 
       try {
-        final user = await PharmaUser.db.insertRow(
+        final firstName =
+            firstIdx != null && firstIdx < cols.length ? cols[firstIdx].trim() : 'User';
+        final lastName =
+            lastIdx != null && lastIdx < cols.length ? cols[lastIdx].trim() : '';
+        final fullName = '${firstName.trim()} ${lastName.trim()}'.trim();
+
+        final role = await Role.db.findFirstRow(
           session,
-          PharmaUser(
+          where: (t) => t.code.equals(roleCode),
+        );
+        if (role == null) {
+          errors.add('Row ${i + 1}: role "$roleCode" not found');
+          continue;
+        }
+
+        if (existing == null) {
+          await createUserWithRole(
+            session,
+            employeeId: employeeId,
             email: email,
-            firstName: firstIdx != null && firstIdx < cols.length ? cols[firstIdx].trim() : 'User',
-            lastName: lastIdx != null && lastIdx < cols.length ? cols[lastIdx].trim() : '',
+            firstName: firstName,
+            lastName: lastName,
+            departmentId: deptId,
+            siteId: siteId,
+            organizationId: orgId,
+            jobRoleId: jobRoleId,
+            roleCode: roleCode,
+            assignedById: assignedById,
+            dueDate: due,
+          );
+        } else {
+          // UPDATE existing user (conflict resolution).
+          final normalizedEmail = email.trim().toLowerCase();
+          final existingEmail = existing.email.trim().toLowerCase();
+          if (existingEmail.isNotEmpty && existingEmail != normalizedEmail) {
+            errors.add('Row ${i + 1}: employeeId exists but email differs (existing=$existingEmail, incoming=$normalizedEmail)');
+            continue;
+          }
+
+          final updated = existing.copyWith(
+            firstName: firstName,
+            lastName: lastName,
             departmentId: deptId,
             jobRoleId: jobRoleId,
             siteId: siteId,
             organizationId: orgId,
-          ),
-        );
+            status: 'active',
+          );
+          await PharmaUser.db.updateRow(session, updated);
 
-        final curriculum = await getRoleBasedCurriculum(session, jobRoleId);
-        for (final courseVersionId in curriculum) {
-          final assignment = await TrainingAssignmentService.assign(
+          // Replace role(s) for now (single role in CSV).
+          await UserRole.db.deleteWhere(
             session,
-            userId: user.id!,
-            courseVersionId: courseVersionId,
-            assignedById: assignedById,
-            dueDate: due,
-            source: 'onboarding',
+            where: (t) => t.userId.equals(existing.id!),
           );
-          await TrainingAssignmentService.createEnrollment(
+          await UserRole.db.insertRow(
             session,
-            userId: user.id!,
-            courseVersionId: courseVersionId,
-            assignmentId: assignment.id!,
+            UserRole(userId: existing.id!, roleId: role.id!),
           );
+
+          // Ensure auth exists; if missing, provision + email new temp password.
+          final tempPassword = _generateTemporaryPassword();
+          await _provisionAuthAndSendWelcome(
+            session,
+            email: existing.email,
+            fullName: fullName,
+            tempPassword: tempPassword,
+          );
+
+          // Ensure onboarding enrollments exist for the chosen jobRoleId.
+          final curriculum = await getRoleBasedCurriculum(session, jobRoleId);
+          for (final courseVersionId in curriculum) {
+            final hasActive = await TrainingAssignmentService.hasActiveEnrollment(
+              session,
+              userId: existing.id!,
+              courseVersionId: courseVersionId,
+            );
+            if (hasActive) continue;
+
+            final assignment = await TrainingAssignmentService.assign(
+              session,
+              userId: existing.id!,
+              courseVersionId: courseVersionId,
+              assignedById: assignedById,
+              dueDate: due,
+              reason: 'onboarding',
+              source: 'onboarding',
+            );
+            await TrainingAssignmentService.createEnrollment(
+              session,
+              userId: existing.id!,
+              courseVersionId: courseVersionId,
+              assignmentId: assignment.id!,
+            );
+          }
         }
+
         imported++;
       } catch (e) {
         errors.add('Row ${i + 1}: $e');
@@ -554,6 +892,176 @@ class AdminEndpoint extends Endpoint {
       action: 'UserUnlocked',
       newValueJson: '{"email":"$email"}',
     );
+    return true;
+  }
+
+  /// List all users with optional filtering and pagination
+  Future<List<PharmaUser>> listUsers(
+    Session session, {
+    int page = 1,
+    int perPage = 10,
+    String? roleCode,
+    String? status,
+    String? searchQuery,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
+    
+    final offset = (page - 1) * perPage;
+    
+    // Start with base query
+    final users = await PharmaUser.db.find(
+      session,
+      limit: perPage,
+      offset: offset,
+      orderBy: (t) => t.createdAt,
+    );
+    
+    // If we have filters, apply them in-memory for now
+    // TODO: Optimize with SQL WHERE clauses
+    var filtered = users;
+    
+    if (status != null && status.isNotEmpty) {
+      filtered = filtered.where((u) => u.status == status).toList();
+    }
+    
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      final lowerSearch = searchQuery.toLowerCase();
+      filtered = filtered.where((u) =>
+        u.email.toLowerCase().contains(lowerSearch) ||
+        u.firstName.toLowerCase().contains(lowerSearch) ||
+        u.lastName.toLowerCase().contains(lowerSearch) ||
+        (u.employeeId?.toLowerCase().contains(lowerSearch) ?? false)
+      ).toList();
+    }
+    
+    if (roleCode != null && roleCode.isNotEmpty) {
+      // TODO: Load roles and filter by role
+      // For now, return all
+    }
+    
+    return filtered.take(perPage).toList();
+  }
+  
+  /// Get total count of users with optional filtering
+  Future<int> getUserCount(
+    Session session, {
+    String? roleCode,
+    String? status,
+    String? searchQuery,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
+    
+    final allUsers = await PharmaUser.db.find(session);
+    
+    var filtered = allUsers;
+    
+    if (status != null && status.isNotEmpty) {
+      filtered = filtered.where((u) => u.status == status).toList();
+    }
+    
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      final lowerSearch = searchQuery.toLowerCase();
+      filtered = filtered.where((u) =>
+        u.email.toLowerCase().contains(lowerSearch) ||
+        u.firstName.toLowerCase().contains(lowerSearch) ||
+        u.lastName.toLowerCase().contains(lowerSearch) ||
+        (u.employeeId?.toLowerCase().contains(lowerSearch) ?? false)
+      ).toList();
+    }
+    
+    if (roleCode != null && roleCode.isNotEmpty) {
+      // TODO: Load roles and filter by role
+      // For now, return all
+    }
+    
+    return filtered.length;
+  }
+  
+  /// Get a single user by ID
+  Future<PharmaUser?> getUser(Session session, int userId) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
+    return await PharmaUser.db.findById(session, userId);
+  }
+  
+  /// Update a user's information
+  Future<PharmaUser?> updateUser(
+    Session session, {
+    required int userId,
+    String? firstName,
+    String? lastName,
+    int? departmentId,
+    int? jobRoleId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'write');
+    
+    final user = await PharmaUser.db.findById(session, userId);
+    if (user == null) {
+      throw Exception('User not found');
+    }
+    
+    final updated = user.copyWith(
+      firstName: firstName ?? user.firstName,
+      lastName: lastName ?? user.lastName,
+      departmentId: departmentId ?? user.departmentId,
+      jobRoleId: jobRoleId ?? user.jobRoleId,
+    );
+    
+    final result = await PharmaUser.db.updateRow(session, updated);
+    
+    await AuditService.log(
+      session,
+      entityType: 'pharma_user',
+      entityId: userId.toString(),
+      action: AuditEventType.assignmentUpdated,
+      oldValueJson: jsonEncode({
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+      }),
+      newValueJson: jsonEncode({
+        'firstName': updated.firstName,
+        'lastName': updated.lastName,
+      }),
+    );
+    
+    return result;
+  }
+  
+  /// Deactivate a user (soft delete)
+  Future<bool> deactivateUser(
+    Session session, {
+    required int userId,
+    required int deactivatedById,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'write');
+    
+    final user = await PharmaUser.db.findById(session, userId);
+    if (user == null) {
+      throw Exception('User not found');
+    }
+    
+    final updated = user.copyWith(status: 'inactive');
+    await PharmaUser.db.updateRow(session, updated);
+    
+    // Log audit event
+    await AuditService.log(
+      session,
+      entityType: 'pharma_user',
+      entityId: userId.toString(),
+      action: AuditEventType.userTerminated,
+      oldValueJson: jsonEncode({'status': user.status}),
+      newValueJson: jsonEncode({'status': 'inactive'}),
+      userId: deactivatedById,
+    );
+    
+    // Lock the auth user
+    if (user.email.isNotEmpty) {
+      try {
+        await lockUserByEmail(session, user.email);
+      } catch (_) {
+        // Auth user may not exist - continue
+      }
+    }
+    
     return true;
   }
 

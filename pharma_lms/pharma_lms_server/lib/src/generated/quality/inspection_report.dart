@@ -453,7 +453,7 @@ class InspectionReportRepository {
   /// );
   /// ```
   Future<List<InspectionReport>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionReportTable>? where,
     int? limit,
     int? offset,
@@ -497,7 +497,7 @@ class InspectionReportRepository {
   /// );
   /// ```
   Future<InspectionReport?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionReportTable>? where,
     int? offset,
     _i1.OrderByBuilder<InspectionReportTable>? orderBy,
@@ -523,7 +523,7 @@ class InspectionReportRepository {
 
   /// Finds a single [InspectionReport] by its [id] or null if no such row exists.
   Future<InspectionReport?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     InspectionReportInclude? include,
@@ -550,7 +550,7 @@ class InspectionReportRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<InspectionReport>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionReport> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -566,7 +566,7 @@ class InspectionReportRepository {
   ///
   /// The returned [InspectionReport] will have its `id` field set.
   Future<InspectionReport> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionReport row, {
     _i1.Transaction? transaction,
   }) async {
@@ -582,7 +582,7 @@ class InspectionReportRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<InspectionReport>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionReport> rows, {
     _i1.ColumnSelections<InspectionReportTable>? columns,
     _i1.Transaction? transaction,
@@ -598,7 +598,7 @@ class InspectionReportRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<InspectionReport> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionReport row, {
     _i1.ColumnSelections<InspectionReportTable>? columns,
     _i1.Transaction? transaction,
@@ -613,7 +613,7 @@ class InspectionReportRepository {
   /// Updates a single [InspectionReport] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<InspectionReport?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<InspectionReportUpdateTable>
     columnValues,
@@ -629,7 +629,7 @@ class InspectionReportRepository {
   /// Updates all [InspectionReport]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<InspectionReport>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<InspectionReportUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<InspectionReportTable> where,
@@ -656,7 +656,7 @@ class InspectionReportRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<InspectionReport>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionReport> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -668,7 +668,7 @@ class InspectionReportRepository {
 
   /// Deletes a single [InspectionReport].
   Future<InspectionReport> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionReport row, {
     _i1.Transaction? transaction,
   }) async {
@@ -680,7 +680,7 @@ class InspectionReportRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<InspectionReport>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<InspectionReportTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -693,7 +693,7 @@ class InspectionReportRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionReportTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -707,7 +707,7 @@ class InspectionReportRepository {
 
   /// Acquires row-level locks on [InspectionReport] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<InspectionReportTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -728,7 +728,7 @@ class InspectionReportAttachRowRepository {
   /// Creates a relation between the given [InspectionReport] and [Organization]
   /// by setting the [InspectionReport]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionReport inspectionReport,
     _i2.Organization organization, {
     _i1.Transaction? transaction,
@@ -753,7 +753,7 @@ class InspectionReportAttachRowRepository {
   /// Creates a relation between the given [InspectionReport] and [Site]
   /// by setting the [InspectionReport]'s foreign key `siteId` to refer to the [Site].
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionReport inspectionReport,
     _i3.Site site, {
     _i1.Transaction? transaction,
@@ -783,7 +783,7 @@ class InspectionReportDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionReport inspectionReport, {
     _i1.Transaction? transaction,
   }) async {

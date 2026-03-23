@@ -26,6 +26,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
   List<String> _headers = [];
   Map<String, int?> _columnMapping = {};
   static const _requiredFields = [
+    'employeeId',
     'email',
     'firstName',
     'lastName',
@@ -33,6 +34,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     'siteId',
     'organizationId',
     'jobRoleId',
+    'role',
   ];
   bool _importing = false;
   int _assignedById = 1;
@@ -113,13 +115,19 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
   }
 
   String? _validateRow(int rowIndex, List<String> row) {
+    final employeeIdx = _columnMapping['employeeId'];
     final emailIdx = _columnMapping['email'];
-    final firstIdx = _columnMapping['firstName'];
-    final lastIdx = _columnMapping['lastName'];
     final deptIdx = _columnMapping['departmentId'];
     final siteIdx = _columnMapping['siteId'];
     final orgIdx = _columnMapping['organizationId'];
     final jobIdx = _columnMapping['jobRoleId'];
+    final roleIdx = _columnMapping['role'];
+
+    if (employeeIdx == null || employeeIdx >= row.length) {
+      return 'Missing employeeId column';
+    }
+    final employeeId = row[employeeIdx].trim();
+    if (employeeId.isEmpty) return 'Empty employeeId';
 
     if (emailIdx == null || emailIdx >= row.length) {
       return 'Missing email column';
@@ -130,13 +138,16 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
     if (!emailRegex.hasMatch(email)) return 'Invalid email format';
 
-    if (deptIdx == null || siteIdx == null || orgIdx == null || jobIdx == null) {
-      return 'Missing required column mapping';
+    if (deptIdx == null || siteIdx == null || orgIdx == null || jobIdx == null || roleIdx == null) {
+      return 'Missing required column mapping (employeeId/email/names/department/site/org/jobRoleId/role)';
     }
     final orgId = int.tryParse(row[orgIdx].trim());
     final siteId = int.tryParse(row[siteIdx].trim());
     final deptId = int.tryParse(row[deptIdx].trim());
     final jobRoleId = int.tryParse(row[jobIdx].trim());
+    final role = row[roleIdx].trim();
+    if (role.isEmpty) return 'Empty role';
+
     if (orgId == null || siteId == null || deptId == null || jobRoleId == null) {
       return 'Invalid org/site/dept/jobRole IDs';
     }
@@ -175,9 +186,15 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     setState(() => _importing = true);
 
     final csvLines = <String>[
-      'email,firstName,lastName,departmentId,siteId,organizationId,jobRoleId',
+      'employeeId,role,email,firstName,lastName,departmentId,siteId,organizationId,jobRoleId',
     ];
     for (final row in validRows) {
+      final employeeId = _columnMapping['employeeId']! < row.length
+          ? row[_columnMapping['employeeId']!].trim()
+          : '';
+      final role = _columnMapping['role']! < row.length
+          ? row[_columnMapping['role']!].trim()
+          : '';
       final email = _columnMapping['email']! < row.length
           ? row[_columnMapping['email']!].trim()
           : '';
@@ -201,7 +218,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       final job = _columnMapping['jobRoleId']! < row.length
           ? row[_columnMapping['jobRoleId']!].trim()
           : '';
-      csvLines.add('$email,$first,$last,$dept,$site,$org,$job');
+      csvLines.add('$employeeId,$role,$email,$first,$last,$dept,$site,$org,$job');
     }
 
     final csv = csvLines.join('\n');
@@ -255,7 +272,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Upload a CSV with columns: email, firstName, lastName, '
+                      'Upload a CSV with columns: employeeId, role, email, firstName, lastName, '
                       'departmentId, siteId, organizationId, jobRoleId. '
                       'Or map your columns below.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(

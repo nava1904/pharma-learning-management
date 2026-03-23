@@ -42,9 +42,16 @@ abstract class PharmaUser
     this.managerId,
     this.preferredLanguage,
     String? timezone,
+    this.lastLogin,
+    this.authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    this.roles,
   }) : status = status ?? 'active',
        createdAt = createdAt ?? DateTime.now(),
-       timezone = timezone ?? 'UTC';
+       timezone = timezone ?? 'UTC',
+       mfaEnabled = mfaEnabled ?? false,
+       compliancePercent = compliancePercent ?? 0.0;
 
   factory PharmaUser({
     int? id,
@@ -67,6 +74,11 @@ abstract class PharmaUser
     int? managerId,
     String? preferredLanguage,
     String? timezone,
+    DateTime? lastLogin,
+    String? authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    List<String>? roles,
   }) = _PharmaUserImpl;
 
   factory PharmaUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -109,6 +121,20 @@ abstract class PharmaUser
       managerId: jsonSerialization['managerId'] as int?,
       preferredLanguage: jsonSerialization['preferredLanguage'] as String?,
       timezone: jsonSerialization['timezone'] as String?,
+      lastLogin: jsonSerialization['lastLogin'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['lastLogin']),
+      authType: jsonSerialization['authType'] as String?,
+      mfaEnabled: jsonSerialization['mfaEnabled'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['mfaEnabled']),
+      compliancePercent: (jsonSerialization['compliancePercent'] as num?)
+          ?.toDouble(),
+      roles: jsonSerialization['roles'] == null
+          ? null
+          : _i6.Protocol().deserialize<List<String>>(
+              jsonSerialization['roles'],
+            ),
     );
   }
 
@@ -172,6 +198,21 @@ abstract class PharmaUser
   /// User timezone (e.g., America/New_York).
   String? timezone;
 
+  /// Last login timestamp.
+  DateTime? lastLogin;
+
+  /// Authentication type (e.g., SSO, Local).
+  String? authType;
+
+  /// Whether MFA is enabled for this user.
+  bool? mfaEnabled;
+
+  /// Compliance percent (0-100).
+  double? compliancePercent;
+
+  /// List of roles assigned to the user.
+  List<String>? roles;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -199,6 +240,11 @@ abstract class PharmaUser
     int? managerId,
     String? preferredLanguage,
     String? timezone,
+    DateTime? lastLogin,
+    String? authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    List<String>? roles,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -224,6 +270,11 @@ abstract class PharmaUser
       if (managerId != null) 'managerId': managerId,
       if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
       if (timezone != null) 'timezone': timezone,
+      if (lastLogin != null) 'lastLogin': lastLogin?.toJson(),
+      if (authType != null) 'authType': authType,
+      if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
+      if (compliancePercent != null) 'compliancePercent': compliancePercent,
+      if (roles != null) 'roles': roles?.toJson(),
     };
   }
 
@@ -252,6 +303,11 @@ abstract class PharmaUser
       if (managerId != null) 'managerId': managerId,
       if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
       if (timezone != null) 'timezone': timezone,
+      if (lastLogin != null) 'lastLogin': lastLogin?.toJson(),
+      if (authType != null) 'authType': authType,
+      if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
+      if (compliancePercent != null) 'compliancePercent': compliancePercent,
+      if (roles != null) 'roles': roles?.toJson(),
     };
   }
 
@@ -319,6 +375,11 @@ class _PharmaUserImpl extends PharmaUser {
     int? managerId,
     String? preferredLanguage,
     String? timezone,
+    DateTime? lastLogin,
+    String? authType,
+    bool? mfaEnabled,
+    double? compliancePercent,
+    List<String>? roles,
   }) : super._(
          id: id,
          email: email,
@@ -340,6 +401,11 @@ class _PharmaUserImpl extends PharmaUser {
          managerId: managerId,
          preferredLanguage: preferredLanguage,
          timezone: timezone,
+         lastLogin: lastLogin,
+         authType: authType,
+         mfaEnabled: mfaEnabled,
+         compliancePercent: compliancePercent,
+         roles: roles,
        );
 
   /// Returns a shallow copy of this [PharmaUser]
@@ -367,6 +433,11 @@ class _PharmaUserImpl extends PharmaUser {
     Object? managerId = _Undefined,
     Object? preferredLanguage = _Undefined,
     Object? timezone = _Undefined,
+    Object? lastLogin = _Undefined,
+    Object? authType = _Undefined,
+    Object? mfaEnabled = _Undefined,
+    Object? compliancePercent = _Undefined,
+    Object? roles = _Undefined,
   }) {
     return PharmaUser(
       id: id is int? ? id : this.id,
@@ -395,6 +466,15 @@ class _PharmaUserImpl extends PharmaUser {
           ? preferredLanguage
           : this.preferredLanguage,
       timezone: timezone is String? ? timezone : this.timezone,
+      lastLogin: lastLogin is DateTime? ? lastLogin : this.lastLogin,
+      authType: authType is String? ? authType : this.authType,
+      mfaEnabled: mfaEnabled is bool? ? mfaEnabled : this.mfaEnabled,
+      compliancePercent: compliancePercent is double?
+          ? compliancePercent
+          : this.compliancePercent,
+      roles: roles is List<String>?
+          ? roles
+          : this.roles?.map((e0) => e0).toList(),
     );
   }
 }
@@ -479,6 +559,34 @@ class PharmaUserUpdateTable extends _i1.UpdateTable<PharmaUserTable> {
     table.timezone,
     value,
   );
+
+  _i1.ColumnValue<DateTime, DateTime> lastLogin(DateTime? value) =>
+      _i1.ColumnValue(
+        table.lastLogin,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> authType(String? value) => _i1.ColumnValue(
+    table.authType,
+    value,
+  );
+
+  _i1.ColumnValue<bool, bool> mfaEnabled(bool? value) => _i1.ColumnValue(
+    table.mfaEnabled,
+    value,
+  );
+
+  _i1.ColumnValue<double, double> compliancePercent(double? value) =>
+      _i1.ColumnValue(
+        table.compliancePercent,
+        value,
+      );
+
+  _i1.ColumnValue<List<String>, List<String>> roles(List<String>? value) =>
+      _i1.ColumnValue(
+        table.roles,
+        value,
+      );
 }
 
 class PharmaUserTable extends _i1.Table<int?> {
@@ -547,6 +655,28 @@ class PharmaUserTable extends _i1.Table<int?> {
       this,
       hasDefault: true,
     );
+    lastLogin = _i1.ColumnDateTime(
+      'lastLogin',
+      this,
+    );
+    authType = _i1.ColumnString(
+      'authType',
+      this,
+    );
+    mfaEnabled = _i1.ColumnBool(
+      'mfaEnabled',
+      this,
+      hasDefault: true,
+    );
+    compliancePercent = _i1.ColumnDouble(
+      'compliancePercent',
+      this,
+      hasDefault: true,
+    );
+    roles = _i1.ColumnSerializable<List<String>>(
+      'roles',
+      this,
+    );
   }
 
   late final PharmaUserUpdateTable updateTable;
@@ -603,6 +733,21 @@ class PharmaUserTable extends _i1.Table<int?> {
 
   /// User timezone (e.g., America/New_York).
   late final _i1.ColumnString timezone;
+
+  /// Last login timestamp.
+  late final _i1.ColumnDateTime lastLogin;
+
+  /// Authentication type (e.g., SSO, Local).
+  late final _i1.ColumnString authType;
+
+  /// Whether MFA is enabled for this user.
+  late final _i1.ColumnBool mfaEnabled;
+
+  /// Compliance percent (0-100).
+  late final _i1.ColumnDouble compliancePercent;
+
+  /// List of roles assigned to the user.
+  late final _i1.ColumnSerializable<List<String>> roles;
 
   _i2.DepartmentTable get department {
     if (_department != null) return _department!;
@@ -674,6 +819,11 @@ class PharmaUserTable extends _i1.Table<int?> {
     managerId,
     preferredLanguage,
     timezone,
+    lastLogin,
+    authType,
+    mfaEnabled,
+    compliancePercent,
+    roles,
   ];
 
   @override
@@ -775,7 +925,7 @@ class PharmaUserRepository {
   /// );
   /// ```
   Future<List<PharmaUser>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<PharmaUserTable>? where,
     int? limit,
     int? offset,
@@ -819,7 +969,7 @@ class PharmaUserRepository {
   /// );
   /// ```
   Future<PharmaUser?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<PharmaUserTable>? where,
     int? offset,
     _i1.OrderByBuilder<PharmaUserTable>? orderBy,
@@ -845,7 +995,7 @@ class PharmaUserRepository {
 
   /// Finds a single [PharmaUser] by its [id] or null if no such row exists.
   Future<PharmaUser?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     PharmaUserInclude? include,
@@ -872,7 +1022,7 @@ class PharmaUserRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<PharmaUser>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<PharmaUser> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -888,7 +1038,7 @@ class PharmaUserRepository {
   ///
   /// The returned [PharmaUser] will have its `id` field set.
   Future<PharmaUser> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser row, {
     _i1.Transaction? transaction,
   }) async {
@@ -904,7 +1054,7 @@ class PharmaUserRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<PharmaUser>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<PharmaUser> rows, {
     _i1.ColumnSelections<PharmaUserTable>? columns,
     _i1.Transaction? transaction,
@@ -920,7 +1070,7 @@ class PharmaUserRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<PharmaUser> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser row, {
     _i1.ColumnSelections<PharmaUserTable>? columns,
     _i1.Transaction? transaction,
@@ -935,7 +1085,7 @@ class PharmaUserRepository {
   /// Updates a single [PharmaUser] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<PharmaUser?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<PharmaUserUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -950,7 +1100,7 @@ class PharmaUserRepository {
   /// Updates all [PharmaUser]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<PharmaUser>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<PharmaUserUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<PharmaUserTable> where,
     int? limit,
@@ -976,7 +1126,7 @@ class PharmaUserRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<PharmaUser>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<PharmaUser> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -988,7 +1138,7 @@ class PharmaUserRepository {
 
   /// Deletes a single [PharmaUser].
   Future<PharmaUser> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser row, {
     _i1.Transaction? transaction,
   }) async {
@@ -1000,7 +1150,7 @@ class PharmaUserRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<PharmaUser>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<PharmaUserTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -1013,7 +1163,7 @@ class PharmaUserRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<PharmaUserTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -1027,7 +1177,7 @@ class PharmaUserRepository {
 
   /// Acquires row-level locks on [PharmaUser] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<PharmaUserTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -1048,7 +1198,7 @@ class PharmaUserAttachRowRepository {
   /// Creates a relation between the given [PharmaUser] and [Department]
   /// by setting the [PharmaUser]'s foreign key `departmentId` to refer to the [Department].
   Future<void> department(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser pharmaUser,
     _i2.Department department, {
     _i1.Transaction? transaction,
@@ -1071,7 +1221,7 @@ class PharmaUserAttachRowRepository {
   /// Creates a relation between the given [PharmaUser] and [JobRole]
   /// by setting the [PharmaUser]'s foreign key `jobRoleId` to refer to the [JobRole].
   Future<void> jobRole(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser pharmaUser,
     _i3.JobRole jobRole, {
     _i1.Transaction? transaction,
@@ -1094,7 +1244,7 @@ class PharmaUserAttachRowRepository {
   /// Creates a relation between the given [PharmaUser] and [Site]
   /// by setting the [PharmaUser]'s foreign key `siteId` to refer to the [Site].
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser pharmaUser,
     _i4.Site site, {
     _i1.Transaction? transaction,
@@ -1117,7 +1267,7 @@ class PharmaUserAttachRowRepository {
   /// Creates a relation between the given [PharmaUser] and [Organization]
   /// by setting the [PharmaUser]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     PharmaUser pharmaUser,
     _i5.Organization organization, {
     _i1.Transaction? transaction,

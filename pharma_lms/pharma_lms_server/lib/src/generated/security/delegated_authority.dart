@@ -396,7 +396,7 @@ class DelegatedAuthorityRepository {
   /// );
   /// ```
   Future<List<DelegatedAuthority>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DelegatedAuthorityTable>? where,
     int? limit,
     int? offset,
@@ -440,7 +440,7 @@ class DelegatedAuthorityRepository {
   /// );
   /// ```
   Future<DelegatedAuthority?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DelegatedAuthorityTable>? where,
     int? offset,
     _i1.OrderByBuilder<DelegatedAuthorityTable>? orderBy,
@@ -466,7 +466,7 @@ class DelegatedAuthorityRepository {
 
   /// Finds a single [DelegatedAuthority] by its [id] or null if no such row exists.
   Future<DelegatedAuthority?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     DelegatedAuthorityInclude? include,
@@ -493,7 +493,7 @@ class DelegatedAuthorityRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<DelegatedAuthority>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DelegatedAuthority> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -509,7 +509,7 @@ class DelegatedAuthorityRepository {
   ///
   /// The returned [DelegatedAuthority] will have its `id` field set.
   Future<DelegatedAuthority> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DelegatedAuthority row, {
     _i1.Transaction? transaction,
   }) async {
@@ -525,7 +525,7 @@ class DelegatedAuthorityRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<DelegatedAuthority>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DelegatedAuthority> rows, {
     _i1.ColumnSelections<DelegatedAuthorityTable>? columns,
     _i1.Transaction? transaction,
@@ -541,7 +541,7 @@ class DelegatedAuthorityRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<DelegatedAuthority> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DelegatedAuthority row, {
     _i1.ColumnSelections<DelegatedAuthorityTable>? columns,
     _i1.Transaction? transaction,
@@ -556,7 +556,7 @@ class DelegatedAuthorityRepository {
   /// Updates a single [DelegatedAuthority] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<DelegatedAuthority?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<DelegatedAuthorityUpdateTable>
     columnValues,
@@ -572,7 +572,7 @@ class DelegatedAuthorityRepository {
   /// Updates all [DelegatedAuthority]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<DelegatedAuthority>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<DelegatedAuthorityUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<DelegatedAuthorityTable> where,
@@ -599,7 +599,7 @@ class DelegatedAuthorityRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<DelegatedAuthority>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DelegatedAuthority> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -611,7 +611,7 @@ class DelegatedAuthorityRepository {
 
   /// Deletes a single [DelegatedAuthority].
   Future<DelegatedAuthority> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DelegatedAuthority row, {
     _i1.Transaction? transaction,
   }) async {
@@ -623,7 +623,7 @@ class DelegatedAuthorityRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<DelegatedAuthority>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DelegatedAuthorityTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -636,7 +636,7 @@ class DelegatedAuthorityRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DelegatedAuthorityTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -650,7 +650,7 @@ class DelegatedAuthorityRepository {
 
   /// Acquires row-level locks on [DelegatedAuthority] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DelegatedAuthorityTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -671,7 +671,7 @@ class DelegatedAuthorityAttachRowRepository {
   /// Creates a relation between the given [DelegatedAuthority] and [PharmaUser]
   /// by setting the [DelegatedAuthority]'s foreign key `delegatorId` to refer to the [PharmaUser].
   Future<void> delegator(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DelegatedAuthority delegatedAuthority,
     _i2.PharmaUser delegator, {
     _i1.Transaction? transaction,
@@ -696,7 +696,7 @@ class DelegatedAuthorityAttachRowRepository {
   /// Creates a relation between the given [DelegatedAuthority] and [PharmaUser]
   /// by setting the [DelegatedAuthority]'s foreign key `delegateeId` to refer to the [PharmaUser].
   Future<void> delegatee(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DelegatedAuthority delegatedAuthority,
     _i2.PharmaUser delegatee, {
     _i1.Transaction? transaction,

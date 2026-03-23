@@ -338,7 +338,7 @@ class CourseCompetencyRepository {
   /// );
   /// ```
   Future<List<CourseCompetency>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseCompetencyTable>? where,
     int? limit,
     int? offset,
@@ -382,7 +382,7 @@ class CourseCompetencyRepository {
   /// );
   /// ```
   Future<CourseCompetency?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseCompetencyTable>? where,
     int? offset,
     _i1.OrderByBuilder<CourseCompetencyTable>? orderBy,
@@ -408,7 +408,7 @@ class CourseCompetencyRepository {
 
   /// Finds a single [CourseCompetency] by its [id] or null if no such row exists.
   Future<CourseCompetency?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     CourseCompetencyInclude? include,
@@ -435,7 +435,7 @@ class CourseCompetencyRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<CourseCompetency>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseCompetency> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -451,7 +451,7 @@ class CourseCompetencyRepository {
   ///
   /// The returned [CourseCompetency] will have its `id` field set.
   Future<CourseCompetency> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseCompetency row, {
     _i1.Transaction? transaction,
   }) async {
@@ -467,7 +467,7 @@ class CourseCompetencyRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<CourseCompetency>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseCompetency> rows, {
     _i1.ColumnSelections<CourseCompetencyTable>? columns,
     _i1.Transaction? transaction,
@@ -483,7 +483,7 @@ class CourseCompetencyRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<CourseCompetency> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseCompetency row, {
     _i1.ColumnSelections<CourseCompetencyTable>? columns,
     _i1.Transaction? transaction,
@@ -498,7 +498,7 @@ class CourseCompetencyRepository {
   /// Updates a single [CourseCompetency] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<CourseCompetency?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<CourseCompetencyUpdateTable>
     columnValues,
@@ -514,7 +514,7 @@ class CourseCompetencyRepository {
   /// Updates all [CourseCompetency]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<CourseCompetency>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<CourseCompetencyUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<CourseCompetencyTable> where,
@@ -541,7 +541,7 @@ class CourseCompetencyRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<CourseCompetency>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseCompetency> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -553,7 +553,7 @@ class CourseCompetencyRepository {
 
   /// Deletes a single [CourseCompetency].
   Future<CourseCompetency> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseCompetency row, {
     _i1.Transaction? transaction,
   }) async {
@@ -565,7 +565,7 @@ class CourseCompetencyRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<CourseCompetency>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CourseCompetencyTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -578,7 +578,7 @@ class CourseCompetencyRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseCompetencyTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -592,7 +592,7 @@ class CourseCompetencyRepository {
 
   /// Acquires row-level locks on [CourseCompetency] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CourseCompetencyTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -613,7 +613,7 @@ class CourseCompetencyAttachRowRepository {
   /// Creates a relation between the given [CourseCompetency] and [Course]
   /// by setting the [CourseCompetency]'s foreign key `courseId` to refer to the [Course].
   Future<void> course(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseCompetency courseCompetency,
     _i2.Course course, {
     _i1.Transaction? transaction,
@@ -636,7 +636,7 @@ class CourseCompetencyAttachRowRepository {
   /// Creates a relation between the given [CourseCompetency] and [Competency]
   /// by setting the [CourseCompetency]'s foreign key `competencyId` to refer to the [Competency].
   Future<void> competency(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseCompetency courseCompetency,
     _i3.Competency competency, {
     _i1.Transaction? transaction,

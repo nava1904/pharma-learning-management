@@ -582,7 +582,7 @@ class CapaRepository {
   /// );
   /// ```
   Future<List<Capa>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CapaTable>? where,
     int? limit,
     int? offset,
@@ -626,7 +626,7 @@ class CapaRepository {
   /// );
   /// ```
   Future<Capa?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CapaTable>? where,
     int? offset,
     _i1.OrderByBuilder<CapaTable>? orderBy,
@@ -652,7 +652,7 @@ class CapaRepository {
 
   /// Finds a single [Capa] by its [id] or null if no such row exists.
   Future<Capa?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     CapaInclude? include,
@@ -679,7 +679,7 @@ class CapaRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Capa>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Capa> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -695,7 +695,7 @@ class CapaRepository {
   ///
   /// The returned [Capa] will have its `id` field set.
   Future<Capa> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Capa row, {
     _i1.Transaction? transaction,
   }) async {
@@ -711,7 +711,7 @@ class CapaRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Capa>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Capa> rows, {
     _i1.ColumnSelections<CapaTable>? columns,
     _i1.Transaction? transaction,
@@ -727,7 +727,7 @@ class CapaRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Capa> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Capa row, {
     _i1.ColumnSelections<CapaTable>? columns,
     _i1.Transaction? transaction,
@@ -742,7 +742,7 @@ class CapaRepository {
   /// Updates a single [Capa] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Capa?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<CapaUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -757,7 +757,7 @@ class CapaRepository {
   /// Updates all [Capa]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Capa>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<CapaUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<CapaTable> where,
     int? limit,
@@ -783,7 +783,7 @@ class CapaRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Capa>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Capa> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -795,7 +795,7 @@ class CapaRepository {
 
   /// Deletes a single [Capa].
   Future<Capa> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Capa row, {
     _i1.Transaction? transaction,
   }) async {
@@ -807,7 +807,7 @@ class CapaRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Capa>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CapaTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -820,7 +820,7 @@ class CapaRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CapaTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -834,7 +834,7 @@ class CapaRepository {
 
   /// Acquires row-level locks on [Capa] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CapaTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -855,7 +855,7 @@ class CapaAttachRowRepository {
   /// Creates a relation between the given [Capa] and [QualityEvent]
   /// by setting the [Capa]'s foreign key `qualityEventId` to refer to the [QualityEvent].
   Future<void> qualityEvent(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Capa capa,
     _i2.QualityEvent qualityEvent, {
     _i1.Transaction? transaction,
@@ -878,7 +878,7 @@ class CapaAttachRowRepository {
   /// Creates a relation between the given [Capa] and [TrainingAssignment]
   /// by setting the [Capa]'s foreign key `trainingAssignmentId` to refer to the [TrainingAssignment].
   Future<void> trainingAssignment(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Capa capa,
     _i3.TrainingAssignment trainingAssignment, {
     _i1.Transaction? transaction,
@@ -908,7 +908,7 @@ class CapaDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> trainingAssignment(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Capa capa, {
     _i1.Transaction? transaction,
   }) async {

@@ -436,7 +436,7 @@ class NotificationLogRepository {
   /// );
   /// ```
   Future<List<NotificationLog>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<NotificationLogTable>? where,
     int? limit,
     int? offset,
@@ -480,7 +480,7 @@ class NotificationLogRepository {
   /// );
   /// ```
   Future<NotificationLog?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<NotificationLogTable>? where,
     int? offset,
     _i1.OrderByBuilder<NotificationLogTable>? orderBy,
@@ -506,7 +506,7 @@ class NotificationLogRepository {
 
   /// Finds a single [NotificationLog] by its [id] or null if no such row exists.
   Future<NotificationLog?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     NotificationLogInclude? include,
@@ -533,7 +533,7 @@ class NotificationLogRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<NotificationLog>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<NotificationLog> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -549,7 +549,7 @@ class NotificationLogRepository {
   ///
   /// The returned [NotificationLog] will have its `id` field set.
   Future<NotificationLog> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     NotificationLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -565,7 +565,7 @@ class NotificationLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<NotificationLog>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<NotificationLog> rows, {
     _i1.ColumnSelections<NotificationLogTable>? columns,
     _i1.Transaction? transaction,
@@ -581,7 +581,7 @@ class NotificationLogRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<NotificationLog> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     NotificationLog row, {
     _i1.ColumnSelections<NotificationLogTable>? columns,
     _i1.Transaction? transaction,
@@ -596,7 +596,7 @@ class NotificationLogRepository {
   /// Updates a single [NotificationLog] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<NotificationLog?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<NotificationLogUpdateTable>
     columnValues,
@@ -612,7 +612,7 @@ class NotificationLogRepository {
   /// Updates all [NotificationLog]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<NotificationLog>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<NotificationLogUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<NotificationLogTable> where,
@@ -639,7 +639,7 @@ class NotificationLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<NotificationLog>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<NotificationLog> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -651,7 +651,7 @@ class NotificationLogRepository {
 
   /// Deletes a single [NotificationLog].
   Future<NotificationLog> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     NotificationLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -663,7 +663,7 @@ class NotificationLogRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<NotificationLog>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<NotificationLogTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -676,7 +676,7 @@ class NotificationLogRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<NotificationLogTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -690,7 +690,7 @@ class NotificationLogRepository {
 
   /// Acquires row-level locks on [NotificationLog] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<NotificationLogTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -711,7 +711,7 @@ class NotificationLogAttachRowRepository {
   /// Creates a relation between the given [NotificationLog] and [Notification]
   /// by setting the [NotificationLog]'s foreign key `notificationId` to refer to the [Notification].
   Future<void> notification(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     NotificationLog notificationLog,
     _i2.Notification notification, {
     _i1.Transaction? transaction,

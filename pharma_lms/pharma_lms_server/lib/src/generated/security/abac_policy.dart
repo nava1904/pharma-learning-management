@@ -264,7 +264,7 @@ class AbacPolicyRepository {
   /// );
   /// ```
   Future<List<AbacPolicy>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AbacPolicyTable>? where,
     int? limit,
     int? offset,
@@ -306,7 +306,7 @@ class AbacPolicyRepository {
   /// );
   /// ```
   Future<AbacPolicy?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AbacPolicyTable>? where,
     int? offset,
     _i1.OrderByBuilder<AbacPolicyTable>? orderBy,
@@ -330,7 +330,7 @@ class AbacPolicyRepository {
 
   /// Finds a single [AbacPolicy] by its [id] or null if no such row exists.
   Future<AbacPolicy?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -355,7 +355,7 @@ class AbacPolicyRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AbacPolicy>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AbacPolicy> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -371,7 +371,7 @@ class AbacPolicyRepository {
   ///
   /// The returned [AbacPolicy] will have its `id` field set.
   Future<AbacPolicy> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AbacPolicy row, {
     _i1.Transaction? transaction,
   }) async {
@@ -387,7 +387,7 @@ class AbacPolicyRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AbacPolicy>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AbacPolicy> rows, {
     _i1.ColumnSelections<AbacPolicyTable>? columns,
     _i1.Transaction? transaction,
@@ -403,7 +403,7 @@ class AbacPolicyRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AbacPolicy> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AbacPolicy row, {
     _i1.ColumnSelections<AbacPolicyTable>? columns,
     _i1.Transaction? transaction,
@@ -418,7 +418,7 @@ class AbacPolicyRepository {
   /// Updates a single [AbacPolicy] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AbacPolicy?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AbacPolicyUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -433,7 +433,7 @@ class AbacPolicyRepository {
   /// Updates all [AbacPolicy]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AbacPolicy>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AbacPolicyUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<AbacPolicyTable> where,
     int? limit,
@@ -459,7 +459,7 @@ class AbacPolicyRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AbacPolicy>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AbacPolicy> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -471,7 +471,7 @@ class AbacPolicyRepository {
 
   /// Deletes a single [AbacPolicy].
   Future<AbacPolicy> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AbacPolicy row, {
     _i1.Transaction? transaction,
   }) async {
@@ -483,7 +483,7 @@ class AbacPolicyRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AbacPolicy>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AbacPolicyTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -496,7 +496,7 @@ class AbacPolicyRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AbacPolicyTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -510,7 +510,7 @@ class AbacPolicyRepository {
 
   /// Acquires row-level locks on [AbacPolicy] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AbacPolicyTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

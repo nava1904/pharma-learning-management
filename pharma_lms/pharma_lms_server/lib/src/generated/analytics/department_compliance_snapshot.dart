@@ -512,7 +512,7 @@ class DepartmentComplianceSnapshotRepository {
   /// );
   /// ```
   Future<List<DepartmentComplianceSnapshot>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DepartmentComplianceSnapshotTable>? where,
     int? limit,
     int? offset,
@@ -556,7 +556,7 @@ class DepartmentComplianceSnapshotRepository {
   /// );
   /// ```
   Future<DepartmentComplianceSnapshot?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DepartmentComplianceSnapshotTable>? where,
     int? offset,
     _i1.OrderByBuilder<DepartmentComplianceSnapshotTable>? orderBy,
@@ -582,7 +582,7 @@ class DepartmentComplianceSnapshotRepository {
 
   /// Finds a single [DepartmentComplianceSnapshot] by its [id] or null if no such row exists.
   Future<DepartmentComplianceSnapshot?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     DepartmentComplianceSnapshotInclude? include,
@@ -609,7 +609,7 @@ class DepartmentComplianceSnapshotRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<DepartmentComplianceSnapshot>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DepartmentComplianceSnapshot> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -625,7 +625,7 @@ class DepartmentComplianceSnapshotRepository {
   ///
   /// The returned [DepartmentComplianceSnapshot] will have its `id` field set.
   Future<DepartmentComplianceSnapshot> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DepartmentComplianceSnapshot row, {
     _i1.Transaction? transaction,
   }) async {
@@ -641,7 +641,7 @@ class DepartmentComplianceSnapshotRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<DepartmentComplianceSnapshot>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DepartmentComplianceSnapshot> rows, {
     _i1.ColumnSelections<DepartmentComplianceSnapshotTable>? columns,
     _i1.Transaction? transaction,
@@ -657,7 +657,7 @@ class DepartmentComplianceSnapshotRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<DepartmentComplianceSnapshot> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DepartmentComplianceSnapshot row, {
     _i1.ColumnSelections<DepartmentComplianceSnapshotTable>? columns,
     _i1.Transaction? transaction,
@@ -672,7 +672,7 @@ class DepartmentComplianceSnapshotRepository {
   /// Updates a single [DepartmentComplianceSnapshot] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<DepartmentComplianceSnapshot?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<DepartmentComplianceSnapshotUpdateTable>
     columnValues,
@@ -688,7 +688,7 @@ class DepartmentComplianceSnapshotRepository {
   /// Updates all [DepartmentComplianceSnapshot]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<DepartmentComplianceSnapshot>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<DepartmentComplianceSnapshotUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<DepartmentComplianceSnapshotTable>
@@ -716,7 +716,7 @@ class DepartmentComplianceSnapshotRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<DepartmentComplianceSnapshot>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DepartmentComplianceSnapshot> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -728,7 +728,7 @@ class DepartmentComplianceSnapshotRepository {
 
   /// Deletes a single [DepartmentComplianceSnapshot].
   Future<DepartmentComplianceSnapshot> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DepartmentComplianceSnapshot row, {
     _i1.Transaction? transaction,
   }) async {
@@ -740,7 +740,7 @@ class DepartmentComplianceSnapshotRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<DepartmentComplianceSnapshot>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DepartmentComplianceSnapshotTable>
     where,
     _i1.Transaction? transaction,
@@ -754,7 +754,7 @@ class DepartmentComplianceSnapshotRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DepartmentComplianceSnapshotTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -768,7 +768,7 @@ class DepartmentComplianceSnapshotRepository {
 
   /// Acquires row-level locks on [DepartmentComplianceSnapshot] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DepartmentComplianceSnapshotTable>
     where,
     required _i1.LockMode lockMode,
@@ -790,7 +790,7 @@ class DepartmentComplianceSnapshotAttachRowRepository {
   /// Creates a relation between the given [DepartmentComplianceSnapshot] and [Department]
   /// by setting the [DepartmentComplianceSnapshot]'s foreign key `departmentId` to refer to the [Department].
   Future<void> department(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DepartmentComplianceSnapshot departmentComplianceSnapshot,
     _i2.Department department, {
     _i1.Transaction? transaction,
@@ -815,7 +815,7 @@ class DepartmentComplianceSnapshotAttachRowRepository {
   /// Creates a relation between the given [DepartmentComplianceSnapshot] and [ScheduledJobLog]
   /// by setting the [DepartmentComplianceSnapshot]'s foreign key `scheduledJobLogId` to refer to the [ScheduledJobLog].
   Future<void> scheduledJobLog(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DepartmentComplianceSnapshot departmentComplianceSnapshot,
     _i3.ScheduledJobLog scheduledJobLog, {
     _i1.Transaction? transaction,
@@ -847,7 +847,7 @@ class DepartmentComplianceSnapshotDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> scheduledJobLog(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DepartmentComplianceSnapshot departmentComplianceSnapshot, {
     _i1.Transaction? transaction,
   }) async {

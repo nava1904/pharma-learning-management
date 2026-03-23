@@ -399,7 +399,7 @@ class DocumentLifecycleRepository {
   /// );
   /// ```
   Future<List<DocumentLifecycle>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DocumentLifecycleTable>? where,
     int? limit,
     int? offset,
@@ -443,7 +443,7 @@ class DocumentLifecycleRepository {
   /// );
   /// ```
   Future<DocumentLifecycle?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DocumentLifecycleTable>? where,
     int? offset,
     _i1.OrderByBuilder<DocumentLifecycleTable>? orderBy,
@@ -469,7 +469,7 @@ class DocumentLifecycleRepository {
 
   /// Finds a single [DocumentLifecycle] by its [id] or null if no such row exists.
   Future<DocumentLifecycle?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     DocumentLifecycleInclude? include,
@@ -496,7 +496,7 @@ class DocumentLifecycleRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<DocumentLifecycle>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DocumentLifecycle> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -512,7 +512,7 @@ class DocumentLifecycleRepository {
   ///
   /// The returned [DocumentLifecycle] will have its `id` field set.
   Future<DocumentLifecycle> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DocumentLifecycle row, {
     _i1.Transaction? transaction,
   }) async {
@@ -528,7 +528,7 @@ class DocumentLifecycleRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<DocumentLifecycle>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DocumentLifecycle> rows, {
     _i1.ColumnSelections<DocumentLifecycleTable>? columns,
     _i1.Transaction? transaction,
@@ -544,7 +544,7 @@ class DocumentLifecycleRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<DocumentLifecycle> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DocumentLifecycle row, {
     _i1.ColumnSelections<DocumentLifecycleTable>? columns,
     _i1.Transaction? transaction,
@@ -559,7 +559,7 @@ class DocumentLifecycleRepository {
   /// Updates a single [DocumentLifecycle] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<DocumentLifecycle?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<DocumentLifecycleUpdateTable>
     columnValues,
@@ -575,7 +575,7 @@ class DocumentLifecycleRepository {
   /// Updates all [DocumentLifecycle]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<DocumentLifecycle>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<DocumentLifecycleUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<DocumentLifecycleTable> where,
@@ -602,7 +602,7 @@ class DocumentLifecycleRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<DocumentLifecycle>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DocumentLifecycle> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -614,7 +614,7 @@ class DocumentLifecycleRepository {
 
   /// Deletes a single [DocumentLifecycle].
   Future<DocumentLifecycle> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DocumentLifecycle row, {
     _i1.Transaction? transaction,
   }) async {
@@ -626,7 +626,7 @@ class DocumentLifecycleRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<DocumentLifecycle>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DocumentLifecycleTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -639,7 +639,7 @@ class DocumentLifecycleRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DocumentLifecycleTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -653,7 +653,7 @@ class DocumentLifecycleRepository {
 
   /// Acquires row-level locks on [DocumentLifecycle] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DocumentLifecycleTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -674,7 +674,7 @@ class DocumentLifecycleAttachRowRepository {
   /// Creates a relation between the given [DocumentLifecycle] and [DocumentVersion]
   /// by setting the [DocumentLifecycle]'s foreign key `documentVersionId` to refer to the [DocumentVersion].
   Future<void> documentVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DocumentLifecycle documentLifecycle,
     _i2.DocumentVersion documentVersion, {
     _i1.Transaction? transaction,
@@ -699,7 +699,7 @@ class DocumentLifecycleAttachRowRepository {
   /// Creates a relation between the given [DocumentLifecycle] and [PharmaUser]
   /// by setting the [DocumentLifecycle]'s foreign key `changedById` to refer to the [PharmaUser].
   Future<void> changedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DocumentLifecycle documentLifecycle,
     _i3.PharmaUser changedBy, {
     _i1.Transaction? transaction,

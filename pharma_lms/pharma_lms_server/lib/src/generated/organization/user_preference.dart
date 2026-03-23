@@ -315,7 +315,7 @@ class UserPreferenceRepository {
   /// );
   /// ```
   Future<List<UserPreference>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserPreferenceTable>? where,
     int? limit,
     int? offset,
@@ -359,7 +359,7 @@ class UserPreferenceRepository {
   /// );
   /// ```
   Future<UserPreference?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserPreferenceTable>? where,
     int? offset,
     _i1.OrderByBuilder<UserPreferenceTable>? orderBy,
@@ -385,7 +385,7 @@ class UserPreferenceRepository {
 
   /// Finds a single [UserPreference] by its [id] or null if no such row exists.
   Future<UserPreference?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     UserPreferenceInclude? include,
@@ -412,7 +412,7 @@ class UserPreferenceRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<UserPreference>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserPreference> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -428,7 +428,7 @@ class UserPreferenceRepository {
   ///
   /// The returned [UserPreference] will have its `id` field set.
   Future<UserPreference> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserPreference row, {
     _i1.Transaction? transaction,
   }) async {
@@ -444,7 +444,7 @@ class UserPreferenceRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<UserPreference>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserPreference> rows, {
     _i1.ColumnSelections<UserPreferenceTable>? columns,
     _i1.Transaction? transaction,
@@ -460,7 +460,7 @@ class UserPreferenceRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<UserPreference> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserPreference row, {
     _i1.ColumnSelections<UserPreferenceTable>? columns,
     _i1.Transaction? transaction,
@@ -475,7 +475,7 @@ class UserPreferenceRepository {
   /// Updates a single [UserPreference] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<UserPreference?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<UserPreferenceUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -490,7 +490,7 @@ class UserPreferenceRepository {
   /// Updates all [UserPreference]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<UserPreference>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<UserPreferenceUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<UserPreferenceTable> where,
     int? limit,
@@ -516,7 +516,7 @@ class UserPreferenceRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<UserPreference>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserPreference> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -528,7 +528,7 @@ class UserPreferenceRepository {
 
   /// Deletes a single [UserPreference].
   Future<UserPreference> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserPreference row, {
     _i1.Transaction? transaction,
   }) async {
@@ -540,7 +540,7 @@ class UserPreferenceRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<UserPreference>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserPreferenceTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -553,7 +553,7 @@ class UserPreferenceRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserPreferenceTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -567,7 +567,7 @@ class UserPreferenceRepository {
 
   /// Acquires row-level locks on [UserPreference] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserPreferenceTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -588,7 +588,7 @@ class UserPreferenceAttachRowRepository {
   /// Creates a relation between the given [UserPreference] and [PharmaUser]
   /// by setting the [UserPreference]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserPreference userPreference,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,

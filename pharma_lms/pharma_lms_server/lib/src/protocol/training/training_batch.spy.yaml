@@ -1,0 +1,32 @@
+### Training batch for scheduled cohort training. GMP compliant.
+class: TrainingBatch
+
+table: training_batch
+
+fields:
+  ### Organization this batch belongs to.
+  organization: Organization?, relation
+  ### The course version for this batch.
+  courseVersion: CourseVersion?, relation
+  ### Batch name.
+  name: String
+  ### Instructor/trainer assigned.
+  instructor: PharmaUser?, relation
+  ### When batch starts.
+  startDate: DateTime
+  ### When batch ends.
+  endDate: DateTime
+  ### Max capacity of learners.
+  capacity: int, default=30
+  ### Number of learners enrolled.
+  enrolledCount: int, default=0
+  ### Number of learners completed.
+  completedCount: int, default=0
+  ### Status: scheduled, active, completed, cancelled.
+  status: String, default='scheduled'
+  ### Location (room, building, etc).
+  location: String?
+  ### Notes or description.
+  notes: String?
+  ### Created timestamp.
+  createdAt: DateTime, default=now

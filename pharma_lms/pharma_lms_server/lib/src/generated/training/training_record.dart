@@ -538,7 +538,7 @@ class TrainingRecordRepository {
   /// );
   /// ```
   Future<List<TrainingRecord>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingRecordTable>? where,
     int? limit,
     int? offset,
@@ -582,7 +582,7 @@ class TrainingRecordRepository {
   /// );
   /// ```
   Future<TrainingRecord?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingRecordTable>? where,
     int? offset,
     _i1.OrderByBuilder<TrainingRecordTable>? orderBy,
@@ -608,7 +608,7 @@ class TrainingRecordRepository {
 
   /// Finds a single [TrainingRecord] by its [id] or null if no such row exists.
   Future<TrainingRecord?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     TrainingRecordInclude? include,
@@ -635,7 +635,7 @@ class TrainingRecordRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<TrainingRecord>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingRecord> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -651,7 +651,7 @@ class TrainingRecordRepository {
   ///
   /// The returned [TrainingRecord] will have its `id` field set.
   Future<TrainingRecord> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord row, {
     _i1.Transaction? transaction,
   }) async {
@@ -667,7 +667,7 @@ class TrainingRecordRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<TrainingRecord>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingRecord> rows, {
     _i1.ColumnSelections<TrainingRecordTable>? columns,
     _i1.Transaction? transaction,
@@ -683,7 +683,7 @@ class TrainingRecordRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<TrainingRecord> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord row, {
     _i1.ColumnSelections<TrainingRecordTable>? columns,
     _i1.Transaction? transaction,
@@ -698,7 +698,7 @@ class TrainingRecordRepository {
   /// Updates a single [TrainingRecord] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<TrainingRecord?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<TrainingRecordUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -713,7 +713,7 @@ class TrainingRecordRepository {
   /// Updates all [TrainingRecord]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<TrainingRecord>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<TrainingRecordUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<TrainingRecordTable> where,
     int? limit,
@@ -739,7 +739,7 @@ class TrainingRecordRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<TrainingRecord>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingRecord> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -751,7 +751,7 @@ class TrainingRecordRepository {
 
   /// Deletes a single [TrainingRecord].
   Future<TrainingRecord> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord row, {
     _i1.Transaction? transaction,
   }) async {
@@ -763,7 +763,7 @@ class TrainingRecordRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<TrainingRecord>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingRecordTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -776,7 +776,7 @@ class TrainingRecordRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingRecordTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -790,7 +790,7 @@ class TrainingRecordRepository {
 
   /// Acquires row-level locks on [TrainingRecord] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingRecordTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -811,7 +811,7 @@ class TrainingRecordAttachRowRepository {
   /// Creates a relation between the given [TrainingRecord] and [Enrollment]
   /// by setting the [TrainingRecord]'s foreign key `enrollmentId` to refer to the [Enrollment].
   Future<void> enrollment(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord trainingRecord,
     _i2.Enrollment enrollment, {
     _i1.Transaction? transaction,
@@ -834,7 +834,7 @@ class TrainingRecordAttachRowRepository {
   /// Creates a relation between the given [TrainingRecord] and [PharmaUser]
   /// by setting the [TrainingRecord]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord trainingRecord,
     _i3.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -857,7 +857,7 @@ class TrainingRecordAttachRowRepository {
   /// Creates a relation between the given [TrainingRecord] and [CourseVersion]
   /// by setting the [TrainingRecord]'s foreign key `courseVersionId` to refer to the [CourseVersion].
   Future<void> courseVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord trainingRecord,
     _i4.CourseVersion courseVersion, {
     _i1.Transaction? transaction,
@@ -882,7 +882,7 @@ class TrainingRecordAttachRowRepository {
   /// Creates a relation between the given [TrainingRecord] and [ElectronicSignature]
   /// by setting the [TrainingRecord]'s foreign key `esignatureId` to refer to the [ElectronicSignature].
   Future<void> esignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecord trainingRecord,
     _i5.ElectronicSignature esignature, {
     _i1.Transaction? transaction,

@@ -497,7 +497,7 @@ class ApprovalWorkflowRepository {
   /// );
   /// ```
   Future<List<ApprovalWorkflow>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ApprovalWorkflowTable>? where,
     int? limit,
     int? offset,
@@ -541,7 +541,7 @@ class ApprovalWorkflowRepository {
   /// );
   /// ```
   Future<ApprovalWorkflow?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ApprovalWorkflowTable>? where,
     int? offset,
     _i1.OrderByBuilder<ApprovalWorkflowTable>? orderBy,
@@ -567,7 +567,7 @@ class ApprovalWorkflowRepository {
 
   /// Finds a single [ApprovalWorkflow] by its [id] or null if no such row exists.
   Future<ApprovalWorkflow?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     ApprovalWorkflowInclude? include,
@@ -594,7 +594,7 @@ class ApprovalWorkflowRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ApprovalWorkflow>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ApprovalWorkflow> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -610,7 +610,7 @@ class ApprovalWorkflowRepository {
   ///
   /// The returned [ApprovalWorkflow] will have its `id` field set.
   Future<ApprovalWorkflow> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow row, {
     _i1.Transaction? transaction,
   }) async {
@@ -626,7 +626,7 @@ class ApprovalWorkflowRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ApprovalWorkflow>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ApprovalWorkflow> rows, {
     _i1.ColumnSelections<ApprovalWorkflowTable>? columns,
     _i1.Transaction? transaction,
@@ -642,7 +642,7 @@ class ApprovalWorkflowRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ApprovalWorkflow> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow row, {
     _i1.ColumnSelections<ApprovalWorkflowTable>? columns,
     _i1.Transaction? transaction,
@@ -657,7 +657,7 @@ class ApprovalWorkflowRepository {
   /// Updates a single [ApprovalWorkflow] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ApprovalWorkflow?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ApprovalWorkflowUpdateTable>
     columnValues,
@@ -673,7 +673,7 @@ class ApprovalWorkflowRepository {
   /// Updates all [ApprovalWorkflow]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ApprovalWorkflow>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ApprovalWorkflowUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<ApprovalWorkflowTable> where,
@@ -700,7 +700,7 @@ class ApprovalWorkflowRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ApprovalWorkflow>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ApprovalWorkflow> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -712,7 +712,7 @@ class ApprovalWorkflowRepository {
 
   /// Deletes a single [ApprovalWorkflow].
   Future<ApprovalWorkflow> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow row, {
     _i1.Transaction? transaction,
   }) async {
@@ -724,7 +724,7 @@ class ApprovalWorkflowRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ApprovalWorkflow>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ApprovalWorkflowTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -737,7 +737,7 @@ class ApprovalWorkflowRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ApprovalWorkflowTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -751,7 +751,7 @@ class ApprovalWorkflowRepository {
 
   /// Acquires row-level locks on [ApprovalWorkflow] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ApprovalWorkflowTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -772,7 +772,7 @@ class ApprovalWorkflowAttachRowRepository {
   /// Creates a relation between the given [ApprovalWorkflow] and [DocumentVersion]
   /// by setting the [ApprovalWorkflow]'s foreign key `documentVersionId` to refer to the [DocumentVersion].
   Future<void> documentVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow approvalWorkflow,
     _i2.DocumentVersion documentVersion, {
     _i1.Transaction? transaction,
@@ -797,7 +797,7 @@ class ApprovalWorkflowAttachRowRepository {
   /// Creates a relation between the given [ApprovalWorkflow] and [PharmaUser]
   /// by setting the [ApprovalWorkflow]'s foreign key `approverId` to refer to the [PharmaUser].
   Future<void> approver(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow approvalWorkflow,
     _i3.PharmaUser approver, {
     _i1.Transaction? transaction,
@@ -820,7 +820,7 @@ class ApprovalWorkflowAttachRowRepository {
   /// Creates a relation between the given [ApprovalWorkflow] and [ElectronicSignature]
   /// by setting the [ApprovalWorkflow]'s foreign key `esignatureId` to refer to the [ElectronicSignature].
   Future<void> esignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow approvalWorkflow,
     _i4.ElectronicSignature esignature, {
     _i1.Transaction? transaction,
@@ -852,7 +852,7 @@ class ApprovalWorkflowDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> esignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ApprovalWorkflow approvalWorkflow, {
     _i1.Transaction? transaction,
   }) async {

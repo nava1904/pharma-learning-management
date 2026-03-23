@@ -270,7 +270,7 @@ class MfaVerifiedSessionRepository {
   /// );
   /// ```
   Future<List<MfaVerifiedSession>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MfaVerifiedSessionTable>? where,
     int? limit,
     int? offset,
@@ -312,7 +312,7 @@ class MfaVerifiedSessionRepository {
   /// );
   /// ```
   Future<MfaVerifiedSession?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MfaVerifiedSessionTable>? where,
     int? offset,
     _i1.OrderByBuilder<MfaVerifiedSessionTable>? orderBy,
@@ -336,7 +336,7 @@ class MfaVerifiedSessionRepository {
 
   /// Finds a single [MfaVerifiedSession] by its [id] or null if no such row exists.
   Future<MfaVerifiedSession?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -361,7 +361,7 @@ class MfaVerifiedSessionRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<MfaVerifiedSession>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MfaVerifiedSession> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -377,7 +377,7 @@ class MfaVerifiedSessionRepository {
   ///
   /// The returned [MfaVerifiedSession] will have its `id` field set.
   Future<MfaVerifiedSession> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MfaVerifiedSession row, {
     _i1.Transaction? transaction,
   }) async {
@@ -393,7 +393,7 @@ class MfaVerifiedSessionRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<MfaVerifiedSession>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MfaVerifiedSession> rows, {
     _i1.ColumnSelections<MfaVerifiedSessionTable>? columns,
     _i1.Transaction? transaction,
@@ -409,7 +409,7 @@ class MfaVerifiedSessionRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<MfaVerifiedSession> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MfaVerifiedSession row, {
     _i1.ColumnSelections<MfaVerifiedSessionTable>? columns,
     _i1.Transaction? transaction,
@@ -424,7 +424,7 @@ class MfaVerifiedSessionRepository {
   /// Updates a single [MfaVerifiedSession] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<MfaVerifiedSession?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<MfaVerifiedSessionUpdateTable>
     columnValues,
@@ -440,7 +440,7 @@ class MfaVerifiedSessionRepository {
   /// Updates all [MfaVerifiedSession]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<MfaVerifiedSession>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<MfaVerifiedSessionUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<MfaVerifiedSessionTable> where,
@@ -467,7 +467,7 @@ class MfaVerifiedSessionRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<MfaVerifiedSession>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<MfaVerifiedSession> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -479,7 +479,7 @@ class MfaVerifiedSessionRepository {
 
   /// Deletes a single [MfaVerifiedSession].
   Future<MfaVerifiedSession> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     MfaVerifiedSession row, {
     _i1.Transaction? transaction,
   }) async {
@@ -491,7 +491,7 @@ class MfaVerifiedSessionRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<MfaVerifiedSession>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MfaVerifiedSessionTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -504,7 +504,7 @@ class MfaVerifiedSessionRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<MfaVerifiedSessionTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -518,7 +518,7 @@ class MfaVerifiedSessionRepository {
 
   /// Acquires row-level locks on [MfaVerifiedSession] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<MfaVerifiedSessionTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

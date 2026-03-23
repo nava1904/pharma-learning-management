@@ -1,0 +1,26 @@
+### Append-only role history for revocations and grants
+class: RoleHistory
+
+table: role_history
+
+fields:
+  ### The user affected
+  user: PharmaUser?, relation
+  ### The role affected
+  role: Role?, relation
+  ### Action (GRANTED, REVOKED)
+  action: String
+  ### Timestamp of the action
+  timestamp: DateTime, default=now
+  ### Who performed the action (admin or SYSTEM)
+  performedBy: PharmaUser?, relation(optional)
+  ### Reason for the action
+  reason: String?
+  ### Original grant record ID (for revocations)
+  grantRecordId: int?
+  ### IP address
+  ipAddress: String?
+  ### HMAC hash for audit chain
+  hmacHash: String?
+  ### Temporary migration marker - remove after migration applied
+  migrationMarker: String?

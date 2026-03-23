@@ -17,7 +17,6 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
-import '../../providers/user_provider.dart';
 
 class CourseAnalyticsV2Screen extends ConsumerStatefulWidget {
   const CourseAnalyticsV2Screen({super.key, required this.courseId});

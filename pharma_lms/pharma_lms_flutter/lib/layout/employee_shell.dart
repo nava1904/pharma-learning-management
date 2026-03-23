@@ -191,7 +191,7 @@ class _TopBar extends ConsumerWidget {
           ],
           
           // Logo
-          VyuhLogo(height: 28, width: 28),
+            VyuhLogo(height: 28, width: 28, color: Colors.white),
           const SizedBox(width: 10),
           Text(
             PharmaBrand.name,

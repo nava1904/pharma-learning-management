@@ -418,7 +418,7 @@ class DeadLetterQueueRepository {
   /// );
   /// ```
   Future<List<DeadLetterQueue>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DeadLetterQueueTable>? where,
     int? limit,
     int? offset,
@@ -460,7 +460,7 @@ class DeadLetterQueueRepository {
   /// );
   /// ```
   Future<DeadLetterQueue?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DeadLetterQueueTable>? where,
     int? offset,
     _i1.OrderByBuilder<DeadLetterQueueTable>? orderBy,
@@ -484,7 +484,7 @@ class DeadLetterQueueRepository {
 
   /// Finds a single [DeadLetterQueue] by its [id] or null if no such row exists.
   Future<DeadLetterQueue?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -509,7 +509,7 @@ class DeadLetterQueueRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<DeadLetterQueue>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DeadLetterQueue> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -525,7 +525,7 @@ class DeadLetterQueueRepository {
   ///
   /// The returned [DeadLetterQueue] will have its `id` field set.
   Future<DeadLetterQueue> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DeadLetterQueue row, {
     _i1.Transaction? transaction,
   }) async {
@@ -541,7 +541,7 @@ class DeadLetterQueueRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<DeadLetterQueue>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DeadLetterQueue> rows, {
     _i1.ColumnSelections<DeadLetterQueueTable>? columns,
     _i1.Transaction? transaction,
@@ -557,7 +557,7 @@ class DeadLetterQueueRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<DeadLetterQueue> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DeadLetterQueue row, {
     _i1.ColumnSelections<DeadLetterQueueTable>? columns,
     _i1.Transaction? transaction,
@@ -572,7 +572,7 @@ class DeadLetterQueueRepository {
   /// Updates a single [DeadLetterQueue] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<DeadLetterQueue?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<DeadLetterQueueUpdateTable>
     columnValues,
@@ -588,7 +588,7 @@ class DeadLetterQueueRepository {
   /// Updates all [DeadLetterQueue]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<DeadLetterQueue>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<DeadLetterQueueUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<DeadLetterQueueTable> where,
@@ -615,7 +615,7 @@ class DeadLetterQueueRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<DeadLetterQueue>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<DeadLetterQueue> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -627,7 +627,7 @@ class DeadLetterQueueRepository {
 
   /// Deletes a single [DeadLetterQueue].
   Future<DeadLetterQueue> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     DeadLetterQueue row, {
     _i1.Transaction? transaction,
   }) async {
@@ -639,7 +639,7 @@ class DeadLetterQueueRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<DeadLetterQueue>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DeadLetterQueueTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -652,7 +652,7 @@ class DeadLetterQueueRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DeadLetterQueueTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -666,7 +666,7 @@ class DeadLetterQueueRepository {
 
   /// Acquires row-level locks on [DeadLetterQueue] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DeadLetterQueueTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

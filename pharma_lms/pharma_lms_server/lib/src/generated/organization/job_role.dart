@@ -343,7 +343,7 @@ class JobRoleRepository {
   /// );
   /// ```
   Future<List<JobRole>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<JobRoleTable>? where,
     int? limit,
     int? offset,
@@ -387,7 +387,7 @@ class JobRoleRepository {
   /// );
   /// ```
   Future<JobRole?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<JobRoleTable>? where,
     int? offset,
     _i1.OrderByBuilder<JobRoleTable>? orderBy,
@@ -413,7 +413,7 @@ class JobRoleRepository {
 
   /// Finds a single [JobRole] by its [id] or null if no such row exists.
   Future<JobRole?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     JobRoleInclude? include,
@@ -440,7 +440,7 @@ class JobRoleRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<JobRole>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<JobRole> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -456,7 +456,7 @@ class JobRoleRepository {
   ///
   /// The returned [JobRole] will have its `id` field set.
   Future<JobRole> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     JobRole row, {
     _i1.Transaction? transaction,
   }) async {
@@ -472,7 +472,7 @@ class JobRoleRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<JobRole>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<JobRole> rows, {
     _i1.ColumnSelections<JobRoleTable>? columns,
     _i1.Transaction? transaction,
@@ -488,7 +488,7 @@ class JobRoleRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<JobRole> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     JobRole row, {
     _i1.ColumnSelections<JobRoleTable>? columns,
     _i1.Transaction? transaction,
@@ -503,7 +503,7 @@ class JobRoleRepository {
   /// Updates a single [JobRole] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<JobRole?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<JobRoleUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -518,7 +518,7 @@ class JobRoleRepository {
   /// Updates all [JobRole]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<JobRole>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<JobRoleUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<JobRoleTable> where,
     int? limit,
@@ -544,7 +544,7 @@ class JobRoleRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<JobRole>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<JobRole> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -556,7 +556,7 @@ class JobRoleRepository {
 
   /// Deletes a single [JobRole].
   Future<JobRole> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     JobRole row, {
     _i1.Transaction? transaction,
   }) async {
@@ -568,7 +568,7 @@ class JobRoleRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<JobRole>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<JobRoleTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -581,7 +581,7 @@ class JobRoleRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<JobRoleTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -595,7 +595,7 @@ class JobRoleRepository {
 
   /// Acquires row-level locks on [JobRole] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<JobRoleTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -616,7 +616,7 @@ class JobRoleAttachRowRepository {
   /// Creates a relation between the given [JobRole] and [Department]
   /// by setting the [JobRole]'s foreign key `departmentId` to refer to the [Department].
   Future<void> department(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     JobRole jobRole,
     _i2.Department department, {
     _i1.Transaction? transaction,

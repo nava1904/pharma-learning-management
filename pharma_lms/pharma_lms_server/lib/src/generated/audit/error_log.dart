@@ -294,7 +294,7 @@ class ErrorLogRepository {
   /// );
   /// ```
   Future<List<ErrorLog>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ErrorLogTable>? where,
     int? limit,
     int? offset,
@@ -336,7 +336,7 @@ class ErrorLogRepository {
   /// );
   /// ```
   Future<ErrorLog?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ErrorLogTable>? where,
     int? offset,
     _i1.OrderByBuilder<ErrorLogTable>? orderBy,
@@ -360,7 +360,7 @@ class ErrorLogRepository {
 
   /// Finds a single [ErrorLog] by its [id] or null if no such row exists.
   Future<ErrorLog?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -385,7 +385,7 @@ class ErrorLogRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ErrorLog>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ErrorLog> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -401,7 +401,7 @@ class ErrorLogRepository {
   ///
   /// The returned [ErrorLog] will have its `id` field set.
   Future<ErrorLog> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ErrorLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -417,7 +417,7 @@ class ErrorLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ErrorLog>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ErrorLog> rows, {
     _i1.ColumnSelections<ErrorLogTable>? columns,
     _i1.Transaction? transaction,
@@ -433,7 +433,7 @@ class ErrorLogRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ErrorLog> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ErrorLog row, {
     _i1.ColumnSelections<ErrorLogTable>? columns,
     _i1.Transaction? transaction,
@@ -448,7 +448,7 @@ class ErrorLogRepository {
   /// Updates a single [ErrorLog] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ErrorLog?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ErrorLogUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -463,7 +463,7 @@ class ErrorLogRepository {
   /// Updates all [ErrorLog]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ErrorLog>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ErrorLogUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<ErrorLogTable> where,
     int? limit,
@@ -489,7 +489,7 @@ class ErrorLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ErrorLog>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ErrorLog> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -501,7 +501,7 @@ class ErrorLogRepository {
 
   /// Deletes a single [ErrorLog].
   Future<ErrorLog> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ErrorLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -513,7 +513,7 @@ class ErrorLogRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ErrorLog>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ErrorLogTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -526,7 +526,7 @@ class ErrorLogRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ErrorLogTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -540,7 +540,7 @@ class ErrorLogRepository {
 
   /// Acquires row-level locks on [ErrorLog] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ErrorLogTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

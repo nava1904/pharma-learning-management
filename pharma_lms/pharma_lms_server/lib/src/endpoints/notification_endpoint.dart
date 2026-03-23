@@ -147,4 +147,55 @@ class NotificationEndpoint extends Endpoint {
       where: (t) => t.userId.equals(userId) & t.readAt.equals(null),
     );
   }
+
+  /// List all notifications for an organization (Admin Portal).
+  Future<List<Notification>> listNotifications(
+    Session session, {
+    required int organizationId,
+    String? type,
+    String? channel,
+    String? deliveryStatus,
+    int? limit,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'notification', action: 'read')) return [];
+    
+    // Get all users in the organization first
+    final users = await PharmaUser.db.find(
+      session,
+      where: (t) => t.organizationId.equals(organizationId),
+    );
+    final userIds = users.map((u) => u.id!).toList();
+    
+    if (userIds.isEmpty) return [];
+    
+    // Build where expression
+    var whereExpr = Notification.t.userId.inSet(userIds.toSet());
+    
+    if (type != null && type.isNotEmpty) {
+      whereExpr = whereExpr & Notification.t.type.equals(type);
+    }
+    
+    if (channel != null && channel.isNotEmpty) {
+      whereExpr = whereExpr & Notification.t.channel.equals(channel);
+    }
+    
+    if (deliveryStatus != null && deliveryStatus.isNotEmpty) {
+      whereExpr = whereExpr & Notification.t.deliveryStatus.equals(deliveryStatus);
+    }
+    
+    return await Notification.db.find(
+      session,
+      where: (t) => whereExpr,
+      include: Notification.include(
+        user: PharmaUser.include(),
+        enrollment: Enrollment.include(
+          courseVersion: CourseVersion.include(course: Course.include()),
+        ),
+      ),
+      orderBy: (t) => t.createdAt,
+      orderDescending: true,
+      limit: limit ?? 100,
+    );
+  }
 }

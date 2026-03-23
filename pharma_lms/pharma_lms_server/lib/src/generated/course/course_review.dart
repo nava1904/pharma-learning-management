@@ -554,7 +554,7 @@ class CourseReviewRepository {
   /// );
   /// ```
   Future<List<CourseReview>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseReviewTable>? where,
     int? limit,
     int? offset,
@@ -598,7 +598,7 @@ class CourseReviewRepository {
   /// );
   /// ```
   Future<CourseReview?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseReviewTable>? where,
     int? offset,
     _i1.OrderByBuilder<CourseReviewTable>? orderBy,
@@ -624,7 +624,7 @@ class CourseReviewRepository {
 
   /// Finds a single [CourseReview] by its [id] or null if no such row exists.
   Future<CourseReview?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     CourseReviewInclude? include,
@@ -651,7 +651,7 @@ class CourseReviewRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<CourseReview>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseReview> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -667,7 +667,7 @@ class CourseReviewRepository {
   ///
   /// The returned [CourseReview] will have its `id` field set.
   Future<CourseReview> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview row, {
     _i1.Transaction? transaction,
   }) async {
@@ -683,7 +683,7 @@ class CourseReviewRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<CourseReview>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseReview> rows, {
     _i1.ColumnSelections<CourseReviewTable>? columns,
     _i1.Transaction? transaction,
@@ -699,7 +699,7 @@ class CourseReviewRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<CourseReview> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview row, {
     _i1.ColumnSelections<CourseReviewTable>? columns,
     _i1.Transaction? transaction,
@@ -714,7 +714,7 @@ class CourseReviewRepository {
   /// Updates a single [CourseReview] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<CourseReview?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<CourseReviewUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -729,7 +729,7 @@ class CourseReviewRepository {
   /// Updates all [CourseReview]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<CourseReview>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<CourseReviewUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<CourseReviewTable> where,
     int? limit,
@@ -755,7 +755,7 @@ class CourseReviewRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<CourseReview>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<CourseReview> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -767,7 +767,7 @@ class CourseReviewRepository {
 
   /// Deletes a single [CourseReview].
   Future<CourseReview> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview row, {
     _i1.Transaction? transaction,
   }) async {
@@ -779,7 +779,7 @@ class CourseReviewRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<CourseReview>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CourseReviewTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -792,7 +792,7 @@ class CourseReviewRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CourseReviewTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -806,7 +806,7 @@ class CourseReviewRepository {
 
   /// Acquires row-level locks on [CourseReview] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CourseReviewTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -827,7 +827,7 @@ class CourseReviewAttachRowRepository {
   /// Creates a relation between the given [CourseReview] and [CourseVersion]
   /// by setting the [CourseReview]'s foreign key `courseVersionId` to refer to the [CourseVersion].
   Future<void> courseVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview courseReview,
     _i2.CourseVersion courseVersion, {
     _i1.Transaction? transaction,
@@ -852,7 +852,7 @@ class CourseReviewAttachRowRepository {
   /// Creates a relation between the given [CourseReview] and [PharmaUser]
   /// by setting the [CourseReview]'s foreign key `reviewerId` to refer to the [PharmaUser].
   Future<void> reviewer(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview courseReview,
     _i3.PharmaUser reviewer, {
     _i1.Transaction? transaction,
@@ -875,7 +875,7 @@ class CourseReviewAttachRowRepository {
   /// Creates a relation between the given [CourseReview] and [ElectronicSignature]
   /// by setting the [CourseReview]'s foreign key `esignatureId` to refer to the [ElectronicSignature].
   Future<void> esignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview courseReview,
     _i4.ElectronicSignature esignature, {
     _i1.Transaction? transaction,
@@ -905,7 +905,7 @@ class CourseReviewDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> esignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     CourseReview courseReview, {
     _i1.Transaction? transaction,
   }) async {

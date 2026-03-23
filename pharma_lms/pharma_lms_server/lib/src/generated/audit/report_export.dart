@@ -483,7 +483,7 @@ class ReportExportRepository {
   /// );
   /// ```
   Future<List<ReportExport>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ReportExportTable>? where,
     int? limit,
     int? offset,
@@ -527,7 +527,7 @@ class ReportExportRepository {
   /// );
   /// ```
   Future<ReportExport?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ReportExportTable>? where,
     int? offset,
     _i1.OrderByBuilder<ReportExportTable>? orderBy,
@@ -553,7 +553,7 @@ class ReportExportRepository {
 
   /// Finds a single [ReportExport] by its [id] or null if no such row exists.
   Future<ReportExport?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     ReportExportInclude? include,
@@ -580,7 +580,7 @@ class ReportExportRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ReportExport>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ReportExport> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -596,7 +596,7 @@ class ReportExportRepository {
   ///
   /// The returned [ReportExport] will have its `id` field set.
   Future<ReportExport> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ReportExport row, {
     _i1.Transaction? transaction,
   }) async {
@@ -612,7 +612,7 @@ class ReportExportRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ReportExport>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ReportExport> rows, {
     _i1.ColumnSelections<ReportExportTable>? columns,
     _i1.Transaction? transaction,
@@ -628,7 +628,7 @@ class ReportExportRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ReportExport> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ReportExport row, {
     _i1.ColumnSelections<ReportExportTable>? columns,
     _i1.Transaction? transaction,
@@ -643,7 +643,7 @@ class ReportExportRepository {
   /// Updates a single [ReportExport] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ReportExport?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ReportExportUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -658,7 +658,7 @@ class ReportExportRepository {
   /// Updates all [ReportExport]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ReportExport>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ReportExportUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<ReportExportTable> where,
     int? limit,
@@ -684,7 +684,7 @@ class ReportExportRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ReportExport>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ReportExport> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -696,7 +696,7 @@ class ReportExportRepository {
 
   /// Deletes a single [ReportExport].
   Future<ReportExport> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ReportExport row, {
     _i1.Transaction? transaction,
   }) async {
@@ -708,7 +708,7 @@ class ReportExportRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ReportExport>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ReportExportTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -721,7 +721,7 @@ class ReportExportRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ReportExportTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -735,7 +735,7 @@ class ReportExportRepository {
 
   /// Acquires row-level locks on [ReportExport] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ReportExportTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -756,7 +756,7 @@ class ReportExportAttachRowRepository {
   /// Creates a relation between the given [ReportExport] and [PharmaUser]
   /// by setting the [ReportExport]'s foreign key `exportedById` to refer to the [PharmaUser].
   Future<void> exportedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ReportExport reportExport,
     _i2.PharmaUser exportedBy, {
     _i1.Transaction? transaction,

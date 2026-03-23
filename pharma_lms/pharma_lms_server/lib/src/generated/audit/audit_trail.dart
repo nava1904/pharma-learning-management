@@ -502,7 +502,7 @@ class AuditTrailRepository {
   /// );
   /// ```
   Future<List<AuditTrail>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditTrailTable>? where,
     int? limit,
     int? offset,
@@ -546,7 +546,7 @@ class AuditTrailRepository {
   /// );
   /// ```
   Future<AuditTrail?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditTrailTable>? where,
     int? offset,
     _i1.OrderByBuilder<AuditTrailTable>? orderBy,
@@ -572,7 +572,7 @@ class AuditTrailRepository {
 
   /// Finds a single [AuditTrail] by its [id] or null if no such row exists.
   Future<AuditTrail?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AuditTrailInclude? include,
@@ -599,7 +599,7 @@ class AuditTrailRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AuditTrail>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditTrail> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -615,7 +615,7 @@ class AuditTrailRepository {
   ///
   /// The returned [AuditTrail] will have its `id` field set.
   Future<AuditTrail> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditTrail row, {
     _i1.Transaction? transaction,
   }) async {
@@ -631,7 +631,7 @@ class AuditTrailRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AuditTrail>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditTrail> rows, {
     _i1.ColumnSelections<AuditTrailTable>? columns,
     _i1.Transaction? transaction,
@@ -647,7 +647,7 @@ class AuditTrailRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AuditTrail> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditTrail row, {
     _i1.ColumnSelections<AuditTrailTable>? columns,
     _i1.Transaction? transaction,
@@ -662,7 +662,7 @@ class AuditTrailRepository {
   /// Updates a single [AuditTrail] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AuditTrail?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AuditTrailUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -677,7 +677,7 @@ class AuditTrailRepository {
   /// Updates all [AuditTrail]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AuditTrail>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AuditTrailUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<AuditTrailTable> where,
     int? limit,
@@ -703,7 +703,7 @@ class AuditTrailRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AuditTrail>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditTrail> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -715,7 +715,7 @@ class AuditTrailRepository {
 
   /// Deletes a single [AuditTrail].
   Future<AuditTrail> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditTrail row, {
     _i1.Transaction? transaction,
   }) async {
@@ -727,7 +727,7 @@ class AuditTrailRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AuditTrail>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditTrailTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -740,7 +740,7 @@ class AuditTrailRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditTrailTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -754,7 +754,7 @@ class AuditTrailRepository {
 
   /// Acquires row-level locks on [AuditTrail] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditTrailTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -775,7 +775,7 @@ class AuditTrailAttachRowRepository {
   /// Creates a relation between the given [AuditTrail] and [PharmaUser]
   /// by setting the [AuditTrail]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditTrail auditTrail,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -805,7 +805,7 @@ class AuditTrailDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditTrail auditTrail, {
     _i1.Transaction? transaction,
   }) async {

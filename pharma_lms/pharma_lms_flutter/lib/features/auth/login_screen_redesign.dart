@@ -461,7 +461,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 // Logo and brand name
                 Row(
                   children: [
-                    VyuhLogo(height: s4, width: s4), // 32px
+                      VyuhLogo(height: s4, width: s4, color: Colors.white), // 32px
                     const SizedBox(width: s2), // 16px
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

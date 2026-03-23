@@ -458,7 +458,7 @@ class AuditorPageLogRepository {
   /// );
   /// ```
   Future<List<AuditorPageLog>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditorPageLogTable>? where,
     int? limit,
     int? offset,
@@ -502,7 +502,7 @@ class AuditorPageLogRepository {
   /// );
   /// ```
   Future<AuditorPageLog?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditorPageLogTable>? where,
     int? offset,
     _i1.OrderByBuilder<AuditorPageLogTable>? orderBy,
@@ -528,7 +528,7 @@ class AuditorPageLogRepository {
 
   /// Finds a single [AuditorPageLog] by its [id] or null if no such row exists.
   Future<AuditorPageLog?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AuditorPageLogInclude? include,
@@ -555,7 +555,7 @@ class AuditorPageLogRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AuditorPageLog>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditorPageLog> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -571,7 +571,7 @@ class AuditorPageLogRepository {
   ///
   /// The returned [AuditorPageLog] will have its `id` field set.
   Future<AuditorPageLog> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorPageLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -587,7 +587,7 @@ class AuditorPageLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AuditorPageLog>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditorPageLog> rows, {
     _i1.ColumnSelections<AuditorPageLogTable>? columns,
     _i1.Transaction? transaction,
@@ -603,7 +603,7 @@ class AuditorPageLogRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AuditorPageLog> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorPageLog row, {
     _i1.ColumnSelections<AuditorPageLogTable>? columns,
     _i1.Transaction? transaction,
@@ -618,7 +618,7 @@ class AuditorPageLogRepository {
   /// Updates a single [AuditorPageLog] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AuditorPageLog?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AuditorPageLogUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -633,7 +633,7 @@ class AuditorPageLogRepository {
   /// Updates all [AuditorPageLog]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AuditorPageLog>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AuditorPageLogUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<AuditorPageLogTable> where,
     int? limit,
@@ -659,7 +659,7 @@ class AuditorPageLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AuditorPageLog>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AuditorPageLog> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -671,7 +671,7 @@ class AuditorPageLogRepository {
 
   /// Deletes a single [AuditorPageLog].
   Future<AuditorPageLog> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorPageLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -683,7 +683,7 @@ class AuditorPageLogRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AuditorPageLog>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditorPageLogTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -696,7 +696,7 @@ class AuditorPageLogRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AuditorPageLogTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -710,7 +710,7 @@ class AuditorPageLogRepository {
 
   /// Acquires row-level locks on [AuditorPageLog] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AuditorPageLogTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -731,7 +731,7 @@ class AuditorPageLogAttachRowRepository {
   /// Creates a relation between the given [AuditorPageLog] and [AuditorSession]
   /// by setting the [AuditorPageLog]'s foreign key `auditorSessionId` to refer to the [AuditorSession].
   Future<void> auditorSession(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AuditorPageLog auditorPageLog,
     _i2.AuditorSession auditorSession, {
     _i1.Transaction? transaction,

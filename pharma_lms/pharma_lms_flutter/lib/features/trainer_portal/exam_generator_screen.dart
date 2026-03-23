@@ -130,7 +130,7 @@ class _ExamGeneratorScreenState extends ConsumerState<ExamGeneratorScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
-            value: _selectedBankId,
+            initialValue: _selectedBankId,
             decoration: InputDecoration(
               hintText: 'Select a bank',
               border: OutlineInputBorder(

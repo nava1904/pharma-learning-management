@@ -3,10 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
-import '../features/admin_panel/admin_dashboard_screen.dart';
-import '../features/admin_panel/bulk_import_screen.dart';
-import '../features/admin_panel/health_dashboard_screen.dart';
-import '../features/admin_panel/training_waivers_screen.dart';
+import '../features/admin_portal/dashboard/admin_dashboard_screen_v2.dart';
+import '../features/admin_portal/users/users_screens.dart';
+import '../features/admin_portal/modules/01_user_identity/user_create_screen.dart';
+import '../features/admin_portal/modules/01_user_identity/user_edit_screen.dart';
+import '../features/admin_portal/modules/01_user_identity/user_view_screen.dart';
+import '../features/admin_portal/modules/01_user_identity/user_role_assignment_screen.dart';
+import '../features/admin_portal/modules/01_user_identity/user_bulk_import_screen.dart';
+import '../features/admin_portal/modules/01_user_identity/user_audit_trail_screen.dart';
+import '../features/admin_portal/courses/course_screens.dart';
+import '../features/admin_portal/enrollments/enrollment_screens.dart';
+import '../features/admin_portal/batches/batch_screens.dart';
+import '../features/admin_portal/job_specs/job_spec_screens.dart';
+import '../features/admin_portal/assessments/assessment_screens.dart';
+import '../features/admin_portal/certificates/certificate_screens.dart';
+import '../features/admin_portal/documents/document_screens.dart';
+import '../features/admin_portal/reports/report_screens.dart';
+import '../features/admin_portal/audit_capa/audit_capa_screens.dart';
+import '../features/admin_portal/notifications/notification_screens.dart';
+import '../features/admin_portal/analytics/analytics_screens.dart';
+import '../features/admin_portal/system/system_screens.dart';
 import '../features/analytics/analytics_dashboard_screen.dart';
 import '../features/assessment/assessment_screen.dart';
 import '../features/assessment/assessment_v2.dart';
@@ -80,7 +96,14 @@ import '../features/trainer_portal/trainer_reports_screen.dart';
 import '../features/my_learning/my_learning_screen.dart';
 import '../features/training_timeline/training_timeline_screen.dart';
 import '../features/not_found/not_found_screen.dart';
+// Employee Batch Screens
+import '../features/employee_dashboard/batches/employee_batch_list_screen.dart';
+import '../features/employee_dashboard/batches/employee_batch_detail_screen.dart';
+// Trainer Batch Screens
+import '../features/trainer_portal/batches/trainer_batch_list_screen.dart';
+import '../features/trainer_portal/batches/trainer_batch_detail_screen.dart';
 import '../layout/app_layout.dart';
+import '../layout/admin_shell_v2.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auditor_watermark_wrapper.dart';
 
@@ -335,29 +358,279 @@ List<RouteBase> get _buildRoutes => [
               path: 'downloads',
               builder: (context, state) => const DownloadsScreen(),
             ),
+            // Employee Training Sessions (Batches)
+            GoRoute(
+              path: 'sessions',
+              builder: (context, state) => const EmployeeBatchListScreen(),
+            ),
+            GoRoute(
+              path: 'sessions/:batchId',
+              builder: (context, state) {
+                final batchId = int.tryParse(state.pathParameters['batchId'] ?? '0') ?? 0;
+                return EmployeeBatchDetailScreen(batchId: batchId);
+              },
+            ),
           ],
         ),
       ],
     ),
-    GoRoute(
-      path: '/admin',
-      builder: (context, state) => const AdminDashboardScreen(),
+    ShellRoute(
+      builder: (context, state, child) => AdminShellV2(
+        currentPath: state.uri.path,
+        child: child,
+      ),
       routes: [
         GoRoute(
-          path: 'training-waivers',
-          builder: (context, state) => const TrainingWaiversScreen(),
+          path: '/admin',
+          builder: (context, state) => const AdminDashboardScreenV2(),
+        ),
+        // Module 1: User & Identity Management
+        GoRoute(
+          path: '/admin/users/directory',
+          builder: (context, state) => const AdminUserDirectoryScreen(),
+          routes: [
+            GoRoute(
+              path: 'create',
+              builder: (context, state) => const UserCreateScreen(),
+            ),
+            GoRoute(
+              path: 'view/:userId',
+              builder: (context, state) {
+                final userId = int.tryParse(state.pathParameters['userId'] ?? '0') ?? 0;
+                return UserViewScreen(userId: userId);
+              },
+              routes: [
+                GoRoute(
+                  path: 'edit',
+                  builder: (context, state) {
+                    final userId = int.tryParse(state.pathParameters['userId'] ?? '0') ?? 0;
+                    return UserEditScreen(userId: userId);
+                  },
+                ),
+                GoRoute(
+                  path: 'roles',
+                  builder: (context, state) {
+                    final userId = int.tryParse(state.pathParameters['userId'] ?? '0') ?? 0;
+                    final userName = state.extra as String? ?? 'User';
+                    return UserRoleAssignmentScreen(
+                      userId: userId,
+                      userName: userName,
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'audit-trail',
+                  builder: (context, state) {
+                    final userId = int.tryParse(state.pathParameters['userId'] ?? '0') ?? 0;
+                    final userName = state.extra as String? ?? 'User';
+                    return UserAuditTrailScreen(
+                      userId: userId,
+                      userName: userName,
+                    );
+                  },
+                ),
+              ],
+            ),
+            GoRoute(
+              path: 'import',
+              builder: (context, state) => const UserBulkImportScreen(),
+            ),
+          ],
+        ),
+        // Legacy placeholder routes (for reference, can be removed later)
+        /*
+        GoRoute(
+          path: '/admin/users/create',
+          builder: (context, state) => const AdminUserCreateScreen(),
         ),
         GoRoute(
-          path: 'health',
-          builder: (context, state) => const HealthDashboardScreen(),
+          path: '/admin/users/import',
+          builder: (context, state) => const AdminUserImportScreen(),
+        ),
+        */
+        GoRoute(
+          path: '/admin/users/org-tree',
+          builder: (context, state) => const AdminOrgHierarchyScreen(),
         ),
         GoRoute(
-          path: 'bulk-import',
-          builder: (context, state) => const BulkImportScreen(),
+          path: '/admin/users/access-review',
+          builder: (context, state) => const AdminAccessReviewScreen(),
         ),
         GoRoute(
-          path: 'sop-coverage',
-          builder: (context, state) => const SopCoverageScreen(),
+          path: '/admin/courses/catalogue',
+          builder: (context, state) => const AdminCourseCatalogueScreen(),
+        ),
+        GoRoute(
+          path: '/admin/courses/create',
+          builder: (context, state) => const AdminCourseCreateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/courses/approval',
+          builder: (context, state) => const AdminCourseApprovalScreen(),
+        ),
+        GoRoute(
+          path: '/admin/enrollments/list',
+          builder: (context, state) => const AdminEnrollmentListScreen(),
+        ),
+        GoRoute(
+          path: '/admin/enrollments/create',
+          builder: (context, state) => const AdminEnrollmentCreateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/enrollments/bulk',
+          builder: (context, state) => const AdminEnrollmentBulkScreen(),
+        ),
+        GoRoute(
+          path: '/admin/enrollments/rules',
+          builder: (context, state) => const AdminEnrollmentRulesScreen(),
+        ),
+        GoRoute(
+          path: '/admin/enrollments/transcript',
+          builder: (context, state) => const AdminTranscriptViewerScreen(),
+        ),
+        GoRoute(
+          path: '/admin/batches/list',
+          builder: (context, state) => const AdminBatchListScreen(),
+        ),
+        GoRoute(
+          path: '/admin/batches/create',
+          builder: (context, state) => const AdminBatchCreateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/batches/detail',
+          builder: (context, state) => const AdminBatchDetailScreen(),
+        ),
+        GoRoute(
+          path: '/admin/job-specs/list',
+          builder: (context, state) => const AdminJobSpecListScreen(),
+        ),
+        GoRoute(
+          path: '/admin/job-specs/create',
+          builder: (context, state) => const AdminJobSpecCreateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/job-specs/matrix',
+          builder: (context, state) => const AdminTrainingMatrixScreen(),
+        ),
+        GoRoute(
+          path: '/admin/job-specs/gap-analysis',
+          builder: (context, state) => const AdminGapAnalysisScreen(),
+        ),
+        GoRoute(
+          path: '/admin/assessments/question-bank',
+          builder: (context, state) => const AdminQuestionBankScreen(),
+        ),
+        GoRoute(
+          path: '/admin/assessments/list',
+          builder: (context, state) => const AdminAssessmentListScreen(),
+        ),
+        GoRoute(
+          path: '/admin/assessments/create',
+          builder: (context, state) => const AdminAssessmentCreateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/assessments/attempt-review',
+          builder: (context, state) => const AdminAttemptReviewScreen(),
+        ),
+        GoRoute(
+          path: '/admin/certificates/list',
+          builder: (context, state) => const AdminCertificateListScreen(),
+        ),
+        GoRoute(
+          path: '/admin/certificates/templates',
+          builder: (context, state) => const AdminCertificateTemplateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/certificates/expiry',
+          builder: (context, state) => const AdminCertificateExpiryScreen(),
+        ),
+        GoRoute(
+          path: '/admin/documents/library',
+          builder: (context, state) => const AdminDocumentLibraryScreen(),
+        ),
+        GoRoute(
+          path: '/admin/documents/upload',
+          builder: (context, state) => const AdminDocumentUploadScreen(),
+        ),
+        GoRoute(
+          path: '/admin/documents/ack',
+          builder: (context, state) => const AdminDocumentAcknowledgementScreen(),
+        ),
+        GoRoute(
+          path: '/admin/reports/compliance',
+          builder: (context, state) => const AdminComplianceReportDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/admin/reports/gap',
+          builder: (context, state) => const AdminGapReportScreen(),
+        ),
+        GoRoute(
+          path: '/admin/reports/regulatory',
+          builder: (context, state) => const AdminRegulatoryReportScreen(),
+        ),
+        GoRoute(
+          path: '/admin/reports/scheduled',
+          builder: (context, state) => const AdminScheduledReportScreen(),
+        ),
+        GoRoute(
+          path: '/admin/audit/trail',
+          builder: (context, state) => const AdminAuditTrailScreen(),
+        ),
+        GoRoute(
+          path: '/admin/audit/integrity',
+          builder: (context, state) => const AdminIntegrityCheckScreen(),
+        ),
+        GoRoute(
+          path: '/admin/audit/capa',
+          builder: (context, state) => const AdminCapaRegisterScreen(),
+        ),
+        GoRoute(
+          path: '/admin/notifications/templates',
+          builder: (context, state) => const AdminNotificationTemplateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/notifications/rules',
+          builder: (context, state) => const AdminReminderRulesScreen(),
+        ),
+        GoRoute(
+          path: '/admin/notifications/broadcast',
+          builder: (context, state) => const AdminBroadcastScreen(),
+        ),
+        GoRoute(
+          path: '/admin/analytics/dashboard',
+          builder: (context, state) => const AdminAnalyticsDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/admin/analytics/report-builder',
+          builder: (context, state) => const AdminReportBuilderScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/settings',
+          builder: (context, state) => const AdminSystemSettingsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/hr-integration',
+          builder: (context, state) => const AdminHrIntegrationScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/api-keys',
+          builder: (context, state) => const AdminApiKeysScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/health',
+          builder: (context, state) => const AdminSystemHealthScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/validation-docs',
+          builder: (context, state) => const AdminValidationDocsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/retention',
+          builder: (context, state) => const AdminRetentionPolicyScreen(),
+        ),
+        GoRoute(
+          path: '/admin/system/gdpr',
+          builder: (context, state) => const AdminGdprScreen(),
         ),
       ],
     ),
@@ -523,6 +796,18 @@ List<RouteBase> get _buildRoutes => [
             GoRoute(
               path: 'profile',
               builder: (context, state) => const TrainerProfileScreen(),
+            ),
+            // TRN-BATCH: Trainer Batches (Instructor-led Training)
+            GoRoute(
+              path: 'batches',
+              builder: (context, state) => const TrainerBatchListScreen(),
+            ),
+            GoRoute(
+              path: 'batches/:batchId',
+              builder: (context, state) {
+                final batchId = int.tryParse(state.pathParameters['batchId'] ?? '0') ?? 0;
+                return TrainerBatchDetailScreen(batchId: batchId);
+              },
             ),
             // Legacy: course-builder route (backward compat)
             GoRoute(

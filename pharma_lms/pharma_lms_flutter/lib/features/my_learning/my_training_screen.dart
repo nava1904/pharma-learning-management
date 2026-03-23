@@ -37,7 +37,9 @@ class _MyTrainingScreenState extends ConsumerState<MyTrainingScreen> {
       final id = enrollment.id;
       if (id == null ||
           _progressCache.containsKey(id) ||
-          _progressLoading.contains(id)) continue;
+          _progressLoading.contains(id)) {
+        continue;
+      }
       if (enrollment.status == 'completed') {
         _progressCache[id] = 1.0;
         continue;

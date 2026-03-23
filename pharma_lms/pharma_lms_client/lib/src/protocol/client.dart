@@ -18,109 +18,117 @@ import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
     as _i4;
 import 'package:pharma_lms_client/src/protocol/auth/oidc_client_config.dart'
     as _i5;
-import 'package:pharma_lms_client/src/protocol/shared/signature_meaning.dart'
+import 'package:pharma_lms_client/src/protocol/access_reviews/access_review.dart'
     as _i6;
-import 'package:pharma_lms_client/src/protocol/training/training_assignment.dart'
-    as _i7;
-import 'package:pharma_lms_client/src/protocol/admin/bulk_import_result.dart'
+import 'package:pharma_lms_client/src/protocol/organization/user.dart' as _i7;
+import 'package:pharma_lms_client/src/protocol/shared/signature_meaning.dart'
     as _i8;
-import 'package:pharma_lms_client/src/protocol/organization/job_role.dart'
+import 'package:pharma_lms_client/src/protocol/training/training_assignment.dart'
     as _i9;
-import 'package:pharma_lms_client/src/protocol/training/training_waiver.dart'
+import 'package:pharma_lms_client/src/protocol/admin/bulk_import_result.dart'
     as _i10;
-import 'package:pharma_lms_client/src/protocol/analytics/course_analytics.dart'
+import 'package:pharma_lms_client/src/protocol/organization/job_role.dart'
     as _i11;
-import 'package:pharma_lms_client/src/protocol/analytics/department_compliance_summary.dart'
+import 'package:pharma_lms_client/src/protocol/training/training_waiver.dart'
     as _i12;
-import 'package:pharma_lms_client/src/protocol/analytics/audit_readiness_score.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/course_analytics.dart'
     as _i13;
-import 'package:pharma_lms_client/src/protocol/analytics/report_definition.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/department_compliance_summary.dart'
     as _i14;
-import 'package:pharma_lms_client/src/protocol/analytics/dashboard.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/audit_readiness_score.dart'
     as _i15;
-import 'package:pharma_lms_client/src/protocol/analytics/sla_breach.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/report_definition.dart'
     as _i16;
-import 'package:pharma_lms_client/src/protocol/organization/user.dart' as _i17;
-import 'package:pharma_lms_client/src/protocol/training/certificate.dart'
+import 'package:pharma_lms_client/src/protocol/analytics/dashboard.dart'
+    as _i17;
+import 'package:pharma_lms_client/src/protocol/analytics/sla_breach.dart'
     as _i18;
-import 'package:pharma_lms_client/src/protocol/quality/capa.dart' as _i19;
+import 'package:pharma_lms_client/src/protocol/training/certificate.dart'
+    as _i19;
+import 'package:pharma_lms_client/src/protocol/quality/capa.dart' as _i20;
 import 'package:pharma_lms_client/src/protocol/analytics/analytics_event.dart'
-    as _i20;
-import 'package:pharma_lms_client/src/protocol/assessment/question.dart'
     as _i21;
-import 'package:pharma_lms_client/src/protocol/assessment/question_bank.dart'
+import 'package:pharma_lms_client/src/protocol/assessment/question.dart'
     as _i22;
-import 'package:pharma_lms_client/src/protocol/assessment/assessment.dart'
+import 'package:pharma_lms_client/src/protocol/assessment/question_bank.dart'
     as _i23;
-import 'package:pharma_lms_client/src/protocol/assessment/assessment_attempt.dart'
+import 'package:pharma_lms_client/src/protocol/assessment/assessment.dart'
     as _i24;
-import 'package:pharma_lms_client/src/protocol/assessment/assessment_result.dart'
+import 'package:pharma_lms_client/src/protocol/assessment/assessment_attempt.dart'
     as _i25;
-import 'package:pharma_lms_client/src/protocol/audit/audit_trail.dart' as _i26;
-import 'package:pharma_lms_client/src/protocol/audit/access_log.dart' as _i27;
+import 'package:pharma_lms_client/src/protocol/assessment/assessment_result.dart'
+    as _i26;
+import 'package:pharma_lms_client/src/protocol/audit/audit_trail.dart' as _i27;
+import 'package:pharma_lms_client/src/protocol/audit/access_log.dart' as _i28;
 import 'package:pharma_lms_client/src/protocol/analytics/compliance_metrics.dart'
-    as _i28;
-import 'package:pharma_lms_client/src/protocol/analytics/user_compliance_metrics.dart'
     as _i29;
-import 'package:pharma_lms_client/src/protocol/course/module.dart' as _i30;
-import 'package:pharma_lms_client/src/protocol/course/lesson.dart' as _i31;
+import 'package:pharma_lms_client/src/protocol/analytics/user_compliance_metrics.dart'
+    as _i30;
+import 'package:pharma_lms_client/src/protocol/course/module.dart' as _i31;
+import 'package:pharma_lms_client/src/protocol/course/lesson.dart' as _i32;
 import 'package:pharma_lms_client/src/protocol/course/course_version.dart'
-    as _i32;
-import 'package:pharma_lms_client/src/protocol/course/qa_validation_result.dart'
     as _i33;
-import 'package:pharma_lms_client/src/protocol/course/course.dart' as _i34;
-import 'package:pharma_lms_client/src/protocol/document/document.dart' as _i35;
+import 'package:pharma_lms_client/src/protocol/course/qa_validation_result.dart'
+    as _i34;
+import 'package:pharma_lms_client/src/protocol/course/course.dart' as _i35;
+import 'package:pharma_lms_client/src/protocol/document/document.dart' as _i36;
 import 'package:pharma_lms_client/src/protocol/document/document_version.dart'
-    as _i36;
-import 'package:pharma_lms_client/src/protocol/document/document_lifecycle.dart'
     as _i37;
-import 'package:pharma_lms_client/src/protocol/document/approval_workflow.dart'
+import 'package:pharma_lms_client/src/protocol/document/document_lifecycle.dart'
     as _i38;
-import 'package:pharma_lms_client/src/protocol/audit/inspection_record.dart'
+import 'package:pharma_lms_client/src/protocol/document/approval_workflow.dart'
     as _i39;
-import 'package:pharma_lms_client/src/protocol/audit/auditor_page_log.dart'
+import 'package:pharma_lms_client/src/protocol/audit/inspection_record.dart'
     as _i40;
-import 'package:pharma_lms_client/src/protocol/audit/inspection_package.dart'
+import 'package:pharma_lms_client/src/protocol/audit/auditor_page_log.dart'
     as _i41;
-import 'package:pharma_lms_client/src/protocol/material/material.dart' as _i42;
+import 'package:pharma_lms_client/src/protocol/audit/inspection_package.dart'
+    as _i42;
+import 'package:pharma_lms_client/src/protocol/material/material.dart' as _i43;
 import 'package:pharma_lms_client/src/protocol/material/material_version.dart'
-    as _i43;
-import 'package:pharma_lms_client/src/protocol/material/material_progress.dart'
     as _i44;
-import 'package:pharma_lms_client/src/protocol/mfa/mfa_status_result.dart'
+import 'package:pharma_lms_client/src/protocol/material/material_progress.dart'
     as _i45;
-import 'package:pharma_lms_client/src/protocol/mfa/mfa_enroll_result.dart'
+import 'package:pharma_lms_client/src/protocol/mfa/mfa_status_result.dart'
     as _i46;
-import 'package:pharma_lms_client/src/protocol/notifications/in_app_notification.dart'
+import 'package:pharma_lms_client/src/protocol/mfa/mfa_enroll_result.dart'
     as _i47;
-import 'package:pharma_lms_client/src/protocol/organization/organization.dart'
+import 'package:pharma_lms_client/src/protocol/notifications/in_app_notification.dart'
     as _i48;
-import 'package:pharma_lms_client/src/protocol/organization/site.dart' as _i49;
-import 'package:pharma_lms_client/src/protocol/organization/department.dart'
+import 'package:pharma_lms_client/src/protocol/notifications/notification.dart'
+    as _i49;
+import 'package:pharma_lms_client/src/protocol/notifications/notification_template.dart'
     as _i50;
-import 'package:pharma_lms_client/src/protocol/course/course_review.dart'
+import 'package:pharma_lms_client/src/protocol/organization/organization.dart'
     as _i51;
-import 'package:pharma_lms_client/src/protocol/quality/quality_event.dart'
-    as _i52;
-import 'package:pharma_lms_client/src/protocol/quality/inspection_report.dart'
+import 'package:pharma_lms_client/src/protocol/organization/site.dart' as _i52;
+import 'package:pharma_lms_client/src/protocol/organization/department.dart'
     as _i53;
-import 'package:pharma_lms_client/src/protocol/course/course_sop_link.dart'
+import 'package:pharma_lms_client/src/protocol/course/course_review.dart'
     as _i54;
-import 'package:pharma_lms_client/src/protocol/training/enrollment.dart'
+import 'package:pharma_lms_client/src/protocol/quality/quality_event.dart'
     as _i55;
-import 'package:pharma_lms_client/src/protocol/training/training_record.dart'
+import 'package:pharma_lms_client/src/protocol/quality/inspection_report.dart'
     as _i56;
-import 'package:pharma_lms_client/src/protocol/shared/signature_verification_result.dart'
+import 'package:pharma_lms_client/src/protocol/course/course_sop_link.dart'
     as _i57;
-import 'package:pharma_lms_client/src/protocol/shared/electronic_signature.dart'
+import 'package:pharma_lms_client/src/protocol/training/training_batch.dart'
     as _i58;
-import 'package:pharma_lms_client/src/protocol/training/training_record_annotation.dart'
+import 'package:pharma_lms_client/src/protocol/training/enrollment.dart'
     as _i59;
-import 'package:pharma_lms_client/src/protocol/organization/user_preference.dart'
+import 'package:pharma_lms_client/src/protocol/training/training_record.dart'
     as _i60;
-import 'package:pharma_lms_client/src/protocol/greetings/greeting.dart' as _i61;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i62;
-import 'protocol.dart' as _i63;
+import 'package:pharma_lms_client/src/protocol/shared/signature_verification_result.dart'
+    as _i61;
+import 'package:pharma_lms_client/src/protocol/shared/electronic_signature.dart'
+    as _i62;
+import 'package:pharma_lms_client/src/protocol/training/training_record_annotation.dart'
+    as _i63;
+import 'package:pharma_lms_client/src/protocol/organization/user_preference.dart'
+    as _i64;
+import 'package:pharma_lms_client/src/protocol/greetings/greeting.dart' as _i65;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i66;
+import 'protocol.dart' as _i67;
 
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
 /// are made available on the server and enable the corresponding sign-in widget
@@ -382,6 +390,214 @@ class EndpointOidcIdp extends _i1.EndpointIdpBase {
   );
 }
 
+/// {@category Endpoint}
+class EndpointAccessReview extends _i2.EndpointRef {
+  EndpointAccessReview(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'accessReview';
+
+  _i3.Future<List<_i6.AccessReview>> getAccessReviews(int windowId) =>
+      caller.callServerEndpoint<List<_i6.AccessReview>>(
+        'accessReview',
+        'getAccessReviews',
+        {'windowId': windowId},
+      );
+
+  _i3.Future<void> recertify({
+    required int reviewId,
+    required String justification,
+  }) => caller.callServerEndpoint<void>(
+    'accessReview',
+    'recertify',
+    {
+      'reviewId': reviewId,
+      'justification': justification,
+    },
+  );
+
+  _i3.Future<void> revoke({
+    required int reviewId,
+    required String justification,
+  }) => caller.callServerEndpoint<void>(
+    'accessReview',
+    'revoke',
+    {
+      'reviewId': reviewId,
+      'justification': justification,
+    },
+  );
+
+  _i3.Future<void> signReview({
+    required int windowId,
+    required String password,
+    required String reason,
+  }) => caller.callServerEndpoint<void>(
+    'accessReview',
+    'signReview',
+    {
+      'windowId': windowId,
+      'password': password,
+      'reason': reason,
+    },
+  );
+
+  _i3.Future<String> exportSignedPdf({required int windowId}) =>
+      caller.callServerEndpoint<String>(
+        'accessReview',
+        'exportSignedPdf',
+        {'windowId': windowId},
+      );
+}
+
+/// Admin User Management Endpoint
+///
+/// Module 1: User & Identity Management
+///
+/// Handles all user management operations:
+/// - List users with filters, search, pagination
+/// - Get user details with roles and organization info
+/// - Create new user
+/// - Update user information
+/// - Deactivate/reactivate user
+/// - Reset password
+/// - Bulk operations
+///
+/// All operations are audited (logged to audit_trail table)
+/// All operations enforce RBAC (admin-only)
+/// Compliance: 21 CFR Part 11 - Full audit trail with HMAC
+/// {@category Endpoint}
+class EndpointAdminUserManagement extends _i2.EndpointRef {
+  EndpointAdminUserManagement(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'adminUserManagement';
+
+  /// List all users with filtering, searching, and pagination
+  ///
+  /// Query parameters:
+  /// - role: Filter by user role (EMPLOYEE, TRAINER, ADMIN)
+  /// - status: Filter by status (ACTIVE, INACTIVE, SUSPENDED, PENDING_APPROVAL)
+  /// - organization: Filter by organization name
+  /// - department: Filter by department
+  /// - search: Search by name, email, or employee_id
+  /// - page: Page number (1-indexed)
+  /// - perPage: Records per page (default 10, max 100)
+  ///
+  /// Returns: List of users matching criteria
+  /// Database: Queries pharma_user table
+  /// Audit: Logged as USERS_READ (informational)
+  _i3.Future<List<_i7.PharmaUser>> listUsers({
+    String? role,
+    String? status,
+    String? organizationName,
+    String? departmentName,
+    String? search,
+    required int page,
+    required int perPage,
+  }) => caller.callServerEndpoint<List<_i7.PharmaUser>>(
+    'adminUserManagement',
+    'listUsers',
+    {
+      'role': role,
+      'status': status,
+      'organizationName': organizationName,
+      'departmentName': departmentName,
+      'search': search,
+      'page': page,
+      'perPage': perPage,
+    },
+  );
+
+  /// Get a single user with all details
+  ///
+  /// Parameters:
+  /// - userId: The ID of the user to fetch
+  ///
+  /// Returns: Full user object with roles and organization details
+  /// Database: Queries pharma_user table
+  /// Audit: Logged as USER_VIEW
+  _i3.Future<_i7.PharmaUser?> getUser({required int userId}) =>
+      caller.callServerEndpoint<_i7.PharmaUser?>(
+        'adminUserManagement',
+        'getUser',
+        {'userId': userId},
+      );
+
+  /// Create a new user
+  ///
+  /// Validation:
+  /// - Email must be unique
+  /// - Email must be valid format
+  /// - Name cannot be empty
+  /// - Role must be EMPLOYEE, TRAINER, or ADMIN
+  ///
+  /// Database: Inserts into pharma_user table
+  /// Audit: Logged as USER_CREATE
+  /// Compliance: New user status = PENDING_APPROVAL, requires admin approval
+  _i3.Future<_i7.PharmaUser> createUser({
+    required String email,
+    required String firstName,
+    required String lastName,
+    String? employeeId,
+    int? organizationId,
+    int? departmentId,
+    int? jobRoleId,
+    int? siteId,
+  }) => caller.callServerEndpoint<_i7.PharmaUser>(
+    'adminUserManagement',
+    'createUser',
+    {
+      'email': email,
+      'firstName': firstName,
+      'lastName': lastName,
+      'employeeId': employeeId,
+      'organizationId': organizationId,
+      'departmentId': departmentId,
+      'jobRoleId': jobRoleId,
+      'siteId': siteId,
+    },
+  );
+
+  /// Update user information
+  ///
+  /// All user fields can be updated except id and email (email is immutable)
+  /// Database: Updates pharma_user table
+  /// Audit: Logged as USER_UPDATE with field changes
+  _i3.Future<_i7.PharmaUser?> updateUser({
+    required int userId,
+    String? firstName,
+    String? lastName,
+    int? organizationId,
+    int? departmentId,
+  }) => caller.callServerEndpoint<_i7.PharmaUser?>(
+    'adminUserManagement',
+    'updateUser',
+    {
+      'userId': userId,
+      'firstName': firstName,
+      'lastName': lastName,
+      'organizationId': organizationId,
+      'departmentId': departmentId,
+    },
+  );
+
+  /// Deactivate a user (soft delete)
+  ///
+  /// Sets is_suspended = true, is_active = false
+  /// User cannot login or use system
+  /// All enrollment/certificate records remain intact (audit trail)
+  ///
+  /// Database: Updates pharma_user table
+  /// Audit: Logged as USER_DEACTIVATE
+  _i3.Future<bool> deactivateUser({required int userId}) =>
+      caller.callServerEndpoint<bool>(
+        'adminUserManagement',
+        'deactivateUser',
+        {'userId': userId},
+      );
+}
+
 /// Training Administrator domain endpoint.
 /// {@category Endpoint}
 class EndpointAdmin extends _i2.EndpointRef {
@@ -391,19 +607,19 @@ class EndpointAdmin extends _i2.EndpointRef {
   String get name => 'admin';
 
   /// List all signature meanings (admin - includes inactive).
-  _i3.Future<List<_i6.SignatureMeaning>> listSignatureMeanings() =>
-      caller.callServerEndpoint<List<_i6.SignatureMeaning>>(
+  _i3.Future<List<_i8.SignatureMeaning>> listSignatureMeanings() =>
+      caller.callServerEndpoint<List<_i8.SignatureMeaning>>(
         'admin',
         'listSignatureMeanings',
         {},
       );
 
   /// Create a signature meaning.
-  _i3.Future<_i6.SignatureMeaning> createSignatureMeaning({
+  _i3.Future<_i8.SignatureMeaning> createSignatureMeaning({
     required String meaning,
     required bool isActive,
     required int orderIndex,
-  }) => caller.callServerEndpoint<_i6.SignatureMeaning>(
+  }) => caller.callServerEndpoint<_i8.SignatureMeaning>(
     'admin',
     'createSignatureMeaning',
     {
@@ -414,12 +630,12 @@ class EndpointAdmin extends _i2.EndpointRef {
   );
 
   /// Update a signature meaning.
-  _i3.Future<_i6.SignatureMeaning> updateSignatureMeaning({
+  _i3.Future<_i8.SignatureMeaning> updateSignatureMeaning({
     required int id,
     String? meaning,
     bool? isActive,
     int? orderIndex,
-  }) => caller.callServerEndpoint<_i6.SignatureMeaning>(
+  }) => caller.callServerEndpoint<_i8.SignatureMeaning>(
     'admin',
     'updateSignatureMeaning',
     {
@@ -431,14 +647,14 @@ class EndpointAdmin extends _i2.EndpointRef {
   );
 
   /// Assign training to all users in a department.
-  _i3.Future<List<_i7.TrainingAssignment>> assignTrainingToDepartment({
+  _i3.Future<List<_i9.TrainingAssignment>> assignTrainingToDepartment({
     required int departmentId,
     required int courseVersionId,
     required int assignedById,
     required DateTime dueDate,
     String? reason,
     required String source,
-  }) => caller.callServerEndpoint<List<_i7.TrainingAssignment>>(
+  }) => caller.callServerEndpoint<List<_i9.TrainingAssignment>>(
     'admin',
     'assignTrainingToDepartment',
     {
@@ -451,12 +667,56 @@ class EndpointAdmin extends _i2.EndpointRef {
     },
   );
 
-  /// Bulk import users from CSV (base64). Columns: email,firstName,lastName,departmentId,siteId,organizationId,jobRoleId
-  _i3.Future<_i8.BulkImportResult> bulkImportUsers({
+  /// Real admin "creates trainer" flow (US-ADM-USR-001).
+  ///
+  /// Creates the `pharma_user`, assigns a portal `role` via `user_role`,
+  /// provisions Serverpod auth (email + temporary password) and sends the welcome email,
+  /// logs an immutable audit trail entry, and creates onboarding enrollments from the
+  /// selected training-matrix `jobRoleId`.
+  _i3.Future<_i7.PharmaUser> createUserWithRole({
+    required String employeeId,
+    required String email,
+    required String firstName,
+    required String lastName,
+    required int departmentId,
+    required int siteId,
+    required int organizationId,
+    required int jobRoleId,
+    required String roleCode,
+    required int assignedById,
+    int? managerId,
+    DateTime? dueDate,
+  }) => caller.callServerEndpoint<_i7.PharmaUser>(
+    'admin',
+    'createUserWithRole',
+    {
+      'employeeId': employeeId,
+      'email': email,
+      'firstName': firstName,
+      'lastName': lastName,
+      'departmentId': departmentId,
+      'siteId': siteId,
+      'organizationId': organizationId,
+      'jobRoleId': jobRoleId,
+      'roleCode': roleCode,
+      'assignedById': assignedById,
+      'managerId': managerId,
+      'dueDate': dueDate,
+    },
+  );
+
+  /// Bulk import users from CSV (base64).
+  ///
+  /// Pragmatic production mapping aligned to US-ADM-USR-001/002:
+  /// - employeeId (conflict key)
+  /// - role (portal role code; e.g. trainer)
+  /// - email/firstName/lastName
+  /// - departmentId/siteId/organizationId/jobRoleId (training matrix scoping)
+  _i3.Future<_i10.BulkImportResult> bulkImportUsers({
     required String csvBase64,
     required int assignedById,
     DateTime? dueDate,
-  }) => caller.callServerEndpoint<_i8.BulkImportResult>(
+  }) => caller.callServerEndpoint<_i10.BulkImportResult>(
     'admin',
     'bulkImportUsers',
     {
@@ -468,19 +728,19 @@ class EndpointAdmin extends _i2.EndpointRef {
 
   /// Bulk import training matrix from CSV. Columns: job_role_code, course_id.
   /// One row per role-course pair. Merges with existing matrix per role.
-  _i3.Future<_i8.BulkImportResult> bulkImportTrainingMatrix({
+  _i3.Future<_i10.BulkImportResult> bulkImportTrainingMatrix({
     required String csvBase64,
-  }) => caller.callServerEndpoint<_i8.BulkImportResult>(
+  }) => caller.callServerEndpoint<_i10.BulkImportResult>(
     'admin',
     'bulkImportTrainingMatrix',
     {'csvBase64': csvBase64},
   );
 
   /// Update job role training matrix (JSON array of course IDs).
-  _i3.Future<_i9.JobRole> updateJobRoleTrainingMatrix({
+  _i3.Future<_i11.JobRole> updateJobRoleTrainingMatrix({
     required int jobRoleId,
     required String trainingMatrixJson,
-  }) => caller.callServerEndpoint<_i9.JobRole>(
+  }) => caller.callServerEndpoint<_i11.JobRole>(
     'admin',
     'updateJobRoleTrainingMatrix',
     {
@@ -498,12 +758,12 @@ class EndpointAdmin extends _i2.EndpointRef {
       );
 
   /// Assign role-based training (curriculum from JobRole) to a user.
-  _i3.Future<List<_i7.TrainingAssignment>> assignRoleBasedTraining({
+  _i3.Future<List<_i9.TrainingAssignment>> assignRoleBasedTraining({
     required int userId,
     required int jobRoleId,
     required int assignedById,
     required DateTime dueDate,
-  }) => caller.callServerEndpoint<List<_i7.TrainingAssignment>>(
+  }) => caller.callServerEndpoint<List<_i9.TrainingAssignment>>(
     'admin',
     'assignRoleBasedTraining',
     {
@@ -523,14 +783,14 @@ class EndpointAdmin extends _i2.EndpointRef {
       );
 
   /// ADM-07: Request a training waiver (admin creates request for user).
-  _i3.Future<_i10.TrainingWaiver> requestTrainingWaiver({
+  _i3.Future<_i12.TrainingWaiver> requestTrainingWaiver({
     required int userId,
     required int courseId,
     required int requestedById,
     required String requestReason,
     String? evidenceStoragePath,
     DateTime? expiresAt,
-  }) => caller.callServerEndpoint<_i10.TrainingWaiver>(
+  }) => caller.callServerEndpoint<_i12.TrainingWaiver>(
     'admin',
     'requestTrainingWaiver',
     {
@@ -544,12 +804,12 @@ class EndpointAdmin extends _i2.EndpointRef {
   );
 
   /// ADM-07: List training waivers with optional filters.
-  _i3.Future<List<_i10.TrainingWaiver>> listTrainingWaivers({
+  _i3.Future<List<_i12.TrainingWaiver>> listTrainingWaivers({
     int? userId,
     String? status,
     int? courseId,
     required int limit,
-  }) => caller.callServerEndpoint<List<_i10.TrainingWaiver>>(
+  }) => caller.callServerEndpoint<List<_i12.TrainingWaiver>>(
     'admin',
     'listTrainingWaivers',
     {
@@ -561,10 +821,10 @@ class EndpointAdmin extends _i2.EndpointRef {
   );
 
   /// ADM-07: QA approve a training waiver. Separation of duties: requester cannot approve.
-  _i3.Future<_i10.TrainingWaiver> approveTrainingWaiver({
+  _i3.Future<_i12.TrainingWaiver> approveTrainingWaiver({
     required int waiverId,
     required int approvedById,
-  }) => caller.callServerEndpoint<_i10.TrainingWaiver>(
+  }) => caller.callServerEndpoint<_i12.TrainingWaiver>(
     'admin',
     'approveTrainingWaiver',
     {
@@ -574,11 +834,11 @@ class EndpointAdmin extends _i2.EndpointRef {
   );
 
   /// ADM-07: QA reject a training waiver.
-  _i3.Future<_i10.TrainingWaiver> rejectTrainingWaiver({
+  _i3.Future<_i12.TrainingWaiver> rejectTrainingWaiver({
     required int waiverId,
     required int approvedById,
     required String rejectionReason,
-  }) => caller.callServerEndpoint<_i10.TrainingWaiver>(
+  }) => caller.callServerEndpoint<_i12.TrainingWaiver>(
     'admin',
     'rejectTrainingWaiver',
     {
@@ -595,6 +855,80 @@ class EndpointAdmin extends _i2.EndpointRef {
         'unlockUserByEmail',
         {'email': email},
       );
+
+  /// List all users with optional filtering and pagination
+  _i3.Future<List<_i7.PharmaUser>> listUsers({
+    required int page,
+    required int perPage,
+    String? roleCode,
+    String? status,
+    String? searchQuery,
+  }) => caller.callServerEndpoint<List<_i7.PharmaUser>>(
+    'admin',
+    'listUsers',
+    {
+      'page': page,
+      'perPage': perPage,
+      'roleCode': roleCode,
+      'status': status,
+      'searchQuery': searchQuery,
+    },
+  );
+
+  /// Get total count of users with optional filtering
+  _i3.Future<int> getUserCount({
+    String? roleCode,
+    String? status,
+    String? searchQuery,
+  }) => caller.callServerEndpoint<int>(
+    'admin',
+    'getUserCount',
+    {
+      'roleCode': roleCode,
+      'status': status,
+      'searchQuery': searchQuery,
+    },
+  );
+
+  /// Get a single user by ID
+  _i3.Future<_i7.PharmaUser?> getUser(int userId) =>
+      caller.callServerEndpoint<_i7.PharmaUser?>(
+        'admin',
+        'getUser',
+        {'userId': userId},
+      );
+
+  /// Update a user's information
+  _i3.Future<_i7.PharmaUser?> updateUser({
+    required int userId,
+    String? firstName,
+    String? lastName,
+    int? departmentId,
+    int? jobRoleId,
+  }) => caller.callServerEndpoint<_i7.PharmaUser?>(
+    'admin',
+    'updateUser',
+    {
+      'userId': userId,
+      'firstName': firstName,
+      'lastName': lastName,
+      'departmentId': departmentId,
+      'jobRoleId': jobRoleId,
+    },
+  );
+
+  /// Deactivate a user (soft delete)
+  _i3.Future<bool> deactivateUser({
+    required int userId,
+    required int deactivatedById,
+  }) => caller.callServerEndpoint<bool>(
+    'admin',
+    'deactivateUser',
+    {
+      'userId': userId,
+      'deactivatedById': deactivatedById,
+    },
+  );
 
   /// ADM-WF-07: Terminate a user - HR workflow for employee offboarding.
   /// - Updates PharmaUser status to 'terminated'
@@ -627,8 +961,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
   String get name => 'analytics';
 
   /// Course analytics - pass rate and score distribution from TrainingRecord.
-  _i3.Future<_i11.CourseAnalytics> getCourseAnalytics(int courseVersionId) =>
-      caller.callServerEndpoint<_i11.CourseAnalytics>(
+  _i3.Future<_i13.CourseAnalytics> getCourseAnalytics(int courseVersionId) =>
+      caller.callServerEndpoint<_i13.CourseAnalytics>(
         'analytics',
         'getCourseAnalytics',
         {'courseVersionId': courseVersionId},
@@ -700,9 +1034,9 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// Department compliance summary.
-  _i3.Future<List<_i12.DepartmentComplianceSummary>>
+  _i3.Future<List<_i14.DepartmentComplianceSummary>>
   getDepartmentComplianceSummary() =>
-      caller.callServerEndpoint<List<_i12.DepartmentComplianceSummary>>(
+      caller.callServerEndpoint<List<_i14.DepartmentComplianceSummary>>(
         'analytics',
         'getDepartmentComplianceSummary',
         {},
@@ -717,65 +1051,65 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// Audit readiness score - based on compliance and audit trail completeness.
-  _i3.Future<_i13.AuditReadinessScore> getAuditReadinessScore({
+  _i3.Future<_i15.AuditReadinessScore> getAuditReadinessScore({
     int? organizationId,
-  }) => caller.callServerEndpoint<_i13.AuditReadinessScore>(
+  }) => caller.callServerEndpoint<_i15.AuditReadinessScore>(
     'analytics',
     'getAuditReadinessScore',
     {'organizationId': organizationId},
   );
 
-  _i3.Future<List<_i14.ReportDefinition>> listReportDefinitions() =>
-      caller.callServerEndpoint<List<_i14.ReportDefinition>>(
+  _i3.Future<List<_i16.ReportDefinition>> listReportDefinitions() =>
+      caller.callServerEndpoint<List<_i16.ReportDefinition>>(
         'analytics',
         'listReportDefinitions',
         {},
       );
 
-  _i3.Future<List<_i15.Dashboard>> listDashboards({int? roleId}) =>
-      caller.callServerEndpoint<List<_i15.Dashboard>>(
+  _i3.Future<List<_i17.Dashboard>> listDashboards({int? roleId}) =>
+      caller.callServerEndpoint<List<_i17.Dashboard>>(
         'analytics',
         'listDashboards',
         {'roleId': roleId},
       );
 
-  _i3.Future<List<_i16.SlaBreach>> getOpenSlaBreaches() =>
-      caller.callServerEndpoint<List<_i16.SlaBreach>>(
+  _i3.Future<List<_i18.SlaBreach>> getOpenSlaBreaches() =>
+      caller.callServerEndpoint<List<_i18.SlaBreach>>(
         'analytics',
         'getOpenSlaBreaches',
         {},
       );
 
   /// Non-compliant employees (overdue training).
-  _i3.Future<List<_i17.PharmaUser>> getNonCompliantEmployees({
+  _i3.Future<List<_i7.PharmaUser>> getNonCompliantEmployees({
     int? departmentId,
-  }) => caller.callServerEndpoint<List<_i17.PharmaUser>>(
+  }) => caller.callServerEndpoint<List<_i7.PharmaUser>>(
     'analytics',
     'getNonCompliantEmployees',
     {'departmentId': departmentId},
   );
 
   /// Upcoming certificate expirations by department (30/60/90 days).
-  _i3.Future<Map<String, List<_i18.Certificate>>>
+  _i3.Future<Map<String, List<_i19.Certificate>>>
   getUpcomingExpirationsByDepartment() =>
-      caller.callServerEndpoint<Map<String, List<_i18.Certificate>>>(
+      caller.callServerEndpoint<Map<String, List<_i19.Certificate>>>(
         'analytics',
         'getUpcomingExpirationsByDepartment',
         {},
       );
 
   /// Recent training assignments (last 10).
-  _i3.Future<List<_i7.TrainingAssignment>> getRecentAssignments({
+  _i3.Future<List<_i9.TrainingAssignment>> getRecentAssignments({
     required int limit,
-  }) => caller.callServerEndpoint<List<_i7.TrainingAssignment>>(
+  }) => caller.callServerEndpoint<List<_i9.TrainingAssignment>>(
     'analytics',
     'getRecentAssignments',
     {'limit': limit},
   );
 
   /// Open CAPAs requiring training (not yet completed).
-  _i3.Future<List<_i19.Capa>> getOpenCapasRequiringTraining() =>
-      caller.callServerEndpoint<List<_i19.Capa>>(
+  _i3.Future<List<_i20.Capa>> getOpenCapasRequiringTraining() =>
+      caller.callServerEndpoint<List<_i20.Capa>>(
         'analytics',
         'getOpenCapasRequiringTraining',
         {},
@@ -847,10 +1181,10 @@ class EndpointAnalytics extends _i2.EndpointRef {
 
   /// Real-time analytics stream. Poll-based: yields every 30s with fresh metrics.
   /// Channel: 'compliance', 'dept:{deptId}', 'course:{courseVersionId}', 'audit_readiness'.
-  _i3.Stream<_i20.AnalyticsEvent> streamAnalytics(String channel) =>
+  _i3.Stream<_i21.AnalyticsEvent> streamAnalytics(String channel) =>
       caller.callStreamingServerEndpoint<
-        _i3.Stream<_i20.AnalyticsEvent>,
-        _i20.AnalyticsEvent
+        _i3.Stream<_i21.AnalyticsEvent>,
+        _i21.AnalyticsEvent
       >(
         'analytics',
         'streamAnalytics',
@@ -874,8 +1208,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
   );
 
   /// Get SLA breaches.
-  _i3.Future<List<_i16.SlaBreach>> getSlaBreaches() =>
-      caller.callServerEndpoint<List<_i16.SlaBreach>>(
+  _i3.Future<List<_i18.SlaBreach>> getSlaBreaches() =>
+      caller.callServerEndpoint<List<_i18.SlaBreach>>(
         'analytics',
         'getSlaBreaches',
         {},
@@ -964,7 +1298,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
   @override
   String get name => 'assessmentBuilder';
 
-  _i3.Future<_i21.Question> createQuestion({
+  _i3.Future<_i22.Question> createQuestion({
     required int questionBankId,
     required String text,
     required String questionType,
@@ -972,7 +1306,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     required String correctAnswer,
     String? difficulty,
     String? regulatoryTag,
-  }) => caller.callServerEndpoint<_i21.Question>(
+  }) => caller.callServerEndpoint<_i22.Question>(
     'assessmentBuilder',
     'createQuestion',
     {
@@ -986,14 +1320,14 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i21.Question> updateQuestion({
+  _i3.Future<_i22.Question> updateQuestion({
     required int questionId,
     String? text,
     String? questionType,
     String? optionsJson,
     String? correctAnswer,
     String? difficulty,
-  }) => caller.callServerEndpoint<_i21.Question>(
+  }) => caller.callServerEndpoint<_i22.Question>(
     'assessmentBuilder',
     'updateQuestion',
     {
@@ -1016,11 +1350,11 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
       );
 
   /// TRN-WF-03: Create a new question bank.
-  _i3.Future<_i22.QuestionBank> createQuestionBank({
+  _i3.Future<_i23.QuestionBank> createQuestionBank({
     required String name,
     required int organizationId,
     String? tagsJson,
-  }) => caller.callServerEndpoint<_i22.QuestionBank>(
+  }) => caller.callServerEndpoint<_i23.QuestionBank>(
     'assessmentBuilder',
     'createQuestionBank',
     {
@@ -1031,11 +1365,11 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
   );
 
   /// TRN-WF-03: Update question bank metadata.
-  _i3.Future<_i22.QuestionBank> updateQuestionBank({
+  _i3.Future<_i23.QuestionBank> updateQuestionBank({
     required int questionBankId,
     String? name,
     String? tagsJson,
-  }) => caller.callServerEndpoint<_i22.QuestionBank>(
+  }) => caller.callServerEndpoint<_i23.QuestionBank>(
     'assessmentBuilder',
     'updateQuestionBank',
     {
@@ -1056,7 +1390,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
 
   /// TRN-WF-03: Create assessment with 2x question pool validation.
   /// questionsToDisplay must be <= totalQuestions / 2 for adequate randomization.
-  _i3.Future<_i23.Assessment> createAssessment({
+  _i3.Future<_i24.Assessment> createAssessment({
     required int courseVersionId,
     required int questionBankId,
     required int passingScore,
@@ -1064,7 +1398,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
-  }) => caller.callServerEndpoint<_i23.Assessment>(
+  }) => caller.callServerEndpoint<_i24.Assessment>(
     'assessmentBuilder',
     'createAssessment',
     {
@@ -1079,14 +1413,14 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
   );
 
   /// TRN-WF-03: Update assessment with 2x question pool validation.
-  _i3.Future<_i23.Assessment> updateAssessment({
+  _i3.Future<_i24.Assessment> updateAssessment({
     required int assessmentId,
     int? passingScore,
     bool? randomize,
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
-  }) => caller.callServerEndpoint<_i23.Assessment>(
+  }) => caller.callServerEndpoint<_i24.Assessment>(
     'assessmentBuilder',
     'updateAssessment',
     {
@@ -1118,25 +1452,25 @@ class EndpointAssessment extends _i2.EndpointRef {
   @override
   String get name => 'assessment';
 
-  _i3.Future<_i23.Assessment?> getAssessmentForCourse(int courseVersionId) =>
-      caller.callServerEndpoint<_i23.Assessment?>(
+  _i3.Future<_i24.Assessment?> getAssessmentForCourse(int courseVersionId) =>
+      caller.callServerEndpoint<_i24.Assessment?>(
         'assessment',
         'getAssessmentForCourse',
         {'courseVersionId': courseVersionId},
       );
 
-  _i3.Future<List<_i21.Question>> getQuestions(int questionBankId) =>
-      caller.callServerEndpoint<List<_i21.Question>>(
+  _i3.Future<List<_i22.Question>> getQuestions(int questionBankId) =>
+      caller.callServerEndpoint<List<_i22.Question>>(
         'assessment',
         'getQuestions',
         {'questionBankId': questionBankId},
       );
 
-  _i3.Future<_i24.AssessmentAttempt> startAttempt({
+  _i3.Future<_i25.AssessmentAttempt> startAttempt({
     required int userId,
     required int assessmentId,
     int? enrollmentId,
-  }) => caller.callServerEndpoint<_i24.AssessmentAttempt>(
+  }) => caller.callServerEndpoint<_i25.AssessmentAttempt>(
     'assessment',
     'startAttempt',
     {
@@ -1161,18 +1495,18 @@ class EndpointAssessment extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i24.AssessmentAttempt> submitAttempt({required int attemptId}) =>
-      caller.callServerEndpoint<_i24.AssessmentAttempt>(
+  _i3.Future<_i25.AssessmentAttempt> submitAttempt({required int attemptId}) =>
+      caller.callServerEndpoint<_i25.AssessmentAttempt>(
         'assessment',
         'submitAttempt',
         {'attemptId': attemptId},
       );
 
-  _i3.Future<_i25.AssessmentResult> recordAnswer({
+  _i3.Future<_i26.AssessmentResult> recordAnswer({
     required int attemptId,
     required int questionId,
     required String answer,
-  }) => caller.callServerEndpoint<_i25.AssessmentResult>(
+  }) => caller.callServerEndpoint<_i26.AssessmentResult>(
     'assessment',
     'recordAnswer',
     {
@@ -1182,19 +1516,19 @@ class EndpointAssessment extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i22.QuestionBank>> listQuestionBanks({
+  _i3.Future<List<_i23.QuestionBank>> listQuestionBanks({
     int? organizationId,
-  }) => caller.callServerEndpoint<List<_i22.QuestionBank>>(
+  }) => caller.callServerEndpoint<List<_i23.QuestionBank>>(
     'assessment',
     'listQuestionBanks',
     {'organizationId': organizationId},
   );
 
-  _i3.Future<_i22.QuestionBank> createQuestionBank({
+  _i3.Future<_i23.QuestionBank> createQuestionBank({
     required String name,
     required int organizationId,
     String? tagsJson,
-  }) => caller.callServerEndpoint<_i22.QuestionBank>(
+  }) => caller.callServerEndpoint<_i23.QuestionBank>(
     'assessment',
     'createQuestionBank',
     {
@@ -1205,10 +1539,10 @@ class EndpointAssessment extends _i2.EndpointRef {
   );
 
   /// Generate a random assessment selection from a question bank using Fisher-Yates shuffle.
-  _i3.Future<List<_i21.Question>> generateRandomAssessment({
+  _i3.Future<List<_i22.Question>> generateRandomAssessment({
     required int questionBankId,
     required int count,
-  }) => caller.callServerEndpoint<List<_i21.Question>>(
+  }) => caller.callServerEndpoint<List<_i22.Question>>(
     'assessment',
     'generateRandomAssessment',
     {
@@ -1218,10 +1552,10 @@ class EndpointAssessment extends _i2.EndpointRef {
   );
 
   /// Bulk import questions into a question bank.
-  _i3.Future<List<_i21.Question>> importQuestionsToBank({
+  _i3.Future<List<_i22.Question>> importQuestionsToBank({
     required int targetBankId,
     required List<Map<String, dynamic>> questions,
-  }) => caller.callServerEndpoint<List<_i21.Question>>(
+  }) => caller.callServerEndpoint<List<_i22.Question>>(
     'assessment',
     'importQuestionsToBank',
     {
@@ -1258,14 +1592,14 @@ class EndpointAudit extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i26.AuditTrail>> getAuditTrail({
+  _i3.Future<List<_i27.AuditTrail>> getAuditTrail({
     String? entityType,
     String? entityId,
     int? userId,
     DateTime? from,
     DateTime? to,
     required int limit,
-  }) => caller.callServerEndpoint<List<_i26.AuditTrail>>(
+  }) => caller.callServerEndpoint<List<_i27.AuditTrail>>(
     'audit',
     'getAuditTrail',
     {
@@ -1279,12 +1613,12 @@ class EndpointAudit extends _i2.EndpointRef {
   );
 
   /// Config change log - filter AuditTrail where action=='ConfigChanged' or entityType matches config entities.
-  _i3.Future<List<_i26.AuditTrail>> getConfigChangeLog({
+  _i3.Future<List<_i27.AuditTrail>> getConfigChangeLog({
     String? entityType,
     required int limit,
     DateTime? from,
     DateTime? to,
-  }) => caller.callServerEndpoint<List<_i26.AuditTrail>>(
+  }) => caller.callServerEndpoint<List<_i27.AuditTrail>>(
     'audit',
     'getConfigChangeLog',
     {
@@ -1295,12 +1629,12 @@ class EndpointAudit extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i27.AccessLog>> getAccessLogs({
+  _i3.Future<List<_i28.AccessLog>> getAccessLogs({
     int? userId,
     DateTime? from,
     DateTime? to,
     required int limit,
-  }) => caller.callServerEndpoint<List<_i27.AccessLog>>(
+  }) => caller.callServerEndpoint<List<_i28.AccessLog>>(
     'audit',
     'getAccessLogs',
     {
@@ -1329,6 +1663,21 @@ class EndpointAudit extends _i2.EndpointRef {
       'limit': limit,
     },
   );
+}
+
+/// {@category Endpoint}
+class EndpointAuditFeed extends _i2.EndpointRef {
+  EndpointAuditFeed(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'auditFeed';
+
+  _i3.Future<List<_i27.AuditTrail>> getRecentAuditEvents() =>
+      caller.callServerEndpoint<List<_i27.AuditTrail>>(
+        'auditFeed',
+        'getRecentAuditEvents',
+        {},
+      );
 }
 
 /// {@category Endpoint}
@@ -1363,6 +1712,80 @@ class EndpointAuditTrail extends _i2.EndpointRef {
   );
 }
 
+/// Certificate management endpoint for Admin Portal.
+/// Manages training certificates and their lifecycle.
+/// {@category Endpoint}
+class EndpointCertificate extends _i2.EndpointRef {
+  EndpointCertificate(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'certificate';
+
+  /// List all certificates for an organization.
+  _i3.Future<List<_i19.Certificate>> listCertificates({
+    required int organizationId,
+    String? status,
+    int? userId,
+    int? courseVersionId,
+    int? limit,
+  }) => caller.callServerEndpoint<List<_i19.Certificate>>(
+    'certificate',
+    'listCertificates',
+    {
+      'organizationId': organizationId,
+      'status': status,
+      'userId': userId,
+      'courseVersionId': courseVersionId,
+      'limit': limit,
+    },
+  );
+
+  /// Get a single certificate by ID.
+  _i3.Future<_i19.Certificate?> getCertificate(int certificateId) =>
+      caller.callServerEndpoint<_i19.Certificate?>(
+        'certificate',
+        'getCertificate',
+        {'certificateId': certificateId},
+      );
+
+  /// Get certificates for a specific user.
+  _i3.Future<List<_i19.Certificate>> getUserCertificates(int userId) =>
+      caller.callServerEndpoint<List<_i19.Certificate>>(
+        'certificate',
+        'getUserCertificates',
+        {'userId': userId},
+      );
+
+  /// Revoke a certificate.
+  _i3.Future<_i19.Certificate?> revokeCertificate(
+    int certificateId, {
+    String? reason,
+  }) => caller.callServerEndpoint<_i19.Certificate?>(
+    'certificate',
+    'revokeCertificate',
+    {
+      'certificateId': certificateId,
+      'reason': reason,
+    },
+  );
+
+  /// Get certificate statistics for dashboard.
+  _i3.Future<Map<String, int>> getCertificateStats(int organizationId) =>
+      caller.callServerEndpoint<Map<String, int>>(
+        'certificate',
+        'getCertificateStats',
+        {'organizationId': organizationId},
+      );
+
+  /// Verify a certificate by QR code.
+  _i3.Future<_i19.Certificate?> verifyCertificate(String qrCode) =>
+      caller.callServerEndpoint<_i19.Certificate?>(
+        'certificate',
+        'verifyCertificate',
+        {'qrCode': qrCode},
+      );
+}
+
 /// Compliance Engine domain endpoint.
 /// {@category Endpoint}
 class EndpointCompliance extends _i2.EndpointRef {
@@ -1371,10 +1794,10 @@ class EndpointCompliance extends _i2.EndpointRef {
   @override
   String get name => 'compliance';
 
-  _i3.Future<_i28.ComplianceMetrics> getDepartmentCompliance(
+  _i3.Future<_i29.ComplianceMetrics> getDepartmentCompliance(
     int departmentId, {
     DateTime? asOf,
-  }) => caller.callServerEndpoint<_i28.ComplianceMetrics>(
+  }) => caller.callServerEndpoint<_i29.ComplianceMetrics>(
     'compliance',
     'getDepartmentCompliance',
     {
@@ -1383,10 +1806,10 @@ class EndpointCompliance extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i29.UserComplianceMetrics> getUserCompliance(
+  _i3.Future<_i30.UserComplianceMetrics> getUserCompliance(
     int userId, {
     DateTime? asOf,
-  }) => caller.callServerEndpoint<_i29.UserComplianceMetrics>(
+  }) => caller.callServerEndpoint<_i30.UserComplianceMetrics>(
     'compliance',
     'getUserCompliance',
     {
@@ -1416,11 +1839,11 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
   @override
   String get name => 'courseBuilder';
 
-  _i3.Future<_i30.Module> createModule({
+  _i3.Future<_i31.Module> createModule({
     required int courseVersionId,
     required String title,
     required int orderIndex,
-  }) => caller.callServerEndpoint<_i30.Module>(
+  }) => caller.callServerEndpoint<_i31.Module>(
     'courseBuilder',
     'createModule',
     {
@@ -1430,11 +1853,11 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i30.Module> updateModule({
+  _i3.Future<_i31.Module> updateModule({
     required int moduleId,
     String? title,
     int? orderIndex,
-  }) => caller.callServerEndpoint<_i30.Module>(
+  }) => caller.callServerEndpoint<_i31.Module>(
     'courseBuilder',
     'updateModule',
     {
@@ -1444,13 +1867,13 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i31.Lesson> createLesson({
+  _i3.Future<_i32.Lesson> createLesson({
     required int moduleId,
     required String title,
     required int materialId,
     required int orderIndex,
     int? durationMinutes,
-  }) => caller.callServerEndpoint<_i31.Lesson>(
+  }) => caller.callServerEndpoint<_i32.Lesson>(
     'courseBuilder',
     'createLesson',
     {
@@ -1462,13 +1885,13 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i31.Lesson> updateLesson({
+  _i3.Future<_i32.Lesson> updateLesson({
     required int lessonId,
     String? title,
     int? materialId,
     int? orderIndex,
     int? durationMinutes,
-  }) => caller.callServerEndpoint<_i31.Lesson>(
+  }) => caller.callServerEndpoint<_i32.Lesson>(
     'courseBuilder',
     'updateLesson',
     {
@@ -1482,12 +1905,12 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
 
   /// Create new course version. TC-07: if course has approved version, only allow draft.
   /// When superseding (hasApproved), changeSummary is required (TRN-05).
-  _i3.Future<_i32.CourseVersion> createCourseVersion({
+  _i3.Future<_i33.CourseVersion> createCourseVersion({
     required int courseId,
     required String version,
     required String status,
     String? changeSummary,
-  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+  }) => caller.callServerEndpoint<_i33.CourseVersion>(
     'courseBuilder',
     'createCourseVersion',
     {
@@ -1520,11 +1943,11 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
 
   /// Update course version status. TC-07: approved/effective -> no edit.
   /// Lifecycle: draft -> pending_approval (SME) -> effective (QA). Only QA can set effective.
-  _i3.Future<_i32.CourseVersion> updateCourseVersionStatus({
+  _i3.Future<_i33.CourseVersion> updateCourseVersionStatus({
     required int courseVersionId,
     required String status,
     int? approverId,
-  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+  }) => caller.callServerEndpoint<_i33.CourseVersion>(
     'courseBuilder',
     'updateCourseVersionStatus',
     {
@@ -1537,9 +1960,9 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
   /// TRN-WF-04: Validate course version for QA submission.
   /// Performs all validation checks required before submitting for QA review.
   /// Returns validation status and detailed results for each rule.
-  _i3.Future<_i33.QaValidationResult> validateForQaSubmission({
+  _i3.Future<_i34.QaValidationResult> validateForQaSubmission({
     required int courseVersionId,
-  }) => caller.callServerEndpoint<_i33.QaValidationResult>(
+  }) => caller.callServerEndpoint<_i34.QaValidationResult>(
     'courseBuilder',
     'validateForQaSubmission',
     {'courseVersionId': courseVersionId},
@@ -1548,10 +1971,10 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
   /// TRN-WF-04: Submit course for QA review.
   /// Validates all rules first, then changes status to pending_approval if all pass.
   /// Returns the updated CourseVersion or throws if validation fails.
-  _i3.Future<_i32.CourseVersion> submitForQaReview({
+  _i3.Future<_i33.CourseVersion> submitForQaReview({
     required int courseVersionId,
     int? submittedById,
-  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+  }) => caller.callServerEndpoint<_i33.CourseVersion>(
     'courseBuilder',
     'submitForQaReview',
     {
@@ -1577,10 +2000,10 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
       );
 
   /// Update a lesson's materialId (replaces hardcoded materialId: 1).
-  _i3.Future<_i31.Lesson> updateLessonMaterial({
+  _i3.Future<_i32.Lesson> updateLessonMaterial({
     required int lessonId,
     required int materialId,
-  }) => caller.callServerEndpoint<_i31.Lesson>(
+  }) => caller.callServerEndpoint<_i32.Lesson>(
     'courseBuilder',
     'updateLessonMaterial',
     {
@@ -1611,10 +2034,10 @@ class EndpointCourse extends _i2.EndpointRef {
   @override
   String get name => 'course';
 
-  _i3.Future<List<_i34.Course>> listCourses({
+  _i3.Future<List<_i35.Course>> listCourses({
     int? organizationId,
     String? status,
-  }) => caller.callServerEndpoint<List<_i34.Course>>(
+  }) => caller.callServerEndpoint<List<_i35.Course>>(
     'course',
     'listCourses',
     {
@@ -1623,34 +2046,34 @@ class EndpointCourse extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i34.Course?> getCourse(int id) =>
-      caller.callServerEndpoint<_i34.Course?>(
+  _i3.Future<_i35.Course?> getCourse(int id) =>
+      caller.callServerEndpoint<_i35.Course?>(
         'course',
         'getCourse',
         {'id': id},
       );
 
-  _i3.Future<List<_i32.CourseVersion>> getCourseVersions(int courseId) =>
-      caller.callServerEndpoint<List<_i32.CourseVersion>>(
+  _i3.Future<List<_i33.CourseVersion>> getCourseVersions(int courseId) =>
+      caller.callServerEndpoint<List<_i33.CourseVersion>>(
         'course',
         'getCourseVersions',
         {'courseId': courseId},
       );
 
-  _i3.Future<_i32.CourseVersion?> getCourseVersion(int courseVersionId) =>
-      caller.callServerEndpoint<_i32.CourseVersion?>(
+  _i3.Future<_i33.CourseVersion?> getCourseVersion(int courseVersionId) =>
+      caller.callServerEndpoint<_i33.CourseVersion?>(
         'course',
         'getCourseVersion',
         {'courseVersionId': courseVersionId},
       );
 
-  _i3.Future<_i34.Course> createCourse({
+  _i3.Future<_i35.Course> createCourse({
     required String title,
     required int organizationId,
     String? sopNumber,
     String? description,
     int? createdById,
-  }) => caller.callServerEndpoint<_i34.Course>(
+  }) => caller.callServerEndpoint<_i35.Course>(
     'course',
     'createCourse',
     {
@@ -1683,33 +2106,33 @@ class EndpointCourse extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i30.Module>> getModulesForCourseVersion(
+  _i3.Future<List<_i31.Module>> getModulesForCourseVersion(
     int courseVersionId,
-  ) => caller.callServerEndpoint<List<_i30.Module>>(
+  ) => caller.callServerEndpoint<List<_i31.Module>>(
     'course',
     'getModulesForCourseVersion',
     {'courseVersionId': courseVersionId},
   );
 
-  _i3.Future<List<_i31.Lesson>> getLessonsForModule(int moduleId) =>
-      caller.callServerEndpoint<List<_i31.Lesson>>(
+  _i3.Future<List<_i32.Lesson>> getLessonsForModule(int moduleId) =>
+      caller.callServerEndpoint<List<_i32.Lesson>>(
         'course',
         'getLessonsForModule',
         {'moduleId': moduleId},
       );
 
-  _i3.Future<_i31.Lesson?> getLessonWithMaterial(int lessonId) =>
-      caller.callServerEndpoint<_i31.Lesson?>(
+  _i3.Future<_i32.Lesson?> getLessonWithMaterial(int lessonId) =>
+      caller.callServerEndpoint<_i32.Lesson?>(
         'course',
         'getLessonWithMaterial',
         {'lessonId': lessonId},
       );
 
   /// Search courses by title, description, or SOP number.
-  _i3.Future<List<_i34.Course>> searchCourses({
+  _i3.Future<List<_i35.Course>> searchCourses({
     required String query,
     int? organizationId,
-  }) => caller.callServerEndpoint<List<_i34.Course>>(
+  }) => caller.callServerEndpoint<List<_i35.Course>>(
     'course',
     'searchCourses',
     {
@@ -1719,12 +2142,12 @@ class EndpointCourse extends _i2.EndpointRef {
   );
 
   /// Update course metadata (title, description, sopNumber).
-  _i3.Future<_i34.Course> updateCourse({
+  _i3.Future<_i35.Course> updateCourse({
     required int courseId,
     String? title,
     String? description,
     String? sopNumber,
-  }) => caller.callServerEndpoint<_i34.Course>(
+  }) => caller.callServerEndpoint<_i35.Course>(
     'course',
     'updateCourse',
     {
@@ -1752,10 +2175,10 @@ class EndpointDocument extends _i2.EndpointRef {
   @override
   String get name => 'document';
 
-  _i3.Future<List<_i35.Document>> listDocuments({
+  _i3.Future<List<_i36.Document>> listDocuments({
     int? organizationId,
     String? documentType,
-  }) => caller.callServerEndpoint<List<_i35.Document>>(
+  }) => caller.callServerEndpoint<List<_i36.Document>>(
     'document',
     'listDocuments',
     {
@@ -1764,20 +2187,20 @@ class EndpointDocument extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i35.Document?> getDocument(int id) =>
-      caller.callServerEndpoint<_i35.Document?>(
+  _i3.Future<_i36.Document?> getDocument(int id) =>
+      caller.callServerEndpoint<_i36.Document?>(
         'document',
         'getDocument',
         {'id': id},
       );
 
   /// QA gate: classify SOP update as training_required or no_training_required.
-  _i3.Future<_i35.Document> updateDocumentQaClassification({
+  _i3.Future<_i36.Document> updateDocumentQaClassification({
     required int documentId,
     required String trainingRequiredByQa,
     String? affectedDepartmentIdsJson,
     String? affectedRoleIdsJson,
-  }) => caller.callServerEndpoint<_i35.Document>(
+  }) => caller.callServerEndpoint<_i36.Document>(
     'document',
     'updateDocumentQaClassification',
     {
@@ -1788,19 +2211,19 @@ class EndpointDocument extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i36.DocumentVersion>> getDocumentVersions(int documentId) =>
-      caller.callServerEndpoint<List<_i36.DocumentVersion>>(
+  _i3.Future<List<_i37.DocumentVersion>> getDocumentVersions(int documentId) =>
+      caller.callServerEndpoint<List<_i37.DocumentVersion>>(
         'document',
         'getDocumentVersions',
         {'documentId': documentId},
       );
 
-  _i3.Future<_i35.Document> createDocument({
+  _i3.Future<_i36.Document> createDocument({
     required String title,
     required String documentNumber,
     required String documentType,
     required int organizationId,
-  }) => caller.callServerEndpoint<_i35.Document>(
+  }) => caller.callServerEndpoint<_i36.Document>(
     'document',
     'createDocument',
     {
@@ -1813,7 +2236,7 @@ class EndpointDocument extends _i2.EndpointRef {
 
   /// Create a document version. Plan 3B: optional versionMajor, versionMinor, isMajorVersion.
   /// If versionMajor/versionMinor omitted, parses version as "major.minor".
-  _i3.Future<_i36.DocumentVersion> createDocumentVersion({
+  _i3.Future<_i37.DocumentVersion> createDocumentVersion({
     required int documentId,
     required String version,
     required String storageKey,
@@ -1822,7 +2245,7 @@ class EndpointDocument extends _i2.EndpointRef {
     int? versionMajor,
     int? versionMinor,
     bool? isMajorVersion,
-  }) => caller.callServerEndpoint<_i36.DocumentVersion>(
+  }) => caller.callServerEndpoint<_i37.DocumentVersion>(
     'document',
     'createDocumentVersion',
     {
@@ -1837,9 +2260,9 @@ class EndpointDocument extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i37.DocumentLifecycle>> getDocumentLifecycle(
+  _i3.Future<List<_i38.DocumentLifecycle>> getDocumentLifecycle(
     int documentVersionId,
-  ) => caller.callServerEndpoint<List<_i37.DocumentLifecycle>>(
+  ) => caller.callServerEndpoint<List<_i38.DocumentLifecycle>>(
     'document',
     'getDocumentLifecycle',
     {'documentVersionId': documentVersionId},
@@ -1847,7 +2270,7 @@ class EndpointDocument extends _i2.EndpointRef {
 
   /// Transition document version lifecycle (QA-02). Enforces: draft→review→approved→effective→obsolete.
   /// Approved/Effective require QA e-sign. Obsolete requires reason.
-  _i3.Future<_i37.DocumentLifecycle> transitionDocumentLifecycle({
+  _i3.Future<_i38.DocumentLifecycle> transitionDocumentLifecycle({
     required int documentVersionId,
     required String newState,
     String? obsoleteReason,
@@ -1855,7 +2278,7 @@ class EndpointDocument extends _i2.EndpointRef {
     required String signatureMeaning,
     String? passwordPlaintext,
     String? ipAddress,
-  }) => caller.callServerEndpoint<_i37.DocumentLifecycle>(
+  }) => caller.callServerEndpoint<_i38.DocumentLifecycle>(
     'document',
     'transitionDocumentLifecycle',
     {
@@ -1869,13 +2292,13 @@ class EndpointDocument extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i38.ApprovalWorkflow> createApprovalStep({
+  _i3.Future<_i39.ApprovalWorkflow> createApprovalStep({
     required int documentVersionId,
     required int step,
     required int approverId,
     required String status,
     int? esignatureId,
-  }) => caller.callServerEndpoint<_i38.ApprovalWorkflow>(
+  }) => caller.callServerEndpoint<_i39.ApprovalWorkflow>(
     'document',
     'createApprovalStep',
     {
@@ -1989,9 +2412,9 @@ class EndpointInspection extends _i2.EndpointRef {
   String get name => 'inspection';
 
   /// List inspection records (for Admin/QA).
-  _i3.Future<List<_i39.InspectionRecord>> listInspectionRecords({
+  _i3.Future<List<_i40.InspectionRecord>> listInspectionRecords({
     required int limit,
-  }) => caller.callServerEndpoint<List<_i39.InspectionRecord>>(
+  }) => caller.callServerEndpoint<List<_i40.InspectionRecord>>(
     'inspection',
     'listInspectionRecords',
     {'limit': limit},
@@ -2030,10 +2453,10 @@ class EndpointInspection extends _i2.EndpointRef {
   );
 
   /// List page logs for an inspection record (for auditor session widget).
-  _i3.Future<List<_i40.AuditorPageLog>> listAuditorPageLogs({
+  _i3.Future<List<_i41.AuditorPageLog>> listAuditorPageLogs({
     required int inspectionRecordId,
     required int limit,
-  }) => caller.callServerEndpoint<List<_i40.AuditorPageLog>>(
+  }) => caller.callServerEndpoint<List<_i41.AuditorPageLog>>(
     'inspection',
     'listAuditorPageLogs',
     {
@@ -2064,10 +2487,10 @@ class EndpointInspection extends _i2.EndpointRef {
   );
 
   /// List inspection packages for a record (for Admin/QA).
-  _i3.Future<List<_i41.InspectionPackage>> listInspectionPackages({
+  _i3.Future<List<_i42.InspectionPackage>> listInspectionPackages({
     required int inspectionRecordId,
     required int limit,
-  }) => caller.callServerEndpoint<List<_i41.InspectionPackage>>(
+  }) => caller.callServerEndpoint<List<_i42.InspectionPackage>>(
     'inspection',
     'listInspectionPackages',
     {
@@ -2101,13 +2524,13 @@ class EndpointInspection extends _i2.EndpointRef {
 
   /// Sign inspection package as official (QA Director e-sign). ADM-10.
   /// Requires QA Director, Admin, or QA role.
-  _i3.Future<_i41.InspectionPackage> signInspectionPackageAsOfficial({
+  _i3.Future<_i42.InspectionPackage> signInspectionPackageAsOfficial({
     required int packageId,
     required int userId,
     required String signatureMeaning,
     String? passwordPlaintext,
     String? ipAddress,
-  }) => caller.callServerEndpoint<_i41.InspectionPackage>(
+  }) => caller.callServerEndpoint<_i42.InspectionPackage>(
     'inspection',
     'signInspectionPackageAsOfficial',
     {
@@ -2160,8 +2583,8 @@ class EndpointMaterial extends _i2.EndpointRef {
   @override
   String get name => 'material';
 
-  _i3.Future<_i42.Material?> getMaterial(int id) =>
-      caller.callServerEndpoint<_i42.Material?>(
+  _i3.Future<_i43.Material?> getMaterial(int id) =>
+      caller.callServerEndpoint<_i43.Material?>(
         'material',
         'getMaterial',
         {'id': id},
@@ -2176,11 +2599,11 @@ class EndpointMaterial extends _i2.EndpointRef {
         {'storageKey': storageKey},
       );
 
-  _i3.Future<_i42.Material> createMaterial({
+  _i3.Future<_i43.Material> createMaterial({
     required String title,
     required String materialType,
     required int organizationId,
-  }) => caller.callServerEndpoint<_i42.Material>(
+  }) => caller.callServerEndpoint<_i43.Material>(
     'material',
     'createMaterial',
     {
@@ -2208,13 +2631,13 @@ class EndpointMaterial extends _i2.EndpointRef {
   /// TRN-WF-02: Create material version after successful upload.
   /// Supports file integrity tracking (fileHash), file size, and virus scan status.
   /// changeSummary is required when uploading a new version of existing material.
-  _i3.Future<_i43.MaterialVersion> createMaterialVersion({
+  _i3.Future<_i44.MaterialVersion> createMaterialVersion({
     required int materialId,
     required String storageKey,
     String? fileHash,
     int? fileSizeBytes,
     String? changeSummary,
-  }) => caller.callServerEndpoint<_i43.MaterialVersion>(
+  }) => caller.callServerEndpoint<_i44.MaterialVersion>(
     'material',
     'createMaterialVersion',
     {
@@ -2227,11 +2650,11 @@ class EndpointMaterial extends _i2.EndpointRef {
   );
 
   /// TRN-WF-02: Update material metadata (title).
-  _i3.Future<_i42.Material> updateMaterial({
+  _i3.Future<_i43.Material> updateMaterial({
     required int materialId,
     String? title,
     String? materialType,
-  }) => caller.callServerEndpoint<_i42.Material>(
+  }) => caller.callServerEndpoint<_i43.Material>(
     'material',
     'updateMaterial',
     {
@@ -2242,18 +2665,18 @@ class EndpointMaterial extends _i2.EndpointRef {
   );
 
   /// TRN-WF-02: Get latest version of a material.
-  _i3.Future<_i43.MaterialVersion?> getLatestMaterialVersion(int materialId) =>
-      caller.callServerEndpoint<_i43.MaterialVersion?>(
+  _i3.Future<_i44.MaterialVersion?> getLatestMaterialVersion(int materialId) =>
+      caller.callServerEndpoint<_i44.MaterialVersion?>(
         'material',
         'getLatestMaterialVersion',
         {'materialId': materialId},
       );
 
   /// TRN-WF-02: Update virus scan status after scanning.
-  _i3.Future<_i43.MaterialVersion> updateVirusScanStatus({
+  _i3.Future<_i44.MaterialVersion> updateVirusScanStatus({
     required int materialVersionId,
     required String virusScanStatus,
-  }) => caller.callServerEndpoint<_i43.MaterialVersion>(
+  }) => caller.callServerEndpoint<_i44.MaterialVersion>(
     'material',
     'updateVirusScanStatus',
     {
@@ -2262,16 +2685,16 @@ class EndpointMaterial extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i43.MaterialVersion>> getMaterialVersions(int materialId) =>
-      caller.callServerEndpoint<List<_i43.MaterialVersion>>(
+  _i3.Future<List<_i44.MaterialVersion>> getMaterialVersions(int materialId) =>
+      caller.callServerEndpoint<List<_i44.MaterialVersion>>(
         'material',
         'getMaterialVersions',
         {'materialId': materialId},
       );
 
-  _i3.Future<List<_i42.Material>> listMaterials({
+  _i3.Future<List<_i43.Material>> listMaterials({
     required int organizationId,
-  }) => caller.callServerEndpoint<List<_i42.Material>>(
+  }) => caller.callServerEndpoint<List<_i43.Material>>(
     'material',
     'listMaterials',
     {'organizationId': organizationId},
@@ -2281,7 +2704,7 @@ class EndpointMaterial extends _i2.EndpointRef {
   /// Server-enforced: when progressPct=100 or completedAt is set, requires
   /// timeSpentSeconds >= lesson.durationMinutes*60, readTimeMet=true, and
   /// for video: videoWatchedPct>=90, for pdf: pdfScrollPct>=80 in interactionJson.
-  _i3.Future<_i44.MaterialProgress> updateProgress({
+  _i3.Future<_i45.MaterialProgress> updateProgress({
     required int userId,
     required int materialId,
     required int progressPct,
@@ -2292,7 +2715,7 @@ class EndpointMaterial extends _i2.EndpointRef {
     int? materialVersionId,
     int? enrollmentId,
     int? lessonId,
-  }) => caller.callServerEndpoint<_i44.MaterialProgress>(
+  }) => caller.callServerEndpoint<_i45.MaterialProgress>(
     'material',
     'updateProgress',
     {
@@ -2309,11 +2732,11 @@ class EndpointMaterial extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i44.MaterialProgress?> getProgress({
+  _i3.Future<_i45.MaterialProgress?> getProgress({
     required int userId,
     required int materialId,
     int? enrollmentId,
-  }) => caller.callServerEndpoint<_i44.MaterialProgress?>(
+  }) => caller.callServerEndpoint<_i45.MaterialProgress?>(
     'material',
     'getProgress',
     {
@@ -2327,7 +2750,7 @@ class EndpointMaterial extends _i2.EndpointRef {
   /// Minimum read time is enforced server-side: elapsed time is computed from
   /// [lastHeartbeat], capped at 15 seconds per heartbeat to prevent offline pause abuse.
   /// [readTimeMet] is set strictly on the server when timeSpentSeconds >= required read time.
-  _i3.Future<_i44.MaterialProgress> recordEngagement({
+  _i3.Future<_i45.MaterialProgress> recordEngagement({
     required int userId,
     required int materialId,
     required int lessonId,
@@ -2337,7 +2760,7 @@ class EndpointMaterial extends _i2.EndpointRef {
     int? videoWatchedPct,
     int? videoPositionSeconds,
     required int deltaSeconds,
-  }) => caller.callServerEndpoint<_i44.MaterialProgress>(
+  }) => caller.callServerEndpoint<_i45.MaterialProgress>(
     'material',
     'recordEngagement',
     {
@@ -2381,16 +2804,16 @@ class EndpointMfa extends _i2.EndpointRef {
   String get name => 'mfa';
 
   /// Returns MFA status for the current user. Requires auth.
-  _i3.Future<_i45.MfaStatusResult> getMfaStatus() =>
-      caller.callServerEndpoint<_i45.MfaStatusResult>(
+  _i3.Future<_i46.MfaStatusResult> getMfaStatus() =>
+      caller.callServerEndpoint<_i46.MfaStatusResult>(
         'mfa',
         'getMfaStatus',
         {},
       );
 
   /// Starts MFA enrollment. Generates secret and returns it for QR setup.
-  _i3.Future<_i46.MfaEnrollResult> enrollMfa() =>
-      caller.callServerEndpoint<_i46.MfaEnrollResult>(
+  _i3.Future<_i47.MfaEnrollResult> enrollMfa() =>
+      caller.callServerEndpoint<_i47.MfaEnrollResult>(
         'mfa',
         'enrollMfa',
         {},
@@ -2435,17 +2858,17 @@ class EndpointNotification extends _i2.EndpointRef {
   String get name => 'notification';
 
   /// Get in-app notifications: assignment due, overdue from TrainingAssignment.
-  _i3.Future<List<_i47.InAppNotification>> getInAppNotifications(int userId) =>
-      caller.callServerEndpoint<List<_i47.InAppNotification>>(
+  _i3.Future<List<_i48.InAppNotification>> getInAppNotifications(int userId) =>
+      caller.callServerEndpoint<List<_i48.InAppNotification>>(
         'notification',
         'getInAppNotifications',
         {'userId': userId},
       );
 
   /// Get trainer-specific notifications (QA decisions, SOP updates, assignment alerts).
-  _i3.Future<List<_i47.InAppNotification>> getTrainerNotifications(
+  _i3.Future<List<_i48.InAppNotification>> getTrainerNotifications(
     int userId,
-  ) => caller.callServerEndpoint<List<_i47.InAppNotification>>(
+  ) => caller.callServerEndpoint<List<_i48.InAppNotification>>(
     'notification',
     'getTrainerNotifications',
     {'userId': userId},
@@ -2465,6 +2888,141 @@ class EndpointNotification extends _i2.EndpointRef {
     'getUnreadCount',
     {'userId': userId},
   );
+
+  /// List all notifications for an organization (Admin Portal).
+  _i3.Future<List<_i49.Notification>> listNotifications({
+    required int organizationId,
+    String? type,
+    String? channel,
+    String? deliveryStatus,
+    int? limit,
+  }) => caller.callServerEndpoint<List<_i49.Notification>>(
+    'notification',
+    'listNotifications',
+    {
+      'organizationId': organizationId,
+      'type': type,
+      'channel': channel,
+      'deliveryStatus': deliveryStatus,
+      'limit': limit,
+    },
+  );
+}
+
+/// Notification Template management endpoint for Admin Portal.
+/// Manages notification templates for various training events.
+/// {@category Endpoint}
+class EndpointNotificationTemplate extends _i2.EndpointRef {
+  EndpointNotificationTemplate(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'notificationTemplate';
+
+  /// List all notification templates for an organization.
+  _i3.Future<List<_i50.NotificationTemplate>> listTemplates({
+    required int organizationId,
+    String? status,
+    String? type,
+    String? channel,
+    int? limit,
+  }) => caller.callServerEndpoint<List<_i50.NotificationTemplate>>(
+    'notificationTemplate',
+    'listTemplates',
+    {
+      'organizationId': organizationId,
+      'status': status,
+      'type': type,
+      'channel': channel,
+      'limit': limit,
+    },
+  );
+
+  /// Get a single notification template by ID.
+  _i3.Future<_i50.NotificationTemplate?> getTemplate(int templateId) =>
+      caller.callServerEndpoint<_i50.NotificationTemplate?>(
+        'notificationTemplate',
+        'getTemplate',
+        {'templateId': templateId},
+      );
+
+  /// Create a new notification template.
+  _i3.Future<_i50.NotificationTemplate?> createTemplate({
+    required int organizationId,
+    required String name,
+    required String type,
+    required String channel,
+    String? triggerEvent,
+    String? subject,
+    required String bodyTemplate,
+    required String status,
+  }) => caller.callServerEndpoint<_i50.NotificationTemplate?>(
+    'notificationTemplate',
+    'createTemplate',
+    {
+      'organizationId': organizationId,
+      'name': name,
+      'type': type,
+      'channel': channel,
+      'triggerEvent': triggerEvent,
+      'subject': subject,
+      'bodyTemplate': bodyTemplate,
+      'status': status,
+    },
+  );
+
+  /// Update a notification template.
+  _i3.Future<_i50.NotificationTemplate?> updateTemplate(
+    int templateId, {
+    String? name,
+    String? type,
+    String? channel,
+    String? triggerEvent,
+    String? subject,
+    String? bodyTemplate,
+    String? status,
+  }) => caller.callServerEndpoint<_i50.NotificationTemplate?>(
+    'notificationTemplate',
+    'updateTemplate',
+    {
+      'templateId': templateId,
+      'name': name,
+      'type': type,
+      'channel': channel,
+      'triggerEvent': triggerEvent,
+      'subject': subject,
+      'bodyTemplate': bodyTemplate,
+      'status': status,
+    },
+  );
+
+  /// Delete a notification template.
+  _i3.Future<bool> deleteTemplate(int templateId) =>
+      caller.callServerEndpoint<bool>(
+        'notificationTemplate',
+        'deleteTemplate',
+        {'templateId': templateId},
+      );
+
+  /// Get template statistics for dashboard.
+  _i3.Future<Map<String, int>> getTemplateStats(int organizationId) =>
+      caller.callServerEndpoint<Map<String, int>>(
+        'notificationTemplate',
+        'getTemplateStats',
+        {'organizationId': organizationId},
+      );
+
+  /// Duplicate a template.
+  _i3.Future<_i50.NotificationTemplate?> duplicateTemplate(
+    int templateId, {
+    String? newName,
+  }) => caller.callServerEndpoint<_i50.NotificationTemplate?>(
+    'notificationTemplate',
+    'duplicateTemplate',
+    {
+      'templateId': templateId,
+      'newName': newName,
+    },
+  );
 }
 
 /// Organization & Identity domain endpoint.
@@ -2475,24 +3033,24 @@ class EndpointOrganization extends _i2.EndpointRef {
   @override
   String get name => 'organization';
 
-  _i3.Future<List<_i48.Organization>> listOrganizations() =>
-      caller.callServerEndpoint<List<_i48.Organization>>(
+  _i3.Future<List<_i51.Organization>> listOrganizations() =>
+      caller.callServerEndpoint<List<_i51.Organization>>(
         'organization',
         'listOrganizations',
         {},
       );
 
-  _i3.Future<_i48.Organization?> getOrganization(int id) =>
-      caller.callServerEndpoint<_i48.Organization?>(
+  _i3.Future<_i51.Organization?> getOrganization(int id) =>
+      caller.callServerEndpoint<_i51.Organization?>(
         'organization',
         'getOrganization',
         {'id': id},
       );
 
-  _i3.Future<_i48.Organization> createOrganization({
+  _i3.Future<_i51.Organization> createOrganization({
     required String name,
     required String code,
-  }) => caller.callServerEndpoint<_i48.Organization>(
+  }) => caller.callServerEndpoint<_i51.Organization>(
     'organization',
     'createOrganization',
     {
@@ -2501,31 +3059,31 @@ class EndpointOrganization extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i49.Site>> listSites(int organizationId) =>
-      caller.callServerEndpoint<List<_i49.Site>>(
+  _i3.Future<List<_i52.Site>> listSites(int organizationId) =>
+      caller.callServerEndpoint<List<_i52.Site>>(
         'organization',
         'listSites',
         {'organizationId': organizationId},
       );
 
-  _i3.Future<List<_i50.Department>> listDepartments(int siteId) =>
-      caller.callServerEndpoint<List<_i50.Department>>(
+  _i3.Future<List<_i53.Department>> listDepartments(int siteId) =>
+      caller.callServerEndpoint<List<_i53.Department>>(
         'organization',
         'listDepartments',
         {'siteId': siteId},
       );
 
-  _i3.Future<List<_i9.JobRole>> listJobRoles(int departmentId) =>
-      caller.callServerEndpoint<List<_i9.JobRole>>(
+  _i3.Future<List<_i11.JobRole>> listJobRoles(int departmentId) =>
+      caller.callServerEndpoint<List<_i11.JobRole>>(
         'organization',
         'listJobRoles',
         {'departmentId': departmentId},
       );
 
-  _i3.Future<List<_i17.PharmaUser>> listUsers({
+  _i3.Future<List<_i7.PharmaUser>> listUsers({
     int? organizationId,
     int? departmentId,
-  }) => caller.callServerEndpoint<List<_i17.PharmaUser>>(
+  }) => caller.callServerEndpoint<List<_i7.PharmaUser>>(
     'organization',
     'listUsers',
     {
@@ -2544,8 +3102,8 @@ class EndpointQa extends _i2.EndpointRef {
   String get name => 'qa';
 
   /// List course versions pending QA approval.
-  _i3.Future<List<_i32.CourseVersion>> listPendingCourseVersions() =>
-      caller.callServerEndpoint<List<_i32.CourseVersion>>(
+  _i3.Future<List<_i33.CourseVersion>> listPendingCourseVersions() =>
+      caller.callServerEndpoint<List<_i33.CourseVersion>>(
         'qa',
         'listPendingCourseVersions',
         {},
@@ -2554,13 +3112,13 @@ class EndpointQa extends _i2.EndpointRef {
   /// Approve and publish a course version (QA sign-off). Sets status to effective.
   /// Marks previous effective versions obsolete and their certificates obsolete.
   /// reviewChecklistJson: QA-WF-01 structured checklist (content accuracy, etc.)
-  _i3.Future<_i32.CourseVersion> approveCourseVersion({
+  _i3.Future<_i33.CourseVersion> approveCourseVersion({
     required int courseVersionId,
     required String passwordPlaintext,
     required String signatureMeaning,
     int? approverId,
     String? reviewChecklistJson,
-  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+  }) => caller.callServerEndpoint<_i33.CourseVersion>(
     'qa',
     'approveCourseVersion',
     {
@@ -2573,11 +3131,11 @@ class EndpointQa extends _i2.EndpointRef {
   );
 
   /// Reject a course version (return to draft). Optionally return for changes.
-  _i3.Future<_i32.CourseVersion> rejectCourseVersion({
+  _i3.Future<_i33.CourseVersion> rejectCourseVersion({
     required int courseVersionId,
     String? reason,
     required bool returnForChanges,
-  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+  }) => caller.callServerEndpoint<_i33.CourseVersion>(
     'qa',
     'rejectCourseVersion',
     {
@@ -2596,11 +3154,11 @@ class EndpointQa extends _i2.EndpointRef {
       );
 
   /// Return a course for changes (not rejection). Status -> needs_revision.
-  _i3.Future<_i32.CourseVersion> returnCourseForChanges({
+  _i3.Future<_i33.CourseVersion> returnCourseForChanges({
     required int courseVersionId,
     required String comments,
     int? reviewerId,
-  }) => caller.callServerEndpoint<_i32.CourseVersion>(
+  }) => caller.callServerEndpoint<_i33.CourseVersion>(
     'qa',
     'returnCourseForChanges',
     {
@@ -2611,9 +3169,9 @@ class EndpointQa extends _i2.EndpointRef {
   );
 
   /// Get all course reviews for a course version.
-  _i3.Future<List<_i51.CourseReview>> getCourseReviews({
+  _i3.Future<List<_i54.CourseReview>> getCourseReviews({
     required int courseVersionId,
-  }) => caller.callServerEndpoint<List<_i51.CourseReview>>(
+  }) => caller.callServerEndpoint<List<_i54.CourseReview>>(
     'qa',
     'getCourseReviews',
     {'courseVersionId': courseVersionId},
@@ -2628,11 +3186,11 @@ class EndpointQualityEvent extends _i2.EndpointRef {
   @override
   String get name => 'qualityEvent';
 
-  _i3.Future<List<_i52.QualityEvent>> listQualityEvents({
+  _i3.Future<List<_i55.QualityEvent>> listQualityEvents({
     int? siteId,
     String? eventType,
     String? status,
-  }) => caller.callServerEndpoint<List<_i52.QualityEvent>>(
+  }) => caller.callServerEndpoint<List<_i55.QualityEvent>>(
     'qualityEvent',
     'listQualityEvents',
     {
@@ -2642,17 +3200,17 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i52.QualityEvent?> getQualityEvent(int id) =>
-      caller.callServerEndpoint<_i52.QualityEvent?>(
+  _i3.Future<_i55.QualityEvent?> getQualityEvent(int id) =>
+      caller.callServerEndpoint<_i55.QualityEvent?>(
         'qualityEvent',
         'getQualityEvent',
         {'id': id},
       );
 
-  _i3.Future<List<_i19.Capa>> listCapas({
+  _i3.Future<List<_i20.Capa>> listCapas({
     int? qualityEventId,
     String? status,
-  }) => caller.callServerEndpoint<List<_i19.Capa>>(
+  }) => caller.callServerEndpoint<List<_i20.Capa>>(
     'qualityEvent',
     'listCapas',
     {
@@ -2661,13 +3219,13 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i52.QualityEvent> createQualityEvent({
+  _i3.Future<_i55.QualityEvent> createQualityEvent({
     required String eventType,
     required String title,
     required String status,
     String? referenceId,
     int? siteId,
-  }) => caller.callServerEndpoint<_i52.QualityEvent>(
+  }) => caller.callServerEndpoint<_i55.QualityEvent>(
     'qualityEvent',
     'createQualityEvent',
     {
@@ -2680,12 +3238,12 @@ class EndpointQualityEvent extends _i2.EndpointRef {
   );
 
   /// Update CAPA lifecycle status. Enforces valid state machine transitions.
-  _i3.Future<_i19.Capa> updateCapaStatus({
+  _i3.Future<_i20.Capa> updateCapaStatus({
     required int capaId,
     required String status,
     String? rootCause,
     DateTime? rcaCompletedAt,
-  }) => caller.callServerEndpoint<_i19.Capa>(
+  }) => caller.callServerEndpoint<_i20.Capa>(
     'qualityEvent',
     'updateCapaStatus',
     {
@@ -2698,10 +3256,10 @@ class EndpointQualityEvent extends _i2.EndpointRef {
 
   /// Close CAPA (QA verifies no recurrence).
   /// Requires: status must be Verification; if trainingRequired, effectivenessCheckDue must be set.
-  _i3.Future<_i19.Capa> closeCapa({
+  _i3.Future<_i20.Capa> closeCapa({
     required int capaId,
     required int closedById,
-  }) => caller.callServerEndpoint<_i19.Capa>(
+  }) => caller.callServerEndpoint<_i20.Capa>(
     'qualityEvent',
     'closeCapa',
     {
@@ -2723,12 +3281,12 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i19.Capa> createCapa({
+  _i3.Future<_i20.Capa> createCapa({
     required int qualityEventId,
     String? description,
     String? rootCause,
     required bool trainingRequired,
-  }) => caller.callServerEndpoint<_i19.Capa>(
+  }) => caller.callServerEndpoint<_i20.Capa>(
     'qualityEvent',
     'createCapa',
     {
@@ -2739,13 +3297,13 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i7.TrainingAssignment?> assignTrainingFromCapa({
+  _i3.Future<_i9.TrainingAssignment?> assignTrainingFromCapa({
     required int capaId,
     required int userId,
     required int courseVersionId,
     required int assignedById,
     required DateTime dueDate,
-  }) => caller.callServerEndpoint<_i7.TrainingAssignment?>(
+  }) => caller.callServerEndpoint<_i9.TrainingAssignment?>(
     'qualityEvent',
     'assignTrainingFromCapa',
     {
@@ -2757,10 +3315,10 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i53.InspectionReport>> listInspectionReports({
+  _i3.Future<List<_i56.InspectionReport>> listInspectionReports({
     int? organizationId,
     int? siteId,
-  }) => caller.callServerEndpoint<List<_i53.InspectionReport>>(
+  }) => caller.callServerEndpoint<List<_i56.InspectionReport>>(
     'qualityEvent',
     'listInspectionReports',
     {
@@ -2769,14 +3327,14 @@ class EndpointQualityEvent extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<_i53.InspectionReport> createInspectionReport({
+  _i3.Future<_i56.InspectionReport> createInspectionReport({
     required int organizationId,
     required String status,
     int? siteId,
     String? inspector,
     DateTime? inspectionDate,
     String? findingsJson,
-  }) => caller.callServerEndpoint<_i53.InspectionReport>(
+  }) => caller.callServerEndpoint<_i56.InspectionReport>(
     'qualityEvent',
     'createInspectionReport',
     {
@@ -2839,6 +3397,13 @@ class EndpointSeed extends _i2.EndpointRef {
         'provisionAuthAccounts',
         {},
       );
+
+  /// Fix admin passwords by re-provisioning them with proper password hashes
+  _i3.Future<String> fixAdminPasswords() => caller.callServerEndpoint<String>(
+    'seed',
+    'fixAdminPasswords',
+    {},
+  );
 }
 
 /// SOP-Course linkage management endpoint.
@@ -2850,11 +3415,11 @@ class EndpointSopLinkage extends _i2.EndpointRef {
   String get name => 'sopLinkage';
 
   /// Link a SOP document to a course.
-  _i3.Future<_i54.CourseSopLink> linkSopToCourse({
+  _i3.Future<_i57.CourseSopLink> linkSopToCourse({
     required int courseId,
     required int documentId,
     int? linkedById,
-  }) => caller.callServerEndpoint<_i54.CourseSopLink>(
+  }) => caller.callServerEndpoint<_i57.CourseSopLink>(
     'sopLinkage',
     'linkSopToCourse',
     {
@@ -2865,10 +3430,10 @@ class EndpointSopLinkage extends _i2.EndpointRef {
   );
 
   /// Unlink a SOP document from a course (soft-delete).
-  _i3.Future<_i54.CourseSopLink> unlinkSopFromCourse({
+  _i3.Future<_i57.CourseSopLink> unlinkSopFromCourse({
     required int linkId,
     int? unlinkedById,
-  }) => caller.callServerEndpoint<_i54.CourseSopLink>(
+  }) => caller.callServerEndpoint<_i57.CourseSopLink>(
     'sopLinkage',
     'unlinkSopFromCourse',
     {
@@ -2878,21 +3443,125 @@ class EndpointSopLinkage extends _i2.EndpointRef {
   );
 
   /// Get all active SOP links for a course.
-  _i3.Future<List<_i54.CourseSopLink>> getLinkedSops({required int courseId}) =>
-      caller.callServerEndpoint<List<_i54.CourseSopLink>>(
+  _i3.Future<List<_i57.CourseSopLink>> getLinkedSops({required int courseId}) =>
+      caller.callServerEndpoint<List<_i57.CourseSopLink>>(
         'sopLinkage',
         'getLinkedSops',
         {'courseId': courseId},
       );
 
   /// Get all courses linked to a specific SOP document.
-  _i3.Future<List<_i54.CourseSopLink>> getCoursesForSop({
+  _i3.Future<List<_i57.CourseSopLink>> getCoursesForSop({
     required int documentId,
-  }) => caller.callServerEndpoint<List<_i54.CourseSopLink>>(
+  }) => caller.callServerEndpoint<List<_i57.CourseSopLink>>(
     'sopLinkage',
     'getCoursesForSop',
     {'documentId': documentId},
   );
+}
+
+/// Training Batch management endpoint for Admin Portal.
+/// Manages training batches/cohorts for instructor-led training.
+/// {@category Endpoint}
+class EndpointTrainingBatch extends _i2.EndpointRef {
+  EndpointTrainingBatch(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'trainingBatch';
+
+  /// List all training batches for an organization.
+  _i3.Future<List<_i58.TrainingBatch>> listBatches({
+    required int organizationId,
+    String? status,
+    int? courseVersionId,
+    int? limit,
+  }) => caller.callServerEndpoint<List<_i58.TrainingBatch>>(
+    'trainingBatch',
+    'listBatches',
+    {
+      'organizationId': organizationId,
+      'status': status,
+      'courseVersionId': courseVersionId,
+      'limit': limit,
+    },
+  );
+
+  /// Get a single training batch by ID.
+  _i3.Future<_i58.TrainingBatch?> getBatch(int batchId) =>
+      caller.callServerEndpoint<_i58.TrainingBatch?>(
+        'trainingBatch',
+        'getBatch',
+        {'batchId': batchId},
+      );
+
+  /// Create a new training batch.
+  _i3.Future<_i58.TrainingBatch?> createBatch({
+    required int organizationId,
+    required int courseVersionId,
+    required String name,
+    int? instructorId,
+    required DateTime startDate,
+    required DateTime endDate,
+    required int capacity,
+    String? location,
+    String? notes,
+  }) => caller.callServerEndpoint<_i58.TrainingBatch?>(
+    'trainingBatch',
+    'createBatch',
+    {
+      'organizationId': organizationId,
+      'courseVersionId': courseVersionId,
+      'name': name,
+      'instructorId': instructorId,
+      'startDate': startDate,
+      'endDate': endDate,
+      'capacity': capacity,
+      'location': location,
+      'notes': notes,
+    },
+  );
+
+  /// Update a training batch.
+  _i3.Future<_i58.TrainingBatch?> updateBatch(
+    int batchId, {
+    String? name,
+    int? instructorId,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? capacity,
+    String? status,
+    String? location,
+    String? notes,
+  }) => caller.callServerEndpoint<_i58.TrainingBatch?>(
+    'trainingBatch',
+    'updateBatch',
+    {
+      'batchId': batchId,
+      'name': name,
+      'instructorId': instructorId,
+      'startDate': startDate,
+      'endDate': endDate,
+      'capacity': capacity,
+      'status': status,
+      'location': location,
+      'notes': notes,
+    },
+  );
+
+  /// Delete a training batch.
+  _i3.Future<bool> deleteBatch(int batchId) => caller.callServerEndpoint<bool>(
+    'trainingBatch',
+    'deleteBatch',
+    {'batchId': batchId},
+  );
+
+  /// Get batch statistics for dashboard.
+  _i3.Future<Map<String, int>> getBatchStats(int organizationId) =>
+      caller.callServerEndpoint<Map<String, int>>(
+        'trainingBatch',
+        'getBatchStats',
+        {'organizationId': organizationId},
+      );
 }
 
 /// Training Assignment domain endpoint.
@@ -2904,21 +3573,21 @@ class EndpointTraining extends _i2.EndpointRef {
   String get name => 'training';
 
   /// List active signature meanings for e-signature dropdown (21 CFR Part 11).
-  _i3.Future<List<_i6.SignatureMeaning>> listSignatureMeanings() =>
-      caller.callServerEndpoint<List<_i6.SignatureMeaning>>(
+  _i3.Future<List<_i8.SignatureMeaning>> listSignatureMeanings() =>
+      caller.callServerEndpoint<List<_i8.SignatureMeaning>>(
         'training',
         'listSignatureMeanings',
         {},
       );
 
-  _i3.Future<List<_i7.TrainingAssignment>> getAssignmentsForUser(int userId) =>
-      caller.callServerEndpoint<List<_i7.TrainingAssignment>>(
+  _i3.Future<List<_i9.TrainingAssignment>> getAssignmentsForUser(int userId) =>
+      caller.callServerEndpoint<List<_i9.TrainingAssignment>>(
         'training',
         'getAssignmentsForUser',
         {'userId': userId},
       );
 
-  _i3.Future<_i7.TrainingAssignment> assignTraining({
+  _i3.Future<_i9.TrainingAssignment> assignTraining({
     required int userId,
     required int courseVersionId,
     required int assignedById,
@@ -2927,7 +3596,7 @@ class EndpointTraining extends _i2.EndpointRef {
     String? reason,
     required String source,
     required bool forceReassign,
-  }) => caller.callServerEndpoint<_i7.TrainingAssignment>(
+  }) => caller.callServerEndpoint<_i9.TrainingAssignment>(
     'training',
     'assignTraining',
     {
@@ -2943,12 +3612,12 @@ class EndpointTraining extends _i2.EndpointRef {
   );
 
   /// Update assignment due date or priority.
-  _i3.Future<_i7.TrainingAssignment> updateAssignment({
+  _i3.Future<_i9.TrainingAssignment> updateAssignment({
     required int assignmentId,
     DateTime? dueDate,
     String? priority,
     required int updatedById,
-  }) => caller.callServerEndpoint<_i7.TrainingAssignment>(
+  }) => caller.callServerEndpoint<_i9.TrainingAssignment>(
     'training',
     'updateAssignment',
     {
@@ -2961,11 +3630,11 @@ class EndpointTraining extends _i2.EndpointRef {
 
   /// Cancel an assignment (ADM-WF-02).
   /// Requires a mandatory reason and cascades cancellation to linked active enrollments.
-  _i3.Future<_i7.TrainingAssignment> cancelAssignment({
+  _i3.Future<_i9.TrainingAssignment> cancelAssignment({
     required int assignmentId,
     required int cancelledById,
     required String reason,
-  }) => caller.callServerEndpoint<_i7.TrainingAssignment>(
+  }) => caller.callServerEndpoint<_i9.TrainingAssignment>(
     'training',
     'cancelAssignment',
     {
@@ -2975,8 +3644,8 @@ class EndpointTraining extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i55.Enrollment>> getEnrollmentsForUser(int userId) =>
-      caller.callServerEndpoint<List<_i55.Enrollment>>(
+  _i3.Future<List<_i59.Enrollment>> getEnrollmentsForUser(int userId) =>
+      caller.callServerEndpoint<List<_i59.Enrollment>>(
         'training',
         'getEnrollmentsForUser',
         {'userId': userId},
@@ -2991,8 +3660,8 @@ class EndpointTraining extends _i2.EndpointRef {
       );
 
   /// Get enrollment by ID for course viewer (e.g. to check retraining gate).
-  _i3.Future<_i55.Enrollment?> getEnrollmentById(int enrollmentId) =>
-      caller.callServerEndpoint<_i55.Enrollment?>(
+  _i3.Future<_i59.Enrollment?> getEnrollmentById(int enrollmentId) =>
+      caller.callServerEndpoint<_i59.Enrollment?>(
         'training',
         'getEnrollmentById',
         {'enrollmentId': enrollmentId},
@@ -3000,12 +3669,12 @@ class EndpointTraining extends _i2.EndpointRef {
 
   /// Acknowledge retraining change summary with e-signature.
   /// Requires: enrollment has retrainingChangeSummary, acknowledgedAt is null, userId matches.
-  _i3.Future<_i55.Enrollment> acknowledgeRetraining({
+  _i3.Future<_i59.Enrollment> acknowledgeRetraining({
     required int enrollmentId,
     required int userId,
     required String signatureMeaning,
     String? passwordPlaintext,
-  }) => caller.callServerEndpoint<_i55.Enrollment>(
+  }) => caller.callServerEndpoint<_i59.Enrollment>(
     'training',
     'acknowledgeRetraining',
     {
@@ -3016,32 +3685,32 @@ class EndpointTraining extends _i2.EndpointRef {
     },
   );
 
-  _i3.Future<List<_i18.Certificate>> getCertificatesForUser(int userId) =>
-      caller.callServerEndpoint<List<_i18.Certificate>>(
+  _i3.Future<List<_i19.Certificate>> getCertificatesForUser(int userId) =>
+      caller.callServerEndpoint<List<_i19.Certificate>>(
         'training',
         'getCertificatesForUser',
         {'userId': userId},
       );
 
   /// Training records for user (enrollment completions with score). Used for training history.
-  _i3.Future<List<_i56.TrainingRecord>> getTrainingRecordsForUser(int userId) =>
-      caller.callServerEndpoint<List<_i56.TrainingRecord>>(
+  _i3.Future<List<_i60.TrainingRecord>> getTrainingRecordsForUser(int userId) =>
+      caller.callServerEndpoint<List<_i60.TrainingRecord>>(
         'training',
         'getTrainingRecordsForUser',
         {'userId': userId},
       );
 
   /// Get certificate by ID for verification and direct links.
-  _i3.Future<_i18.Certificate?> getCertificateById(int certificateId) =>
-      caller.callServerEndpoint<_i18.Certificate?>(
+  _i3.Future<_i19.Certificate?> getCertificateById(int certificateId) =>
+      caller.callServerEndpoint<_i19.Certificate?>(
         'training',
         'getCertificateById',
         {'certificateId': certificateId},
       );
 
   /// Get a training waiver by ID. Returns the waiver only if the current user is the waiver owner (employee view).
-  _i3.Future<_i10.TrainingWaiver?> getWaiverById(int waiverId) =>
-      caller.callServerEndpoint<_i10.TrainingWaiver?>(
+  _i3.Future<_i12.TrainingWaiver?> getWaiverById(int waiverId) =>
+      caller.callServerEndpoint<_i12.TrainingWaiver?>(
         'training',
         'getWaiverById',
         {'waiverId': waiverId},
@@ -3049,22 +3718,22 @@ class EndpointTraining extends _i2.EndpointRef {
 
   /// Get signature with integrity verification. Returns null signature if not found.
   /// integrityViolation is true when HMAC mismatch (tampering detected).
-  _i3.Future<_i57.SignatureVerificationResult> getSignatureWithIntegrityCheck(
+  _i3.Future<_i61.SignatureVerificationResult> getSignatureWithIntegrityCheck(
     int signatureId,
-  ) => caller.callServerEndpoint<_i57.SignatureVerificationResult>(
+  ) => caller.callServerEndpoint<_i61.SignatureVerificationResult>(
     'training',
     'getSignatureWithIntegrityCheck',
     {'signatureId': signatureId},
   );
 
   /// List electronic signatures for auditor verification (21 CFR Part 11).
-  _i3.Future<List<_i58.ElectronicSignature>> listElectronicSignatures({
+  _i3.Future<List<_i62.ElectronicSignature>> listElectronicSignatures({
     DateTime? from,
     DateTime? to,
     String? entityType,
     int? userId,
     required int limit,
-  }) => caller.callServerEndpoint<List<_i58.ElectronicSignature>>(
+  }) => caller.callServerEndpoint<List<_i62.ElectronicSignature>>(
     'training',
     'listElectronicSignatures',
     {
@@ -3117,13 +3786,13 @@ class EndpointTraining extends _i2.EndpointRef {
   /// Complete training: create TrainingRecord, Certificate, update Enrollment.
   /// Call after assessment pass and e-signature.
   /// Idempotent: returns existing certificate if already completed for this enrollment.
-  _i3.Future<_i18.Certificate> completeTraining({
+  _i3.Future<_i19.Certificate> completeTraining({
     required int enrollmentId,
     required int userId,
     required int courseVersionId,
     required int esignatureId,
     int? score,
-  }) => caller.callServerEndpoint<_i18.Certificate>(
+  }) => caller.callServerEndpoint<_i19.Certificate>(
     'training',
     'completeTraining',
     {
@@ -3136,20 +3805,20 @@ class EndpointTraining extends _i2.EndpointRef {
   );
 
   /// QA-08: List annotations for a training record.
-  _i3.Future<List<_i59.TrainingRecordAnnotation>> listAnnotations(
+  _i3.Future<List<_i63.TrainingRecordAnnotation>> listAnnotations(
     int trainingRecordId,
-  ) => caller.callServerEndpoint<List<_i59.TrainingRecordAnnotation>>(
+  ) => caller.callServerEndpoint<List<_i63.TrainingRecordAnnotation>>(
     'training',
     'listAnnotations',
     {'trainingRecordId': trainingRecordId},
   );
 
   /// QA-08: Add annotation to a training record (QA role).
-  _i3.Future<_i59.TrainingRecordAnnotation> addAnnotation({
+  _i3.Future<_i63.TrainingRecordAnnotation> addAnnotation({
     required int trainingRecordId,
     required int authorId,
     required String note,
-  }) => caller.callServerEndpoint<_i59.TrainingRecordAnnotation>(
+  }) => caller.callServerEndpoint<_i63.TrainingRecordAnnotation>(
     'training',
     'addAnnotation',
     {
@@ -3178,10 +3847,10 @@ class EndpointTraining extends _i2.EndpointRef {
   /// Self-enrollment for employee-initiated course enrollment.
   /// Creates a "self" source assignment and associated enrollment.
   /// Returns the created enrollment.
-  _i3.Future<_i55.Enrollment> selfEnroll({
+  _i3.Future<_i59.Enrollment> selfEnroll({
     required int userId,
     required int courseVersionId,
-  }) => caller.callServerEndpoint<_i55.Enrollment>(
+  }) => caller.callServerEndpoint<_i59.Enrollment>(
     'training',
     'selfEnroll',
     {
@@ -3191,36 +3860,36 @@ class EndpointTraining extends _i2.EndpointRef {
   );
 
   /// Get all enrollments for a specific course version (trainer view).
-  _i3.Future<List<_i55.Enrollment>> getEnrollmentsForCourseVersion(
+  _i3.Future<List<_i59.Enrollment>> getEnrollmentsForCourseVersion(
     int courseVersionId,
-  ) => caller.callServerEndpoint<List<_i55.Enrollment>>(
+  ) => caller.callServerEndpoint<List<_i59.Enrollment>>(
     'training',
     'getEnrollmentsForCourseVersion',
     {'courseVersionId': courseVersionId},
   );
 
   /// Get all assignments for a specific course version (trainer view).
-  _i3.Future<List<_i7.TrainingAssignment>> getAssignmentsForCourseVersion(
+  _i3.Future<List<_i9.TrainingAssignment>> getAssignmentsForCourseVersion(
     int courseVersionId,
-  ) => caller.callServerEndpoint<List<_i7.TrainingAssignment>>(
+  ) => caller.callServerEndpoint<List<_i9.TrainingAssignment>>(
     'training',
     'getAssignmentsForCourseVersion',
     {'courseVersionId': courseVersionId},
   );
 
   /// Get all assignments across all courses in an organization (trainer overview).
-  _i3.Future<List<_i7.TrainingAssignment>> getAllAssignments({
+  _i3.Future<List<_i9.TrainingAssignment>> getAllAssignments({
     int? organizationId,
-  }) => caller.callServerEndpoint<List<_i7.TrainingAssignment>>(
+  }) => caller.callServerEndpoint<List<_i9.TrainingAssignment>>(
     'training',
     'getAllAssignments',
     {'organizationId': organizationId},
   );
 
   /// Get training records for a specific course version (for analytics/learner progress).
-  _i3.Future<List<_i56.TrainingRecord>> getTrainingRecordsForCourseVersion(
+  _i3.Future<List<_i60.TrainingRecord>> getTrainingRecordsForCourseVersion(
     int courseVersionId,
-  ) => caller.callServerEndpoint<List<_i56.TrainingRecord>>(
+  ) => caller.callServerEndpoint<List<_i60.TrainingRecord>>(
     'training',
     'getTrainingRecordsForCourseVersion',
     {'courseVersionId': courseVersionId},
@@ -3249,9 +3918,9 @@ class EndpointTraining extends _i2.EndpointRef {
   );
 
   /// Get all certificates for a course version (trainer view).
-  _i3.Future<List<_i18.Certificate>> getCertificatesForCourseVersion(
+  _i3.Future<List<_i19.Certificate>> getCertificatesForCourseVersion(
     int courseVersionId,
-  ) => caller.callServerEndpoint<List<_i18.Certificate>>(
+  ) => caller.callServerEndpoint<List<_i19.Certificate>>(
     'training',
     'getCertificatesForCourseVersion',
     {'courseVersionId': courseVersionId},
@@ -3266,8 +3935,8 @@ class EndpointUser extends _i2.EndpointRef {
   @override
   String get name => 'user';
 
-  _i3.Future<_i17.PharmaUser?> getUser(int id) =>
-      caller.callServerEndpoint<_i17.PharmaUser?>(
+  _i3.Future<_i7.PharmaUser?> getUser(int id) =>
+      caller.callServerEndpoint<_i7.PharmaUser?>(
         'user',
         'getUser',
         {'id': id},
@@ -3276,8 +3945,8 @@ class EndpointUser extends _i2.EndpointRef {
   /// Returns PharmaUser by email.
   /// For demo/development: if no auth session, looks up user directly by email.
   /// For production: validates session and ensures user can only access own profile.
-  _i3.Future<_i17.PharmaUser?> getUserByEmail(String email) =>
-      caller.callServerEndpoint<_i17.PharmaUser?>(
+  _i3.Future<_i7.PharmaUser?> getUserByEmail(String email) =>
+      caller.callServerEndpoint<_i7.PharmaUser?>(
         'user',
         'getUserByEmail',
         {'email': email},
@@ -3294,20 +3963,20 @@ class EndpointUser extends _i2.EndpointRef {
       );
 
   /// Get all preferences for a user.
-  _i3.Future<List<_i60.UserPreference>> getUserPreferences({
+  _i3.Future<List<_i64.UserPreference>> getUserPreferences({
     required int userId,
-  }) => caller.callServerEndpoint<List<_i60.UserPreference>>(
+  }) => caller.callServerEndpoint<List<_i64.UserPreference>>(
     'user',
     'getUserPreferences',
     {'userId': userId},
   );
 
   /// Set a user preference (upsert).
-  _i3.Future<_i60.UserPreference> setUserPreference({
+  _i3.Future<_i64.UserPreference> setUserPreference({
     required int userId,
     required String key,
     required String value,
-  }) => caller.callServerEndpoint<_i60.UserPreference>(
+  }) => caller.callServerEndpoint<_i64.UserPreference>(
     'user',
     'setUserPreference',
     {
@@ -3388,8 +4057,8 @@ class EndpointGreeting extends _i2.EndpointRef {
   String get name => 'greeting';
 
   /// Returns a personalized greeting message: "Hello {name}".
-  _i3.Future<_i61.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i61.Greeting>(
+  _i3.Future<_i65.Greeting> hello(String name) =>
+      caller.callServerEndpoint<_i65.Greeting>(
         'greeting',
         'hello',
         {'name': name},
@@ -3400,14 +4069,14 @@ class Modules {
   Modules(Client client) {
     serverpod_auth_core = _i4.Caller(client);
     serverpod_auth_idp = _i1.Caller(client);
-    auth = _i62.Caller(client);
+    auth = _i66.Caller(client);
   }
 
   late final _i4.Caller serverpod_auth_core;
 
   late final _i1.Caller serverpod_auth_idp;
 
-  late final _i62.Caller auth;
+  late final _i66.Caller auth;
 }
 
 class Client extends _i2.ServerpodClientShared {
@@ -3430,7 +4099,7 @@ class Client extends _i2.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i63.Protocol(),
+         _i67.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -3442,12 +4111,16 @@ class Client extends _i2.ServerpodClientShared {
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     oidcIdp = EndpointOidcIdp(this);
+    accessReview = EndpointAccessReview(this);
+    adminUserManagement = EndpointAdminUserManagement(this);
     admin = EndpointAdmin(this);
     analytics = EndpointAnalytics(this);
     assessmentBuilder = EndpointAssessmentBuilder(this);
     assessment = EndpointAssessment(this);
     audit = EndpointAudit(this);
+    auditFeed = EndpointAuditFeed(this);
     auditTrail = EndpointAuditTrail(this);
+    certificate = EndpointCertificate(this);
     compliance = EndpointCompliance(this);
     courseBuilder = EndpointCourseBuilder(this);
     course = EndpointCourse(this);
@@ -3457,11 +4130,13 @@ class Client extends _i2.ServerpodClientShared {
     material = EndpointMaterial(this);
     mfa = EndpointMfa(this);
     notification = EndpointNotification(this);
+    notificationTemplate = EndpointNotificationTemplate(this);
     organization = EndpointOrganization(this);
     qa = EndpointQa(this);
     qualityEvent = EndpointQualityEvent(this);
     seed = EndpointSeed(this);
     sopLinkage = EndpointSopLinkage(this);
+    trainingBatch = EndpointTrainingBatch(this);
     training = EndpointTraining(this);
     user = EndpointUser(this);
     validation = EndpointValidation(this);
@@ -3475,6 +4150,10 @@ class Client extends _i2.ServerpodClientShared {
 
   late final EndpointOidcIdp oidcIdp;
 
+  late final EndpointAccessReview accessReview;
+
+  late final EndpointAdminUserManagement adminUserManagement;
+
   late final EndpointAdmin admin;
 
   late final EndpointAnalytics analytics;
@@ -3485,7 +4164,11 @@ class Client extends _i2.ServerpodClientShared {
 
   late final EndpointAudit audit;
 
+  late final EndpointAuditFeed auditFeed;
+
   late final EndpointAuditTrail auditTrail;
+
+  late final EndpointCertificate certificate;
 
   late final EndpointCompliance compliance;
 
@@ -3505,6 +4188,8 @@ class Client extends _i2.ServerpodClientShared {
 
   late final EndpointNotification notification;
 
+  late final EndpointNotificationTemplate notificationTemplate;
+
   late final EndpointOrganization organization;
 
   late final EndpointQa qa;
@@ -3514,6 +4199,8 @@ class Client extends _i2.ServerpodClientShared {
   late final EndpointSeed seed;
 
   late final EndpointSopLinkage sopLinkage;
+
+  late final EndpointTrainingBatch trainingBatch;
 
   late final EndpointTraining training;
 
@@ -3530,12 +4217,16 @@ class Client extends _i2.ServerpodClientShared {
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
     'oidcIdp': oidcIdp,
+    'accessReview': accessReview,
+    'adminUserManagement': adminUserManagement,
     'admin': admin,
     'analytics': analytics,
     'assessmentBuilder': assessmentBuilder,
     'assessment': assessment,
     'audit': audit,
+    'auditFeed': auditFeed,
     'auditTrail': auditTrail,
+    'certificate': certificate,
     'compliance': compliance,
     'courseBuilder': courseBuilder,
     'course': course,
@@ -3545,11 +4236,13 @@ class Client extends _i2.ServerpodClientShared {
     'material': material,
     'mfa': mfa,
     'notification': notification,
+    'notificationTemplate': notificationTemplate,
     'organization': organization,
     'qa': qa,
     'qualityEvent': qualityEvent,
     'seed': seed,
     'sopLinkage': sopLinkage,
+    'trainingBatch': trainingBatch,
     'training': training,
     'user': user,
     'validation': validation,

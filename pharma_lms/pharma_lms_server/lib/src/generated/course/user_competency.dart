@@ -398,7 +398,7 @@ class UserCompetencyRepository {
   /// );
   /// ```
   Future<List<UserCompetency>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserCompetencyTable>? where,
     int? limit,
     int? offset,
@@ -442,7 +442,7 @@ class UserCompetencyRepository {
   /// );
   /// ```
   Future<UserCompetency?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserCompetencyTable>? where,
     int? offset,
     _i1.OrderByBuilder<UserCompetencyTable>? orderBy,
@@ -468,7 +468,7 @@ class UserCompetencyRepository {
 
   /// Finds a single [UserCompetency] by its [id] or null if no such row exists.
   Future<UserCompetency?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     UserCompetencyInclude? include,
@@ -495,7 +495,7 @@ class UserCompetencyRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<UserCompetency>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserCompetency> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -511,7 +511,7 @@ class UserCompetencyRepository {
   ///
   /// The returned [UserCompetency] will have its `id` field set.
   Future<UserCompetency> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserCompetency row, {
     _i1.Transaction? transaction,
   }) async {
@@ -527,7 +527,7 @@ class UserCompetencyRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<UserCompetency>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserCompetency> rows, {
     _i1.ColumnSelections<UserCompetencyTable>? columns,
     _i1.Transaction? transaction,
@@ -543,7 +543,7 @@ class UserCompetencyRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<UserCompetency> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserCompetency row, {
     _i1.ColumnSelections<UserCompetencyTable>? columns,
     _i1.Transaction? transaction,
@@ -558,7 +558,7 @@ class UserCompetencyRepository {
   /// Updates a single [UserCompetency] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<UserCompetency?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<UserCompetencyUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -573,7 +573,7 @@ class UserCompetencyRepository {
   /// Updates all [UserCompetency]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<UserCompetency>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<UserCompetencyUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<UserCompetencyTable> where,
     int? limit,
@@ -599,7 +599,7 @@ class UserCompetencyRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<UserCompetency>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserCompetency> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -611,7 +611,7 @@ class UserCompetencyRepository {
 
   /// Deletes a single [UserCompetency].
   Future<UserCompetency> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserCompetency row, {
     _i1.Transaction? transaction,
   }) async {
@@ -623,7 +623,7 @@ class UserCompetencyRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<UserCompetency>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserCompetencyTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -636,7 +636,7 @@ class UserCompetencyRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserCompetencyTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -650,7 +650,7 @@ class UserCompetencyRepository {
 
   /// Acquires row-level locks on [UserCompetency] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserCompetencyTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -671,7 +671,7 @@ class UserCompetencyAttachRowRepository {
   /// Creates a relation between the given [UserCompetency] and [PharmaUser]
   /// by setting the [UserCompetency]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserCompetency userCompetency,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -694,7 +694,7 @@ class UserCompetencyAttachRowRepository {
   /// Creates a relation between the given [UserCompetency] and [Competency]
   /// by setting the [UserCompetency]'s foreign key `competencyId` to refer to the [Competency].
   Future<void> competency(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserCompetency userCompetency,
     _i3.Competency competency, {
     _i1.Transaction? transaction,

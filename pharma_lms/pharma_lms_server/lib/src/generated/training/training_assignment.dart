@@ -772,7 +772,7 @@ class TrainingAssignmentRepository {
   /// );
   /// ```
   Future<List<TrainingAssignment>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingAssignmentTable>? where,
     int? limit,
     int? offset,
@@ -816,7 +816,7 @@ class TrainingAssignmentRepository {
   /// );
   /// ```
   Future<TrainingAssignment?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingAssignmentTable>? where,
     int? offset,
     _i1.OrderByBuilder<TrainingAssignmentTable>? orderBy,
@@ -842,7 +842,7 @@ class TrainingAssignmentRepository {
 
   /// Finds a single [TrainingAssignment] by its [id] or null if no such row exists.
   Future<TrainingAssignment?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     TrainingAssignmentInclude? include,
@@ -869,7 +869,7 @@ class TrainingAssignmentRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<TrainingAssignment>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingAssignment> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -885,7 +885,7 @@ class TrainingAssignmentRepository {
   ///
   /// The returned [TrainingAssignment] will have its `id` field set.
   Future<TrainingAssignment> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingAssignment row, {
     _i1.Transaction? transaction,
   }) async {
@@ -901,7 +901,7 @@ class TrainingAssignmentRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<TrainingAssignment>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingAssignment> rows, {
     _i1.ColumnSelections<TrainingAssignmentTable>? columns,
     _i1.Transaction? transaction,
@@ -917,7 +917,7 @@ class TrainingAssignmentRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<TrainingAssignment> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingAssignment row, {
     _i1.ColumnSelections<TrainingAssignmentTable>? columns,
     _i1.Transaction? transaction,
@@ -932,7 +932,7 @@ class TrainingAssignmentRepository {
   /// Updates a single [TrainingAssignment] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<TrainingAssignment?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<TrainingAssignmentUpdateTable>
     columnValues,
@@ -948,7 +948,7 @@ class TrainingAssignmentRepository {
   /// Updates all [TrainingAssignment]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<TrainingAssignment>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<TrainingAssignmentUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<TrainingAssignmentTable> where,
@@ -975,7 +975,7 @@ class TrainingAssignmentRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<TrainingAssignment>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingAssignment> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -987,7 +987,7 @@ class TrainingAssignmentRepository {
 
   /// Deletes a single [TrainingAssignment].
   Future<TrainingAssignment> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingAssignment row, {
     _i1.Transaction? transaction,
   }) async {
@@ -999,7 +999,7 @@ class TrainingAssignmentRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<TrainingAssignment>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingAssignmentTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -1012,7 +1012,7 @@ class TrainingAssignmentRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingAssignmentTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -1026,7 +1026,7 @@ class TrainingAssignmentRepository {
 
   /// Acquires row-level locks on [TrainingAssignment] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingAssignmentTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -1047,7 +1047,7 @@ class TrainingAssignmentAttachRowRepository {
   /// Creates a relation between the given [TrainingAssignment] and [PharmaUser]
   /// by setting the [TrainingAssignment]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingAssignment trainingAssignment,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -1070,7 +1070,7 @@ class TrainingAssignmentAttachRowRepository {
   /// Creates a relation between the given [TrainingAssignment] and [CourseVersion]
   /// by setting the [TrainingAssignment]'s foreign key `courseVersionId` to refer to the [CourseVersion].
   Future<void> courseVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingAssignment trainingAssignment,
     _i3.CourseVersion courseVersion, {
     _i1.Transaction? transaction,
@@ -1095,7 +1095,7 @@ class TrainingAssignmentAttachRowRepository {
   /// Creates a relation between the given [TrainingAssignment] and [PharmaUser]
   /// by setting the [TrainingAssignment]'s foreign key `assignedById` to refer to the [PharmaUser].
   Future<void> assignedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingAssignment trainingAssignment,
     _i2.PharmaUser assignedBy, {
     _i1.Transaction? transaction,

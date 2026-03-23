@@ -295,7 +295,7 @@ class OidcAccountRepository {
   /// );
   /// ```
   Future<List<OidcAccount>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OidcAccountTable>? where,
     int? limit,
     int? offset,
@@ -337,7 +337,7 @@ class OidcAccountRepository {
   /// );
   /// ```
   Future<OidcAccount?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OidcAccountTable>? where,
     int? offset,
     _i1.OrderByBuilder<OidcAccountTable>? orderBy,
@@ -361,7 +361,7 @@ class OidcAccountRepository {
 
   /// Finds a single [OidcAccount] by its [id] or null if no such row exists.
   Future<OidcAccount?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -386,7 +386,7 @@ class OidcAccountRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<OidcAccount>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<OidcAccount> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -402,7 +402,7 @@ class OidcAccountRepository {
   ///
   /// The returned [OidcAccount] will have its `id` field set.
   Future<OidcAccount> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     OidcAccount row, {
     _i1.Transaction? transaction,
   }) async {
@@ -418,7 +418,7 @@ class OidcAccountRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<OidcAccount>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<OidcAccount> rows, {
     _i1.ColumnSelections<OidcAccountTable>? columns,
     _i1.Transaction? transaction,
@@ -434,7 +434,7 @@ class OidcAccountRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<OidcAccount> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     OidcAccount row, {
     _i1.ColumnSelections<OidcAccountTable>? columns,
     _i1.Transaction? transaction,
@@ -449,7 +449,7 @@ class OidcAccountRepository {
   /// Updates a single [OidcAccount] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<OidcAccount?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<OidcAccountUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -464,7 +464,7 @@ class OidcAccountRepository {
   /// Updates all [OidcAccount]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<OidcAccount>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<OidcAccountUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<OidcAccountTable> where,
     int? limit,
@@ -490,7 +490,7 @@ class OidcAccountRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<OidcAccount>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<OidcAccount> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -502,7 +502,7 @@ class OidcAccountRepository {
 
   /// Deletes a single [OidcAccount].
   Future<OidcAccount> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     OidcAccount row, {
     _i1.Transaction? transaction,
   }) async {
@@ -514,7 +514,7 @@ class OidcAccountRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<OidcAccount>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<OidcAccountTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -527,7 +527,7 @@ class OidcAccountRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OidcAccountTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -541,7 +541,7 @@ class OidcAccountRepository {
 
   /// Acquires row-level locks on [OidcAccount] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<OidcAccountTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

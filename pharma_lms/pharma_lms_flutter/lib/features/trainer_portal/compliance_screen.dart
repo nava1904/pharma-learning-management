@@ -9,7 +9,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../core/client.dart';

@@ -334,7 +334,7 @@ class UserRoleRepository {
   /// );
   /// ```
   Future<List<UserRole>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserRoleTable>? where,
     int? limit,
     int? offset,
@@ -378,7 +378,7 @@ class UserRoleRepository {
   /// );
   /// ```
   Future<UserRole?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserRoleTable>? where,
     int? offset,
     _i1.OrderByBuilder<UserRoleTable>? orderBy,
@@ -404,7 +404,7 @@ class UserRoleRepository {
 
   /// Finds a single [UserRole] by its [id] or null if no such row exists.
   Future<UserRole?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     UserRoleInclude? include,
@@ -431,7 +431,7 @@ class UserRoleRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<UserRole>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserRole> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -447,7 +447,7 @@ class UserRoleRepository {
   ///
   /// The returned [UserRole] will have its `id` field set.
   Future<UserRole> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserRole row, {
     _i1.Transaction? transaction,
   }) async {
@@ -463,7 +463,7 @@ class UserRoleRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<UserRole>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserRole> rows, {
     _i1.ColumnSelections<UserRoleTable>? columns,
     _i1.Transaction? transaction,
@@ -479,7 +479,7 @@ class UserRoleRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<UserRole> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserRole row, {
     _i1.ColumnSelections<UserRoleTable>? columns,
     _i1.Transaction? transaction,
@@ -494,7 +494,7 @@ class UserRoleRepository {
   /// Updates a single [UserRole] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<UserRole?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<UserRoleUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -509,7 +509,7 @@ class UserRoleRepository {
   /// Updates all [UserRole]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<UserRole>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<UserRoleUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<UserRoleTable> where,
     int? limit,
@@ -535,7 +535,7 @@ class UserRoleRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<UserRole>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserRole> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -547,7 +547,7 @@ class UserRoleRepository {
 
   /// Deletes a single [UserRole].
   Future<UserRole> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserRole row, {
     _i1.Transaction? transaction,
   }) async {
@@ -559,7 +559,7 @@ class UserRoleRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<UserRole>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserRoleTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -572,7 +572,7 @@ class UserRoleRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserRoleTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -586,7 +586,7 @@ class UserRoleRepository {
 
   /// Acquires row-level locks on [UserRole] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserRoleTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -607,7 +607,7 @@ class UserRoleAttachRowRepository {
   /// Creates a relation between the given [UserRole] and [PharmaUser]
   /// by setting the [UserRole]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserRole userRole,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -630,7 +630,7 @@ class UserRoleAttachRowRepository {
   /// Creates a relation between the given [UserRole] and [Role]
   /// by setting the [UserRole]'s foreign key `roleId` to refer to the [Role].
   Future<void> role(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserRole userRole,
     _i3.Role role, {
     _i1.Transaction? transaction,

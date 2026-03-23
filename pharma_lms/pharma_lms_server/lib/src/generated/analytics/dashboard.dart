@@ -312,7 +312,7 @@ class DashboardRepository {
   /// );
   /// ```
   Future<List<Dashboard>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DashboardTable>? where,
     int? limit,
     int? offset,
@@ -356,7 +356,7 @@ class DashboardRepository {
   /// );
   /// ```
   Future<Dashboard?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DashboardTable>? where,
     int? offset,
     _i1.OrderByBuilder<DashboardTable>? orderBy,
@@ -382,7 +382,7 @@ class DashboardRepository {
 
   /// Finds a single [Dashboard] by its [id] or null if no such row exists.
   Future<Dashboard?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     DashboardInclude? include,
@@ -409,7 +409,7 @@ class DashboardRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Dashboard>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Dashboard> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -425,7 +425,7 @@ class DashboardRepository {
   ///
   /// The returned [Dashboard] will have its `id` field set.
   Future<Dashboard> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Dashboard row, {
     _i1.Transaction? transaction,
   }) async {
@@ -441,7 +441,7 @@ class DashboardRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Dashboard>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Dashboard> rows, {
     _i1.ColumnSelections<DashboardTable>? columns,
     _i1.Transaction? transaction,
@@ -457,7 +457,7 @@ class DashboardRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Dashboard> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Dashboard row, {
     _i1.ColumnSelections<DashboardTable>? columns,
     _i1.Transaction? transaction,
@@ -472,7 +472,7 @@ class DashboardRepository {
   /// Updates a single [Dashboard] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Dashboard?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<DashboardUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -487,7 +487,7 @@ class DashboardRepository {
   /// Updates all [Dashboard]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Dashboard>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<DashboardUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<DashboardTable> where,
     int? limit,
@@ -513,7 +513,7 @@ class DashboardRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Dashboard>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Dashboard> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -525,7 +525,7 @@ class DashboardRepository {
 
   /// Deletes a single [Dashboard].
   Future<Dashboard> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Dashboard row, {
     _i1.Transaction? transaction,
   }) async {
@@ -537,7 +537,7 @@ class DashboardRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Dashboard>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DashboardTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -550,7 +550,7 @@ class DashboardRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<DashboardTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -564,7 +564,7 @@ class DashboardRepository {
 
   /// Acquires row-level locks on [Dashboard] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<DashboardTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -585,7 +585,7 @@ class DashboardAttachRowRepository {
   /// Creates a relation between the given [Dashboard] and [Role]
   /// by setting the [Dashboard]'s foreign key `roleId` to refer to the [Role].
   Future<void> role(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Dashboard dashboard,
     _i2.Role role, {
     _i1.Transaction? transaction,
@@ -615,7 +615,7 @@ class DashboardDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> role(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Dashboard dashboard, {
     _i1.Transaction? transaction,
   }) async {

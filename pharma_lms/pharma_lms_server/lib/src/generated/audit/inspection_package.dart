@@ -624,7 +624,7 @@ class InspectionPackageRepository {
   /// );
   /// ```
   Future<List<InspectionPackage>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionPackageTable>? where,
     int? limit,
     int? offset,
@@ -668,7 +668,7 @@ class InspectionPackageRepository {
   /// );
   /// ```
   Future<InspectionPackage?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionPackageTable>? where,
     int? offset,
     _i1.OrderByBuilder<InspectionPackageTable>? orderBy,
@@ -694,7 +694,7 @@ class InspectionPackageRepository {
 
   /// Finds a single [InspectionPackage] by its [id] or null if no such row exists.
   Future<InspectionPackage?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     InspectionPackageInclude? include,
@@ -721,7 +721,7 @@ class InspectionPackageRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<InspectionPackage>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionPackage> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -737,7 +737,7 @@ class InspectionPackageRepository {
   ///
   /// The returned [InspectionPackage] will have its `id` field set.
   Future<InspectionPackage> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage row, {
     _i1.Transaction? transaction,
   }) async {
@@ -753,7 +753,7 @@ class InspectionPackageRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<InspectionPackage>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionPackage> rows, {
     _i1.ColumnSelections<InspectionPackageTable>? columns,
     _i1.Transaction? transaction,
@@ -769,7 +769,7 @@ class InspectionPackageRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<InspectionPackage> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage row, {
     _i1.ColumnSelections<InspectionPackageTable>? columns,
     _i1.Transaction? transaction,
@@ -784,7 +784,7 @@ class InspectionPackageRepository {
   /// Updates a single [InspectionPackage] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<InspectionPackage?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<InspectionPackageUpdateTable>
     columnValues,
@@ -800,7 +800,7 @@ class InspectionPackageRepository {
   /// Updates all [InspectionPackage]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<InspectionPackage>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<InspectionPackageUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<InspectionPackageTable> where,
@@ -827,7 +827,7 @@ class InspectionPackageRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<InspectionPackage>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<InspectionPackage> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -839,7 +839,7 @@ class InspectionPackageRepository {
 
   /// Deletes a single [InspectionPackage].
   Future<InspectionPackage> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage row, {
     _i1.Transaction? transaction,
   }) async {
@@ -851,7 +851,7 @@ class InspectionPackageRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<InspectionPackage>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<InspectionPackageTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -864,7 +864,7 @@ class InspectionPackageRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<InspectionPackageTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -878,7 +878,7 @@ class InspectionPackageRepository {
 
   /// Acquires row-level locks on [InspectionPackage] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<InspectionPackageTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -899,7 +899,7 @@ class InspectionPackageAttachRowRepository {
   /// Creates a relation between the given [InspectionPackage] and [InspectionRecord]
   /// by setting the [InspectionPackage]'s foreign key `inspectionRecordId` to refer to the [InspectionRecord].
   Future<void> inspectionRecord(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage inspectionPackage,
     _i2.InspectionRecord inspectionRecord, {
     _i1.Transaction? transaction,
@@ -924,7 +924,7 @@ class InspectionPackageAttachRowRepository {
   /// Creates a relation between the given [InspectionPackage] and [PharmaUser]
   /// by setting the [InspectionPackage]'s foreign key `generatedById` to refer to the [PharmaUser].
   Future<void> generatedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage inspectionPackage,
     _i3.PharmaUser generatedBy, {
     _i1.Transaction? transaction,
@@ -949,7 +949,7 @@ class InspectionPackageAttachRowRepository {
   /// Creates a relation between the given [InspectionPackage] and [ElectronicSignature]
   /// by setting the [InspectionPackage]'s foreign key `officialEsignatureId` to refer to the [ElectronicSignature].
   Future<void> officialEsignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage inspectionPackage,
     _i4.ElectronicSignature officialEsignature, {
     _i1.Transaction? transaction,
@@ -981,7 +981,7 @@ class InspectionPackageDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> officialEsignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     InspectionPackage inspectionPackage, {
     _i1.Transaction? transaction,
   }) async {

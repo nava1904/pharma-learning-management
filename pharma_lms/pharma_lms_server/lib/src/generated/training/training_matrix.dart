@@ -664,7 +664,7 @@ class TrainingMatrixRepository {
   /// );
   /// ```
   Future<List<TrainingMatrix>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingMatrixTable>? where,
     int? limit,
     int? offset,
@@ -708,7 +708,7 @@ class TrainingMatrixRepository {
   /// );
   /// ```
   Future<TrainingMatrix?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingMatrixTable>? where,
     int? offset,
     _i1.OrderByBuilder<TrainingMatrixTable>? orderBy,
@@ -734,7 +734,7 @@ class TrainingMatrixRepository {
 
   /// Finds a single [TrainingMatrix] by its [id] or null if no such row exists.
   Future<TrainingMatrix?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     TrainingMatrixInclude? include,
@@ -761,7 +761,7 @@ class TrainingMatrixRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<TrainingMatrix>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingMatrix> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -777,7 +777,7 @@ class TrainingMatrixRepository {
   ///
   /// The returned [TrainingMatrix] will have its `id` field set.
   Future<TrainingMatrix> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix row, {
     _i1.Transaction? transaction,
   }) async {
@@ -793,7 +793,7 @@ class TrainingMatrixRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<TrainingMatrix>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingMatrix> rows, {
     _i1.ColumnSelections<TrainingMatrixTable>? columns,
     _i1.Transaction? transaction,
@@ -809,7 +809,7 @@ class TrainingMatrixRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<TrainingMatrix> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix row, {
     _i1.ColumnSelections<TrainingMatrixTable>? columns,
     _i1.Transaction? transaction,
@@ -824,7 +824,7 @@ class TrainingMatrixRepository {
   /// Updates a single [TrainingMatrix] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<TrainingMatrix?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<TrainingMatrixUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -839,7 +839,7 @@ class TrainingMatrixRepository {
   /// Updates all [TrainingMatrix]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<TrainingMatrix>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<TrainingMatrixUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<TrainingMatrixTable> where,
     int? limit,
@@ -865,7 +865,7 @@ class TrainingMatrixRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<TrainingMatrix>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingMatrix> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -877,7 +877,7 @@ class TrainingMatrixRepository {
 
   /// Deletes a single [TrainingMatrix].
   Future<TrainingMatrix> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix row, {
     _i1.Transaction? transaction,
   }) async {
@@ -889,7 +889,7 @@ class TrainingMatrixRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<TrainingMatrix>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingMatrixTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -902,7 +902,7 @@ class TrainingMatrixRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingMatrixTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -916,7 +916,7 @@ class TrainingMatrixRepository {
 
   /// Acquires row-level locks on [TrainingMatrix] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingMatrixTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -937,7 +937,7 @@ class TrainingMatrixAttachRowRepository {
   /// Creates a relation between the given [TrainingMatrix] and [JobRole]
   /// by setting the [TrainingMatrix]'s foreign key `jobRoleId` to refer to the [JobRole].
   Future<void> jobRole(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix,
     _i2.JobRole jobRole, {
     _i1.Transaction? transaction,
@@ -960,7 +960,7 @@ class TrainingMatrixAttachRowRepository {
   /// Creates a relation between the given [TrainingMatrix] and [Course]
   /// by setting the [TrainingMatrix]'s foreign key `courseId` to refer to the [Course].
   Future<void> course(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix,
     _i3.Course course, {
     _i1.Transaction? transaction,
@@ -983,7 +983,7 @@ class TrainingMatrixAttachRowRepository {
   /// Creates a relation between the given [TrainingMatrix] and [Site]
   /// by setting the [TrainingMatrix]'s foreign key `siteId` to refer to the [Site].
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix,
     _i4.Site site, {
     _i1.Transaction? transaction,
@@ -1006,7 +1006,7 @@ class TrainingMatrixAttachRowRepository {
   /// Creates a relation between the given [TrainingMatrix] and [PharmaUser]
   /// by setting the [TrainingMatrix]'s foreign key `createdById` to refer to the [PharmaUser].
   Future<void> createdBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix,
     _i5.PharmaUser createdBy, {
     _i1.Transaction? transaction,
@@ -1029,7 +1029,7 @@ class TrainingMatrixAttachRowRepository {
   /// Creates a relation between the given [TrainingMatrix] and [PharmaUser]
   /// by setting the [TrainingMatrix]'s foreign key `approvedById` to refer to the [PharmaUser].
   Future<void> approvedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix,
     _i5.PharmaUser approvedBy, {
     _i1.Transaction? transaction,
@@ -1059,7 +1059,7 @@ class TrainingMatrixDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix, {
     _i1.Transaction? transaction,
   }) async {
@@ -1081,7 +1081,7 @@ class TrainingMatrixDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> createdBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix, {
     _i1.Transaction? transaction,
   }) async {
@@ -1103,7 +1103,7 @@ class TrainingMatrixDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> approvedBy(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingMatrix trainingMatrix, {
     _i1.Transaction? transaction,
   }) async {

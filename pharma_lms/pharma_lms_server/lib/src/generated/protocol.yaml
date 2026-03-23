@@ -13,11 +13,24 @@ oidcIdp:
   - hasAccount:
   - getClientConfig:
   - login:
+accessReview:
+  - getAccessReviews:
+  - recertify:
+  - revoke:
+  - signReview:
+  - exportSignedPdf:
+adminUserManagement:
+  - listUsers:
+  - getUser:
+  - createUser:
+  - updateUser:
+  - deactivateUser:
 admin:
   - listSignatureMeanings:
   - createSignatureMeaning:
   - updateSignatureMeaning:
   - assignTrainingToDepartment:
+  - createUserWithRole:
   - bulkImportUsers:
   - bulkImportTrainingMatrix:
   - updateJobRoleTrainingMatrix:
@@ -29,6 +42,11 @@ admin:
   - approveTrainingWaiver:
   - rejectTrainingWaiver:
   - unlockUserByEmail:
+  - listUsers:
+  - getUserCount:
+  - getUser:
+  - updateUser:
+  - deactivateUser:
   - terminateUser:
 analytics:
   - getCourseAnalytics:
@@ -97,8 +115,17 @@ audit:
   - getConfigChangeLog:
   - getAccessLogs:
   - exportAuditCsv:
+auditFeed:
+  - getRecentAuditEvents:
 auditTrail:
   - logAction:
+certificate:
+  - listCertificates:
+  - getCertificate:
+  - getUserCertificates:
+  - revokeCertificate:
+  - getCertificateStats:
+  - verifyCertificate:
 compliance:
   - getDepartmentCompliance:
   - getUserCompliance:
@@ -188,6 +215,15 @@ notification:
   - getTrainerNotifications:
   - markNotificationRead:
   - getUnreadCount:
+  - listNotifications:
+notificationTemplate:
+  - listTemplates:
+  - getTemplate:
+  - createTemplate:
+  - updateTemplate:
+  - deleteTemplate:
+  - getTemplateStats:
+  - duplicateTemplate:
 organization:
   - listOrganizations:
   - getOrganization:
@@ -221,11 +257,19 @@ seed:
   - clearAndReseed:
   - runComprehensiveSeed:
   - provisionAuthAccounts:
+  - fixAdminPasswords:
 sopLinkage:
   - linkSopToCourse:
   - unlinkSopFromCourse:
   - getLinkedSops:
   - getCoursesForSop:
+trainingBatch:
+  - listBatches:
+  - getBatch:
+  - createBatch:
+  - updateBatch:
+  - deleteBatch:
+  - getBatchStats:
 training:
   - listSignatureMeanings:
   - getAssignmentsForUser:

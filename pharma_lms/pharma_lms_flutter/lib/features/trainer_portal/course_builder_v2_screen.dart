@@ -15,9 +15,9 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Material;
 import 'package:go_router/go_router.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
+import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
@@ -218,7 +218,16 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
           const SizedBox(width: 12),
           // Preview as Employee
           OutlinedButton.icon(
-            onPressed: () => context.go('/employee/course/${widget.courseId}'),
+            onPressed: () {
+              if (_selectedVersion != null) {
+                context.go(
+                  '/employee/course/${widget.courseId}',
+                  extra: {
+                    'courseVersionId': _selectedVersion!.id!,
+                  },
+                );
+              }
+            },
             icon: const Icon(Icons.visibility, size: 16),
             label: const Text('Preview as Employee'),
             style: OutlinedButton.styleFrom(
@@ -495,6 +504,195 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
 
             const SizedBox(height: PharmaSpacing.sectionGap),
 
+            // Linked Material Display
+            Builder(
+              builder: (ctx) {
+                final lesson = selectedLesson!;
+                
+                if (lesson.materialId <= 0) {
+                  return Container(
+                    padding: const EdgeInsets.all(PharmaSpacing.md),
+                    decoration: BoxDecoration(
+                      color: PharmaColors.warningBg,
+                      borderRadius: PharmaRadius.cardRadius,
+                      border: Border.all(color: PharmaColors.borderLight),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: PharmaColors.warning, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text('No material linked to this lesson',
+                              style: PharmaTypography.body
+                                  .copyWith(color: PharmaColors.warning)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return FutureBuilder<Material?>(
+                  future: client.material.getMaterial(lesson.materialId),
+                  builder: (ctx, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Container(
+                        padding: const EdgeInsets.all(PharmaSpacing.md),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.successBg,
+                          borderRadius: PharmaRadius.cardRadius,
+                          border: Border.all(color: PharmaColors.borderLight),
+                        ),
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    }
+
+                    final material = snapshot.data;
+                    if (material == null) {
+                      return Container(
+                        padding: const EdgeInsets.all(PharmaSpacing.md),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.dangerBg,
+                          borderRadius: PharmaRadius.cardRadius,
+                          border: Border.all(color: PharmaColors.borderLight),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: PharmaColors.danger),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text('Material not found',
+                                  style: PharmaTypography.body
+                                      .copyWith(color: PharmaColors.danger)),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () async {
+                                try {
+                                  await client.courseBuilder.updateLesson(
+                                    lessonId: lesson.id!,
+                                    title: lesson.title,
+                                    materialId: 0,
+                                  );
+                                  setState(() {
+                                    lesson.materialId = 0;
+                                  });
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error unlinking material: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(PharmaSpacing.md),
+                      decoration: BoxDecoration(
+                        color: PharmaColors.successBg,
+                        borderRadius: PharmaRadius.cardRadius,
+                        border: Border.all(color: PharmaColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.description, color: PharmaColors.success, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Linked Material',
+                                        style: PharmaTypography.caption
+                                            .copyWith(color: PharmaColors.success)),
+                                    const SizedBox(height: 4),
+                                    Text(material.title,
+                                        style: PharmaTypography.bodyMedium,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                              Chip(
+                                label: Text(material.materialType,
+                                    style: PharmaTypography.caption),
+                                backgroundColor:
+                                    PharmaColors.success.withOpacity(0.2),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  // Unlink material
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Unlink Material'),
+                                      content: const Text(
+                                          'Are you sure? The lesson will no longer be associated with this material.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(ctx),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            Navigator.pop(ctx);
+                                            try {
+                                              await client.courseBuilder.updateLesson(
+                                                lessonId: lesson.id!,
+                                                title: lesson.title,
+                                                materialId: 0,
+                                              );
+                                              setState(() {
+                                                lesson.materialId = 0;
+                                              });
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Error unlinking material: $e')),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          child: Text('Unlink',
+                                              style: TextStyle(color: PharmaColors.danger)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.link_off, size: 16),
+                                label: const Text('Unlink'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: PharmaColors.danger,
+                                  side: BorderSide(color: PharmaColors.borderMedium),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+
+            const SizedBox(height: PharmaSpacing.sectionGap),
+
             // Action buttons
             Row(
               children: [
@@ -542,11 +740,9 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
                 ),
                 const Spacer(),
                 OutlinedButton.icon(
-                  onPressed: () => context.go(
-                    '/trainer/courses/${widget.courseId}/lessons/${selectedLesson?.id}/material',
-                  ),
+                  onPressed: () => _linkMaterialToLesson(selectedLesson),
                   icon: const Icon(Icons.upload_file, size: 16),
-                  label: const Text('Upload Material'),
+                  label: const Text('Link Material'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: PharmaColors.info,
                     side: BorderSide(color: PharmaColors.infoBg),
@@ -839,6 +1035,117 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
       }
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _linkMaterialToLesson(Lesson? lesson) async {
+    if (lesson?.id == null) return;
+    
+    // Show material selection dialog
+    final selectedMaterialId = await _showMaterialSelectionDialog();
+    
+    if (selectedMaterialId != null && mounted) {
+      try {
+        // Update the lesson with the selected material
+        await client.courseBuilder.updateLesson(
+          lessonId: lesson!.id!,
+          materialId: selectedMaterialId,
+        );
+        
+        // Reload lesson data
+        await _load();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Material linked to lesson successfully'),
+              backgroundColor: PharmaColors.emerald600,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to link material: $e'),
+              backgroundColor: PharmaColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<int?> _showMaterialSelectionDialog() async {
+    try {
+      final materials = await client.material.listMaterials(
+        organizationId: _course?.organizationId ?? 0,
+      );
+      
+      if (!mounted || _course?.organizationId == null) return null;
+      
+      int? selectedId;
+      await showDialog<int?>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Select Material'),
+          content: SizedBox(
+            width: 400,
+            height: 300,
+            child: materials.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.folder_off, size: 48, color: PharmaColors.gray300),
+                        const SizedBox(height: 12),
+                        const Text('No materials found'),
+                        const SizedBox(height: 8),
+                        const Text('Upload materials in the Materials section first'),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: materials.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (_, i) {
+                      final m = materials[i];
+                      return ListTile(
+                        onTap: () {
+                          selectedId = m.id;
+                          Navigator.pop(ctx);
+                        },
+                        leading: Icon(
+                          m.materialType.toLowerCase() == 'pdf'
+                              ? Icons.picture_as_pdf
+                              : m.materialType.toLowerCase() == 'video'
+                                  ? Icons.videocam
+                                  : Icons.insert_drive_file,
+                          color: PharmaColors.emerald600,
+                        ),
+                        title: Text(m.title),
+                        subtitle: Text(m.materialType),
+                        trailing: const Icon(Icons.chevron_right),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+      return selectedId;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading materials: $e')),
+        );
+      }
+      return null;
     }
   }
 

@@ -14,7 +14,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../core/client.dart';
-import '../../design_system/pharma_components.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
 

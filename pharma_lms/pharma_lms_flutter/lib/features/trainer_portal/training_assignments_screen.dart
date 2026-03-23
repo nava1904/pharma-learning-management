@@ -818,7 +818,7 @@ class _NewAssignmentDialogState extends State<_NewAssignmentDialog> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             // Course selection
             DropdownButtonFormField<Course>(
-              value: _selectedCourse,
+              initialValue: _selectedCourse,
               items: courses
                   .map((c) => DropdownMenuItem(
                       value: c,
@@ -852,7 +852,7 @@ class _NewAssignmentDialogState extends State<_NewAssignmentDialog> {
               )
             else if (_selectedCourse != null)
               DropdownButtonFormField<CourseVersion>(
-                value: _selectedVersion,
+                initialValue: _selectedVersion,
                 items: _versions
                     .map((v) => DropdownMenuItem(
                         value: v,
@@ -873,7 +873,7 @@ class _NewAssignmentDialogState extends State<_NewAssignmentDialog> {
 
             // User selection
             DropdownButtonFormField<PharmaUser>(
-              value: _selectedUser,
+              initialValue: _selectedUser,
               items: users
                   .where((u) => u.status == 'active')
                   .map((u) => DropdownMenuItem(
@@ -898,7 +898,7 @@ class _NewAssignmentDialogState extends State<_NewAssignmentDialog> {
             Row(children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _priority,
+                  initialValue: _priority,
                   items: ['critical', 'high', 'medium', 'low']
                       .map((p) => DropdownMenuItem(
                           value: p,

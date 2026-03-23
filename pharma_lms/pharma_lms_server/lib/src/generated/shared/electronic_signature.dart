@@ -573,7 +573,7 @@ class ElectronicSignatureRepository {
   /// );
   /// ```
   Future<List<ElectronicSignature>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ElectronicSignatureTable>? where,
     int? limit,
     int? offset,
@@ -617,7 +617,7 @@ class ElectronicSignatureRepository {
   /// );
   /// ```
   Future<ElectronicSignature?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ElectronicSignatureTable>? where,
     int? offset,
     _i1.OrderByBuilder<ElectronicSignatureTable>? orderBy,
@@ -643,7 +643,7 @@ class ElectronicSignatureRepository {
 
   /// Finds a single [ElectronicSignature] by its [id] or null if no such row exists.
   Future<ElectronicSignature?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     ElectronicSignatureInclude? include,
@@ -670,7 +670,7 @@ class ElectronicSignatureRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ElectronicSignature>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ElectronicSignature> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -686,7 +686,7 @@ class ElectronicSignatureRepository {
   ///
   /// The returned [ElectronicSignature] will have its `id` field set.
   Future<ElectronicSignature> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ElectronicSignature row, {
     _i1.Transaction? transaction,
   }) async {
@@ -702,7 +702,7 @@ class ElectronicSignatureRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ElectronicSignature>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ElectronicSignature> rows, {
     _i1.ColumnSelections<ElectronicSignatureTable>? columns,
     _i1.Transaction? transaction,
@@ -718,7 +718,7 @@ class ElectronicSignatureRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ElectronicSignature> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ElectronicSignature row, {
     _i1.ColumnSelections<ElectronicSignatureTable>? columns,
     _i1.Transaction? transaction,
@@ -733,7 +733,7 @@ class ElectronicSignatureRepository {
   /// Updates a single [ElectronicSignature] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ElectronicSignature?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ElectronicSignatureUpdateTable>
     columnValues,
@@ -749,7 +749,7 @@ class ElectronicSignatureRepository {
   /// Updates all [ElectronicSignature]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ElectronicSignature>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ElectronicSignatureUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<ElectronicSignatureTable> where,
@@ -776,7 +776,7 @@ class ElectronicSignatureRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ElectronicSignature>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ElectronicSignature> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -788,7 +788,7 @@ class ElectronicSignatureRepository {
 
   /// Deletes a single [ElectronicSignature].
   Future<ElectronicSignature> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ElectronicSignature row, {
     _i1.Transaction? transaction,
   }) async {
@@ -800,7 +800,7 @@ class ElectronicSignatureRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ElectronicSignature>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ElectronicSignatureTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -813,7 +813,7 @@ class ElectronicSignatureRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ElectronicSignatureTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -827,7 +827,7 @@ class ElectronicSignatureRepository {
 
   /// Acquires row-level locks on [ElectronicSignature] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ElectronicSignatureTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -848,7 +848,7 @@ class ElectronicSignatureAttachRowRepository {
   /// Creates a relation between the given [ElectronicSignature] and [PharmaUser]
   /// by setting the [ElectronicSignature]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ElectronicSignature electronicSignature,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,

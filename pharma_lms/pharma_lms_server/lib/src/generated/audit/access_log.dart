@@ -400,7 +400,7 @@ class AccessLogRepository {
   /// );
   /// ```
   Future<List<AccessLog>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AccessLogTable>? where,
     int? limit,
     int? offset,
@@ -444,7 +444,7 @@ class AccessLogRepository {
   /// );
   /// ```
   Future<AccessLog?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AccessLogTable>? where,
     int? offset,
     _i1.OrderByBuilder<AccessLogTable>? orderBy,
@@ -470,7 +470,7 @@ class AccessLogRepository {
 
   /// Finds a single [AccessLog] by its [id] or null if no such row exists.
   Future<AccessLog?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AccessLogInclude? include,
@@ -497,7 +497,7 @@ class AccessLogRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AccessLog>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AccessLog> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -513,7 +513,7 @@ class AccessLogRepository {
   ///
   /// The returned [AccessLog] will have its `id` field set.
   Future<AccessLog> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AccessLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -529,7 +529,7 @@ class AccessLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AccessLog>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AccessLog> rows, {
     _i1.ColumnSelections<AccessLogTable>? columns,
     _i1.Transaction? transaction,
@@ -545,7 +545,7 @@ class AccessLogRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AccessLog> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AccessLog row, {
     _i1.ColumnSelections<AccessLogTable>? columns,
     _i1.Transaction? transaction,
@@ -560,7 +560,7 @@ class AccessLogRepository {
   /// Updates a single [AccessLog] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AccessLog?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AccessLogUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -575,7 +575,7 @@ class AccessLogRepository {
   /// Updates all [AccessLog]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AccessLog>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AccessLogUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<AccessLogTable> where,
     int? limit,
@@ -601,7 +601,7 @@ class AccessLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AccessLog>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AccessLog> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -613,7 +613,7 @@ class AccessLogRepository {
 
   /// Deletes a single [AccessLog].
   Future<AccessLog> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AccessLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -625,7 +625,7 @@ class AccessLogRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AccessLog>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AccessLogTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -638,7 +638,7 @@ class AccessLogRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AccessLogTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -652,7 +652,7 @@ class AccessLogRepository {
 
   /// Acquires row-level locks on [AccessLog] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AccessLogTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -673,7 +673,7 @@ class AccessLogAttachRowRepository {
   /// Creates a relation between the given [AccessLog] and [PharmaUser]
   /// by setting the [AccessLog]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AccessLog accessLog,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -703,7 +703,7 @@ class AccessLogDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AccessLog accessLog, {
     _i1.Transaction? transaction,
   }) async {

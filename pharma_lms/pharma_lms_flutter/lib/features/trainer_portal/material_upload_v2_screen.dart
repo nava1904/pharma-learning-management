@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
@@ -62,8 +63,14 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
         if (mounted) setState(() => _loading = false);
         return;
       }
-      final result = await client.material.listMaterials(organizationId: user!.organizationId!);
-      if (mounted) setState(() { _materials = result; _loading = false; });
+      final result = await client.material.listMaterials(organizationId: user!.organizationId);
+      if (mounted) {
+        setState(() {
+          // Show all materials - version history will have the storage key
+          _materials = result;
+          _loading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
@@ -417,36 +424,59 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
 
   Future<void> _previewMaterial(LmsMaterial m) async {
     try {
-      final url = await client.material.getMaterialViewUrl(m.storageKey ?? '');
+      String? storageKey = m.storageKey;
+      
+      // If no storage key on material, try to get it from latest version
+      if (storageKey == null || storageKey.isEmpty) {
+        if (m.id == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Material has no ID - cannot preview')),
+            );
+          }
+          return;
+        }
+        
+        try {
+          final versions = await client.material.getMaterialVersions(m.id!);
+          if (versions.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Material has no versions - cannot preview')),
+              );
+            }
+            return;
+          }
+          storageKey = versions.first.storageKey;
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to get material versions: $e')),
+            );
+          }
+          return;
+        }
+      }
+
+      if (storageKey.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Material has no storage key assigned')),
+          );
+        }
+        return;
+      }
+
+      final url = await client.material.getMaterialViewUrl(storageKey);
       if (!mounted) return;
-      final displayUrl = url ?? '';
+      
+      // Show preview dialog with rendered content
       showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('Preview: ${m.title}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Type: ${m.materialType}', style: PharmaTypography.caption),
-              const SizedBox(height: 12),
-              SelectableText(displayUrl, style: PharmaTypography.body.copyWith(color: PharmaColors.info)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: displayUrl));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('URL copied to clipboard')),
-                );
-              },
-              child: const Text('Copy URL'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
-            ),
-          ],
+        builder: (ctx) => _MaterialPreviewDialog(
+          title: m.title,
+          materialType: m.materialType,
+          url: url,
         ),
       );
     } catch (e) {
@@ -528,22 +558,51 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
       ),
     );
     if (confirmed != true) return;
+    
+    setState(() => _loading = true);
     try {
-      await client.material.deleteMaterial(materialId: m.id!);
-      if (mounted) {
+      final success = await client.material.deleteMaterial(materialId: m.id!);
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('"${m.title}" deleted'),
+            content: Text('"${m.title}" deleted successfully'),
             backgroundColor: PharmaColors.emerald600,
+            duration: const Duration(seconds: 3),
           ),
         );
-        _load();
+        await _load();
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        // Check if error is about material being used in lessons
+        final errorMsg = e.toString();
+        if (errorMsg.contains('used in') || errorMsg.contains('lesson')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Cannot delete: Material is linked to one or more lessons. Unlink it first.'),
+              backgroundColor: PharmaColors.warning,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Delete failed: ${e.toString().replaceAll('Exception: ', '')}'),
+              backgroundColor: PharmaColors.danger,
+            ),
+          );
+        }
+        setState(() => _loading = false);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Delete failed: $e')),
+          SnackBar(
+            content: Text('Unexpected error: $e'),
+            backgroundColor: PharmaColors.danger,
+          ),
         );
+        setState(() => _loading = false);
       }
     }
   }
@@ -573,7 +632,7 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
       setState(() => _uploadProgress = 0.1);
       final user = ref.read(currentUserProvider).valueOrNull;
       if (user?.organizationId == null) throw Exception('User has no organization assigned');
-      final material = await client.material.createMaterial(title: file.name.replaceAll(RegExp(r'\.[^.]+$'), ''), materialType: materialType, organizationId: user!.organizationId!);
+      final material = await client.material.createMaterial(title: file.name.replaceAll(RegExp(r'\.[^.]+$'), ''), materialType: materialType, organizationId: user!.organizationId);
       setState(() => _uploadProgress = 0.3);
 
       // Antivirus scan simulation
@@ -594,10 +653,20 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
       setState(() => _uploadProgress = 0.85);
 
       final fileHash = sha256.convert(bytes).toString();
-      await client.material.createMaterialVersion(materialId: material.id!, storageKey: storagePath, fileHash: fileHash, fileSizeBytes: bytes.length);
+      await client.material.createMaterialVersion(
+        materialId: material.id!,
+        storageKey: storagePath,
+        fileHash: fileHash,
+        fileSizeBytes: bytes.length,
+      );
+      
       setState(() { _uploadProgress = 1.0; _lastHash = fileHash; });
 
+      // Reload materials to show the newly uploaded file
+      // Add a small delay to ensure the server has processed the version
+      await Future.delayed(const Duration(milliseconds: 800));
       await _load();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Row(children: [
@@ -637,3 +706,203 @@ class _TypeChip extends StatelessWidget {
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MATERIAL PREVIEW DIALOG
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _MaterialPreviewDialog extends StatelessWidget {
+  const _MaterialPreviewDialog({
+    required this.title,
+    required this.materialType,
+    required this.url,
+  });
+
+  final String title;
+  final String materialType;
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.lg)),
+      insetPadding: const EdgeInsets.all(PharmaSpacing.lg),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: 900,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(PharmaSpacing.lg),
+              decoration: BoxDecoration(
+                color: PharmaColors.pageBg,
+                border: Border(bottom: BorderSide(color: PharmaColors.borderLight)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: PharmaTypography.headingMedium),
+                        const SizedBox(height: 4),
+                        Text('Type: $materialType', style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, size: 20),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: url != null
+                  ? _buildPreviewContent()
+                  : Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.image_not_supported, size: 48, color: PharmaColors.gray300),
+                          const SizedBox(height: 12),
+                          const Text('Preview not available'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Open the file in a new window to view',
+                            style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+            // Footer with actions
+            Container(
+              padding: const EdgeInsets.all(PharmaSpacing.lg),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: PharmaColors.borderLight)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (url != null) ...[
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: url!));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('URL copied to clipboard')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy URL'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        if (await canLaunchUrl(Uri.parse(url!))) {
+                          await launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Open in Browser'),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewContent() {
+    final type = materialType.toLowerCase();
+    
+    if (type == 'pdf') {
+      return Container(
+        color: PharmaColors.pageBg,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.picture_as_pdf, size: 64, color: PharmaColors.danger),
+            const SizedBox(height: 16),
+            const Text('PDF Document'),
+            const SizedBox(height: 8),
+            Text('Click "Open in Browser" to view this PDF', style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
+          ],
+        ),
+      );
+    } else if (type == 'video') {
+      return Container(
+        color: PharmaColors.pageBg,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.videocam, size: 64, color: PharmaColors.info),
+            const SizedBox(height: 16),
+            const Text('Video Content'),
+            const SizedBox(height: 8),
+            Text('Click "Open in Browser" to play this video', style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
+          ],
+        ),
+      );
+    } else if (type == 'image') {
+      return Container(
+        color: PharmaColors.pageBg,
+        padding: const EdgeInsets.all(PharmaSpacing.lg),
+        child: Image.network(
+          url!,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.image_not_supported, size: 48, color: PharmaColors.gray300),
+                  const SizedBox(height: 12),
+                  const Text('Failed to load image'),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    } else {
+      return Container(
+        color: PharmaColors.pageBg,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.insert_drive_file, size: 64, color: PharmaColors.gray400),
+            const SizedBox(height: 16),
+            Text(materialType),
+            const SizedBox(height: 8),
+            Text('Click "Open in Browser" to view this file', style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
+          ],
+        ),
+      );
+    }
+  }
+}
+

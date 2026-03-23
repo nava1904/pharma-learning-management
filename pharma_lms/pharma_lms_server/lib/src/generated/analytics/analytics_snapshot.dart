@@ -515,7 +515,7 @@ class AnalyticsSnapshotRepository {
   /// );
   /// ```
   Future<List<AnalyticsSnapshot>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AnalyticsSnapshotTable>? where,
     int? limit,
     int? offset,
@@ -559,7 +559,7 @@ class AnalyticsSnapshotRepository {
   /// );
   /// ```
   Future<AnalyticsSnapshot?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AnalyticsSnapshotTable>? where,
     int? offset,
     _i1.OrderByBuilder<AnalyticsSnapshotTable>? orderBy,
@@ -585,7 +585,7 @@ class AnalyticsSnapshotRepository {
 
   /// Finds a single [AnalyticsSnapshot] by its [id] or null if no such row exists.
   Future<AnalyticsSnapshot?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     AnalyticsSnapshotInclude? include,
@@ -612,7 +612,7 @@ class AnalyticsSnapshotRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<AnalyticsSnapshot>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AnalyticsSnapshot> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -628,7 +628,7 @@ class AnalyticsSnapshotRepository {
   ///
   /// The returned [AnalyticsSnapshot] will have its `id` field set.
   Future<AnalyticsSnapshot> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AnalyticsSnapshot row, {
     _i1.Transaction? transaction,
   }) async {
@@ -644,7 +644,7 @@ class AnalyticsSnapshotRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<AnalyticsSnapshot>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AnalyticsSnapshot> rows, {
     _i1.ColumnSelections<AnalyticsSnapshotTable>? columns,
     _i1.Transaction? transaction,
@@ -660,7 +660,7 @@ class AnalyticsSnapshotRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<AnalyticsSnapshot> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AnalyticsSnapshot row, {
     _i1.ColumnSelections<AnalyticsSnapshotTable>? columns,
     _i1.Transaction? transaction,
@@ -675,7 +675,7 @@ class AnalyticsSnapshotRepository {
   /// Updates a single [AnalyticsSnapshot] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<AnalyticsSnapshot?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<AnalyticsSnapshotUpdateTable>
     columnValues,
@@ -691,7 +691,7 @@ class AnalyticsSnapshotRepository {
   /// Updates all [AnalyticsSnapshot]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<AnalyticsSnapshot>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<AnalyticsSnapshotUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<AnalyticsSnapshotTable> where,
@@ -718,7 +718,7 @@ class AnalyticsSnapshotRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<AnalyticsSnapshot>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<AnalyticsSnapshot> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -730,7 +730,7 @@ class AnalyticsSnapshotRepository {
 
   /// Deletes a single [AnalyticsSnapshot].
   Future<AnalyticsSnapshot> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AnalyticsSnapshot row, {
     _i1.Transaction? transaction,
   }) async {
@@ -742,7 +742,7 @@ class AnalyticsSnapshotRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<AnalyticsSnapshot>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AnalyticsSnapshotTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -755,7 +755,7 @@ class AnalyticsSnapshotRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<AnalyticsSnapshotTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -769,7 +769,7 @@ class AnalyticsSnapshotRepository {
 
   /// Acquires row-level locks on [AnalyticsSnapshot] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<AnalyticsSnapshotTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -790,7 +790,7 @@ class AnalyticsSnapshotAttachRowRepository {
   /// Creates a relation between the given [AnalyticsSnapshot] and [ScheduledJobLog]
   /// by setting the [AnalyticsSnapshot]'s foreign key `scheduledJobLogId` to refer to the [ScheduledJobLog].
   Future<void> scheduledJobLog(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AnalyticsSnapshot analyticsSnapshot,
     _i2.ScheduledJobLog scheduledJobLog, {
     _i1.Transaction? transaction,
@@ -822,7 +822,7 @@ class AnalyticsSnapshotDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> scheduledJobLog(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     AnalyticsSnapshot analyticsSnapshot, {
     _i1.Transaction? transaction,
   }) async {

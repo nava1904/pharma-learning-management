@@ -394,7 +394,7 @@ class QualityEventRepository {
   /// );
   /// ```
   Future<List<QualityEvent>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<QualityEventTable>? where,
     int? limit,
     int? offset,
@@ -438,7 +438,7 @@ class QualityEventRepository {
   /// );
   /// ```
   Future<QualityEvent?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<QualityEventTable>? where,
     int? offset,
     _i1.OrderByBuilder<QualityEventTable>? orderBy,
@@ -464,7 +464,7 @@ class QualityEventRepository {
 
   /// Finds a single [QualityEvent] by its [id] or null if no such row exists.
   Future<QualityEvent?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     QualityEventInclude? include,
@@ -491,7 +491,7 @@ class QualityEventRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<QualityEvent>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<QualityEvent> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -507,7 +507,7 @@ class QualityEventRepository {
   ///
   /// The returned [QualityEvent] will have its `id` field set.
   Future<QualityEvent> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     QualityEvent row, {
     _i1.Transaction? transaction,
   }) async {
@@ -523,7 +523,7 @@ class QualityEventRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<QualityEvent>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<QualityEvent> rows, {
     _i1.ColumnSelections<QualityEventTable>? columns,
     _i1.Transaction? transaction,
@@ -539,7 +539,7 @@ class QualityEventRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<QualityEvent> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     QualityEvent row, {
     _i1.ColumnSelections<QualityEventTable>? columns,
     _i1.Transaction? transaction,
@@ -554,7 +554,7 @@ class QualityEventRepository {
   /// Updates a single [QualityEvent] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<QualityEvent?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<QualityEventUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -569,7 +569,7 @@ class QualityEventRepository {
   /// Updates all [QualityEvent]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<QualityEvent>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<QualityEventUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<QualityEventTable> where,
     int? limit,
@@ -595,7 +595,7 @@ class QualityEventRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<QualityEvent>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<QualityEvent> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -607,7 +607,7 @@ class QualityEventRepository {
 
   /// Deletes a single [QualityEvent].
   Future<QualityEvent> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     QualityEvent row, {
     _i1.Transaction? transaction,
   }) async {
@@ -619,7 +619,7 @@ class QualityEventRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<QualityEvent>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<QualityEventTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -632,7 +632,7 @@ class QualityEventRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<QualityEventTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -646,7 +646,7 @@ class QualityEventRepository {
 
   /// Acquires row-level locks on [QualityEvent] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<QualityEventTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -667,7 +667,7 @@ class QualityEventAttachRowRepository {
   /// Creates a relation between the given [QualityEvent] and [Site]
   /// by setting the [QualityEvent]'s foreign key `siteId` to refer to the [Site].
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     QualityEvent qualityEvent,
     _i2.Site site, {
     _i1.Transaction? transaction,
@@ -697,7 +697,7 @@ class QualityEventDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> site(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     QualityEvent qualityEvent, {
     _i1.Transaction? transaction,
   }) async {

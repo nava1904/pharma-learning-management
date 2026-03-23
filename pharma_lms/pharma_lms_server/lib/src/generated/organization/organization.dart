@@ -268,7 +268,7 @@ class OrganizationRepository {
   /// );
   /// ```
   Future<List<Organization>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OrganizationTable>? where,
     int? limit,
     int? offset,
@@ -310,7 +310,7 @@ class OrganizationRepository {
   /// );
   /// ```
   Future<Organization?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OrganizationTable>? where,
     int? offset,
     _i1.OrderByBuilder<OrganizationTable>? orderBy,
@@ -334,7 +334,7 @@ class OrganizationRepository {
 
   /// Finds a single [Organization] by its [id] or null if no such row exists.
   Future<Organization?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -359,7 +359,7 @@ class OrganizationRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Organization>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Organization> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -375,7 +375,7 @@ class OrganizationRepository {
   ///
   /// The returned [Organization] will have its `id` field set.
   Future<Organization> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Organization row, {
     _i1.Transaction? transaction,
   }) async {
@@ -391,7 +391,7 @@ class OrganizationRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Organization>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Organization> rows, {
     _i1.ColumnSelections<OrganizationTable>? columns,
     _i1.Transaction? transaction,
@@ -407,7 +407,7 @@ class OrganizationRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Organization> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Organization row, {
     _i1.ColumnSelections<OrganizationTable>? columns,
     _i1.Transaction? transaction,
@@ -422,7 +422,7 @@ class OrganizationRepository {
   /// Updates a single [Organization] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Organization?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<OrganizationUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -437,7 +437,7 @@ class OrganizationRepository {
   /// Updates all [Organization]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Organization>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<OrganizationUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<OrganizationTable> where,
     int? limit,
@@ -463,7 +463,7 @@ class OrganizationRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Organization>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Organization> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -475,7 +475,7 @@ class OrganizationRepository {
 
   /// Deletes a single [Organization].
   Future<Organization> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Organization row, {
     _i1.Transaction? transaction,
   }) async {
@@ -487,7 +487,7 @@ class OrganizationRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Organization>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<OrganizationTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -500,7 +500,7 @@ class OrganizationRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<OrganizationTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -514,7 +514,7 @@ class OrganizationRepository {
 
   /// Acquires row-level locks on [Organization] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<OrganizationTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

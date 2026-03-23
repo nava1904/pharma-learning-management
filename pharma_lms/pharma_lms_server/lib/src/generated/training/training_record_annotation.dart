@@ -399,7 +399,7 @@ class TrainingRecordAnnotationRepository {
   /// );
   /// ```
   Future<List<TrainingRecordAnnotation>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingRecordAnnotationTable>? where,
     int? limit,
     int? offset,
@@ -443,7 +443,7 @@ class TrainingRecordAnnotationRepository {
   /// );
   /// ```
   Future<TrainingRecordAnnotation?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingRecordAnnotationTable>? where,
     int? offset,
     _i1.OrderByBuilder<TrainingRecordAnnotationTable>? orderBy,
@@ -469,7 +469,7 @@ class TrainingRecordAnnotationRepository {
 
   /// Finds a single [TrainingRecordAnnotation] by its [id] or null if no such row exists.
   Future<TrainingRecordAnnotation?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     TrainingRecordAnnotationInclude? include,
@@ -496,7 +496,7 @@ class TrainingRecordAnnotationRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<TrainingRecordAnnotation>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingRecordAnnotation> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -512,7 +512,7 @@ class TrainingRecordAnnotationRepository {
   ///
   /// The returned [TrainingRecordAnnotation] will have its `id` field set.
   Future<TrainingRecordAnnotation> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecordAnnotation row, {
     _i1.Transaction? transaction,
   }) async {
@@ -528,7 +528,7 @@ class TrainingRecordAnnotationRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<TrainingRecordAnnotation>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingRecordAnnotation> rows, {
     _i1.ColumnSelections<TrainingRecordAnnotationTable>? columns,
     _i1.Transaction? transaction,
@@ -544,7 +544,7 @@ class TrainingRecordAnnotationRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<TrainingRecordAnnotation> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecordAnnotation row, {
     _i1.ColumnSelections<TrainingRecordAnnotationTable>? columns,
     _i1.Transaction? transaction,
@@ -559,7 +559,7 @@ class TrainingRecordAnnotationRepository {
   /// Updates a single [TrainingRecordAnnotation] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<TrainingRecordAnnotation?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<TrainingRecordAnnotationUpdateTable>
     columnValues,
@@ -575,7 +575,7 @@ class TrainingRecordAnnotationRepository {
   /// Updates all [TrainingRecordAnnotation]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<TrainingRecordAnnotation>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<TrainingRecordAnnotationUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<TrainingRecordAnnotationTable> where,
@@ -602,7 +602,7 @@ class TrainingRecordAnnotationRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<TrainingRecordAnnotation>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingRecordAnnotation> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -614,7 +614,7 @@ class TrainingRecordAnnotationRepository {
 
   /// Deletes a single [TrainingRecordAnnotation].
   Future<TrainingRecordAnnotation> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecordAnnotation row, {
     _i1.Transaction? transaction,
   }) async {
@@ -626,7 +626,7 @@ class TrainingRecordAnnotationRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<TrainingRecordAnnotation>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingRecordAnnotationTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -639,7 +639,7 @@ class TrainingRecordAnnotationRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingRecordAnnotationTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -653,7 +653,7 @@ class TrainingRecordAnnotationRepository {
 
   /// Acquires row-level locks on [TrainingRecordAnnotation] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingRecordAnnotationTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -674,7 +674,7 @@ class TrainingRecordAnnotationAttachRowRepository {
   /// Creates a relation between the given [TrainingRecordAnnotation] and [TrainingRecord]
   /// by setting the [TrainingRecordAnnotation]'s foreign key `trainingRecordId` to refer to the [TrainingRecord].
   Future<void> trainingRecord(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecordAnnotation trainingRecordAnnotation,
     _i2.TrainingRecord trainingRecord, {
     _i1.Transaction? transaction,
@@ -699,7 +699,7 @@ class TrainingRecordAnnotationAttachRowRepository {
   /// Creates a relation between the given [TrainingRecordAnnotation] and [PharmaUser]
   /// by setting the [TrainingRecordAnnotation]'s foreign key `authorId` to refer to the [PharmaUser].
   Future<void> author(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingRecordAnnotation trainingRecordAnnotation,
     _i3.PharmaUser author, {
     _i1.Transaction? transaction,

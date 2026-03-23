@@ -1,0 +1,37 @@
+### Access Review window and per-user review record
+class: AccessReview
+
+table: access_review
+
+fields:
+  ### The review window (foreign key to AccessReviewWindow)
+  windowId: int
+  ### The user under review
+  user: PharmaUser?, relation
+  ### The role being reviewed
+  role: Role?, relation
+  ### Review decision (APPROVED, REVOKED, PENDING)
+  decision: String, default='PENDING'
+  ### Justification for the decision
+  justification: String?
+  ### Reviewer (admin) who made the decision
+  reviewedBy: PharmaUser?, relation(optional)
+  ### Timestamp when reviewed
+  reviewedAt: DateTime?
+  ### Timestamp when signed (if e-signed)
+  signedAt: DateTime?
+  ### E-signature record (if signed)
+  signature: ElectronicSignature?, relation(optional)
+  ### Review window open date
+  windowOpen: DateTime
+  ### Review window close date
+  windowClose: DateTime
+  ### Triggering job ID (for audit)
+  jobId: String?
+  ### Status (ACTIVE, CLOSED)
+  status: String, default='ACTIVE'
+  ### Audit fields
+  createdAt: DateTime, default=now
+  updatedAt: DateTime, default=now
+  ### Temporary migration marker - remove after migration applied
+  migrationMarker: String?

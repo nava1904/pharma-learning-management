@@ -593,7 +593,7 @@ class CertificateRepository {
   /// );
   /// ```
   Future<List<Certificate>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CertificateTable>? where,
     int? limit,
     int? offset,
@@ -637,7 +637,7 @@ class CertificateRepository {
   /// );
   /// ```
   Future<Certificate?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CertificateTable>? where,
     int? offset,
     _i1.OrderByBuilder<CertificateTable>? orderBy,
@@ -663,7 +663,7 @@ class CertificateRepository {
 
   /// Finds a single [Certificate] by its [id] or null if no such row exists.
   Future<Certificate?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     CertificateInclude? include,
@@ -690,7 +690,7 @@ class CertificateRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<Certificate>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Certificate> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -706,7 +706,7 @@ class CertificateRepository {
   ///
   /// The returned [Certificate] will have its `id` field set.
   Future<Certificate> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate row, {
     _i1.Transaction? transaction,
   }) async {
@@ -722,7 +722,7 @@ class CertificateRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<Certificate>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Certificate> rows, {
     _i1.ColumnSelections<CertificateTable>? columns,
     _i1.Transaction? transaction,
@@ -738,7 +738,7 @@ class CertificateRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<Certificate> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate row, {
     _i1.ColumnSelections<CertificateTable>? columns,
     _i1.Transaction? transaction,
@@ -753,7 +753,7 @@ class CertificateRepository {
   /// Updates a single [Certificate] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<Certificate?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<CertificateUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -768,7 +768,7 @@ class CertificateRepository {
   /// Updates all [Certificate]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<Certificate>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<CertificateUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<CertificateTable> where,
     int? limit,
@@ -794,7 +794,7 @@ class CertificateRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<Certificate>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<Certificate> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -806,7 +806,7 @@ class CertificateRepository {
 
   /// Deletes a single [Certificate].
   Future<Certificate> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate row, {
     _i1.Transaction? transaction,
   }) async {
@@ -818,7 +818,7 @@ class CertificateRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<Certificate>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CertificateTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -831,7 +831,7 @@ class CertificateRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<CertificateTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -845,7 +845,7 @@ class CertificateRepository {
 
   /// Acquires row-level locks on [Certificate] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<CertificateTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -866,7 +866,7 @@ class CertificateAttachRowRepository {
   /// Creates a relation between the given [Certificate] and [PharmaUser]
   /// by setting the [Certificate]'s foreign key `userId` to refer to the [PharmaUser].
   Future<void> user(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate certificate,
     _i2.PharmaUser user, {
     _i1.Transaction? transaction,
@@ -889,7 +889,7 @@ class CertificateAttachRowRepository {
   /// Creates a relation between the given [Certificate] and [CourseVersion]
   /// by setting the [Certificate]'s foreign key `courseVersionId` to refer to the [CourseVersion].
   Future<void> courseVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate certificate,
     _i3.CourseVersion courseVersion, {
     _i1.Transaction? transaction,
@@ -912,7 +912,7 @@ class CertificateAttachRowRepository {
   /// Creates a relation between the given [Certificate] and [TrainingRecord]
   /// by setting the [Certificate]'s foreign key `trainingRecordId` to refer to the [TrainingRecord].
   Future<void> trainingRecord(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate certificate,
     _i4.TrainingRecord trainingRecord, {
     _i1.Transaction? transaction,
@@ -937,7 +937,7 @@ class CertificateAttachRowRepository {
   /// Creates a relation between the given [Certificate] and [ElectronicSignature]
   /// by setting the [Certificate]'s foreign key `esignatureId` to refer to the [ElectronicSignature].
   Future<void> esignature(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     Certificate certificate,
     _i5.ElectronicSignature esignature, {
     _i1.Transaction? transaction,

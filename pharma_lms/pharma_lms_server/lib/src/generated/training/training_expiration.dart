@@ -438,7 +438,7 @@ class TrainingExpirationRepository {
   /// );
   /// ```
   Future<List<TrainingExpiration>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingExpirationTable>? where,
     int? limit,
     int? offset,
@@ -482,7 +482,7 @@ class TrainingExpirationRepository {
   /// );
   /// ```
   Future<TrainingExpiration?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingExpirationTable>? where,
     int? offset,
     _i1.OrderByBuilder<TrainingExpirationTable>? orderBy,
@@ -508,7 +508,7 @@ class TrainingExpirationRepository {
 
   /// Finds a single [TrainingExpiration] by its [id] or null if no such row exists.
   Future<TrainingExpiration?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     TrainingExpirationInclude? include,
@@ -535,7 +535,7 @@ class TrainingExpirationRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<TrainingExpiration>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingExpiration> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -551,7 +551,7 @@ class TrainingExpirationRepository {
   ///
   /// The returned [TrainingExpiration] will have its `id` field set.
   Future<TrainingExpiration> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingExpiration row, {
     _i1.Transaction? transaction,
   }) async {
@@ -567,7 +567,7 @@ class TrainingExpirationRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<TrainingExpiration>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingExpiration> rows, {
     _i1.ColumnSelections<TrainingExpirationTable>? columns,
     _i1.Transaction? transaction,
@@ -583,7 +583,7 @@ class TrainingExpirationRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<TrainingExpiration> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingExpiration row, {
     _i1.ColumnSelections<TrainingExpirationTable>? columns,
     _i1.Transaction? transaction,
@@ -598,7 +598,7 @@ class TrainingExpirationRepository {
   /// Updates a single [TrainingExpiration] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<TrainingExpiration?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<TrainingExpirationUpdateTable>
     columnValues,
@@ -614,7 +614,7 @@ class TrainingExpirationRepository {
   /// Updates all [TrainingExpiration]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<TrainingExpiration>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<TrainingExpirationUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<TrainingExpirationTable> where,
@@ -641,7 +641,7 @@ class TrainingExpirationRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<TrainingExpiration>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<TrainingExpiration> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -653,7 +653,7 @@ class TrainingExpirationRepository {
 
   /// Deletes a single [TrainingExpiration].
   Future<TrainingExpiration> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingExpiration row, {
     _i1.Transaction? transaction,
   }) async {
@@ -665,7 +665,7 @@ class TrainingExpirationRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<TrainingExpiration>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingExpirationTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -678,7 +678,7 @@ class TrainingExpirationRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<TrainingExpirationTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -692,7 +692,7 @@ class TrainingExpirationRepository {
 
   /// Acquires row-level locks on [TrainingExpiration] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<TrainingExpirationTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -713,7 +713,7 @@ class TrainingExpirationAttachRowRepository {
   /// Creates a relation between the given [TrainingExpiration] and [Certificate]
   /// by setting the [TrainingExpiration]'s foreign key `certificateId` to refer to the [Certificate].
   Future<void> certificate(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingExpiration trainingExpiration,
     _i2.Certificate certificate, {
     _i1.Transaction? transaction,
@@ -738,7 +738,7 @@ class TrainingExpirationAttachRowRepository {
   /// Creates a relation between the given [TrainingExpiration] and [TrainingAssignment]
   /// by setting the [TrainingExpiration]'s foreign key `renewalAssignmentId` to refer to the [TrainingAssignment].
   Future<void> renewalAssignment(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingExpiration trainingExpiration,
     _i3.TrainingAssignment renewalAssignment, {
     _i1.Transaction? transaction,
@@ -770,7 +770,7 @@ class TrainingExpirationDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> renewalAssignment(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     TrainingExpiration trainingExpiration, {
     _i1.Transaction? transaction,
   }) async {

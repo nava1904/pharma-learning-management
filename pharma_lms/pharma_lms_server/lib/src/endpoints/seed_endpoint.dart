@@ -405,44 +405,42 @@ class SeedEndpoint extends Endpoint {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 6b: Demo Users (for development/testing login flow)
-    // These match the emails in auth_provider.dart demo mode
+    // PHASE 6a: Admin Users (5) — for comprehensive admin portal testing
     // ═══════════════════════════════════════════════════════════════════════════
-    final demoUsers = [
-      // [email, firstName, lastName, employeeId, roleCode]
-      ['employee@pharmacorp.demo', 'Demo', 'Employee', 'DEMO-EMP', 'employee'],
-      ['admin@pharmacorp.demo', 'Demo', 'Admin', 'DEMO-ADM', 'admin'],
-      ['qa@pharmacorp.demo', 'Demo', 'QA', 'DEMO-QA', 'qa_manager'],
-      ['trainer@pharmacorp.demo', 'Demo', 'Trainer', 'DEMO-TRN', 'trainer'],
-      ['auditor@pharmacorp.demo', 'Demo', 'Auditor', 'DEMO-AUD', 'auditor'],
-      ['analytics@pharmacorp.demo', 'Demo', 'Analytics', 'DEMO-ANA', 'admin'],
+    final adminUsers = <List<dynamic>>[
+      // [email, firstName, lastName, employeeId, siteId_idx, deptId_idx, roleCode]
+      ['superadmin@pharmatech.in', 'Super', 'Administrator', 'ADM-001', 0, 0, 'admin'],
+      ['contentadmin@pharmatech.in', 'Content', 'Administrator', 'ADM-002', 0, 7, 'admin'],
+      ['qamanager@pharmatech.in', 'Quality', 'Manager', 'ADM-003', 1, 0, 'qa_manager'],
+      ['trainingadmin@pharmatech.in', 'Training', 'Administrator', 'ADM-004', 2, 7, 'admin'],
+      ['auditofficer@pharmatech.in', 'Audit', 'Officer', 'ADM-005', 4, 3, 'auditor'],
     ];
     
-    for (final d in demoUsers) {
-      // Check if demo user already exists
-      final existingDemo = await PharmaUser.db.findFirstRow(
+    for (final a in adminUsers) {
+      // Check if admin user already exists
+      final existingAdmin = await PharmaUser.db.findFirstRow(
         session,
-        where: (t) => t.email.equals(d[0]),
+        where: (t) => t.email.equals(a[0] as String),
       );
-      if (existingDemo == null) {
-        final demoUser = await PharmaUser.db.insertRow(
+      if (existingAdmin == null) {
+        final adminUser = await PharmaUser.db.insertRow(
           session,
           PharmaUser(
-            email: d[0],
-            firstName: d[1],
-            lastName: d[2],
-            employeeId: d[3],
-            siteId: siteIds[0], // Mumbai HQ
-            departmentId: deptIds[0], // First department
-            jobRoleId: jobRoleIds[0], // First job role
+            email: a[0] as String,
+            firstName: a[1] as String,
+            lastName: a[2] as String,
+            employeeId: a[3] as String,
+            siteId: siteIds[a[4] as int],
+            departmentId: deptIds[a[5] as int],
+            jobRoleId: jobRoleIds[0], // Placeholder job role
             organizationId: orgId,
             status: 'active',
-            hireDate: dt(-365), // 1 year ago
+            hireDate: dt(-730), // 2 years ago (long tenure for admins)
           ),
         );
         await UserRole.db.insertRow(
           session,
-          UserRole(userId: demoUser.id!, roleId: roleIds[d[4]]!),
+          UserRole(userId: adminUser.id!, roleId: roleIds[a[6] as String]!),
         );
       }
     }
@@ -1237,6 +1235,209 @@ class SeedEndpoint extends Endpoint {
       ));
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 14: Training Batches (for batch management in Admin Portal)
+    // ═══════════════════════════════════════════════════════════════════════════
+    var trainingBatchCount = 0;
+    final batchConfigs = [
+      // [name, status, startOffset, endOffset, capacity, enrolledCount, completedCount, location]
+      ['GMP Foundation - Q1 2026', 'completed', -90, -60, 25, 25, 25, 'Mumbai HQ - Training Room A'],
+      ['Aseptic Technique - Q1 2026', 'completed', -75, -45, 20, 20, 18, 'Pune Manufacturing - Clean Room Training'],
+      ['Data Integrity - March 2026', 'in_progress', -15, 30, 30, 28, 0, 'Hyderabad R&D - Conference Hall'],
+      ['CAPA Training - April 2026', 'in_progress', -5, 40, 25, 22, 0, 'Mumbai HQ - Training Room B'],
+      ['Quality Control Basics - Q2 2026', 'scheduled', 15, 45, 35, 18, 0, 'Bengaluru Biotech - Lab Training Center'],
+      ['EHS Fundamentals - May 2026', 'scheduled', 30, 60, 40, 12, 0, 'Ahmedabad API - Safety Center'],
+      ['Audit Readiness - June 2026', 'scheduled', 45, 75, 20, 5, 0, 'Mumbai HQ - Audit Room'],
+      ['New Employee Induction - Rolling', 'in_progress', -10, 20, 50, 35, 15, 'All Sites - Virtual'],
+    ];
+
+    for (var i = 0; i < batchConfigs.length; i++) {
+      final cfg = batchConfigs[i];
+      final cvId = courseVersionIds[i % courseVersionIds.length];
+      final instructorId = trainerIds[i % trainerIds.length];
+
+      await TrainingBatch.db.insertRow(session, TrainingBatch(
+        organizationId: orgId,
+        courseVersionId: cvId,
+        name: cfg[0] as String,
+        instructorId: instructorId,
+        startDate: dt(cfg[2] as int),
+        endDate: dt(cfg[3] as int),
+        capacity: cfg[4] as int,
+        enrolledCount: cfg[5] as int,
+        completedCount: cfg[6] as int,
+        status: cfg[1] as String,
+        location: cfg[7] as String,
+        notes: 'Batch created via comprehensive seed.',
+      ));
+      trainingBatchCount++;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 15: Notification Templates (for Admin Portal notifications management)
+    // ═══════════════════════════════════════════════════════════════════════════
+    var notificationTemplateCount = 0;
+    final adminUser = await PharmaUser.db.findFirstRow(
+      session,
+      where: (t) => t.email.equals('super.admin@pharmacorp.demo'),
+    );
+    final adminUserId = adminUser?.id;
+
+    final templateConfigs = [
+      // [name, type, channel, triggerEvent, subject, bodyTemplate, status]
+      [
+        'Training Assignment',
+        'assignment',
+        'email',
+        'training_assigned',
+        'New Training Assignment: {{courseTitle}}',
+        'Dear {{userName}},\n\nYou have been assigned a new training: {{courseTitle}}.\n\nDue Date: {{dueDate}}\nPriority: {{priority}}\n\nPlease log in to the LMS to start your training.\n\nBest regards,\nTraining Team',
+        'active',
+      ],
+      [
+        'Due Date Reminder',
+        'reminder',
+        'email',
+        'due_date_approaching',
+        'Reminder: {{courseTitle}} Due in {{daysRemaining}} Days',
+        'Dear {{userName}},\n\nThis is a reminder that your training "{{courseTitle}}" is due in {{daysRemaining}} days.\n\nDue Date: {{dueDate}}\n\nPlease complete your training to remain compliant.\n\nBest regards,\nTraining Team',
+        'active',
+      ],
+      [
+        'Overdue Alert',
+        'overdue',
+        'email',
+        'training_overdue',
+        'URGENT: Training Overdue - {{courseTitle}}',
+        'Dear {{userName}},\n\nYour training "{{courseTitle}}" is now OVERDUE.\n\nOriginal Due Date: {{dueDate}}\nDays Overdue: {{daysOverdue}}\n\nPlease complete this training immediately to maintain compliance.\n\nBest regards,\nTraining Team',
+        'active',
+      ],
+      [
+        'Certificate Issued',
+        'certificate',
+        'email',
+        'certificate_generated',
+        'Congratulations! Certificate Issued for {{courseTitle}}',
+        'Dear {{userName}},\n\nCongratulations on completing "{{courseTitle}}"!\n\nYour certificate has been issued and is available for download in the LMS.\n\nCertificate ID: {{certificateId}}\nIssued Date: {{issuedDate}}\nExpiry Date: {{expiryDate}}\n\nBest regards,\nTraining Team',
+        'active',
+      ],
+      [
+        'Certificate Expiring',
+        'compliance',
+        'email',
+        'certificate_expiring',
+        'Certificate Expiring: {{courseTitle}}',
+        'Dear {{userName}},\n\nYour certificate for "{{courseTitle}}" will expire on {{expiryDate}}.\n\nPlease complete the refresher training to renew your certification.\n\nBest regards,\nTraining Team',
+        'active',
+      ],
+      [
+        'Push Assignment Alert',
+        'assignment',
+        'push',
+        'training_assigned',
+        null,
+        'New training assigned: {{courseTitle}}. Due: {{dueDate}}',
+        'active',
+      ],
+      [
+        'Push Reminder',
+        'reminder',
+        'push',
+        'due_date_approaching',
+        null,
+        '⏰ Reminder: {{courseTitle}} due in {{daysRemaining}} days',
+        'active',
+      ],
+      [
+        'SMS Overdue Alert',
+        'overdue',
+        'sms',
+        'training_overdue',
+        null,
+        'URGENT: Training "{{courseTitle}}" is overdue. Please complete ASAP.',
+        'active',
+      ],
+      [
+        'In-App Welcome',
+        'broadcast',
+        'in_app',
+        'user_created',
+        'Welcome to PharmaTech LMS',
+        'Welcome to PharmaTech LMS! Complete your profile setup and explore your assigned trainings.',
+        'active',
+      ],
+      [
+        'Monthly Newsletter Template',
+        'broadcast',
+        'email',
+        'scheduled_monthly',
+        'PharmaTech Training Newsletter - {{month}} {{year}}',
+        'Dear {{userName}},\n\nHere is your monthly training update:\n\n• Completed: {{completedCount}} courses\n• In Progress: {{inProgressCount}} courses\n• Upcoming: {{upcomingCount}} courses\n\nKeep up the great work!\n\nBest regards,\nTraining Team',
+        'draft',
+      ],
+      [
+        'SOP Update Notification',
+        'compliance',
+        'email',
+        'sop_updated',
+        'SOP Update: {{sopNumber}} - Action Required',
+        'Dear {{userName}},\n\nSOP {{sopNumber}} has been updated to version {{version}}.\n\nYou are required to complete the associated training by {{dueDate}}.\n\nPlease log in to the LMS to review the changes and complete your training.\n\nBest regards,\nQuality Assurance Team',
+        'active',
+      ],
+      [
+        'Batch Enrollment Confirmation',
+        'assignment',
+        'email',
+        'batch_enrolled',
+        'Enrollment Confirmed: {{batchName}}',
+        'Dear {{userName}},\n\nYour enrollment in "{{batchName}}" has been confirmed.\n\nStart Date: {{startDate}}\nLocation: {{location}}\nInstructor: {{instructorName}}\n\nPlease ensure you are available for all scheduled sessions.\n\nBest regards,\nTraining Team',
+        'active',
+      ],
+    ];
+
+    for (final cfg in templateConfigs) {
+      await NotificationTemplate.db.insertRow(session, NotificationTemplate(
+        organizationId: orgId,
+        name: cfg[0] as String,
+        type: cfg[1] as String,
+        channel: cfg[2] as String,
+        triggerEvent: cfg[3],
+        subject: cfg[4],
+        bodyTemplate: cfg[5] as String,
+        status: cfg[6] as String,
+        createdById: adminUserId ?? trainerIds[0],
+      ));
+      notificationTemplateCount++;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 16: Additional Notifications for various users (Admin Portal display)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Add more diverse notifications for admin portal viewing
+    final notificationTypes = ['assignment', 'reminder', 'overdue', 'certificate', 'compliance', 'broadcast'];
+    final channels = ['email', 'push', 'sms', 'in_app'];
+    final deliveryStatuses = ['delivered', 'pending', 'failed', 'read'];
+
+    for (var i = 0; i < 30; i++) {
+      final userId = learnerIds[i % learnerIds.length];
+      final enrollId = i < enrollmentIds.length ? enrollmentIds[i] : null;
+      final typeIdx = i % notificationTypes.length;
+      final channelIdx = i % channels.length;
+      final statusIdx = i % deliveryStatuses.length;
+      final sentAt = dt(-30 + i);
+      final readAt = statusIdx == 3 ? dt(-28 + i) : null;
+
+      await Notification.db.insertRow(session, Notification(
+        userId: userId,
+        type: notificationTypes[typeIdx],
+        enrollmentId: enrollId,
+        sentAt: sentAt,
+        deliveryStatus: deliveryStatuses[statusIdx],
+        readAt: readAt,
+        channel: channels[channelIdx],
+      ));
+    }
+
     var result = '''
 COMPREHENSIVE SEED COMPLETED
 ═══════════════════════════════════════════════════════════════════════════════
@@ -1265,6 +1466,9 @@ Standalone Question Banks: 2 (23 questions)
 Trainer Audit Events: ${trainerAuditActions.length}
 Trainer Notifications: 5
 UserPreferences: 3
+Training Batches: $trainingBatchCount
+Notification Templates: $notificationTemplateCount
+Additional Notifications: 30
 
 DEMO EMPLOYEE (employee@pharmacorp.demo):
   Completed:   4 courses (with certs + e-sigs + quiz scores)
@@ -1420,11 +1624,112 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
       // Misc org-level tables
       await session.db.unsafeQuery('DELETE FROM feature_flag WHERE "organizationId" = @orgId', parameters: p);
       await session.db.unsafeQuery('DELETE FROM system_configuration WHERE "organizationId" = @orgId', parameters: p);
+      
+      // Training batches
+      await session.db.unsafeQuery('DELETE FROM training_batch WHERE "organizationId" = @orgId', parameters: p);
+      
+      // Notification templates
+      await session.db.unsafeQuery('DELETE FROM notification_template WHERE "organizationId" = @orgId', parameters: p);
 
       // Organization itself
       await session.db.unsafeQuery('DELETE FROM organization WHERE id = @orgId', parameters: p);
     } finally {
       await session.db.unsafeQuery("SET session_replication_role = 'origin'");
     }
+  }
+
+  /// Fix admin passwords by re-provisioning them with proper password hashes
+  Future<String> fixAdminPasswords(Session session) async {
+    final adminEmails = [
+      'super.admin@pharmacorp.demo',
+      'content.admin@pharmacorp.demo',
+      'qa.manager@pharmacorp.demo',
+      'training.admin@pharmacorp.demo',
+      'audit.officer@pharmacorp.demo',
+    ];
+
+    var fixed = 0;
+    var failed = 0;
+    final emailIdp = AuthServices.instance.emailIdp;
+    final admin = emailIdp.admin;
+
+    for (final email in adminEmails) {
+      try {
+        // Check if account exists
+        final existing = await admin.findAccount(session, email: email);
+        
+        if (existing == null) {
+          // Create new account if it doesn't exist
+          final authUser = await AuthServices.instance.authUsers.create(session);
+          await admin.createEmailAuthentication(
+            session,
+            authUserId: authUser.id,
+            email: email,
+            password: _seedPassword,
+          );
+          session.log('Created new auth account for $email');
+
+          // Create profile
+          await session.db.unsafeQuery(
+            r'''INSERT INTO serverpod_auth_core_profile ("authUserId", email, "userName", "fullName")
+                VALUES (@authUserId::uuid, @email, @userName, @fullName)
+                ON CONFLICT ("authUserId") DO NOTHING''',
+            parameters: QueryParameters.named({
+              'authUserId': authUser.id.toString(),
+              'email': email,
+              'userName': email.split('@').first,
+              'fullName': _getFullName(email),
+            }),
+          );
+        } else {
+          // Account exists - update password by directly deleting old email auth and recreating
+          try {
+            // Try direct SQL delete of old email authentication
+            await session.db.unsafeQuery(
+              r'''DELETE FROM serverpod_auth_core_email_auth 
+                  WHERE "authUserId" = @authUserId::uuid''',
+              parameters: QueryParameters.named({
+                'authUserId': existing.id!.toString(),
+              }),
+            );
+            session.log('Deleted old email auth for $email');
+          } catch (e) {
+            session.log('Could not delete old email auth: $e');
+          }
+
+          // Now recreate email authentication with new password
+          try {
+            await admin.createEmailAuthentication(
+              session,
+              authUserId: existing.id!,
+              email: email,
+              password: _seedPassword,
+            );
+            session.log('Updated password for $email');
+          } catch (e) {
+            session.log('Could not create new email auth: $e');
+          }
+        }
+
+        fixed++;
+        session.log('✓ Password fixed for $email');
+      } catch (e) {
+        failed++;
+        session.log('✗ Failed to fix password for $email: $e');
+      }
+    }
+
+    return 'Fixed admin passwords: $fixed fixed, $failed failed. Password: $_seedPassword';
+  }
+
+  String _getFullName(String email) {
+    const names = {
+      'super.admin@pharmacorp.demo': 'Super Administrator',
+      'content.admin@pharmacorp.demo': 'Content Administrator',
+      'qa.manager@pharmacorp.demo': 'Quality Manager',
+      'training.admin@pharmacorp.demo': 'Training Administrator',
+      'audit.officer@pharmacorp.demo': 'Audit Officer',
+    };
+    return names[email] ?? email.split('@').first;
   }
 }

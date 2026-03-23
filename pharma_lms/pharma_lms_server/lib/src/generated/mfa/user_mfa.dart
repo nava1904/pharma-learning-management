@@ -299,7 +299,7 @@ class UserMfaRepository {
   /// );
   /// ```
   Future<List<UserMfa>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserMfaTable>? where,
     int? limit,
     int? offset,
@@ -341,7 +341,7 @@ class UserMfaRepository {
   /// );
   /// ```
   Future<UserMfa?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserMfaTable>? where,
     int? offset,
     _i1.OrderByBuilder<UserMfaTable>? orderBy,
@@ -365,7 +365,7 @@ class UserMfaRepository {
 
   /// Finds a single [UserMfa] by its [id] or null if no such row exists.
   Future<UserMfa?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -390,7 +390,7 @@ class UserMfaRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<UserMfa>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserMfa> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -406,7 +406,7 @@ class UserMfaRepository {
   ///
   /// The returned [UserMfa] will have its `id` field set.
   Future<UserMfa> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserMfa row, {
     _i1.Transaction? transaction,
   }) async {
@@ -422,7 +422,7 @@ class UserMfaRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<UserMfa>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserMfa> rows, {
     _i1.ColumnSelections<UserMfaTable>? columns,
     _i1.Transaction? transaction,
@@ -438,7 +438,7 @@ class UserMfaRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<UserMfa> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserMfa row, {
     _i1.ColumnSelections<UserMfaTable>? columns,
     _i1.Transaction? transaction,
@@ -453,7 +453,7 @@ class UserMfaRepository {
   /// Updates a single [UserMfa] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<UserMfa?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<UserMfaUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -468,7 +468,7 @@ class UserMfaRepository {
   /// Updates all [UserMfa]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<UserMfa>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<UserMfaUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<UserMfaTable> where,
     int? limit,
@@ -494,7 +494,7 @@ class UserMfaRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<UserMfa>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<UserMfa> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -506,7 +506,7 @@ class UserMfaRepository {
 
   /// Deletes a single [UserMfa].
   Future<UserMfa> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     UserMfa row, {
     _i1.Transaction? transaction,
   }) async {
@@ -518,7 +518,7 @@ class UserMfaRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<UserMfa>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserMfaTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -531,7 +531,7 @@ class UserMfaRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<UserMfaTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -545,7 +545,7 @@ class UserMfaRepository {
 
   /// Acquires row-level locks on [UserMfa] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<UserMfaTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,

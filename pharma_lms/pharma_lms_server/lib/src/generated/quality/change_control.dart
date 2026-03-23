@@ -371,7 +371,7 @@ class ChangeControlRepository {
   /// );
   /// ```
   Future<List<ChangeControl>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ChangeControlTable>? where,
     int? limit,
     int? offset,
@@ -415,7 +415,7 @@ class ChangeControlRepository {
   /// );
   /// ```
   Future<ChangeControl?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ChangeControlTable>? where,
     int? offset,
     _i1.OrderByBuilder<ChangeControlTable>? orderBy,
@@ -441,7 +441,7 @@ class ChangeControlRepository {
 
   /// Finds a single [ChangeControl] by its [id] or null if no such row exists.
   Future<ChangeControl?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     ChangeControlInclude? include,
@@ -468,7 +468,7 @@ class ChangeControlRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ChangeControl>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ChangeControl> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -484,7 +484,7 @@ class ChangeControlRepository {
   ///
   /// The returned [ChangeControl] will have its `id` field set.
   Future<ChangeControl> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ChangeControl row, {
     _i1.Transaction? transaction,
   }) async {
@@ -500,7 +500,7 @@ class ChangeControlRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ChangeControl>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ChangeControl> rows, {
     _i1.ColumnSelections<ChangeControlTable>? columns,
     _i1.Transaction? transaction,
@@ -516,7 +516,7 @@ class ChangeControlRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ChangeControl> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ChangeControl row, {
     _i1.ColumnSelections<ChangeControlTable>? columns,
     _i1.Transaction? transaction,
@@ -531,7 +531,7 @@ class ChangeControlRepository {
   /// Updates a single [ChangeControl] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ChangeControl?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ChangeControlUpdateTable> columnValues,
     _i1.Transaction? transaction,
@@ -546,7 +546,7 @@ class ChangeControlRepository {
   /// Updates all [ChangeControl]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ChangeControl>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ChangeControlUpdateTable> columnValues,
     required _i1.WhereExpressionBuilder<ChangeControlTable> where,
     int? limit,
@@ -572,7 +572,7 @@ class ChangeControlRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ChangeControl>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ChangeControl> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -584,7 +584,7 @@ class ChangeControlRepository {
 
   /// Deletes a single [ChangeControl].
   Future<ChangeControl> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ChangeControl row, {
     _i1.Transaction? transaction,
   }) async {
@@ -596,7 +596,7 @@ class ChangeControlRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ChangeControl>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ChangeControlTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -609,7 +609,7 @@ class ChangeControlRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ChangeControlTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -623,7 +623,7 @@ class ChangeControlRepository {
 
   /// Acquires row-level locks on [ChangeControl] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ChangeControlTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -644,7 +644,7 @@ class ChangeControlAttachRowRepository {
   /// Creates a relation between the given [ChangeControl] and [QualityEvent]
   /// by setting the [ChangeControl]'s foreign key `qualityEventId` to refer to the [QualityEvent].
   Future<void> qualityEvent(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ChangeControl changeControl,
     _i2.QualityEvent qualityEvent, {
     _i1.Transaction? transaction,
@@ -669,7 +669,7 @@ class ChangeControlAttachRowRepository {
   /// Creates a relation between the given [ChangeControl] and [DocumentVersion]
   /// by setting the [ChangeControl]'s foreign key `documentVersionId` to refer to the [DocumentVersion].
   Future<void> documentVersion(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ChangeControl changeControl,
     _i3.DocumentVersion documentVersion, {
     _i1.Transaction? transaction,

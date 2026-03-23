@@ -323,7 +323,7 @@ class SystemConfigurationRepository {
   /// );
   /// ```
   Future<List<SystemConfiguration>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SystemConfigurationTable>? where,
     int? limit,
     int? offset,
@@ -367,7 +367,7 @@ class SystemConfigurationRepository {
   /// );
   /// ```
   Future<SystemConfiguration?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SystemConfigurationTable>? where,
     int? offset,
     _i1.OrderByBuilder<SystemConfigurationTable>? orderBy,
@@ -393,7 +393,7 @@ class SystemConfigurationRepository {
 
   /// Finds a single [SystemConfiguration] by its [id] or null if no such row exists.
   Future<SystemConfiguration?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     SystemConfigurationInclude? include,
@@ -420,7 +420,7 @@ class SystemConfigurationRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<SystemConfiguration>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SystemConfiguration> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -436,7 +436,7 @@ class SystemConfigurationRepository {
   ///
   /// The returned [SystemConfiguration] will have its `id` field set.
   Future<SystemConfiguration> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SystemConfiguration row, {
     _i1.Transaction? transaction,
   }) async {
@@ -452,7 +452,7 @@ class SystemConfigurationRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<SystemConfiguration>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SystemConfiguration> rows, {
     _i1.ColumnSelections<SystemConfigurationTable>? columns,
     _i1.Transaction? transaction,
@@ -468,7 +468,7 @@ class SystemConfigurationRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<SystemConfiguration> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SystemConfiguration row, {
     _i1.ColumnSelections<SystemConfigurationTable>? columns,
     _i1.Transaction? transaction,
@@ -483,7 +483,7 @@ class SystemConfigurationRepository {
   /// Updates a single [SystemConfiguration] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<SystemConfiguration?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<SystemConfigurationUpdateTable>
     columnValues,
@@ -499,7 +499,7 @@ class SystemConfigurationRepository {
   /// Updates all [SystemConfiguration]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<SystemConfiguration>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<SystemConfigurationUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<SystemConfigurationTable> where,
@@ -526,7 +526,7 @@ class SystemConfigurationRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<SystemConfiguration>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<SystemConfiguration> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -538,7 +538,7 @@ class SystemConfigurationRepository {
 
   /// Deletes a single [SystemConfiguration].
   Future<SystemConfiguration> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SystemConfiguration row, {
     _i1.Transaction? transaction,
   }) async {
@@ -550,7 +550,7 @@ class SystemConfigurationRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<SystemConfiguration>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SystemConfigurationTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -563,7 +563,7 @@ class SystemConfigurationRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<SystemConfigurationTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -577,7 +577,7 @@ class SystemConfigurationRepository {
 
   /// Acquires row-level locks on [SystemConfiguration] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<SystemConfigurationTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
@@ -598,7 +598,7 @@ class SystemConfigurationAttachRowRepository {
   /// Creates a relation between the given [SystemConfiguration] and [Organization]
   /// by setting the [SystemConfiguration]'s foreign key `organizationId` to refer to the [Organization].
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SystemConfiguration systemConfiguration,
     _i2.Organization organization, {
     _i1.Transaction? transaction,
@@ -630,7 +630,7 @@ class SystemConfigurationDetachRowRepository {
   /// This removes the association between the two models without deleting
   /// the related record.
   Future<void> organization(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     SystemConfiguration systemConfiguration, {
     _i1.Transaction? transaction,
   }) async {

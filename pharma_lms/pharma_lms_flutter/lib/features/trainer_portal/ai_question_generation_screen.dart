@@ -725,7 +725,7 @@ class _AiQuestionGenerationScreenState
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<int>(
-                  value: _selectedTargetBank?.id,
+                  initialValue: _selectedTargetBank?.id,
                   items: targetBanks
                       .map((b) => DropdownMenuItem(
                             value: b.id,

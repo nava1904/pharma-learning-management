@@ -385,7 +385,7 @@ class ScheduledJobLogRepository {
   /// );
   /// ```
   Future<List<ScheduledJobLog>> find(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ScheduledJobLogTable>? where,
     int? limit,
     int? offset,
@@ -427,7 +427,7 @@ class ScheduledJobLogRepository {
   /// );
   /// ```
   Future<ScheduledJobLog?> findFirstRow(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ScheduledJobLogTable>? where,
     int? offset,
     _i1.OrderByBuilder<ScheduledJobLogTable>? orderBy,
@@ -451,7 +451,7 @@ class ScheduledJobLogRepository {
 
   /// Finds a single [ScheduledJobLog] by its [id] or null if no such row exists.
   Future<ScheduledJobLog?> findById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     _i1.Transaction? transaction,
     _i1.LockMode? lockMode,
@@ -476,7 +476,7 @@ class ScheduledJobLogRepository {
   /// rows are silently skipped, and only the successfully inserted rows are
   /// returned.
   Future<List<ScheduledJobLog>> insert(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ScheduledJobLog> rows, {
     _i1.Transaction? transaction,
     bool ignoreConflicts = false,
@@ -492,7 +492,7 @@ class ScheduledJobLogRepository {
   ///
   /// The returned [ScheduledJobLog] will have its `id` field set.
   Future<ScheduledJobLog> insertRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ScheduledJobLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -508,7 +508,7 @@ class ScheduledJobLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fails to
   /// update, none of the rows will be updated.
   Future<List<ScheduledJobLog>> update(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ScheduledJobLog> rows, {
     _i1.ColumnSelections<ScheduledJobLogTable>? columns,
     _i1.Transaction? transaction,
@@ -524,7 +524,7 @@ class ScheduledJobLogRepository {
   /// Optionally, a list of [columns] can be provided to only update those
   /// columns. Defaults to all columns.
   Future<ScheduledJobLog> updateRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ScheduledJobLog row, {
     _i1.ColumnSelections<ScheduledJobLogTable>? columns,
     _i1.Transaction? transaction,
@@ -539,7 +539,7 @@ class ScheduledJobLogRepository {
   /// Updates a single [ScheduledJobLog] by its [id] with the specified [columnValues].
   /// Returns the updated row or null if no row with the given id exists.
   Future<ScheduledJobLog?> updateById(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     int id, {
     required _i1.ColumnValueListBuilder<ScheduledJobLogUpdateTable>
     columnValues,
@@ -555,7 +555,7 @@ class ScheduledJobLogRepository {
   /// Updates all [ScheduledJobLog]s matching the [where] expression with the specified [columnValues].
   /// Returns the list of updated rows.
   Future<List<ScheduledJobLog>> updateWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.ColumnValueListBuilder<ScheduledJobLogUpdateTable>
     columnValues,
     required _i1.WhereExpressionBuilder<ScheduledJobLogTable> where,
@@ -582,7 +582,7 @@ class ScheduledJobLogRepository {
   /// This is an atomic operation, meaning that if one of the rows fail to
   /// be deleted, none of the rows will be deleted.
   Future<List<ScheduledJobLog>> delete(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     List<ScheduledJobLog> rows, {
     _i1.Transaction? transaction,
   }) async {
@@ -594,7 +594,7 @@ class ScheduledJobLogRepository {
 
   /// Deletes a single [ScheduledJobLog].
   Future<ScheduledJobLog> deleteRow(
-    _i1.Session session,
+    _i1.DatabaseSession session,
     ScheduledJobLog row, {
     _i1.Transaction? transaction,
   }) async {
@@ -606,7 +606,7 @@ class ScheduledJobLogRepository {
 
   /// Deletes all rows matching the [where] expression.
   Future<List<ScheduledJobLog>> deleteWhere(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ScheduledJobLogTable> where,
     _i1.Transaction? transaction,
   }) async {
@@ -619,7 +619,7 @@ class ScheduledJobLogRepository {
   /// Counts the number of rows matching the [where] expression. If omitted,
   /// will return the count of all rows in the table.
   Future<int> count(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     _i1.WhereExpressionBuilder<ScheduledJobLogTable>? where,
     int? limit,
     _i1.Transaction? transaction,
@@ -633,7 +633,7 @@ class ScheduledJobLogRepository {
 
   /// Acquires row-level locks on [ScheduledJobLog] rows matching the [where] expression.
   Future<void> lockRows(
-    _i1.Session session, {
+    _i1.DatabaseSession session, {
     required _i1.WhereExpressionBuilder<ScheduledJobLogTable> where,
     required _i1.LockMode lockMode,
     required _i1.Transaction transaction,
