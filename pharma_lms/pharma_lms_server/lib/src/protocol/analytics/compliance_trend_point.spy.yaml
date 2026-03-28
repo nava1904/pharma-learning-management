@@ -1,0 +1,10 @@
+### One month bucket for compliance trend charts (serializable DTO).
+class: ComplianceTrendPoint
+
+fields:
+  ### Calendar month label YYYY-MM.
+  monthLabel: String
+  ### Organization-wide compliance 0–100 (from snapshots or computed).
+  complianceRatePercent: double
+  ### True when derived from [AnalyticsSnapshot] rows for that month.
+  fromSnapshot: bool

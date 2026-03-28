@@ -528,7 +528,6 @@ class AdminGdprScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _SystemTemplate extends StatelessWidget {
@@ -542,7 +541,7 @@ class _SystemTemplate extends StatelessWidget {
         children: const [
           AdminSectionCard(
             title: 'Coming Soon',
-            child: AdminPlaceholderTable(
+            child: AdminDataTable(
               columns: ['Feature', 'Status', 'ETA'],
               rows: [
                 ['Full implementation', 'In Progress', 'Q2 2026'],

@@ -26,7 +26,13 @@ abstract class Lesson implements _i1.SerializableModel {
     required this.materialId,
     this.material,
     this.durationMinutes,
-  }) : orderIndex = orderIndex ?? 0;
+    this.lessonType,
+    this.minEngagementMinutes,
+    this.prerequisiteMode,
+    this.instructorNotes,
+    bool? includeInPreview,
+  }) : orderIndex = orderIndex ?? 0,
+       includeInPreview = includeInPreview ?? false;
 
   factory Lesson({
     int? id,
@@ -37,6 +43,11 @@ abstract class Lesson implements _i1.SerializableModel {
     required int materialId,
     _i3.Material? material,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
+    String? instructorNotes,
+    bool? includeInPreview,
   }) = _LessonImpl;
 
   factory Lesson.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -55,6 +66,15 @@ abstract class Lesson implements _i1.SerializableModel {
               jsonSerialization['material'],
             ),
       durationMinutes: jsonSerialization['durationMinutes'] as int?,
+      lessonType: jsonSerialization['lessonType'] as String?,
+      minEngagementMinutes: jsonSerialization['minEngagementMinutes'] as int?,
+      prerequisiteMode: jsonSerialization['prerequisiteMode'] as String?,
+      instructorNotes: jsonSerialization['instructorNotes'] as String?,
+      includeInPreview: jsonSerialization['includeInPreview'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['includeInPreview'],
+            ),
     );
   }
 
@@ -82,6 +102,21 @@ abstract class Lesson implements _i1.SerializableModel {
   /// Duration in minutes.
   int? durationMinutes;
 
+  /// Lesson type: PDF, Video, SCORM, xAPI, HTML, Checklist, google_doc, google_sheet, google_slide.
+  String? lessonType;
+
+  /// Minimum engagement time in minutes (server-enforced read time).
+  int? minEngagementMinutes;
+
+  /// Prerequisite mode: none, previous (complete previous lesson first).
+  String? prerequisiteMode;
+
+  /// Instructor notes (not shown to learners).
+  String? instructorNotes;
+
+  /// Whether this lesson is included in the course preview.
+  bool includeInPreview;
+
   /// Returns a shallow copy of this [Lesson]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -94,6 +129,11 @@ abstract class Lesson implements _i1.SerializableModel {
     int? materialId,
     _i3.Material? material,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
+    String? instructorNotes,
+    bool? includeInPreview,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -107,6 +147,12 @@ abstract class Lesson implements _i1.SerializableModel {
       'materialId': materialId,
       if (material != null) 'material': material?.toJson(),
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
+      if (lessonType != null) 'lessonType': lessonType,
+      if (minEngagementMinutes != null)
+        'minEngagementMinutes': minEngagementMinutes,
+      if (prerequisiteMode != null) 'prerequisiteMode': prerequisiteMode,
+      if (instructorNotes != null) 'instructorNotes': instructorNotes,
+      'includeInPreview': includeInPreview,
     };
   }
 
@@ -128,6 +174,11 @@ class _LessonImpl extends Lesson {
     required int materialId,
     _i3.Material? material,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
+    String? instructorNotes,
+    bool? includeInPreview,
   }) : super._(
          id: id,
          moduleId: moduleId,
@@ -137,6 +188,11 @@ class _LessonImpl extends Lesson {
          materialId: materialId,
          material: material,
          durationMinutes: durationMinutes,
+         lessonType: lessonType,
+         minEngagementMinutes: minEngagementMinutes,
+         prerequisiteMode: prerequisiteMode,
+         instructorNotes: instructorNotes,
+         includeInPreview: includeInPreview,
        );
 
   /// Returns a shallow copy of this [Lesson]
@@ -152,6 +208,11 @@ class _LessonImpl extends Lesson {
     int? materialId,
     Object? material = _Undefined,
     Object? durationMinutes = _Undefined,
+    Object? lessonType = _Undefined,
+    Object? minEngagementMinutes = _Undefined,
+    Object? prerequisiteMode = _Undefined,
+    Object? instructorNotes = _Undefined,
+    bool? includeInPreview,
   }) {
     return Lesson(
       id: id is int? ? id : this.id,
@@ -166,6 +227,17 @@ class _LessonImpl extends Lesson {
       durationMinutes: durationMinutes is int?
           ? durationMinutes
           : this.durationMinutes,
+      lessonType: lessonType is String? ? lessonType : this.lessonType,
+      minEngagementMinutes: minEngagementMinutes is int?
+          ? minEngagementMinutes
+          : this.minEngagementMinutes,
+      prerequisiteMode: prerequisiteMode is String?
+          ? prerequisiteMode
+          : this.prerequisiteMode,
+      instructorNotes: instructorNotes is String?
+          ? instructorNotes
+          : this.instructorNotes,
+      includeInPreview: includeInPreview ?? this.includeInPreview,
     );
   }
 }

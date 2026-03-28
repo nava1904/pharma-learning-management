@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Route: /trainer/qa-dashboard
-// Lists the trainer's courses and their current QA workflow status.
-// Each course shows a PharmaWorkflowStepper and links to the QA review screen.
+// Lists the trainer's courses and QA workflow status (draft → review → approved).
+// Opens trainer-only submission/validation at /trainer/courses/:id/qa-review (not QA sign-off).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -140,12 +140,12 @@ class _TrainerQADashboardScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'QA Review Dashboard',
+                'Course QA status',
                 style: PharmaTypography.headingLarge
                     .copyWith(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               Text(
-                'Review pending course submissions, approve or return content for revision.',
+                'Track draft and in-review versions. Formal QA sign-off is done in the QA Portal.',
                 style: PharmaTypography.body
                     .copyWith(color: PharmaColors.textTertiary),
               ),

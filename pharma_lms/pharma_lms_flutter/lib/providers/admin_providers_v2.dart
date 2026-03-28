@@ -21,22 +21,25 @@ final adminDashboardKpiProvider = FutureProvider<AdminDashboardKpi>((ref) async 
     if (user == null) {
       return AdminDashboardKpi.empty();
     }
-    
-    // Fetch data
+
     final users = await client.organization.listUsers(organizationId: user.organizationId);
     final courses = await client.course.listCourses(organizationId: user.organizationId);
-    
-    // Count pending items
-    final pendingQA = courses.where((c) => 
-        c.status == 'pending_qa' || c.status == 'under_review').length;
-    
+    final pendingQA = courses
+        .where((c) => c.status == 'pending_qa' || c.status == 'under_review')
+        .length;
+
+    final kpis = await client.analytics.getAdminDashboardKpis();
+    final totalEnrollments = (kpis['totalEnrollments'] as num?)?.toInt() ?? 0;
+    final complianceRate = (kpis['complianceRatePercent'] as num?)?.toInt() ?? 0;
+    final overdueCount = (kpis['overdueEnrollments'] as num?)?.toInt() ?? 0;
+
     return AdminDashboardKpi(
       totalUsers: users.length,
       totalCourses: courses.length,
-      totalEnrollments: 0, // Will be populated when enrollments endpoint is available
-      complianceRate: 91, // Placeholder until calculated
+      totalEnrollments: totalEnrollments,
+      complianceRate: complianceRate,
       pendingQaCount: pendingQA,
-      overdueCount: 0,
+      overdueCount: overdueCount,
     );
   } catch (e) {
     return AdminDashboardKpi.empty();
@@ -48,11 +51,15 @@ final adminPriorityQueuesProvider = FutureProvider<List<PriorityQueueItem>>((ref
   try {
     final user = await ref.watch(currentUserProvider.future);
     if (user == null) return [];
-    
+
     final courses = await client.course.listCourses(organizationId: user.organizationId);
-    final pendingApprovals = courses.where((c) => 
-        c.status == 'pending_qa' || c.status == 'under_review').length;
-    
+    final pendingApprovals = courses
+        .where((c) => c.status == 'pending_qa' || c.status == 'under_review')
+        .length;
+
+    final sopQueue = await client.analytics.getSopRetrainingQueue();
+    final openCapas = await client.analytics.getOpenCapasRequiringTraining();
+
     return [
       PriorityQueueItem(
         name: 'Course Approvals',
@@ -69,15 +76,15 @@ final adminPriorityQueuesProvider = FutureProvider<List<PriorityQueueItem>>((ref
         route: '/admin/users/access-review',
       ),
       PriorityQueueItem(
-        name: 'Doc Acknowledgements',
-        count: 0,
+        name: 'SOP Retraining Queue',
+        count: sopQueue.length,
         sla: '5d',
-        owner: 'Dept Leads',
-        route: '/admin/documents/ack',
+        owner: 'QA / Training',
+        route: '/admin/reports/compliance',
       ),
       PriorityQueueItem(
         name: 'CAPA Actions',
-        count: 0,
+        count: openCapas.length,
         sla: '3d',
         owner: 'Compliance',
         route: '/admin/audit/capa',
@@ -201,13 +208,102 @@ final adminUserCountProvider = FutureProvider<int>((ref) async {
   }
 });
 
+/// Provider to create a new user
+final adminCreateUserProvider = FutureProvider.family<PharmaUser, Map<String, dynamic>>((ref, params) async {
+  return client.adminUserManagement.createUser(
+    email: params['email'] as String,
+    firstName: params['firstName'] as String,
+    lastName: params['lastName'] as String,
+    employeeId: params['employeeId'] as String?,
+    organizationId: params['organizationId'] as int?,
+    departmentId: params['departmentId'] as int?,
+    jobRoleId: params['jobRoleId'] as int?,
+    siteId: params['siteId'] as int?,
+  );
+});
+
+/// Provider to update an existing user
+final adminUpdateUserProvider = FutureProvider.family<PharmaUser?, Map<String, dynamic>>((ref, params) async {
+  try {
+    // params: userId, firstName, lastName, organizationId, departmentId
+    return await client.adminUserManagement.updateUser(
+      userId: params['userId'],
+      firstName: params['firstName'],
+      lastName: params['lastName'],
+      organizationId: params['organizationId'],
+      departmentId: params['departmentId'],
+    );
+  } catch (e) {
+    return null;
+  }
+});
+
+/// Provider to deactivate a user
+final adminDeactivateUserProvider = FutureProvider.family<bool, int>((ref, userId) async {
+  try {
+    return await client.adminUserManagement.deactivateUser(userId: userId);
+  } catch (e) {
+    return false;
+  }
+});
+
 /// Single user detail provider
 final adminUserDetailProvider = FutureProvider.family<PharmaUser?, int>((ref, userId) async {
   try {
-    final users = await ref.watch(adminUsersProvider.future);
-    return users.where((u) => u.id == userId).firstOrNull;
+    return await client.adminUserManagement.getUser(userId: userId);
   } catch (e) {
     return null;
+  }
+});
+
+/// Organizations (for admin user forms).
+final adminOrganizationsListProvider = FutureProvider<List<Organization>>((ref) async {
+  try {
+    return await client.organization.listOrganizations();
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Department + site mapping for an organization (flattened for dropdowns).
+class AdminDepartmentOption {
+  const AdminDepartmentOption({
+    required this.departmentId,
+    required this.siteId,
+    required this.name,
+  });
+  final int departmentId;
+  final int siteId;
+  final String name;
+}
+
+final adminDepartmentOptionsForOrgProvider =
+    FutureProvider.family<List<AdminDepartmentOption>, int>((ref, organizationId) async {
+  try {
+    final sites = await client.organization.listSites(organizationId);
+    final out = <AdminDepartmentOption>[];
+    for (final site in sites) {
+      final sid = site.id;
+      if (sid == null) continue;
+      final depts = await client.organization.listDepartments(sid);
+      for (final d in depts) {
+        final did = d.id;
+        if (did == null) continue;
+        out.add(AdminDepartmentOption(departmentId: did, siteId: sid, name: d.name));
+      }
+    }
+    return out;
+  } catch (e) {
+    return [];
+  }
+});
+
+final adminJobRolesForDepartmentProvider =
+    FutureProvider.family<List<JobRole>, int>((ref, departmentId) async {
+  try {
+    return await client.organization.listJobRoles(departmentId);
+  } catch (e) {
+    return [];
   }
 });
 
@@ -463,6 +559,30 @@ final adminQuestionsProvider = FutureProvider.family<List<Question>, int>((ref, 
   }
 });
 
+/// Admin: list assessments visible to an org.
+final adminAssessmentsProvider = FutureProvider.family<List<Assessment>, int>((ref, organizationId) async {
+  try {
+    return await client.assessmentBuilder.listAssessments(
+      organizationId: organizationId,
+      limit: 200,
+    );
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Admin: list attempts for an assessment.
+final adminAssessmentAttemptsProvider = FutureProvider.family<List<AssessmentAttempt>, int>((ref, assessmentId) async {
+  try {
+    return await client.assessmentBuilder.listAssessmentAttempts(
+      assessmentId: assessmentId,
+      limit: 200,
+    );
+  } catch (e) {
+    return [];
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MODULE 7: CERTIFICATE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -486,6 +606,9 @@ final adminAuditTrailProvider = FutureProvider.family<List<AuditTrail>, AuditTra
     return await client.audit.getAuditTrail(
       userId: params.userId,
       entityType: params.entityType,
+      entityId: params.entityId,
+      from: params.from,
+      to: params.to,
       limit: params.limit,
     );
   } catch (e) {
@@ -496,11 +619,17 @@ final adminAuditTrailProvider = FutureProvider.family<List<AuditTrail>, AuditTra
 class AuditTrailParams {
   final int? userId;
   final String? entityType;
+  final String? entityId;
+  final DateTime? from;
+  final DateTime? to;
   final int limit;
 
   const AuditTrailParams({
     this.userId,
     this.entityType,
+    this.entityId,
+    this.from,
+    this.to,
     this.limit = 100,
   });
 
@@ -510,11 +639,72 @@ class AuditTrailParams {
       other is AuditTrailParams &&
           userId == other.userId &&
           entityType == other.entityType &&
+          entityId == other.entityId &&
+          from == other.from &&
+          to == other.to &&
           limit == other.limit;
 
   @override
-  int get hashCode => Object.hash(userId, entityType, limit);
+  int get hashCode => Object.hash(userId, entityType, entityId, from, to, limit);
 }
+
+/// Org-scoped training assignments (admin view of enrollments / assignments).
+final adminOrgAssignmentsProvider = FutureProvider<List<TrainingAssignment>>((ref) async {
+  try {
+    final user = await ref.watch(currentUserProvider.future);
+    if (user == null) return [];
+    return await client.training.getAllAssignments(organizationId: user.organizationId);
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Controlled documents for current organization.
+final adminDocumentsProvider = FutureProvider<List<Document>>((ref) async {
+  try {
+    final user = await ref.watch(currentUserProvider.future);
+    if (user == null) return [];
+    return await client.document.listDocuments(organizationId: user.organizationId);
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Saved report definitions from analytics module.
+final adminReportDefinitionsProvider = FutureProvider<List<ReportDefinition>>((ref) async {
+  try {
+    return await client.analytics.listReportDefinitions();
+  } catch (e) {
+    return [];
+  }
+});
+
+/// CAPA register (all capas; filter in UI if needed).
+final adminCapasProvider = FutureProvider<List<Capa>>((ref) async {
+  try {
+    return await client.qualityEvent.listCapas();
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Training matrix rows (org-wide when siteId is null).
+final adminTrainingMatrixEntriesProvider = FutureProvider<List<TrainingMatrix>>((ref) async {
+  try {
+    return await client.admin.listTrainingMatrixEntries(siteId: null);
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Department-level compliance summary for gap-style views.
+final adminDepartmentComplianceSummaryProvider = FutureProvider<List<DepartmentComplianceSummary>>((ref) async {
+  try {
+    return await client.analytics.getDepartmentComplianceSummary();
+  } catch (e) {
+    return [];
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MODULE 12: ANALYTICS & REPORTING

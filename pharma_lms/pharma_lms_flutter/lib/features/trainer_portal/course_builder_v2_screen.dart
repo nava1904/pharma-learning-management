@@ -8,20 +8,229 @@
 // Principles:
 //  - Drag-and-drop module/lesson ordering
 //  - DRAFT → UNDER REVIEW → QA APPROVED stepper always visible
-//  - Preview as Employee button
+//  - Preview as Employee button (analytics live under /trainer/analytics)
 //  - Auto-save every 60 seconds
 //  - Version history in right sidebar
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart' hide Material;
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
+import '../../core/video_url_parser.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../design_system/pharma_components.dart';
+import '../shared/communication_sheets.dart';
+
+/// Full-height bottom sheet: org materials with search; returns selected [Material.id].
+Future<int?> showOrganizationMaterialPicker(
+  BuildContext context, {
+  required int organizationId,
+}) {
+  return showModalBottomSheet<int>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      final h = MediaQuery.sizeOf(ctx).height * 0.88;
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: MediaQuery.paddingOf(ctx).bottom + 8,
+        ),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(PharmaRadius.xl)),
+            child: Container(
+              height: h,
+              color: PharmaColors.cardBg,
+              child: _MaterialPickerSheet(organizationId: organizationId),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _MaterialPickerSheet extends StatefulWidget {
+  const _MaterialPickerSheet({required this.organizationId});
+
+  final int organizationId;
+
+  @override
+  State<_MaterialPickerSheet> createState() => _MaterialPickerSheetState();
+}
+
+class _MaterialPickerSheetState extends State<_MaterialPickerSheet> {
+  final _search = TextEditingController();
+  List<Material> _all = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _search.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list =
+          await client.material.listMaterials(organizationId: widget.organizationId);
+      if (mounted) {
+        setState(() {
+          _all = list;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  List<Material> get _filtered {
+    final q = _search.text.trim().toLowerCase();
+    if (q.isEmpty) return _all;
+    return _all
+        .where((m) =>
+            m.title.toLowerCase().contains(q) ||
+            m.materialType.toLowerCase().contains(q))
+        .toList();
+  }
+
+  IconData _iconForType(String t) {
+    final lower = t.toLowerCase();
+    if (lower == 'pdf') return Icons.picture_as_pdf;
+    if (lower.contains('video')) return Icons.videocam;
+    return Icons.insert_drive_file;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Link material from library',
+                  style: PharmaTypography.headingSmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            controller: _search,
+            decoration: InputDecoration(
+              hintText: 'Search by title or type…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              filled: true,
+              fillColor: PharmaColors.pageBg,
+              border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_loading)
+          const Expanded(child: Center(child: CircularProgressIndicator()))
+        else if (_error != null)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(onPressed: _load, child: const Text('Retry')),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (_filtered.isEmpty)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  _all.isEmpty
+                      ? 'No materials in this organization. Upload files in the trainer materials flow first.'
+                      : 'No matches. Try a different search.',
+                  style: PharmaTypography.body.copyWith(
+                    color: PharmaColors.textTertiary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              itemCount: _filtered.length,
+              separatorBuilder: (_, _) => Divider(height: 1, color: PharmaColors.borderLight),
+              itemBuilder: (context, i) {
+                final m = _filtered[i];
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                  leading: Icon(
+                    _iconForType(m.materialType),
+                    color: PharmaColors.emerald600,
+                  ),
+                  title: Text(
+                    m.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(m.materialType),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.pop(context, m.id),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
 
 class CourseBuilderV2Screen extends StatefulWidget {
   const CourseBuilderV2Screen({super.key, required this.courseId});
@@ -32,7 +241,9 @@ class CourseBuilderV2Screen extends StatefulWidget {
   State<CourseBuilderV2Screen> createState() => _CourseBuilderV2ScreenState();
 }
 
-class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
+class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   Course? _course;
   List<CourseVersion> _versions = [];
   CourseVersion? _selectedVersion;
@@ -50,20 +261,64 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
   // Inline controllers
   final _lessonTitleController = TextEditingController();
   final _lessonDurationController = TextEditingController();
+  final _lessonMinEngagementController = TextEditingController();
+  final _googleUrlController = TextEditingController();
+  final _searchController = TextEditingController();
   String _lessonType = 'PDF';
+  String _searchQuery = '';
+
+  // Settings tab controllers
+  final _settingsTitleController = TextEditingController();
+  final _settingsDescController = TextEditingController();
+  final _settingsSopController = TextEditingController();
+  final _settingsImageUrlController = TextEditingController();
+  final _settingsVideoUrlController = TextEditingController();
+  final _settingsTagsController = TextEditingController();
+  String? _settingsCategory;
+  bool _settingsDisableSelfEnrollment = false;
+  bool _settingsFeatured = false;
+  bool _settingsLoaded = false;
+
+  // Block editor state
+  List<LessonBlock> _blocks = [];
+  bool _blocksLoading = false;
+
+  /// Quiz linked to the editable course version (from API).
+  Assessment? _linkedAssessment;
+  bool _assessmentRefreshing = false;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
+    _tabController.addListener(_onTabChanged);
     _load();
     _startAutoSave();
   }
 
+  void _onTabChanged() {
+    if (!mounted || _tabController.indexIsChanging) return;
+    if (_tabController.index == 2) {
+      _refreshLinkedAssessment();
+    }
+  }
+
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
     _autoSaveTimer?.cancel();
     _lessonTitleController.dispose();
     _lessonDurationController.dispose();
+    _lessonMinEngagementController.dispose();
+    _googleUrlController.dispose();
+    _searchController.dispose();
+    _settingsTitleController.dispose();
+    _settingsDescController.dispose();
+    _settingsSopController.dispose();
+    _settingsImageUrlController.dispose();
+    _settingsVideoUrlController.dispose();
+    _settingsTagsController.dispose();
     super.dispose();
   }
 
@@ -99,6 +354,16 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
         }
       }
 
+      Assessment? linkedAssessment;
+      if (editable?.id != null) {
+        try {
+          linkedAssessment =
+              await client.assessment.getAssessmentForCourse(editable!.id!);
+        } catch (_) {
+          linkedAssessment = null;
+        }
+      }
+
       if (mounted) {
         setState(() {
           _course = course;
@@ -106,6 +371,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
           _selectedVersion = editable;
           _modules = modules;
           _lessonsByModule = lessonsByModule;
+          _linkedAssessment = linkedAssessment;
           _loading = false;
         });
       }
@@ -115,6 +381,48 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
           _error = e.toString();
           _loading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _saveGoogleWorkspaceMaterial() async {
+    final url = _googleUrlController.text.trim();
+    if (url.isEmpty) return;
+
+    final lesson = _selectedLessonId != null
+        ? _lessonsByModule.values.expand((l) => l).where((l) => l.id == _selectedLessonId).firstOrNull
+        : null;
+    if (lesson == null) return;
+
+    try {
+      setState(() => _saving = true);
+      final orgId = _course?.organizationId ?? 0;
+      final material = await client.material.createMaterial(
+        title: '${_lessonType == 'google_doc' ? 'Google Doc' : _lessonType == 'google_sheet' ? 'Google Sheet' : 'Google Slides'}: ${lesson.title}',
+        materialType: _lessonType,
+        organizationId: orgId,
+        contentUrl: url,
+      );
+      await client.courseBuilder.updateLesson(
+        lessonId: lesson.id!,
+        title: lesson.title,
+        materialId: material.id!,
+      );
+      setState(() {
+        lesson.materialId = material.id!;
+        _saving = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Workspace content linked')),
+        );
+      }
+    } catch (e) {
+      setState(() => _saving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
   }
@@ -141,21 +449,50 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
 
     return Column(
       children: [
-        // ── HEADER BAR ──
         _buildHeaderBar(),
-        // ── WORKFLOW STEPPER ──
         _buildWorkflowStepper(),
-        // ── 3-COLUMN LAYOUT ──
+        if (_versions.any((v) =>
+                v.status == 'effective' ||
+                v.status == 'approved' ||
+                v.status == 'published') &&
+            (_selectedVersion?.status == 'draft'))
+          _buildDraftVersionAuditBanner(),
+        // ── TAB BAR ──
+        Container(
+          decoration: BoxDecoration(
+            color: PharmaColors.cardBg,
+            border: Border(bottom: BorderSide(color: PharmaColors.borderLight)),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: PharmaColors.emerald700,
+            unselectedLabelColor: PharmaColors.textSecondary,
+            indicatorColor: PharmaColors.emerald600,
+            indicatorWeight: 2,
+            labelStyle: PharmaTypography.bodyMedium.copyWith(fontSize: 13),
+            unselectedLabelStyle: PharmaTypography.body.copyWith(fontSize: 13),
+            tabs: const [
+              Tab(icon: Icon(Icons.settings_outlined, size: 18), text: 'Settings'),
+              Tab(icon: Icon(Icons.menu_book_outlined, size: 18), text: 'Curriculum'),
+              Tab(icon: Icon(Icons.quiz_outlined, size: 18), text: 'Assessment'),
+            ],
+          ),
+        ),
+        // ── TAB VIEWS ──
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: TabBarView(
+            controller: _tabController,
             children: [
-              // LEFT: Module & Lesson Tree (280px)
-              _buildModuleTree(),
-              // CENTRE: Lesson Editor
-              Expanded(child: _buildLessonEditor()),
-              // RIGHT: Context Panel (240px)
-              _buildContextPanel(),
+              _buildSettingsTab(),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildModuleTree(),
+                  Expanded(child: _buildLessonEditor()),
+                  _buildContextPanel(),
+                ],
+              ),
+              _buildAssessmentTab(),
             ],
           ),
         ),
@@ -196,6 +533,8 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
             width: 200,
             height: 32,
             child: TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
               decoration: InputDecoration(
                 hintText: 'Search lessons...',
                 hintStyle: PharmaTypography.caption,
@@ -217,27 +556,48 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
           ),
           const SizedBox(width: 12),
           // Preview as Employee
-          OutlinedButton.icon(
-            onPressed: () {
-              if (_selectedVersion != null) {
-                context.go(
-                  '/employee/course/${widget.courseId}',
-                  extra: {
-                    'courseVersionId': _selectedVersion!.id!,
-                  },
-                );
-              }
-            },
-            icon: const Icon(Icons.visibility, size: 16),
-            label: const Text('Preview as Employee'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: PharmaColors.emerald700,
-              side: BorderSide(color: PharmaColors.emerald200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: PharmaRadius.buttonRadius),
+          Tooltip(
+            message: _selectedVersion == null
+                ? 'Select a course version in the sidebar first'
+                : 'Open this version in the employee course viewer',
+            child: OutlinedButton.icon(
+              onPressed: _selectedVersion == null
+                  ? null
+                  : () {
+                      context.go(
+                        '/employee/course/${widget.courseId}',
+                        extra: <String, dynamic>{
+                          'courseVersionId': _selectedVersion!.id!,
+                        },
+                      );
+                    },
+              icon: const Icon(Icons.visibility, size: 16),
+              label: const Text('Preview as Employee'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.emerald700,
+                side: BorderSide(color: PharmaColors.emerald200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: PharmaRadius.buttonRadius),
+              ),
             ),
           ),
           const SizedBox(width: 8),
+          Tooltip(
+            message: _selectedVersion == null
+                ? 'Select a course version in the sidebar first'
+                : 'Open QA review thread for this version',
+            child: IconButton(
+              onPressed: _selectedVersion == null
+                  ? null
+                  : () => openCourseQaThreadForVersion(
+                        context,
+                        courseVersionId: _selectedVersion!.id!,
+                        courseTitle: _course?.title ?? 'Course',
+                      ),
+              icon: const Icon(Icons.forum_outlined),
+              color: PharmaColors.textSecondary,
+            ),
+          ),
           // Version History
           OutlinedButton.icon(
             onPressed: () => context.go('/trainer/courses/${widget.courseId}/versions'),
@@ -277,6 +637,35 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
     );
   }
 
+  Widget _buildDraftVersionAuditBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 10),
+      decoration: BoxDecoration(
+        color: PharmaColors.infoBg,
+        border: Border(bottom: BorderSide(color: PharmaColors.info.withValues(alpha: 0.25))),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 20, color: PharmaColors.infoText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'You are editing a draft version while a published version exists. '
+              'Edits are blocked on live content by design. Changes on this draft are logged for '
+              'Admin → Audit (lesson / lesson_block / course_version). Submit through QA when ready to publish.',
+              style: PharmaTypography.caption.copyWith(
+                color: PharmaColors.infoText,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── LEFT PANEL: MODULE TREE ──
   Widget _buildModuleTree() {
     return Container(
@@ -295,7 +684,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
             ),
             child: Row(
               children: [
-                Text('Course Structure',
+                Text('Curriculum',
                     style: PharmaTypography.headingSmall.copyWith(fontSize: 13)),
                 const Spacer(),
                 IconButton(
@@ -331,11 +720,18 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
                     onReorder: _reorderModules,
                     children: [
                       for (int i = 0; i < _modules.length; i++)
+                        if (_searchQuery.isEmpty ||
+                            _modules[i].title.toLowerCase().contains(_searchQuery) ||
+                            (_lessonsByModule[_modules[i].id!] ?? []).any((l) => l.title.toLowerCase().contains(_searchQuery)))
                         _ModuleTreeItem(
                           key: ValueKey(_modules[i].id),
                           module: _modules[i],
                           index: i,
-                          lessons: _lessonsByModule[_modules[i].id!] ?? [],
+                          lessons: _searchQuery.isEmpty
+                              ? (_lessonsByModule[_modules[i].id!] ?? [])
+                              : (_lessonsByModule[_modules[i].id!] ?? [])
+                                  .where((l) => l.title.toLowerCase().contains(_searchQuery))
+                                  .toList(),
                           isSelected: _selectedModuleId == _modules[i].id,
                           selectedLessonId: _selectedLessonId,
                           onModuleTap: () => setState(() {
@@ -345,6 +741,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
                           onLessonTap: (lessonId) => _selectLesson(lessonId),
                           onAddLesson: () => _addLesson(_modules[i].id!),
                           onDeleteModule: () => _deleteModule(_modules[i].id!),
+                          onRenameModule: () => _renameModule(_modules[i]),
                         ),
                     ],
                   ),
@@ -374,7 +771,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
     );
   }
 
-  // ── CENTRE PANEL: LESSON EDITOR ──
+  // ── CENTRE PANEL: BLOCK-BASED LESSON EDITOR ──
   Widget _buildLessonEditor() {
     if (_selectedLessonId == null) {
       return Container(
@@ -391,7 +788,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Click on a lesson in the left panel to view and edit its properties.',
+                'Click on a lesson in the left panel to view and edit its content blocks.',
                 style: PharmaTypography.body,
               ),
             ],
@@ -400,7 +797,6 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
       );
     }
 
-    // Find the selected lesson
     Lesson? selectedLesson;
     for (final lessons in _lessonsByModule.values) {
       for (final l in lessons) {
@@ -417,354 +813,407 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
 
     return Container(
       color: PharmaColors.pageBg,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Lesson header
-            Text('Lesson Properties', style: PharmaTypography.headingMedium.copyWith(fontSize: 15)),
-            const SizedBox(height: PharmaSpacing.sectionGap),
-
-            // Form fields
-            _FormField(
-              label: 'Title',
-              child: TextField(
-                controller: _lessonTitleController..text = selectedLesson.title,
-                decoration: _inputDecoration('Enter lesson title'),
-                style: PharmaTypography.body,
-              ),
+      child: Column(
+        children: [
+          // Lesson header bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 10),
+            decoration: BoxDecoration(
+              color: PharmaColors.cardBg,
+              border: Border(bottom: BorderSide(color: PharmaColors.borderLight)),
             ),
-
-            _FormField(
-              label: 'Lesson Type',
-              child: DropdownButtonFormField<String>(
-                initialValue: _lessonType,
-                items: const [
-                  DropdownMenuItem(value: 'PDF', child: Row(children: [Icon(Icons.picture_as_pdf, size: 16, color: PharmaColors.danger), SizedBox(width: 8), Text('PDF')])),
-                  DropdownMenuItem(value: 'Video', child: Row(children: [Icon(Icons.play_circle, size: 16, color: PharmaColors.info), SizedBox(width: 8), Text('Video')])),
-                  DropdownMenuItem(value: 'SCORM', child: Row(children: [Icon(Icons.inventory_2, size: 16, color: PharmaColors.orange), SizedBox(width: 8), Text('SCORM')])),
-                  DropdownMenuItem(value: 'xAPI', child: Row(children: [Icon(Icons.code, size: 16, color: PharmaColors.purple), SizedBox(width: 8), Text('xAPI')])),
-                  DropdownMenuItem(value: 'HTML', child: Row(children: [Icon(Icons.web, size: 16, color: PharmaColors.success), SizedBox(width: 8), Text('Embedded HTML')])),
-                  DropdownMenuItem(value: 'Checklist', child: Row(children: [Icon(Icons.checklist, size: 16, color: PharmaColors.emerald600), SizedBox(width: 8), Text('Practical Checklist')])),
-                ],
-                onChanged: (v) => setState(() => _lessonType = v ?? 'PDF'),
-                decoration: _inputDecoration(''),
-              ),
-            ),
-
-            _FormField(
-              label: 'Estimated Duration',
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 100,
-                    child: TextField(
-                      controller: _lessonDurationController
-                        ..text = '${selectedLesson.durationMinutes ?? 15}',
-                      decoration: _inputDecoration(''),
-                      keyboardType: TextInputType.number,
-                      style: PharmaTypography.body,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('minutes', style: PharmaTypography.body),
-                ],
-              ),
-            ),
-
-            _FormField(
-              label: 'Minimum Engagement Time (Enforced)',
-              child: DropdownButtonFormField<int>(
-                initialValue: 5,
-                items: [5, 10, 15, 20, 30, 45, 60]
-                    .map((m) => DropdownMenuItem(
-                          value: m,
-                          child: Text('$m minutes'),
-                        ))
-                    .toList(),
-                onChanged: (_) {},
-                decoration: _inputDecoration(''),
-              ),
-            ),
-
-            _FormField(
-              label: 'Prerequisites',
-              child: DropdownButtonFormField<String>(
-                initialValue: 'none',
-                items: const [
-                  DropdownMenuItem(value: 'none', child: Text('None Required')),
-                  DropdownMenuItem(
-                      value: 'previous', child: Text('Complete previous lesson')),
-                ],
-                onChanged: (_) {},
-                decoration: _inputDecoration(''),
-              ),
-            ),
-
-            const SizedBox(height: PharmaSpacing.sectionGap),
-
-            // Linked Material Display
-            Builder(
-              builder: (ctx) {
-                final lesson = selectedLesson!;
-                
-                if (lesson.materialId <= 0) {
-                  return Container(
-                    padding: const EdgeInsets.all(PharmaSpacing.md),
-                    decoration: BoxDecoration(
-                      color: PharmaColors.warningBg,
-                      borderRadius: PharmaRadius.cardRadius,
-                      border: Border.all(color: PharmaColors.borderLight),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, color: PharmaColors.warning, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text('No material linked to this lesson',
-                              style: PharmaTypography.body
-                                  .copyWith(color: PharmaColors.warning)),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return FutureBuilder<Material?>(
-                  future: client.material.getMaterial(lesson.materialId),
-                  builder: (ctx, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Container(
-                        padding: const EdgeInsets.all(PharmaSpacing.md),
-                        decoration: BoxDecoration(
-                          color: PharmaColors.successBg,
-                          borderRadius: PharmaRadius.cardRadius,
-                          border: Border.all(color: PharmaColors.borderLight),
-                        ),
-                        child: const CircularProgressIndicator(strokeWidth: 2),
-                      );
-                    }
-
-                    final material = snapshot.data;
-                    if (material == null) {
-                      return Container(
-                        padding: const EdgeInsets.all(PharmaSpacing.md),
-                        decoration: BoxDecoration(
-                          color: PharmaColors.dangerBg,
-                          borderRadius: PharmaRadius.cardRadius,
-                          border: Border.all(color: PharmaColors.borderLight),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: PharmaColors.danger),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text('Material not found',
-                                  style: PharmaTypography.body
-                                      .copyWith(color: PharmaColors.danger)),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () async {
-                                try {
-                                  await client.courseBuilder.updateLesson(
-                                    lessonId: lesson.id!,
-                                    title: lesson.title,
-                                    materialId: 0,
-                                  );
-                                  setState(() {
-                                    lesson.materialId = 0;
-                                  });
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error unlinking material: $e')),
-                                    );
-                                  }
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return Container(
-                      padding: const EdgeInsets.all(PharmaSpacing.md),
-                      decoration: BoxDecoration(
-                        color: PharmaColors.successBg,
-                        borderRadius: PharmaRadius.cardRadius,
-                        border: Border.all(color: PharmaColors.borderLight),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.description, color: PharmaColors.success, size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Linked Material',
-                                        style: PharmaTypography.caption
-                                            .copyWith(color: PharmaColors.success)),
-                                    const SizedBox(height: 4),
-                                    Text(material.title,
-                                        style: PharmaTypography.bodyMedium,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis),
-                                  ],
-                                ),
-                              ),
-                              Chip(
-                                label: Text(material.materialType,
-                                    style: PharmaTypography.caption),
-                                backgroundColor:
-                                    PharmaColors.success.withOpacity(0.2),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  // Unlink material
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Unlink Material'),
-                                      content: const Text(
-                                          'Are you sure? The lesson will no longer be associated with this material.'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () async {
-                                            Navigator.pop(ctx);
-                                            try {
-                                              await client.courseBuilder.updateLesson(
-                                                lessonId: lesson.id!,
-                                                title: lesson.title,
-                                                materialId: 0,
-                                              );
-                                              setState(() {
-                                                lesson.materialId = 0;
-                                              });
-                                            } catch (e) {
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(content: Text('Error unlinking material: $e')),
-                                                );
-                                              }
-                                            }
-                                          },
-                                          child: Text('Unlink',
-                                              style: TextStyle(color: PharmaColors.danger)),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.link_off, size: 16),
-                                label: const Text('Unlink'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: PharmaColors.danger,
-                                  side: BorderSide(color: PharmaColors.borderMedium),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-
-            const SizedBox(height: PharmaSpacing.sectionGap),
-
-            // Action buttons
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Delete Lesson'),
-                        content: const Text('Are you sure? This cannot be undone.'),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: Text('Delete', style: TextStyle(color: PharmaColors.danger)),
-                          ),
-                        ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _lessonTitleController,
+                        decoration: InputDecoration(
+                          hintText: 'Lesson title...',
+                          hintStyle: PharmaTypography.body.copyWith(color: PharmaColors.textQuaternary),
+                          border: InputBorder.none,
+                        ),
+                        style: PharmaTypography.headingMedium.copyWith(fontSize: 16),
                       ),
-                    );
-                    if (confirm == true) {
-                      try {
-                        await client.courseBuilder.deleteLesson(lessonId: _selectedLessonId!);
-                        setState(() {
-                          for (final entry in _lessonsByModule.entries) {
-                            entry.value.removeWhere((l) => l.id == _selectedLessonId);
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Lesson'),
+                            content: const Text('Are you sure? This cannot be undone.'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: Text('Delete', style: TextStyle(color: PharmaColors.danger)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          try {
+                            await client.courseBuilder.deleteLesson(lessonId: _selectedLessonId!);
+                            setState(() {
+                              for (final entry in _lessonsByModule.entries) {
+                                entry.value.removeWhere((l) => l.id == _selectedLessonId);
+                              }
+                              _selectedLessonId = null;
+                              _blocks = [];
+                            });
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
                           }
-                          _selectedLessonId = null;
-                        });
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error deleting lesson: $e')),
-                          );
                         }
-                      }
-                    }
-                  },
-                  icon: Icon(Icons.delete_outline, size: 16, color: PharmaColors.danger),
-                  label: Text('Delete Lesson',
-                      style: TextStyle(color: PharmaColors.danger)),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: PharmaColors.dangerBg),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
+                      },
+                      icon: Icon(Icons.delete_outline, size: 16, color: PharmaColors.danger),
+                      label: Text('Delete', style: TextStyle(color: PharmaColors.danger, fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: PharmaColors.dangerBg),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: _saving ? null : () => _saveLessonChanges(selectedLesson!),
+                      icon: const Icon(Icons.save, size: 16),
+                      label: Text(_saving ? 'Saving...' : 'Save', style: const TextStyle(fontSize: 12)),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: PharmaColors.emerald600,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: () => _linkMaterialToLesson(selectedLesson),
-                  icon: const Icon(Icons.upload_file, size: 16),
-                  label: const Text('Link Material'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: PharmaColors.info,
-                    side: BorderSide(color: PharmaColors.infoBg),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: _saving ? null : () => _saveLessonChanges(selectedLesson!),
-                  icon: const Icon(Icons.save, size: 16),
-                  label: Text(_saving ? 'Saving...' : 'Save Changes'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: PharmaColors.emerald600,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _lessonDurationController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Est. duration (min)',
+                          isDense: true,
+                          filled: true,
+                          fillColor: PharmaColors.pageBg,
+                          border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                        ),
+                        style: PharmaTypography.body.copyWith(fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _lessonMinEngagementController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Min time to complete (min)',
+                          isDense: true,
+                          filled: true,
+                          fillColor: PharmaColors.pageBg,
+                          border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                          helperText: 'Used for learner progress & completion',
+                        ),
+                        style: PharmaTypography.body.copyWith(fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
+          ),
+          // Block list
+          Expanded(
+            child: _blocksLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _blocks.isEmpty
+                    ? _buildEmptyBlockState()
+                    : _buildBlockList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyBlockState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.dashboard_customize_outlined, size: 48, color: PharmaColors.gray300),
+          const SizedBox(height: 12),
+          Text('Add your first content block',
+              style: PharmaTypography.headingSmall.copyWith(color: PharmaColors.gray500)),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: _blockTypeOptions().map((opt) => _BlockTypeChip(
+              icon: opt.icon,
+              label: opt.label,
+              color: opt.color,
+              onTap: () => _addBlock(opt.type),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockList() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      child: Column(
+        children: [
+          for (int i = 0; i < _blocks.length; i++) ...[
+            _BlockEditorWidget(
+              key: ValueKey(_blocks[i].id),
+              block: _blocks[i],
+              onUpdate: (contentJson) => _updateBlock(_blocks[i], contentJson),
+              onDelete: () => _deleteBlock(_blocks[i]),
+              onMoveUp: i > 0 ? () => _moveBlock(i, i - 1) : null,
+              onMoveDown: i < _blocks.length - 1 ? () => _moveBlock(i, i + 1) : null,
+              inputDecoration: _inputDecoration,
+              onLinkUploadMaterial: _blocks[i].blockType == 'upload'
+                  ? () => _handleUploadBlockLinkMaterial(_blocks[i])
+                  : null,
+            ),
+            _AddBlockDivider(onAddBlock: (type) => _insertBlock(type, i + 1)),
+          ],
+          if (_blocks.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: OutlinedButton.icon(
+                onPressed: () => _showBlockTypePicker(_blocks.length),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Block'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: PharmaColors.emerald600,
+                  side: BorderSide(color: PharmaColors.emerald200),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<_BlockTypeOption> _blockTypeOptions() => const [
+    _BlockTypeOption(type: 'text', label: 'Text', icon: Icons.subject, color: PharmaColors.gray600),
+    _BlockTypeOption(type: 'heading', label: 'Heading', icon: Icons.title, color: PharmaColors.gray700),
+    _BlockTypeOption(type: 'video', label: 'Video', icon: Icons.play_circle_outline, color: PharmaColors.info),
+    _BlockTypeOption(type: 'upload', label: 'Upload', icon: Icons.upload_file, color: PharmaColors.emerald600),
+    _BlockTypeOption(type: 'quiz', label: 'Quiz', icon: Icons.quiz_outlined, color: PharmaColors.purple),
+    _BlockTypeOption(type: 'assignment', label: 'Assignment', icon: Icons.assignment_outlined, color: PharmaColors.orange),
+    _BlockTypeOption(type: 'google_doc', label: 'Google Docs', icon: Icons.article_outlined, color: PharmaColors.info),
+    _BlockTypeOption(type: 'google_sheet', label: 'Google Sheets', icon: Icons.table_chart_outlined, color: PharmaColors.success),
+    _BlockTypeOption(type: 'google_slide', label: 'Google Slides', icon: Icons.slideshow_outlined, color: PharmaColors.orange),
+    _BlockTypeOption(type: 'code_sandbox', label: 'CodeSandbox', icon: Icons.code, color: PharmaColors.gray700),
+    _BlockTypeOption(type: 'audio', label: 'Audio', icon: Icons.audiotrack, color: PharmaColors.purple),
+  ];
+
+  Future<void> _loadBlocks() async {
+    if (_selectedLessonId == null) return;
+    setState(() => _blocksLoading = true);
+    try {
+      final blocks = await client.lessonBlock.listBlocks(lessonId: _selectedLessonId!);
+      if (mounted) setState(() { _blocks = blocks; _blocksLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() => _blocksLoading = false);
+    }
+  }
+
+  Future<void> _addBlock(String blockType) async {
+    if (_selectedLessonId == null) return;
+    final contentJson = _defaultContentForType(blockType);
+    try {
+      final block = await client.lessonBlock.createBlock(
+        lessonId: _selectedLessonId!,
+        blockType: blockType,
+        contentJson: jsonEncode(contentJson),
+        orderIndex: _blocks.length,
+      );
+      setState(() => _blocks.add(block));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _insertBlock(String blockType, int index) async {
+    if (_selectedLessonId == null) return;
+    final contentJson = _defaultContentForType(blockType);
+    try {
+      final block = await client.lessonBlock.createBlock(
+        lessonId: _selectedLessonId!,
+        blockType: blockType,
+        contentJson: jsonEncode(contentJson),
+        orderIndex: index,
+      );
+      setState(() => _blocks.insert(index, block));
+      await _reorderBlocksOnServer();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _updateBlock(LessonBlock block, String contentJson) async {
+    try {
+      var toSave = contentJson;
+      if (block.blockType == 'assignment' && _selectedLessonId != null) {
+        final map = jsonDecode(contentJson) as Map<String, dynamic>;
+        final title = (map['title'] as String? ?? '').trim();
+        final existingId = map['assignmentId'];
+        if (title.isNotEmpty && existingId == null) {
+          final created = await client.assignment.createAssignment(
+            lessonId: _selectedLessonId!,
+            title: title,
+            instructions: () {
+              final i = map['instructions'] as String?;
+              if (i == null || i.trim().isEmpty) return null;
+              return i.trim();
+            }(),
+            allowedFileTypes: jsonEncode(map['allowedTypes'] ?? ['pdf', 'doc']),
+          );
+          map['assignmentId'] = created.id;
+          toSave = jsonEncode(map);
+        } else if (existingId != null && title.isNotEmpty) {
+          final id = existingId is int
+              ? existingId
+              : int.tryParse(existingId.toString());
+          if (id != null) {
+            await client.assignment.updateAssignment(
+              assignmentId: id,
+              title: title,
+              instructions: () {
+                final i = map['instructions'] as String?;
+                if (i == null || i.trim().isEmpty) return null;
+                return i.trim();
+              }(),
+              allowedFileTypes: jsonEncode(map['allowedTypes'] ?? ['pdf', 'doc']),
+            );
+          }
+        }
+      }
+      await client.lessonBlock.updateBlock(blockId: block.id!, contentJson: toSave);
+      if (mounted) setState(() => block.contentJson = toSave);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _deleteBlock(LessonBlock block) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Block'),
+        content: const Text('Remove this content block?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete', style: TextStyle(color: PharmaColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await client.lessonBlock.deleteBlock(blockId: block.id!);
+      setState(() => _blocks.removeWhere((b) => b.id == block.id));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  void _moveBlock(int oldIndex, int newIndex) {
+    setState(() {
+      final block = _blocks.removeAt(oldIndex);
+      _blocks.insert(newIndex, block);
+    });
+    _reorderBlocksOnServer();
+  }
+
+  Future<void> _reorderBlocksOnServer() async {
+    if (_selectedLessonId == null) return;
+    final blockIds = _blocks.where((b) => b.id != null).map((b) => b.id!).toList();
+    try {
+      await client.lessonBlock.reorderBlocks(lessonId: _selectedLessonId!, blockIds: blockIds);
+    } catch (_) {}
+  }
+
+  void _showBlockTypePicker(int insertIndex) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(PharmaSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Add Content Block', style: PharmaTypography.headingSmall),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _blockTypeOptions().map((opt) => _BlockTypeChip(
+                icon: opt.icon,
+                label: opt.label,
+                color: opt.color,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _insertBlock(opt.type, insertIndex);
+                },
+              )).toList(),
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
+  }
+
+  Map<String, dynamic> _defaultContentForType(String type) {
+    switch (type) {
+      case 'text': return {'html': ''};
+      case 'heading': return {'text': '', 'level': 2};
+      case 'video': return {'url': '', 'platform': 'direct'};
+      case 'upload': return {'materialId': null, 'materialType': ''};
+      case 'quiz': return {'quizId': null, 'quizTitle': ''};
+      case 'assignment':
+        return {
+          'title': '',
+          'instructions': '',
+          'allowedTypes': ['pdf', 'doc'],
+          'assignmentId': null,
+        };
+      case 'google_doc': return {'url': '', 'embedUrl': ''};
+      case 'google_sheet': return {'url': '', 'embedUrl': ''};
+      case 'google_slide': return {'url': '', 'embedUrl': ''};
+      case 'code_sandbox': return {'url': ''};
+      case 'audio': return {'materialId': null, 'fileName': ''};
+      default: return {};
+    }
   }
 
   // ── RIGHT PANEL: CONTEXT ──
@@ -936,6 +1385,588 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       );
 
+  // ── SETTINGS TAB ──
+  Widget _buildSettingsTab() {
+    if (_course != null && !_settingsLoaded) {
+      _settingsTitleController.text = _course!.title;
+      _settingsDescController.text = _course!.description ?? '';
+      _settingsSopController.text = _course!.sopNumber ?? '';
+      _settingsImageUrlController.text = _course!.imageUrl ?? '';
+      _settingsVideoUrlController.text = _course!.previewVideoUrl ?? '';
+      _settingsTagsController.text = _course!.tags ?? '';
+      _settingsCategory = _course!.category;
+      _settingsDisableSelfEnrollment = _course!.disableSelfEnrollment;
+      _settingsFeatured = _course!.featured;
+      _settingsLoaded = true;
+    }
+
+    return Container(
+      color: PharmaColors.pageBg,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Course Settings',
+                    style: PharmaTypography.headingMedium.copyWith(fontSize: 18)),
+                const SizedBox(height: 4),
+                Text(
+                  'Configure your course metadata, media, and options.',
+                  style: PharmaTypography.body,
+                ),
+                const SizedBox(height: PharmaSpacing.sectionGap),
+
+                // Basic Info Section
+                _SettingsSection(
+                  title: 'Basic Information',
+                  icon: Icons.info_outline,
+                  children: [
+                    _FormField(
+                      label: 'Course Title',
+                      child: TextField(
+                        controller: _settingsTitleController,
+                        decoration: _inputDecoration('Enter course title'),
+                        style: PharmaTypography.body,
+                        onChanged: (_) => _autoSaveSettings(),
+                      ),
+                    ),
+                    _FormField(
+                      label: 'Description',
+                      child: TextField(
+                        controller: _settingsDescController,
+                        decoration: _inputDecoration('Course description...'),
+                        style: PharmaTypography.body,
+                        maxLines: 4,
+                        onChanged: (_) => _autoSaveSettings(),
+                      ),
+                    ),
+                    _FormField(
+                      label: 'Linked SOP Number',
+                      child: TextField(
+                        controller: _settingsSopController,
+                        decoration: _inputDecoration('e.g., SOP-105, SOP-GMP-001'),
+                        style: PharmaTypography.body,
+                        onChanged: (_) => _autoSaveSettings(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: PharmaSpacing.sectionGap),
+
+                // Media Section
+                _SettingsSection(
+                  title: 'Media',
+                  icon: Icons.perm_media_outlined,
+                  children: [
+                    _FormField(
+                      label: 'Cover Image URL',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _settingsImageUrlController,
+                            decoration: _inputDecoration('https://example.com/course-cover.png'),
+                            style: PharmaTypography.body,
+                            keyboardType: TextInputType.url,
+                            onChanged: (_) => _autoSaveSettings(),
+                          ),
+                          if (_settingsImageUrlController.text.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: PharmaRadius.cardRadius,
+                              child: Image.network(
+                                _settingsImageUrlController.text,
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  height: 120,
+                                  color: PharmaColors.gray100,
+                                  child: Center(
+                                    child: Icon(Icons.broken_image,
+                                        color: PharmaColors.gray400),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    _FormField(
+                      label: 'Preview Video URL',
+                      child: TextField(
+                        controller: _settingsVideoUrlController,
+                        decoration: _inputDecoration(
+                            'https://youtube.com/watch?v=... or Vimeo link'),
+                        style: PharmaTypography.body,
+                        keyboardType: TextInputType.url,
+                        onChanged: (_) => _autoSaveSettings(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: PharmaSpacing.sectionGap),
+
+                // Metadata Section
+                _SettingsSection(
+                  title: 'Metadata & Tags',
+                  icon: Icons.label_outline,
+                  children: [
+                    _FormField(
+                      label: 'Category',
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _settingsCategory,
+                        decoration: _inputDecoration('Select a category'),
+                        style: PharmaTypography.body,
+                        items: const [
+                          DropdownMenuItem(value: 'GMP', child: Text('GMP')),
+                          DropdownMenuItem(value: 'Quality', child: Text('Quality')),
+                          DropdownMenuItem(value: 'Safety', child: Text('Safety')),
+                          DropdownMenuItem(value: 'Regulatory', child: Text('Regulatory')),
+                          DropdownMenuItem(value: 'Compliance', child: Text('Compliance')),
+                          DropdownMenuItem(value: 'Manufacturing', child: Text('Manufacturing')),
+                          DropdownMenuItem(value: 'Laboratory', child: Text('Laboratory')),
+                          DropdownMenuItem(value: 'General', child: Text('General')),
+                        ],
+                        onChanged: (val) {
+                          setState(() => _settingsCategory = val);
+                          _autoSaveSettings();
+                        },
+                      ),
+                    ),
+                    _FormField(
+                      label: 'Tags',
+                      child: TextField(
+                        controller: _settingsTagsController,
+                        decoration: _inputDecoration(
+                            'GMP, Beginner, Quality Control (comma-separated)'),
+                        style: PharmaTypography.body,
+                        onChanged: (_) => _autoSaveSettings(),
+                      ),
+                    ),
+                    if (_settingsTagsController.text.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: _settingsTagsController.text
+                              .split(',')
+                              .map((t) => t.trim())
+                              .where((t) => t.isNotEmpty)
+                              .map((t) => Chip(
+                                    label: Text(t,
+                                        style: PharmaTypography.caption),
+                                    backgroundColor: PharmaColors.emerald50,
+                                    side: BorderSide(
+                                        color: PharmaColors.emerald200),
+                                    visualDensity: VisualDensity.compact,
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: PharmaSpacing.sectionGap),
+
+                // Pharma & Publishing Section
+                _SettingsSection(
+                  title: 'Publishing & Pharma Options',
+                  icon: Icons.tune_outlined,
+                  children: [
+                    _FormField(
+                      label: 'Disable Self-Enrollment',
+                      child: SwitchListTile(
+                        value: _settingsDisableSelfEnrollment,
+                        onChanged: (val) {
+                          setState(() => _settingsDisableSelfEnrollment = val);
+                          _autoSaveSettings();
+                        },
+                        title: Text(
+                          'Require admin or manager assignment',
+                          style: PharmaTypography.body,
+                        ),
+                        subtitle: Text(
+                          'When enabled, learners cannot self-enroll in this course.',
+                          style: PharmaTypography.caption,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: PharmaColors.emerald600,
+                      ),
+                    ),
+                    _FormField(
+                      label: 'Featured Course',
+                      child: SwitchListTile(
+                        value: _settingsFeatured,
+                        onChanged: (val) {
+                          setState(() => _settingsFeatured = val);
+                          _autoSaveSettings();
+                        },
+                        title: Text(
+                          'Promote on course catalog',
+                          style: PharmaTypography.body,
+                        ),
+                        subtitle: Text(
+                          'Featured courses appear prominently in the learner catalog.',
+                          style: PharmaTypography.caption,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: PharmaColors.emerald600,
+                      ),
+                    ),
+                    _FormField(
+                      label: 'Published Status',
+                      child: Row(
+                        children: [
+                          Text(
+                            _course?.status == 'approved' ? 'Published' : 'Not Published',
+                            style: PharmaTypography.bodyMedium.copyWith(
+                              color: _course?.status == 'approved'
+                                  ? PharmaColors.success
+                                  : PharmaColors.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_course?.publishedAt != null)
+                            Text(
+                              '(${_course!.publishedAt!.toLocal().toString().substring(0, 10)})',
+                              style: PharmaTypography.caption,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: PharmaSpacing.sectionGap),
+
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _saving ? null : _saveSettings,
+                    icon: const Icon(Icons.save, size: 16),
+                    label: Text(_saving ? 'Saving...' : 'Save Settings'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: PharmaColors.emerald600,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Timer? _settingsDebounce;
+
+  void _autoSaveSettings() {
+    _settingsDebounce?.cancel();
+    _settingsDebounce = Timer(const Duration(seconds: 2), () {
+      _saveSettings();
+    });
+    setState(() {});
+  }
+
+  Future<void> _saveSettings() async {
+    if (_course == null) return;
+    setState(() => _saving = true);
+    try {
+      final updated = await client.course.updateCourse(
+        courseId: _course!.id!,
+        title: _settingsTitleController.text.trim(),
+        description: _settingsDescController.text.trim().isEmpty
+            ? null
+            : _settingsDescController.text.trim(),
+        sopNumber: _settingsSopController.text.trim().isEmpty
+            ? null
+            : _settingsSopController.text.trim(),
+        previewVideoUrl: _settingsVideoUrlController.text.trim().isEmpty
+            ? null
+            : _settingsVideoUrlController.text.trim(),
+        imageUrl: _settingsImageUrlController.text.trim().isEmpty
+            ? null
+            : _settingsImageUrlController.text.trim(),
+        tags: _settingsTagsController.text.trim().isEmpty
+            ? null
+            : _settingsTagsController.text.trim(),
+        category: _settingsCategory,
+        disableSelfEnrollment: _settingsDisableSelfEnrollment,
+        featured: _settingsFeatured,
+      );
+      setState(() {
+        _course = updated;
+        _lastSaved = DateTime.now();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save settings: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _refreshLinkedAssessment() async {
+    final vid = _selectedVersion?.id;
+    if (vid == null || !mounted) return;
+    setState(() => _assessmentRefreshing = true);
+    try {
+      final a = await client.assessment.getAssessmentForCourse(vid);
+      if (mounted) {
+        setState(() {
+          _linkedAssessment = a;
+          _assessmentRefreshing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _linkedAssessment = null;
+          _assessmentRefreshing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load assessment: $e')),
+        );
+      }
+    }
+  }
+
+  // ── ASSESSMENT TAB ──
+  Widget _buildAssessmentTab() {
+    return Container(
+      color: PharmaColors.pageBg,
+      child: ListView(
+        padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+        children: [
+          Row(
+            children: [
+              Icon(Icons.quiz_outlined, color: PharmaColors.emerald600, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assessment for this version',
+                      style: PharmaTypography.headingSmall.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      _selectedVersion == null
+                          ? 'No draft version loaded.'
+                          : 'Linked to v${_selectedVersion!.version} (${_selectedVersion!.status})',
+                      style: PharmaTypography.caption.copyWith(
+                        color: PharmaColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Refresh from server',
+                onPressed:
+                    _selectedVersion == null || _assessmentRefreshing ? null : _refreshLinkedAssessment,
+                icon: _assessmentRefreshing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: PharmaSpacing.lg),
+          if (_selectedVersion == null)
+            Text(
+              'Load a course version to see assessment details.',
+              style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+            )
+          else if (_linkedAssessment == null)
+            _buildNoAssessmentCard()
+          else
+            _buildAssessmentDetailCard(_linkedAssessment!),
+          const SizedBox(height: PharmaSpacing.lg),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Tooltip(
+              message: _selectedVersion == null
+                  ? 'Select a version in the sidebar first'
+                  : 'Edit question bank, passing score, and attempts',
+              child: FilledButton.icon(
+                onPressed: _selectedVersion == null
+                    ? null
+                    : () async {
+                        await context.push('/trainer/courses/${widget.courseId}/assessment');
+                        if (mounted) await _refreshLinkedAssessment();
+                      },
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: Text(_linkedAssessment == null ? 'Create / link assessment' : 'Edit in assessment builder'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: PharmaColors.emerald600,
+                  foregroundColor: PharmaColors.cardBg,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Completion and enrollment metrics are in Analytics → Course analytics.',
+            style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoAssessmentCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.link_off_outlined, color: PharmaColors.warning, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'No assessment linked',
+                style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This course version does not have a quiz yet. Use the button below to create one and attach a question bank.',
+            style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssessmentDetailCard(Assessment a) {
+    final bankName = a.questionBank?.name ?? 'Question bank #${a.questionBankId}';
+    final poolNote = a.limitQuestions != null
+        ? 'Pool cap: ${a.limitQuestions}'
+        : 'Questions shown per attempt: ${a.questionsToDisplay ?? '—'}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.emerald200),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Linked assessment',
+            style: PharmaTypography.caption.copyWith(
+              color: PharmaColors.textTertiary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            bankName,
+            style: PharmaTypography.headingSmall.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Assessment ID: ${a.id} · Bank ID: ${a.questionBankId}',
+            style: PharmaTypography.caption.copyWith(fontFamily: 'monospace'),
+          ),
+          const SizedBox(height: PharmaSpacing.lg),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _assessmentChip(Icons.percent, 'Passing score', '${a.passingScore}%'),
+              _assessmentChip(
+                Icons.shuffle,
+                'Randomize',
+                a.randomize ? 'Yes' : 'No',
+              ),
+              _assessmentChip(
+                Icons.timer_outlined,
+                'Time limit',
+                a.timeLimitMinutes != null ? '${a.timeLimitMinutes} min' : 'None',
+              ),
+              _assessmentChip(
+                Icons.repeat,
+                'Max attempts',
+                a.maxAttempts != null && a.maxAttempts! > 0 ? '${a.maxAttempts}' : 'Unlimited',
+              ),
+              _assessmentChip(Icons.quiz_outlined, 'Display', poolNote),
+              _assessmentChip(
+                Icons.visibility_outlined,
+                'Show answers after submit',
+                a.showAnswers ? 'Yes' : 'No',
+              ),
+              _assessmentChip(
+                Icons.history,
+                'Submission history',
+                a.showSubmissionHistory ? 'Yes' : 'No',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _assessmentChip(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: PharmaColors.pageBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: PharmaColors.emerald600),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: PharmaTypography.caption.copyWith(fontSize: 10)),
+              Text(
+                value,
+                style: PharmaTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showPreSubmissionChecklist() async {
     if (_selectedVersion == null) return;
     final selectedVersionId = _selectedVersion!.id!;
@@ -1020,10 +2051,14 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
   Future<void> _saveLessonChanges(Lesson lesson) async {
     setState(() => _saving = true);
     try {
+      final dur = int.tryParse(_lessonDurationController.text) ?? 15;
+      final minEng = int.tryParse(_lessonMinEngagementController.text);
       await client.courseBuilder.updateLesson(
         lessonId: lesson.id!,
         title: _lessonTitleController.text,
-        durationMinutes: int.tryParse(_lessonDurationController.text) ?? 15,
+        durationMinutes: dur,
+        lessonType: _lessonType,
+        minEngagementMinutes: minEng,
       );
       setState(() => _lastSaved = DateTime.now());
       await _load();
@@ -1038,114 +2073,57 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
     }
   }
 
-  Future<void> _linkMaterialToLesson(Lesson? lesson) async {
-    if (lesson?.id == null) return;
-    
-    // Show material selection dialog
-    final selectedMaterialId = await _showMaterialSelectionDialog();
-    
-    if (selectedMaterialId != null && mounted) {
-      try {
-        // Update the lesson with the selected material
-        await client.courseBuilder.updateLesson(
-          lessonId: lesson!.id!,
-          materialId: selectedMaterialId,
-        );
-        
-        // Reload lesson data
-        await _load();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Material linked to lesson successfully'),
-              backgroundColor: PharmaColors.emerald600,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to link material: $e'),
-              backgroundColor: PharmaColors.danger,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  Future<int?> _showMaterialSelectionDialog() async {
+  Future<void> _handleUploadBlockLinkMaterial(LessonBlock block) async {
+    if (_selectedLessonId == null || _course?.organizationId == null) return;
+    final orgId = _course!.organizationId;
+    final selectedId = await showOrganizationMaterialPicker(
+      context,
+      organizationId: orgId,
+    );
+    if (selectedId == null || !mounted) return;
     try {
-      final materials = await client.material.listMaterials(
-        organizationId: _course?.organizationId ?? 0,
+      await client.courseBuilder.updateLesson(
+        lessonId: _selectedLessonId!,
+        materialId: selectedId,
       );
-      
-      if (!mounted || _course?.organizationId == null) return null;
-      
-      int? selectedId;
-      await showDialog<int?>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Select Material'),
-          content: SizedBox(
-            width: 400,
-            height: 300,
-            child: materials.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.folder_off, size: 48, color: PharmaColors.gray300),
-                        const SizedBox(height: 12),
-                        const Text('No materials found'),
-                        const SizedBox(height: 8),
-                        const Text('Upload materials in the Materials section first'),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: materials.length,
-                    separatorBuilder: (_, __) => const Divider(),
-                    itemBuilder: (_, i) {
-                      final m = materials[i];
-                      return ListTile(
-                        onTap: () {
-                          selectedId = m.id;
-                          Navigator.pop(ctx);
-                        },
-                        leading: Icon(
-                          m.materialType.toLowerCase() == 'pdf'
-                              ? Icons.picture_as_pdf
-                              : m.materialType.toLowerCase() == 'video'
-                                  ? Icons.videocam
-                                  : Icons.insert_drive_file,
-                          color: PharmaColors.emerald600,
-                        ),
-                        title: Text(m.title),
-                        subtitle: Text(m.materialType),
-                        trailing: const Icon(Icons.chevron_right),
-                      );
-                    },
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-          ],
+      Map<String, dynamic> map;
+      try {
+        map = Map<String, dynamic>.from(
+          jsonDecode(block.contentJson) as Map<String, dynamic>? ?? {},
+        );
+      } catch (_) {
+        map = {};
+      }
+      map['materialId'] = selectedId;
+      final newJson = jsonEncode(map);
+      await client.lessonBlock.updateBlock(
+        blockId: block.id!,
+        contentJson: newJson,
+      );
+      if (!mounted) return;
+      setState(() {
+        block.contentJson = newJson;
+        for (final lessons in _lessonsByModule.values) {
+          for (var i = 0; i < lessons.length; i++) {
+            if (lessons[i].id == _selectedLessonId) {
+              lessons[i].materialId = selectedId;
+              break;
+            }
+          }
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Material linked to lesson and block'),
+          backgroundColor: PharmaColors.emerald600,
         ),
       );
-      return selectedId;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading materials: $e')),
+          SnackBar(content: Text('Failed to link material: $e')),
         );
       }
-      return null;
     }
   }
 
@@ -1159,6 +2137,23 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
           moduleId: m.id!,
           orderIndex: i,
         );
+      }
+      // Save lesson fields (title, duration, ordering, type, engagement, prereqs)
+      for (final entry in _lessonsByModule.entries) {
+        final lessons = entry.value;
+        for (int i = 0; i < lessons.length; i++) {
+          final l = lessons[i];
+          if (l.id == null) continue;
+          await client.courseBuilder.updateLesson(
+            lessonId: l.id!,
+            title: l.title,
+            orderIndex: i,
+            durationMinutes: l.durationMinutes,
+            lessonType: l.lessonType,
+            minEngagementMinutes: l.minEngagementMinutes,
+            prerequisiteMode: l.prerequisiteMode,
+          );
+        }
       }
       setState(() => _lastSaved = DateTime.now());
       if (mounted) {
@@ -1180,15 +2175,54 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
   void _selectLesson(int lessonId) {
     setState(() {
       _selectedLessonId = lessonId;
+      _blocks = [];
     });
-    // Load lesson details into controllers
     for (final lessons in _lessonsByModule.values) {
       for (final l in lessons) {
         if (l.id == lessonId) {
           _lessonTitleController.text = l.title;
           _lessonDurationController.text = '${l.durationMinutes ?? 15}';
+          _lessonMinEngagementController.text =
+              '${l.minEngagementMinutes ?? l.durationMinutes ?? 15}';
+          _lessonType = l.lessonType ?? 'PDF';
+          _googleUrlController.clear();
           break;
         }
+      }
+    }
+    _loadBlocks();
+  }
+
+  Future<void> _renameModule(Module module) async {
+    final controller = TextEditingController(text: module.title);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename Module'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Module title'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newName == null || newName.isEmpty || newName == module.title) return;
+    try {
+      await client.courseBuilder.updateModule(moduleId: module.id!, title: newName);
+      setState(() => module.title = newName);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error renaming module: $e')),
+        );
       }
     }
   }
@@ -1223,47 +2257,72 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen> {
 
   Future<void> _addLesson(int moduleId) async {
     final titleController = TextEditingController(text: 'New Lesson');
-    final result = await showDialog<String>(
+    final minEngagementController = TextEditingController(text: '15');
+    final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Add Lesson'),
         content: SizedBox(
           width: 360,
-          child: TextField(
-            controller: titleController,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Lesson Title',
-              hintText: 'Enter lesson title...',
-              filled: true,
-              fillColor: PharmaColors.pageBg,
-              border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Lesson title',
+                  hintText: 'Enter lesson title…',
+                  filled: true,
+                  fillColor: PharmaColors.pageBg,
+                  border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: minEngagementController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Min time to complete (minutes)',
+                  helperText: 'Used for tracking time spent and completion',
+                  filled: true,
+                  fillColor: PharmaColors.pageBg,
+                  border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, titleController.text),
+            onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600),
             child: const Text('Create'),
           ),
         ],
       ),
     );
-    if (result == null || result.trim().isEmpty) return;
+    if (result != true) return;
+    final title = titleController.text.trim();
+    if (title.isEmpty) return;
+    final minEng = int.tryParse(minEngagementController.text.trim()) ?? 15;
 
     try {
       final material = await client.material.createMaterial(
-        title: '${result.trim()} Material',
+        title: '$title Material',
         materialType: 'document',
         organizationId: _course!.organizationId,
       );
       final lesson = await client.courseBuilder.createLesson(
         moduleId: moduleId,
-        title: result.trim(),
+        title: title,
         materialId: material.id!,
         orderIndex: (_lessonsByModule[moduleId]?.length ?? 0),
+        durationMinutes: minEng,
+        minEngagementMinutes: minEng,
+        lessonType: 'PDF',
       );
       await client.auditTrail.logAction(
         action: 'LessonAdded',
@@ -1343,6 +2402,7 @@ class _ModuleTreeItem extends StatelessWidget {
     required this.onLessonTap,
     required this.onAddLesson,
     required this.onDeleteModule,
+    required this.onRenameModule,
   });
 
   final Module module;
@@ -1354,6 +2414,7 @@ class _ModuleTreeItem extends StatelessWidget {
   final Function(int) onLessonTap;
   final VoidCallback onAddLesson;
   final VoidCallback onDeleteModule;
+  final VoidCallback onRenameModule;
 
   @override
   Widget build(BuildContext context) {
@@ -1397,6 +2458,23 @@ class _ModuleTreeItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (lessons.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: PharmaColors.emerald50,
+                      borderRadius: PharmaRadius.pillRadius,
+                    ),
+                    child: Text(
+                      '${lessons.length}',
+                      style: PharmaTypography.caption.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: PharmaColors.emerald700,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 4),
                 PopupMenuButton<String>(
                   iconSize: 16,
                   icon: Icon(Icons.more_vert, size: 16, color: PharmaColors.gray400),
@@ -1412,6 +2490,9 @@ class _ModuleTreeItem extends StatelessWidget {
                     switch (v) {
                       case 'add':
                         onAddLesson();
+                        break;
+                      case 'rename':
+                        onRenameModule();
                         break;
                       case 'delete':
                         onDeleteModule();
@@ -1478,8 +2559,27 @@ class _ModuleTreeItem extends StatelessWidget {
   }
 
   Widget _lessonTypeIcon(Lesson lesson) {
-    // Default to PDF icon
-    return Icon(Icons.description, size: 14, color: PharmaColors.danger);
+    final type = lesson.lessonType?.toLowerCase() ?? 'pdf';
+    switch (type) {
+      case 'video':
+        return Icon(Icons.play_circle, size: 14, color: PharmaColors.info);
+      case 'scorm':
+        return Icon(Icons.inventory_2, size: 14, color: PharmaColors.orange);
+      case 'xapi':
+        return Icon(Icons.code, size: 14, color: PharmaColors.purple);
+      case 'html':
+        return Icon(Icons.web, size: 14, color: PharmaColors.success);
+      case 'checklist':
+        return Icon(Icons.checklist, size: 14, color: PharmaColors.emerald600);
+      case 'google_doc':
+        return Icon(Icons.article_outlined, size: 14, color: PharmaColors.info);
+      case 'google_sheet':
+        return Icon(Icons.table_chart_outlined, size: 14, color: PharmaColors.success);
+      case 'google_slide':
+        return Icon(Icons.slideshow_outlined, size: 14, color: PharmaColors.orange);
+      default:
+        return Icon(Icons.description, size: 14, color: PharmaColors.danger);
+    }
   }
 }
 
@@ -1562,6 +2662,46 @@ class _FormField extends StatelessWidget {
   }
 }
 
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: PharmaColors.emerald600),
+              const SizedBox(width: 8),
+              Text(title,
+                  style:
+                      PharmaTypography.headingSmall.copyWith(fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: PharmaSpacing.lg),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
 class _StepperDot extends StatelessWidget {
   const _StepperDot({
     required this.label,
@@ -1623,6 +2763,632 @@ class _StepperLine extends StatelessWidget {
       height: 2,
       margin: const EdgeInsets.symmetric(horizontal: 8),
       color: isCompleted ? PharmaColors.emerald500 : PharmaColors.gray200,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BLOCK EDITOR COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _BlockTypeOption {
+  const _BlockTypeOption({
+    required this.type,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+  final String type;
+  final String label;
+  final IconData icon;
+  final Color color;
+}
+
+class _BlockTypeChip extends StatelessWidget {
+  const _BlockTypeChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: PharmaRadius.cardRadius,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: PharmaRadius.cardRadius,
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(label, style: PharmaTypography.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddBlockDivider extends StatefulWidget {
+  const _AddBlockDivider({required this.onAddBlock});
+  final Function(String blockType) onAddBlock;
+
+  @override
+  State<_AddBlockDivider> createState() => _AddBlockDividerState();
+}
+
+class _AddBlockDividerState extends State<_AddBlockDivider> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: _hovering ? 36 : 16,
+        child: Center(
+          child: _hovering
+              ? Row(
+                  children: [
+                    Expanded(child: Divider(color: PharmaColors.emerald300)),
+                    PopupMenuButton<String>(
+                      onSelected: widget.onAddBlock,
+                      tooltip: 'Insert block',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.emerald50,
+                          borderRadius: PharmaRadius.pillRadius,
+                          border: Border.all(color: PharmaColors.emerald300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add, size: 14, color: PharmaColors.emerald600),
+                            const SizedBox(width: 2),
+                            Text('Add', style: PharmaTypography.caption.copyWith(
+                              color: PharmaColors.emerald600, fontSize: 10,
+                            )),
+                          ],
+                        ),
+                      ),
+                      itemBuilder: (_) => [
+                        _popupItem('text', Icons.subject, 'Text'),
+                        _popupItem('heading', Icons.title, 'Heading'),
+                        _popupItem('video', Icons.play_circle_outline, 'Video'),
+                        _popupItem('upload', Icons.upload_file, 'Upload'),
+                        _popupItem('quiz', Icons.quiz_outlined, 'Quiz'),
+                        _popupItem('assignment', Icons.assignment_outlined, 'Assignment'),
+                        _popupItem('google_doc', Icons.article_outlined, 'Google Docs'),
+                        _popupItem('google_sheet', Icons.table_chart_outlined, 'Google Sheets'),
+                        _popupItem('google_slide', Icons.slideshow_outlined, 'Google Slides'),
+                        _popupItem('code_sandbox', Icons.code, 'CodeSandbox'),
+                        _popupItem('audio', Icons.audiotrack, 'Audio'),
+                      ],
+                    ),
+                    Expanded(child: Divider(color: PharmaColors.emerald300)),
+                  ],
+                )
+              : Divider(color: PharmaColors.borderLight),
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _popupItem(String value, IconData icon, String label) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 8),
+        Text(label),
+      ]),
+    );
+  }
+}
+
+class _BlockEditorWidget extends StatefulWidget {
+  const _BlockEditorWidget({
+    super.key,
+    required this.block,
+    required this.onUpdate,
+    required this.onDelete,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.inputDecoration,
+    this.onLinkUploadMaterial,
+  });
+
+  final LessonBlock block;
+  final Function(String contentJson) onUpdate;
+  final VoidCallback onDelete;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final InputDecoration Function(String hint) inputDecoration;
+  /// For [blockType] `upload` only: opens org material picker and links lesson + block.
+  final Future<void> Function()? onLinkUploadMaterial;
+
+  @override
+  State<_BlockEditorWidget> createState() => _BlockEditorWidgetState();
+}
+
+class _BlockEditorWidgetState extends State<_BlockEditorWidget> {
+  late Map<String, dynamic> _content;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      _content = jsonDecode(widget.block.contentJson) as Map<String, dynamic>;
+    } catch (_) {
+      _content = {};
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _BlockEditorWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.block.contentJson != widget.block.contentJson) {
+      try {
+        _content = jsonDecode(widget.block.contentJson) as Map<String, dynamic>;
+      } catch (_) {
+        _content = {};
+      }
+    }
+  }
+
+  void _scheduleUpdate() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(seconds: 1), () {
+      widget.onUpdate(jsonEncode(_content));
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  IconData get _blockIcon {
+    switch (widget.block.blockType) {
+      case 'text': return Icons.subject;
+      case 'heading': return Icons.title;
+      case 'video': return Icons.play_circle_outline;
+      case 'upload': return Icons.upload_file;
+      case 'quiz': return Icons.quiz_outlined;
+      case 'assignment': return Icons.assignment_outlined;
+      case 'google_doc': return Icons.article_outlined;
+      case 'google_sheet': return Icons.table_chart_outlined;
+      case 'google_slide': return Icons.slideshow_outlined;
+      case 'code_sandbox': return Icons.code;
+      case 'audio': return Icons.audiotrack;
+      default: return Icons.extension;
+    }
+  }
+
+  String get _blockLabel {
+    switch (widget.block.blockType) {
+      case 'text': return 'Text';
+      case 'heading': return 'Heading';
+      case 'video': return 'Video';
+      case 'upload': return 'Upload';
+      case 'quiz': return 'Quiz';
+      case 'assignment': return 'Assignment';
+      case 'google_doc': return 'Google Docs';
+      case 'google_sheet': return 'Google Sheets';
+      case 'google_slide': return 'Google Slides';
+      case 'code_sandbox': return 'CodeSandbox';
+      case 'audio': return 'Audio';
+      default: return widget.block.blockType;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Block header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: PharmaColors.pageBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.drag_indicator, size: 16, color: PharmaColors.gray300),
+                const SizedBox(width: 6),
+                Icon(_blockIcon, size: 16, color: PharmaColors.emerald600),
+                const SizedBox(width: 6),
+                Text(_blockLabel, style: PharmaTypography.caption.copyWith(
+                  fontWeight: FontWeight.w600, color: PharmaColors.textSecondary,
+                )),
+                const Spacer(),
+                if (widget.onMoveUp != null)
+                  IconButton(
+                    onPressed: widget.onMoveUp,
+                    icon: const Icon(Icons.arrow_upward, size: 14),
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: EdgeInsets.zero,
+                    color: PharmaColors.gray400,
+                    tooltip: 'Move up',
+                  ),
+                if (widget.onMoveDown != null)
+                  IconButton(
+                    onPressed: widget.onMoveDown,
+                    icon: const Icon(Icons.arrow_downward, size: 14),
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: EdgeInsets.zero,
+                    color: PharmaColors.gray400,
+                    tooltip: 'Move down',
+                  ),
+                IconButton(
+                  onPressed: widget.onDelete,
+                  icon: Icon(Icons.close, size: 14, color: PharmaColors.danger),
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Delete block',
+                ),
+              ],
+            ),
+          ),
+          // Block body
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: _buildBlockBody(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockBody() {
+    switch (widget.block.blockType) {
+      case 'text':
+        return _buildTextBlock();
+      case 'heading':
+        return _buildHeadingBlock();
+      case 'video':
+        return _buildVideoBlock();
+      case 'upload':
+        return _buildUploadBlock();
+      case 'quiz':
+        return _buildQuizBlock();
+      case 'assignment':
+        return _buildAssignmentBlock();
+      case 'google_doc':
+      case 'google_sheet':
+      case 'google_slide':
+        return _buildGoogleBlock();
+      case 'code_sandbox':
+        return _buildCodeSandboxBlock();
+      case 'audio':
+        return _buildAudioBlock();
+      default:
+        return Text('Unknown block type: ${widget.block.blockType}');
+    }
+  }
+
+  Widget _buildTextBlock() {
+    return TextField(
+      controller: TextEditingController(text: _content['html'] as String? ?? ''),
+      maxLines: 6,
+      decoration: widget.inputDecoration('Enter rich text content (HTML supported)...'),
+      style: PharmaTypography.body,
+      onChanged: (v) {
+        _content['html'] = v;
+        _scheduleUpdate();
+      },
+    );
+  }
+
+  Widget _buildHeadingBlock() {
+    final level = _content['level'] as int? ?? 2;
+    return Row(
+      children: [
+        DropdownButton<int>(
+          value: level,
+          items: [1, 2, 3].map((l) => DropdownMenuItem(
+            value: l,
+            child: Text('H$l', style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: l == 1 ? 18 : l == 2 ? 16 : 14,
+            )),
+          )).toList(),
+          onChanged: (v) {
+            if (v != null) {
+              setState(() => _content['level'] = v);
+              _scheduleUpdate();
+            }
+          },
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextField(
+            controller: TextEditingController(text: _content['text'] as String? ?? ''),
+            decoration: widget.inputDecoration('Enter heading text...'),
+            style: PharmaTypography.headingMedium.copyWith(
+              fontSize: level == 1 ? 22 : level == 2 ? 18 : 15,
+            ),
+            onChanged: (v) {
+              _content['text'] = v;
+              _scheduleUpdate();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVideoBlock() {
+    final url = _content['url'] as String? ?? '';
+    final platform = _content['platform'] as String? ?? 'direct';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: TextEditingController(text: url),
+          decoration: widget.inputDecoration('Paste YouTube, Vimeo, Cloudflare, or Bunny video URL...'),
+          style: PharmaTypography.body,
+          keyboardType: TextInputType.url,
+          onChanged: (v) {
+            final detected = VideoUrlParser.detectPlatform(v);
+            setState(() {
+              _content['url'] = v;
+              _content['platform'] = detected.name;
+            });
+            _scheduleUpdate();
+          },
+        ),
+        if (url.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: PharmaColors.infoBg,
+              borderRadius: PharmaRadius.pillRadius,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.play_circle, size: 14, color: PharmaColors.info),
+                const SizedBox(width: 4),
+                Text(
+                  VideoUrlParser.platformLabel(VideoPlatform.values.firstWhere(
+                    (p) => p.name == platform,
+                    orElse: () => VideoPlatform.direct,
+                  )),
+                  style: PharmaTypography.caption.copyWith(color: PharmaColors.info),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildUploadBlock() {
+    final materialId = _content['materialId'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (materialId != null && materialId is int && materialId > 0)
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: PharmaColors.successBg,
+              borderRadius: PharmaRadius.cardRadius,
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, size: 16, color: PharmaColors.success),
+                const SizedBox(width: 8),
+                Text('Material #$materialId linked',
+                    style: PharmaTypography.body.copyWith(color: PharmaColors.success)),
+              ],
+            ),
+          )
+        else
+          Text('No file linked yet', style: PharmaTypography.body.copyWith(color: PharmaColors.textQuaternary)),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: widget.onLinkUploadMaterial == null
+              ? null
+              : () async {
+                  await widget.onLinkUploadMaterial!();
+                  if (mounted) setState(() {});
+                },
+          icon: const Icon(Icons.upload_file, size: 16),
+          label: Text(materialId != null ? 'Change Material' : 'Link Material'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: PharmaColors.emerald600,
+            side: BorderSide(color: PharmaColors.emerald200),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuizBlock() {
+    final quizTitle = _content['quizTitle'] as String? ?? '';
+    final quizId = _content['quizId'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (quizId != null && quizId is int)
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: PharmaColors.purple.withOpacity(0.08),
+              borderRadius: PharmaRadius.cardRadius,
+              border: Border.all(color: PharmaColors.purple.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.quiz, size: 16, color: PharmaColors.purple),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(quizTitle.isNotEmpty ? quizTitle : 'Quiz #$quizId',
+                      style: PharmaTypography.body.copyWith(color: PharmaColors.purple)),
+                ),
+              ],
+            ),
+          )
+        else
+          Text('No quiz selected', style: PharmaTypography.body.copyWith(color: PharmaColors.textQuaternary)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: TextEditingController(text: quizId?.toString() ?? ''),
+          decoration: widget.inputDecoration('Enter Quiz/Assessment ID'),
+          keyboardType: TextInputType.number,
+          onChanged: (v) {
+            final id = int.tryParse(v);
+            _content['quizId'] = id;
+            _scheduleUpdate();
+          },
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: TextEditingController(text: quizTitle),
+          decoration: widget.inputDecoration('Quiz title (for display)'),
+          onChanged: (v) {
+            _content['quizTitle'] = v;
+            _scheduleUpdate();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssignmentBlock() {
+    final title = _content['title'] as String? ?? '';
+    final instructions = _content['instructions'] as String? ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: TextEditingController(text: title),
+          decoration: widget.inputDecoration('Assignment title'),
+          style: PharmaTypography.bodyMedium,
+          onChanged: (v) {
+            _content['title'] = v;
+            _scheduleUpdate();
+          },
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: TextEditingController(text: instructions),
+          decoration: widget.inputDecoration('Instructions for the student...'),
+          maxLines: 4,
+          style: PharmaTypography.body,
+          onChanged: (v) {
+            _content['instructions'] = v;
+            _scheduleUpdate();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoogleBlock() {
+    final url = _content['url'] as String? ?? '';
+    final typeLabel = widget.block.blockType == 'google_doc'
+        ? 'Google Docs'
+        : widget.block.blockType == 'google_sheet'
+            ? 'Google Sheets'
+            : 'Google Slides';
+    return TextField(
+      controller: TextEditingController(text: url),
+      decoration: widget.inputDecoration('Paste $typeLabel URL...'),
+      style: PharmaTypography.body,
+      keyboardType: TextInputType.url,
+      onChanged: (v) {
+        _content['url'] = v;
+        _scheduleUpdate();
+      },
+    );
+  }
+
+  Widget _buildCodeSandboxBlock() {
+    return TextField(
+      controller: TextEditingController(text: _content['url'] as String? ?? ''),
+      decoration: widget.inputDecoration('Paste CodeSandbox embed URL...'),
+      style: PharmaTypography.body,
+      keyboardType: TextInputType.url,
+      onChanged: (v) {
+        _content['url'] = v;
+        _scheduleUpdate();
+      },
+    );
+  }
+
+  Widget _buildAudioBlock() {
+    final materialId = _content['materialId'];
+    final fileName = _content['fileName'] as String? ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (materialId != null && materialId is int && materialId > 0)
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: PharmaColors.purple.withOpacity(0.08),
+              borderRadius: PharmaRadius.cardRadius,
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.audiotrack, size: 16, color: PharmaColors.purple),
+                const SizedBox(width: 8),
+                Text(fileName.isNotEmpty ? fileName : 'Audio #$materialId',
+                    style: PharmaTypography.body.copyWith(color: PharmaColors.purple)),
+              ],
+            ),
+          )
+        else
+          Text('No audio file linked', style: PharmaTypography.body.copyWith(color: PharmaColors.textQuaternary)),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Use the materials library to upload audio files (mp3, wav, ogg, m4a)')),
+            );
+          },
+          icon: const Icon(Icons.upload, size: 16),
+          label: Text(materialId != null ? 'Change Audio' : 'Upload Audio'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: PharmaColors.purple,
+            side: BorderSide(color: PharmaColors.purple.withOpacity(0.3)),
+          ),
+        ),
+      ],
     );
   }
 }

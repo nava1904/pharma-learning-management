@@ -1,0 +1,6 @@
+class: DashboardEsignatureSummary
+fields:
+  total: int
+  pending: int
+  completed: int
+  overdue: int

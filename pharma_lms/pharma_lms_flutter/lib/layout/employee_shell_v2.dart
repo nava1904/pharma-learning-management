@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — EMPLOYEE SHELL V2 (REACT REFERENCE MATCH)
+// Vyuh lms — employee shell v2 (React reference match)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Layout extracted from React reference: DashboardLayout.tsx
@@ -29,6 +29,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../design_system/pharma_components.dart';
 import '../design_system/pharma_design_system.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
@@ -36,10 +37,6 @@ import '../providers/user_provider.dart';
 
 // ─── LAYOUT CONSTANTS ────────────────────────────────────────────────────────
 
-const double _kSidebarWidth = 256.0;
-const double _kHeaderHeight = 64.0;
-const double _kBreakpointDesktop = 1024.0;
-const double _kBreakpointTablet = 768.0;
 const int _kIdleTimeoutMinutes = 15; // FR-01-04: 15-min idle timeout
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -189,8 +186,8 @@ class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final isDesktop = width >= _kBreakpointDesktop;
-    final isMobile = width < _kBreakpointTablet;
+    final isDesktop = width >= PortalLayout.breakpointDesktop;
+    final isMobile = width < PortalLayout.breakpointTablet;
 
     return Listener(
       onPointerDown: (_) => _resetIdleTimer(),
@@ -267,7 +264,7 @@ class _SidebarV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: _kSidebarWidth,
+      width: PortalLayout.sidebarWidth,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         border: Border(
@@ -290,26 +287,31 @@ class _SidebarV2 extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 32,
+                VyuhLogo(
                   height: 32,
-                  decoration: BoxDecoration(
-                    color: PharmaColors.emerald600,
-                    borderRadius: BorderRadius.circular(PharmaRadius.sm),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  width: 32,
+                  color: PharmaColors.emerald600,
                 ),
                 const SizedBox(width: PharmaSpacing.md),
-                Text(
-                  'PharmaLMS',
-                  style: PharmaTypography.headingMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      PharmaBrand.name,
+                      style: PharmaTypography.headingMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      'Employee Portal',
+                      style: PharmaTypography.caption.copyWith(
+                        color: PharmaColors.emerald600,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -364,8 +366,29 @@ class _SidebarV2 extends StatelessWidget {
                   _NavItemV2(
                     icon: Icons.groups_outlined,
                     activeIcon: Icons.groups_rounded,
-                    label: 'Training Sessions',
-                    route: '/employee/sessions',
+                    label: 'My Batches',
+                    route: '/employee/my-batches',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
+                    icon: Icons.task_alt_outlined,
+                    activeIcon: Icons.task_alt_rounded,
+                    label: 'Assignments',
+                    route: '/employee/standalone-assignments',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
+                    icon: Icons.assignment_turned_in_outlined,
+                    activeIcon: Icons.assignment_turned_in_rounded,
+                    label: 'Assigned training',
+                    route: '/employee/assigned-training',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
+                    icon: Icons.qr_code_scanner_outlined,
+                    activeIcon: Icons.qr_code_scanner,
+                    label: 'Operator check',
+                    route: '/employee/operator',
                     currentPath: currentPath,
                   ),
 
@@ -500,13 +523,15 @@ class _NavItemV2State extends State<_NavItemV2> {
             vertical: PharmaSpacing.md,
           ),
           decoration: BoxDecoration(
-            // From React: bg-gray-100 for active, hover:bg-gray-50
             color: isActive
-                ? PharmaColors.gray100
+                ? PharmaColors.emerald50
                 : _isHovered
                     ? PharmaColors.gray50
                     : Colors.transparent,
             borderRadius: PharmaRadius.buttonRadius,
+            border: isActive
+                ? Border.all(color: PharmaColors.emerald200, width: 1)
+                : null,
           ),
           child: Row(
             children: [
@@ -514,7 +539,7 @@ class _NavItemV2State extends State<_NavItemV2> {
                 isActive ? widget.activeIcon : widget.icon,
                 size: 20,
                 color: isActive
-                    ? PharmaColors.textPrimary
+                    ? PharmaColors.emerald700
                     : PharmaColors.textSecondary,
               ),
               const SizedBox(width: PharmaSpacing.md),
@@ -522,7 +547,9 @@ class _NavItemV2State extends State<_NavItemV2> {
                 child: Text(
                   widget.label,
                   style: isActive
-                      ? PharmaTypography.navItemActive
+                      ? PharmaTypography.navItemActive.copyWith(
+                          color: PharmaColors.emerald700,
+                        )
                       : PharmaTypography.navItem,
                 ),
               ),
@@ -575,7 +602,7 @@ class _HeaderV2 extends ConsumerWidget {
     ref.watch(notificationRefreshTimerProvider);
 
     return Container(
-      height: _kHeaderHeight,
+      height: PortalLayout.headerHeight,
       padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.cardPadding),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
@@ -747,7 +774,7 @@ class _HeaderV2 extends ConsumerWidget {
             ),
           ),
           Positioned(
-            top: _kHeaderHeight + 4,
+            top: PortalLayout.headerHeight + 4,
             right: PharmaSpacing.cardPadding,
             child: Material(
               color: Colors.transparent,
@@ -781,7 +808,7 @@ class _HeaderV2 extends ConsumerWidget {
             ),
           ),
           Positioned(
-            top: _kHeaderHeight + 4,
+            top: PortalLayout.headerHeight + 4,
             right: PharmaSpacing.cardPadding,
             child: Material(
               color: Colors.transparent,

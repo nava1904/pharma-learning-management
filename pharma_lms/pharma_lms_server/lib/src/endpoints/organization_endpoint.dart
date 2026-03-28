@@ -89,4 +89,76 @@ class OrganizationEndpoint extends Endpoint {
     }
     return await PharmaUser.db.find(session);
   }
+
+  /// Update organization profile (name/code) within the caller's org scope.
+  Future<Organization> updateOrganization(
+    Session session, {
+    required int organizationId,
+    String? name,
+    String? code,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'organization', action: 'update');
+    final user = await RbacHelper.getCurrentPharmaUser(session);
+    if (user == null) throw Exception('Not authenticated');
+    if (user.organizationId != organizationId) {
+      throw Exception('Organization scope mismatch');
+    }
+    final org = await Organization.db.findById(session, organizationId);
+    if (org == null) throw Exception('Organization not found');
+    final updated = org.copyWith(
+      name: name ?? org.name,
+      code: code ?? org.code,
+    );
+    return await Organization.db.updateRow(session, updated);
+  }
+
+  /// Key-value settings for an organization (system_configuration rows).
+  Future<List<SystemConfiguration>> listOrganizationSettings(
+    Session session,
+    int organizationId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'organization', action: 'read');
+    final user = await RbacHelper.getCurrentPharmaUser(session);
+    if (user == null || user.organizationId != organizationId) return [];
+    return await SystemConfiguration.db.find(
+      session,
+      where: (t) => t.organizationId.equals(organizationId),
+    );
+  }
+
+  /// Upsert a single org-scoped setting.
+  Future<SystemConfiguration> upsertOrganizationSetting(
+    Session session, {
+    required int organizationId,
+    required String key,
+    required String value,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'organization', action: 'update');
+    final user = await RbacHelper.getCurrentPharmaUser(session);
+    if (user == null) throw Exception('Not authenticated');
+    if (user.organizationId != organizationId) {
+      throw Exception('Organization scope mismatch');
+    }
+    final k = key.trim();
+    if (k.isEmpty) throw Exception('key is required');
+    final existing = await SystemConfiguration.db.findFirstRow(
+      session,
+      where: (t) => t.organizationId.equals(organizationId) & t.key.equals(k),
+    );
+    if (existing != null) {
+      return await SystemConfiguration.db.updateRow(
+        session,
+        existing.copyWith(value: value),
+      );
+    }
+    return await SystemConfiguration.db.insertRow(
+      session,
+      SystemConfiguration(
+        key: k,
+        value: value,
+        organizationId: organizationId,
+      ),
+    );
+  }
 }

@@ -14,7 +14,8 @@ import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import '../organization/organization.dart' as _i2;
 import '../course/course_version.dart' as _i3;
 import '../organization/user.dart' as _i4;
-import 'package:pharma_lms_client/src/protocol/protocol.dart' as _i5;
+import '../organization/facility.dart' as _i5;
+import 'package:pharma_lms_client/src/protocol/protocol.dart' as _i6;
 
 /// Training batch for scheduled cohort training. GMP compliant.
 abstract class TrainingBatch implements _i1.SerializableModel {
@@ -36,6 +37,14 @@ abstract class TrainingBatch implements _i1.SerializableModel {
     this.location,
     this.notes,
     DateTime? createdAt,
+    this.facilityId,
+    this.facility,
+    this.startTime,
+    this.endTime,
+    this.medium,
+    this.meetingUrl,
+    this.category,
+    this.description,
   }) : capacity = capacity ?? 30,
        enrolledCount = enrolledCount ?? 0,
        completedCount = completedCount ?? 0,
@@ -60,6 +69,14 @@ abstract class TrainingBatch implements _i1.SerializableModel {
     String? location,
     String? notes,
     DateTime? createdAt,
+    int? facilityId,
+    _i5.Facility? facility,
+    String? startTime,
+    String? endTime,
+    String? medium,
+    String? meetingUrl,
+    String? category,
+    String? description,
   }) = _TrainingBatchImpl;
 
   factory TrainingBatch.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -68,20 +85,20 @@ abstract class TrainingBatch implements _i1.SerializableModel {
       organizationId: jsonSerialization['organizationId'] as int,
       organization: jsonSerialization['organization'] == null
           ? null
-          : _i5.Protocol().deserialize<_i2.Organization>(
+          : _i6.Protocol().deserialize<_i2.Organization>(
               jsonSerialization['organization'],
             ),
       courseVersionId: jsonSerialization['courseVersionId'] as int,
       courseVersion: jsonSerialization['courseVersion'] == null
           ? null
-          : _i5.Protocol().deserialize<_i3.CourseVersion>(
+          : _i6.Protocol().deserialize<_i3.CourseVersion>(
               jsonSerialization['courseVersion'],
             ),
       name: jsonSerialization['name'] as String,
       instructorId: jsonSerialization['instructorId'] as int,
       instructor: jsonSerialization['instructor'] == null
           ? null
-          : _i5.Protocol().deserialize<_i4.PharmaUser>(
+          : _i6.Protocol().deserialize<_i4.PharmaUser>(
               jsonSerialization['instructor'],
             ),
       startDate: _i1.DateTimeJsonExtension.fromJson(
@@ -97,6 +114,18 @@ abstract class TrainingBatch implements _i1.SerializableModel {
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
+      facilityId: jsonSerialization['facilityId'] as int?,
+      facility: jsonSerialization['facility'] == null
+          ? null
+          : _i6.Protocol().deserialize<_i5.Facility>(
+              jsonSerialization['facility'],
+            ),
+      startTime: jsonSerialization['startTime'] as String?,
+      endTime: jsonSerialization['endTime'] as String?,
+      medium: jsonSerialization['medium'] as String?,
+      meetingUrl: jsonSerialization['meetingUrl'] as String?,
+      category: jsonSerialization['category'] as String?,
+      description: jsonSerialization['description'] as String?,
     );
   }
 
@@ -150,6 +179,29 @@ abstract class TrainingBatch implements _i1.SerializableModel {
   /// Created timestamp.
   DateTime createdAt;
 
+  int? facilityId;
+
+  /// Optional validated facility / room (capacity enforcement roadmap).
+  _i5.Facility? facility;
+
+  /// Session start time (HH:mm format).
+  String? startTime;
+
+  /// Session end time (HH:mm format).
+  String? endTime;
+
+  /// Delivery medium: online, offline, hybrid.
+  String? medium;
+
+  /// Meeting/conference URL for online/hybrid batches.
+  String? meetingUrl;
+
+  /// Batch category.
+  String? category;
+
+  /// Long description.
+  String? description;
+
   /// Returns a shallow copy of this [TrainingBatch]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -171,6 +223,14 @@ abstract class TrainingBatch implements _i1.SerializableModel {
     String? location,
     String? notes,
     DateTime? createdAt,
+    int? facilityId,
+    _i5.Facility? facility,
+    String? startTime,
+    String? endTime,
+    String? medium,
+    String? meetingUrl,
+    String? category,
+    String? description,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -193,6 +253,14 @@ abstract class TrainingBatch implements _i1.SerializableModel {
       if (location != null) 'location': location,
       if (notes != null) 'notes': notes,
       'createdAt': createdAt.toJson(),
+      if (facilityId != null) 'facilityId': facilityId,
+      if (facility != null) 'facility': facility?.toJson(),
+      if (startTime != null) 'startTime': startTime,
+      if (endTime != null) 'endTime': endTime,
+      if (medium != null) 'medium': medium,
+      if (meetingUrl != null) 'meetingUrl': meetingUrl,
+      if (category != null) 'category': category,
+      if (description != null) 'description': description,
     };
   }
 
@@ -223,6 +291,14 @@ class _TrainingBatchImpl extends TrainingBatch {
     String? location,
     String? notes,
     DateTime? createdAt,
+    int? facilityId,
+    _i5.Facility? facility,
+    String? startTime,
+    String? endTime,
+    String? medium,
+    String? meetingUrl,
+    String? category,
+    String? description,
   }) : super._(
          id: id,
          organizationId: organizationId,
@@ -241,6 +317,14 @@ class _TrainingBatchImpl extends TrainingBatch {
          location: location,
          notes: notes,
          createdAt: createdAt,
+         facilityId: facilityId,
+         facility: facility,
+         startTime: startTime,
+         endTime: endTime,
+         medium: medium,
+         meetingUrl: meetingUrl,
+         category: category,
+         description: description,
        );
 
   /// Returns a shallow copy of this [TrainingBatch]
@@ -265,6 +349,14 @@ class _TrainingBatchImpl extends TrainingBatch {
     Object? location = _Undefined,
     Object? notes = _Undefined,
     DateTime? createdAt,
+    Object? facilityId = _Undefined,
+    Object? facility = _Undefined,
+    Object? startTime = _Undefined,
+    Object? endTime = _Undefined,
+    Object? medium = _Undefined,
+    Object? meetingUrl = _Undefined,
+    Object? category = _Undefined,
+    Object? description = _Undefined,
   }) {
     return TrainingBatch(
       id: id is int? ? id : this.id,
@@ -290,6 +382,16 @@ class _TrainingBatchImpl extends TrainingBatch {
       location: location is String? ? location : this.location,
       notes: notes is String? ? notes : this.notes,
       createdAt: createdAt ?? this.createdAt,
+      facilityId: facilityId is int? ? facilityId : this.facilityId,
+      facility: facility is _i5.Facility?
+          ? facility
+          : this.facility?.copyWith(),
+      startTime: startTime is String? ? startTime : this.startTime,
+      endTime: endTime is String? ? endTime : this.endTime,
+      medium: medium is String? ? medium : this.medium,
+      meetingUrl: meetingUrl is String? ? meetingUrl : this.meetingUrl,
+      category: category is String? ? category : this.category,
+      description: description is String? ? description : this.description,
     );
   }
 }

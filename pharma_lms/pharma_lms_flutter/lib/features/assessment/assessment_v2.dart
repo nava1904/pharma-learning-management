@@ -22,9 +22,11 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../design_system/pharma_design_system.dart';
 import '../../core/client.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
 import '../esignature/esignature_screen.dart';
+import '../../widgets/part11_step_up_dialog.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROVIDERS
@@ -62,6 +64,8 @@ class AssessmentState {
   final bool needsEsignature; // True when passed and awaiting e-signature
   final int? esignatureId; // Set after e-signature completes
   final bool isReviewMode; // True when user came from completed enrollment
+  /// Set when training completes and a certificate is issued (or resolved for review).
+  final int? certificateId;
 
   const AssessmentState({
     this.assessment,
@@ -81,6 +85,7 @@ class AssessmentState {
     this.needsEsignature = false,
     this.esignatureId,
     this.isReviewMode = false,
+    this.certificateId,
   });
 
   AssessmentState copyWith({
@@ -101,6 +106,7 @@ class AssessmentState {
     bool? needsEsignature,
     int? esignatureId,
     bool? isReviewMode,
+    int? certificateId,
   }) {
     return AssessmentState(
       assessment: assessment ?? this.assessment,
@@ -120,6 +126,7 @@ class AssessmentState {
       needsEsignature: needsEsignature ?? this.needsEsignature,
       esignatureId: esignatureId ?? this.esignatureId,
       isReviewMode: isReviewMode ?? this.isReviewMode,
+      certificateId: certificateId ?? this.certificateId,
     );
   }
 }
@@ -127,6 +134,7 @@ class AssessmentState {
 class AssessmentNotifier extends ChangeNotifier {
   final int courseVersionId;
   final int? enrollmentId;
+  final bool forceRetake;
   final int userId;
   final VoidCallback? onTrainingCompleted;
   Timer? _timer;
@@ -143,6 +151,7 @@ class AssessmentNotifier extends ChangeNotifier {
     required this.courseVersionId,
     required this.userId,
     this.enrollmentId,
+    this.forceRetake = false,
     this.onTrainingCompleted,
   });
 
@@ -175,38 +184,62 @@ class AssessmentNotifier extends ChangeNotifier {
           attemptCount = await client.assessment.getAttemptCount(
             userId: userId,
             assessmentId: assessment.id!,
+            enrollmentId: enrollmentId,
           );
         } catch (_) {}
       }
       final maxAttempts = assessment.maxAttempts ?? 3;
 
+      bool enrollmentIsCompleted = false;
+
       // Check if already completed - show review mode instead of starting new attempt
       if (enrollmentId != null) {
         try {
           final enrollment = await client.training.getEnrollmentById(enrollmentId!);
-          if (enrollment?.status == 'completed') {
+          enrollmentIsCompleted = enrollment?.status == 'completed';
+          if (enrollmentIsCompleted && !forceRetake) {
             final records = await client.training.getTrainingRecordsForUser(userId);
             final record = records.where((r) => r.courseVersionId == courseVersionId).firstOrNull;
 
-            List<Question> displayQuestions = List.from(questions);
-            if (assessment.randomize) displayQuestions.shuffle();
-            if (assessment.questionsToDisplay != null &&
-                assessment.questionsToDisplay! < displayQuestions.length) {
-              displayQuestions = displayQuestions.take(assessment.questionsToDisplay!).toList();
-            }
+            int? certId;
+            try {
+              final certs = await client.training.getCertificatesForUser(userId);
+              for (final c in certs) {
+                if (c.courseVersionId == courseVersionId && c.id != null) {
+                  certId = c.id;
+                  break;
+                }
+              }
+            } catch (_) {}
 
-            _updateState(_state.copyWith(
-              assessment: assessment,
-              questions: displayQuestions,
-              isLoading: false,
-              isComplete: true,
-              isReviewMode: true,
-              currentAttemptNumber: attemptCount,
-              maxAttempts: maxAttempts,
-              score: record?.score,
-              passed: true,
-            ));
-            return;
+            // Only lock into review mode after a real training/assessment outcome exists.
+            // If enrollment is "completed" but no record, attempts, or certificate yet, allow taking the assessment.
+            final hasAssessmentHistory =
+                record != null || attemptCount > 0 || certId != null;
+            if (!hasAssessmentHistory) {
+              // Fall through to startAttempt below.
+            } else {
+              List<Question> displayQuestions = List.from(questions);
+              if (assessment.randomize) displayQuestions.shuffle();
+              if (assessment.questionsToDisplay != null &&
+                  assessment.questionsToDisplay! < displayQuestions.length) {
+                displayQuestions = displayQuestions.take(assessment.questionsToDisplay!).toList();
+              }
+
+              _updateState(_state.copyWith(
+                assessment: assessment,
+                questions: displayQuestions,
+                isLoading: false,
+                isComplete: true,
+                isReviewMode: true,
+                currentAttemptNumber: attemptCount,
+                maxAttempts: maxAttempts,
+                score: record?.score,
+                passed: true,
+                certificateId: certId,
+              ));
+              return;
+            }
           }
         } catch (_) {}
       }
@@ -232,11 +265,12 @@ class AssessmentNotifier extends ChangeNotifier {
         displayQuestions = displayQuestions.take(assessment.questionsToDisplay!).toList();
       }
 
-      // Start attempt
+      // Start attempt ([forceRetake] bypasses server 24h inter-attempt cooldown.)
       final attempt = await client.assessment.startAttempt(
         userId: userId,
         assessmentId: assessment.id!,
         enrollmentId: enrollmentId,
+        skipInterAttemptCooldown: forceRetake,
       );
 
       // Set initial remaining time
@@ -250,6 +284,7 @@ class AssessmentNotifier extends ChangeNotifier {
         remainingSeconds: remainingSeconds,
         currentAttemptNumber: attemptCount + 1,
         maxAttempts: maxAttempts,
+        isReviewMode: false,
       ));
 
       // Start timer if time-limited
@@ -343,9 +378,9 @@ class AssessmentNotifier extends ChangeNotifier {
   /// Called after e-signature modal returns successfully
   Future<void> completeWithEsignature(int esignatureId) async {
     if (enrollmentId == null) return;
-    
+
     try {
-      await client.training.completeTraining(
+      final cert = await client.training.completeTraining(
         enrollmentId: enrollmentId!,
         userId: userId,
         courseVersionId: courseVersionId,
@@ -356,15 +391,30 @@ class AssessmentNotifier extends ChangeNotifier {
       _updateState(_state.copyWith(
         needsEsignature: false,
         esignatureId: esignatureId,
+        certificateId: cert.id,
       ));
     } catch (e) {
       debugPrint('Training completion note: $e');
-      // Still mark as signed — certificate may already exist
       _updateState(_state.copyWith(
         needsEsignature: false,
         esignatureId: esignatureId,
       ));
+      await ensureCertificateIdResolved();
     }
+  }
+
+  /// Fills [certificateId] from the server when not yet in state (e.g. after error recovery).
+  Future<void> ensureCertificateIdResolved() async {
+    if (_state.certificateId != null) return;
+    try {
+      final certs = await client.training.getCertificatesForUser(userId);
+      for (final c in certs) {
+        if (c.courseVersionId == courseVersionId && c.id != null) {
+          _updateState(_state.copyWith(certificateId: c.id));
+          return;
+        }
+      }
+    } catch (_) {}
   }
 
   /// Called if e-signature is skipped/cancelled
@@ -386,11 +436,14 @@ class AssessmentNotifier extends ChangeNotifier {
 class AssessmentScreenV2 extends ConsumerStatefulWidget {
   final int courseVersionId;
   final int? enrollmentId;
+  /// When true, allows starting a new assessment attempt even if the enrollment is already `completed`.
+  final bool forceRetake;
 
   const AssessmentScreenV2({
     super.key,
     required this.courseVersionId,
     this.enrollmentId,
+    this.forceRetake = false,
   });
 
   @override
@@ -401,6 +454,25 @@ class _AssessmentScreenV2State extends ConsumerState<AssessmentScreenV2> {
   late AssessmentNotifier _notifier;
   bool _initialized = false;
   bool _showInstructions = true;
+
+  /// Prefer returning to the previous screen (e.g. course viewer). Avoid bogus paths like `/training`.
+  void _popOrGoLearningHub() {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+      return;
+    }
+    final role = ref.read(selectedRoleProvider);
+    if (role == AppRole.employee || role == AppRole.admin) {
+      context.go('/employee/my-training');
+      return;
+    }
+    if (role == null) {
+      context.go('/employee/my-training');
+      return;
+    }
+    context.go('/learning');
+  }
 
   @override
   void initState() {
@@ -423,6 +495,7 @@ class _AssessmentScreenV2State extends ConsumerState<AssessmentScreenV2> {
     _notifier = AssessmentNotifier(
       courseVersionId: widget.courseVersionId,
       enrollmentId: widget.enrollmentId,
+      forceRetake: widget.forceRetake,
       userId: user!.id!,
       onTrainingCompleted: () {
         ref.invalidate(certificatesProvider);
@@ -499,18 +572,34 @@ class _AssessmentScreenV2State extends ConsumerState<AssessmentScreenV2> {
         if (state.errorMessage != null) {
           return _ErrorScreen(
             message: state.errorMessage!,
-            onRetry: () => context.pop(),
+            onRetry: () => _popOrGoLearningHub(),
           );
         }
 
-        if (_showInstructions && !state.isComplete && !state.isReviewMode) {
+        if (_showInstructions && !state.isComplete) {
           return _InstructionsScreen(
             assessment: state.assessment!,
             totalQuestions: state.questions.length,
             attemptNumber: state.currentAttemptNumber,
             maxAttempts: state.maxAttempts,
-            onStart: () => setState(() => _showInstructions = false),
-            onBack: () => context.pop(),
+            onStart: () async {
+              final user = await ref.read(currentUserProvider.future);
+              if (!mounted || user?.id == null) return;
+              final printed =
+                  '${user!.firstName} ${user.lastName}'.trim();
+              if (!context.mounted) return;
+              final ok = await showPart11StepUpDialog(
+                context: context,
+                userId: user.id!,
+                printedName: printed.isEmpty ? user.email : printed,
+                title: 'Assessment — electronic acknowledgment',
+                attestText:
+                    'I will complete this assessment personally, without unauthorized assistance, and in accordance with company training policy.',
+              );
+              if (!context.mounted) return;
+              if (ok) setState(() => _showInstructions = false);
+            },
+            onBack: () => _popOrGoLearningHub(),
           );
         }
 
@@ -534,13 +623,46 @@ class _AssessmentScreenV2State extends ConsumerState<AssessmentScreenV2> {
             esignatureCompleted: state.esignatureId != null,
             needsEsignature: state.needsEsignature,
             isReviewMode: state.isReviewMode,
-            onContinue: () => context.pop(),
-            onViewCertificates: () => context.go('/employee/credentials'),
+            onContinue: () => _popOrGoLearningHub(),
+            onViewCertificate:
+                state.passed == true &&
+                        (state.isReviewMode ||
+                            state.certificateId != null ||
+                            state.esignatureId != null)
+                    ? () async {
+                        await _notifier.ensureCertificateIdResolved();
+                        if (!context.mounted) return;
+                        final id = _notifier.state.certificateId;
+                        if (id != null) {
+                          context.push('/certificate/$id');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Certificate not found. It may still be processing—try again in a moment.',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    : null,
             onSignNow: () => _showEsignatureFlow(),
             onRetake: state.isReviewMode
-                ? () => context.go('/employee/assessment/${widget.courseVersionId}?enrollmentId=${widget.enrollmentId}')
+                ? () {
+                    final q = DateTime.now().millisecondsSinceEpoch.toString();
+                    context.go(
+                      Uri(
+                        path: '/assessment-v2/${widget.courseVersionId}',
+                        queryParameters: {'r': q},
+                      ).toString(),
+                      extra: {
+                        'enrollmentId': widget.enrollmentId,
+                        'forceRetake': true,
+                      },
+                    );
+                  }
                 : null,
-            onBack: () => GoRouter.of(context).go('/employee/my-learning'),
+            onBack: () => _popOrGoLearningHub(),
           );
         }
 
@@ -551,6 +673,7 @@ class _AssessmentScreenV2State extends ConsumerState<AssessmentScreenV2> {
           onPrevious: _notifier.previousQuestion,
           onGoToQuestion: _notifier.goToQuestion,
           onSubmit: _notifier.submitAssessment,
+          onAbandon: _popOrGoLearningHub,
         );
       },
     );
@@ -568,6 +691,7 @@ class _AssessmentContent extends StatelessWidget {
   final VoidCallback onPrevious;
   final void Function(int) onGoToQuestion;
   final VoidCallback onSubmit;
+  final VoidCallback onAbandon;
 
   const _AssessmentContent({
     required this.state,
@@ -576,6 +700,7 @@ class _AssessmentContent extends StatelessWidget {
     required this.onPrevious,
     required this.onGoToQuestion,
     required this.onSubmit,
+    required this.onAbandon,
   });
 
   @override
@@ -606,7 +731,7 @@ class _AssessmentContent extends StatelessWidget {
                   // Back button
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => _showExitConfirmation(context),
+                    onPressed: () => _showExitConfirmation(context, onAbandon),
                     color: PharmaColors.textSecondary,
                   ),
                   const SizedBox(width: PharmaSpacing.md),
@@ -776,31 +901,32 @@ class _AssessmentContent extends StatelessWidget {
     );
   }
 
-  void _showExitConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Exit Assessment?'),
-        content: const Text(
-          'Your progress will be lost if you exit now. Are you sure you want to leave?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Continue Assessment'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              GoRouter.of(context).go('/employee/my-learning');
-            },
-            style: TextButton.styleFrom(foregroundColor: PharmaColors.danger),
-            child: const Text('Exit'),
-          ),
-        ],
+}
+
+void _showExitConfirmation(BuildContext context, VoidCallback onAbandon) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Exit Assessment?'),
+      content: const Text(
+        'Your progress will be lost if you exit now. Are you sure you want to leave?',
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Continue Assessment'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(dialogContext);
+            onAbandon();
+          },
+          style: TextButton.styleFrom(foregroundColor: PharmaColors.danger),
+          child: const Text('Exit'),
+        ),
+      ],
+    ),
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1083,7 +1209,7 @@ class _ResultsScreen extends StatelessWidget {
   final bool needsEsignature;
   final bool isReviewMode;
   final VoidCallback onContinue;
-  final VoidCallback onViewCertificates;
+  final VoidCallback? onViewCertificate;
   final VoidCallback onSignNow;
   final VoidCallback? onRetake;
   final VoidCallback? onBack;
@@ -1100,7 +1226,7 @@ class _ResultsScreen extends StatelessWidget {
     required this.needsEsignature,
     this.isReviewMode = false,
     required this.onContinue,
-    required this.onViewCertificates,
+    this.onViewCertificate,
     required this.onSignNow,
     this.onRetake,
     this.onBack,
@@ -1317,14 +1443,14 @@ class _ResultsScreen extends StatelessWidget {
                   ),
                 ),
 
-                if (passed) ...[
+                if (passed && onViewCertificate != null) ...[
                   const SizedBox(height: PharmaSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: onViewCertificates,
+                      onPressed: onViewCertificate,
                       icon: const Icon(Icons.workspace_premium_rounded, size: 18),
-                      label: const Text('View Certificates'),
+                      label: const Text('View Certificate'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: PharmaColors.emerald600,
                         side: BorderSide(color: PharmaColors.emerald500.withValues(alpha: 0.4)),
@@ -1430,7 +1556,7 @@ class _InstructionsScreen extends StatelessWidget {
   final int totalQuestions;
   final int attemptNumber;
   final int maxAttempts;
-  final VoidCallback onStart;
+  final Future<void> Function() onStart;
   final VoidCallback onBack;
 
   const _InstructionsScreen({
@@ -1565,7 +1691,7 @@ class _InstructionsScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: onStart,
+                      onPressed: () async => onStart(),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('Start Assessment'),
                       style: ElevatedButton.styleFrom(

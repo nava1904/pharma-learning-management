@@ -1,4 +1,4 @@
-/// Pharma LMS design system spacing tokens.
+/// Vyuh lms design system spacing tokens.
 class DesignSpacing {
   DesignSpacing._();
 

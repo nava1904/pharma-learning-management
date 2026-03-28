@@ -6,8 +6,10 @@ classes:
   - admin/import_log
   - analytics/analytics_event
   - analytics/analytics_snapshot
+  - analytics/batch_training_analytics
   - analytics/audit_readiness_score
   - analytics/compliance_metrics
+  - analytics/compliance_trend_point
   - analytics/course_analytics
   - analytics/dashboard
   - analytics/department_compliance_snapshot

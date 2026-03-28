@@ -15,7 +15,8 @@ import 'package:serverpod/serverpod.dart' as _i1;
 import '../organization/organization.dart' as _i2;
 import '../course/course_version.dart' as _i3;
 import '../organization/user.dart' as _i4;
-import 'package:pharma_lms_server/src/generated/protocol.dart' as _i5;
+import '../organization/facility.dart' as _i5;
+import 'package:pharma_lms_server/src/generated/protocol.dart' as _i6;
 
 /// Training batch for scheduled cohort training. GMP compliant.
 abstract class TrainingBatch
@@ -38,6 +39,14 @@ abstract class TrainingBatch
     this.location,
     this.notes,
     DateTime? createdAt,
+    this.facilityId,
+    this.facility,
+    this.startTime,
+    this.endTime,
+    this.medium,
+    this.meetingUrl,
+    this.category,
+    this.description,
   }) : capacity = capacity ?? 30,
        enrolledCount = enrolledCount ?? 0,
        completedCount = completedCount ?? 0,
@@ -62,6 +71,14 @@ abstract class TrainingBatch
     String? location,
     String? notes,
     DateTime? createdAt,
+    int? facilityId,
+    _i5.Facility? facility,
+    String? startTime,
+    String? endTime,
+    String? medium,
+    String? meetingUrl,
+    String? category,
+    String? description,
   }) = _TrainingBatchImpl;
 
   factory TrainingBatch.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -70,20 +87,20 @@ abstract class TrainingBatch
       organizationId: jsonSerialization['organizationId'] as int,
       organization: jsonSerialization['organization'] == null
           ? null
-          : _i5.Protocol().deserialize<_i2.Organization>(
+          : _i6.Protocol().deserialize<_i2.Organization>(
               jsonSerialization['organization'],
             ),
       courseVersionId: jsonSerialization['courseVersionId'] as int,
       courseVersion: jsonSerialization['courseVersion'] == null
           ? null
-          : _i5.Protocol().deserialize<_i3.CourseVersion>(
+          : _i6.Protocol().deserialize<_i3.CourseVersion>(
               jsonSerialization['courseVersion'],
             ),
       name: jsonSerialization['name'] as String,
       instructorId: jsonSerialization['instructorId'] as int,
       instructor: jsonSerialization['instructor'] == null
           ? null
-          : _i5.Protocol().deserialize<_i4.PharmaUser>(
+          : _i6.Protocol().deserialize<_i4.PharmaUser>(
               jsonSerialization['instructor'],
             ),
       startDate: _i1.DateTimeJsonExtension.fromJson(
@@ -99,6 +116,18 @@ abstract class TrainingBatch
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
+      facilityId: jsonSerialization['facilityId'] as int?,
+      facility: jsonSerialization['facility'] == null
+          ? null
+          : _i6.Protocol().deserialize<_i5.Facility>(
+              jsonSerialization['facility'],
+            ),
+      startTime: jsonSerialization['startTime'] as String?,
+      endTime: jsonSerialization['endTime'] as String?,
+      medium: jsonSerialization['medium'] as String?,
+      meetingUrl: jsonSerialization['meetingUrl'] as String?,
+      category: jsonSerialization['category'] as String?,
+      description: jsonSerialization['description'] as String?,
     );
   }
 
@@ -154,6 +183,29 @@ abstract class TrainingBatch
   /// Created timestamp.
   DateTime createdAt;
 
+  int? facilityId;
+
+  /// Optional validated facility / room (capacity enforcement roadmap).
+  _i5.Facility? facility;
+
+  /// Session start time (HH:mm format).
+  String? startTime;
+
+  /// Session end time (HH:mm format).
+  String? endTime;
+
+  /// Delivery medium: online, offline, hybrid.
+  String? medium;
+
+  /// Meeting/conference URL for online/hybrid batches.
+  String? meetingUrl;
+
+  /// Batch category.
+  String? category;
+
+  /// Long description.
+  String? description;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -178,6 +230,14 @@ abstract class TrainingBatch
     String? location,
     String? notes,
     DateTime? createdAt,
+    int? facilityId,
+    _i5.Facility? facility,
+    String? startTime,
+    String? endTime,
+    String? medium,
+    String? meetingUrl,
+    String? category,
+    String? description,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -200,6 +260,14 @@ abstract class TrainingBatch
       if (location != null) 'location': location,
       if (notes != null) 'notes': notes,
       'createdAt': createdAt.toJson(),
+      if (facilityId != null) 'facilityId': facilityId,
+      if (facility != null) 'facility': facility?.toJson(),
+      if (startTime != null) 'startTime': startTime,
+      if (endTime != null) 'endTime': endTime,
+      if (medium != null) 'medium': medium,
+      if (meetingUrl != null) 'meetingUrl': meetingUrl,
+      if (category != null) 'category': category,
+      if (description != null) 'description': description,
     };
   }
 
@@ -226,6 +294,14 @@ abstract class TrainingBatch
       if (location != null) 'location': location,
       if (notes != null) 'notes': notes,
       'createdAt': createdAt.toJson(),
+      if (facilityId != null) 'facilityId': facilityId,
+      if (facility != null) 'facility': facility?.toJsonForProtocol(),
+      if (startTime != null) 'startTime': startTime,
+      if (endTime != null) 'endTime': endTime,
+      if (medium != null) 'medium': medium,
+      if (meetingUrl != null) 'meetingUrl': meetingUrl,
+      if (category != null) 'category': category,
+      if (description != null) 'description': description,
     };
   }
 
@@ -233,11 +309,13 @@ abstract class TrainingBatch
     _i2.OrganizationInclude? organization,
     _i3.CourseVersionInclude? courseVersion,
     _i4.PharmaUserInclude? instructor,
+    _i5.FacilityInclude? facility,
   }) {
     return TrainingBatchInclude._(
       organization: organization,
       courseVersion: courseVersion,
       instructor: instructor,
+      facility: facility,
     );
   }
 
@@ -288,6 +366,14 @@ class _TrainingBatchImpl extends TrainingBatch {
     String? location,
     String? notes,
     DateTime? createdAt,
+    int? facilityId,
+    _i5.Facility? facility,
+    String? startTime,
+    String? endTime,
+    String? medium,
+    String? meetingUrl,
+    String? category,
+    String? description,
   }) : super._(
          id: id,
          organizationId: organizationId,
@@ -306,6 +392,14 @@ class _TrainingBatchImpl extends TrainingBatch {
          location: location,
          notes: notes,
          createdAt: createdAt,
+         facilityId: facilityId,
+         facility: facility,
+         startTime: startTime,
+         endTime: endTime,
+         medium: medium,
+         meetingUrl: meetingUrl,
+         category: category,
+         description: description,
        );
 
   /// Returns a shallow copy of this [TrainingBatch]
@@ -330,6 +424,14 @@ class _TrainingBatchImpl extends TrainingBatch {
     Object? location = _Undefined,
     Object? notes = _Undefined,
     DateTime? createdAt,
+    Object? facilityId = _Undefined,
+    Object? facility = _Undefined,
+    Object? startTime = _Undefined,
+    Object? endTime = _Undefined,
+    Object? medium = _Undefined,
+    Object? meetingUrl = _Undefined,
+    Object? category = _Undefined,
+    Object? description = _Undefined,
   }) {
     return TrainingBatch(
       id: id is int? ? id : this.id,
@@ -355,6 +457,16 @@ class _TrainingBatchImpl extends TrainingBatch {
       location: location is String? ? location : this.location,
       notes: notes is String? ? notes : this.notes,
       createdAt: createdAt ?? this.createdAt,
+      facilityId: facilityId is int? ? facilityId : this.facilityId,
+      facility: facility is _i5.Facility?
+          ? facility
+          : this.facility?.copyWith(),
+      startTime: startTime is String? ? startTime : this.startTime,
+      endTime: endTime is String? ? endTime : this.endTime,
+      medium: medium is String? ? medium : this.medium,
+      meetingUrl: meetingUrl is String? ? meetingUrl : this.meetingUrl,
+      category: category is String? ? category : this.category,
+      description: description is String? ? description : this.description,
     );
   }
 }
@@ -429,6 +541,41 @@ class TrainingBatchUpdateTable extends _i1.UpdateTable<TrainingBatchTable> {
         table.createdAt,
         value,
       );
+
+  _i1.ColumnValue<int, int> facilityId(int? value) => _i1.ColumnValue(
+    table.facilityId,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> startTime(String? value) => _i1.ColumnValue(
+    table.startTime,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> endTime(String? value) => _i1.ColumnValue(
+    table.endTime,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> medium(String? value) => _i1.ColumnValue(
+    table.medium,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> meetingUrl(String? value) => _i1.ColumnValue(
+    table.meetingUrl,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> category(String? value) => _i1.ColumnValue(
+    table.category,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> description(String? value) => _i1.ColumnValue(
+    table.description,
+    value,
+  );
 }
 
 class TrainingBatchTable extends _i1.Table<int?> {
@@ -492,6 +639,34 @@ class TrainingBatchTable extends _i1.Table<int?> {
       this,
       hasDefault: true,
     );
+    facilityId = _i1.ColumnInt(
+      'facilityId',
+      this,
+    );
+    startTime = _i1.ColumnString(
+      'startTime',
+      this,
+    );
+    endTime = _i1.ColumnString(
+      'endTime',
+      this,
+    );
+    medium = _i1.ColumnString(
+      'medium',
+      this,
+    );
+    meetingUrl = _i1.ColumnString(
+      'meetingUrl',
+      this,
+    );
+    category = _i1.ColumnString(
+      'category',
+      this,
+    );
+    description = _i1.ColumnString(
+      'description',
+      this,
+    );
   }
 
   late final TrainingBatchUpdateTable updateTable;
@@ -541,6 +716,29 @@ class TrainingBatchTable extends _i1.Table<int?> {
   /// Created timestamp.
   late final _i1.ColumnDateTime createdAt;
 
+  late final _i1.ColumnInt facilityId;
+
+  /// Optional validated facility / room (capacity enforcement roadmap).
+  _i5.FacilityTable? _facility;
+
+  /// Session start time (HH:mm format).
+  late final _i1.ColumnString startTime;
+
+  /// Session end time (HH:mm format).
+  late final _i1.ColumnString endTime;
+
+  /// Delivery medium: online, offline, hybrid.
+  late final _i1.ColumnString medium;
+
+  /// Meeting/conference URL for online/hybrid batches.
+  late final _i1.ColumnString meetingUrl;
+
+  /// Batch category.
+  late final _i1.ColumnString category;
+
+  /// Long description.
+  late final _i1.ColumnString description;
+
   _i2.OrganizationTable get organization {
     if (_organization != null) return _organization!;
     _organization = _i1.createRelationTable(
@@ -580,6 +778,19 @@ class TrainingBatchTable extends _i1.Table<int?> {
     return _instructor!;
   }
 
+  _i5.FacilityTable get facility {
+    if (_facility != null) return _facility!;
+    _facility = _i1.createRelationTable(
+      relationFieldName: 'facility',
+      field: TrainingBatch.t.facilityId,
+      foreignField: _i5.Facility.t.id,
+      tableRelation: tableRelation,
+      createTable: (foreignTableRelation) =>
+          _i5.FacilityTable(tableRelation: foreignTableRelation),
+    );
+    return _facility!;
+  }
+
   @override
   List<_i1.Column> get columns => [
     id,
@@ -596,6 +807,13 @@ class TrainingBatchTable extends _i1.Table<int?> {
     location,
     notes,
     createdAt,
+    facilityId,
+    startTime,
+    endTime,
+    medium,
+    meetingUrl,
+    category,
+    description,
   ];
 
   @override
@@ -609,6 +827,9 @@ class TrainingBatchTable extends _i1.Table<int?> {
     if (relationField == 'instructor') {
       return instructor;
     }
+    if (relationField == 'facility') {
+      return facility;
+    }
     return null;
   }
 }
@@ -618,10 +839,12 @@ class TrainingBatchInclude extends _i1.IncludeObject {
     _i2.OrganizationInclude? organization,
     _i3.CourseVersionInclude? courseVersion,
     _i4.PharmaUserInclude? instructor,
+    _i5.FacilityInclude? facility,
   }) {
     _organization = organization;
     _courseVersion = courseVersion;
     _instructor = instructor;
+    _facility = facility;
   }
 
   _i2.OrganizationInclude? _organization;
@@ -630,11 +853,14 @@ class TrainingBatchInclude extends _i1.IncludeObject {
 
   _i4.PharmaUserInclude? _instructor;
 
+  _i5.FacilityInclude? _facility;
+
   @override
   Map<String, _i1.Include?> get includes => {
     'organization': _organization,
     'courseVersion': _courseVersion,
     'instructor': _instructor,
+    'facility': _facility,
   };
 
   @override
@@ -665,6 +891,8 @@ class TrainingBatchRepository {
   const TrainingBatchRepository._();
 
   final attachRow = const TrainingBatchAttachRowRepository._();
+
+  final detachRow = const TrainingBatchDetachRowRepository._();
 
   /// Returns a list of [TrainingBatch]s matching the given query parameters.
   ///
@@ -1028,6 +1256,55 @@ class TrainingBatchAttachRowRepository {
     await session.db.updateRow<TrainingBatch>(
       $trainingBatch,
       columns: [TrainingBatch.t.instructorId],
+      transaction: transaction,
+    );
+  }
+
+  /// Creates a relation between the given [TrainingBatch] and [Facility]
+  /// by setting the [TrainingBatch]'s foreign key `facilityId` to refer to the [Facility].
+  Future<void> facility(
+    _i1.DatabaseSession session,
+    TrainingBatch trainingBatch,
+    _i5.Facility facility, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (trainingBatch.id == null) {
+      throw ArgumentError.notNull('trainingBatch.id');
+    }
+    if (facility.id == null) {
+      throw ArgumentError.notNull('facility.id');
+    }
+
+    var $trainingBatch = trainingBatch.copyWith(facilityId: facility.id);
+    await session.db.updateRow<TrainingBatch>(
+      $trainingBatch,
+      columns: [TrainingBatch.t.facilityId],
+      transaction: transaction,
+    );
+  }
+}
+
+class TrainingBatchDetachRowRepository {
+  const TrainingBatchDetachRowRepository._();
+
+  /// Detaches the relation between this [TrainingBatch] and the [Facility] set in `facility`
+  /// by setting the [TrainingBatch]'s foreign key `facilityId` to `null`.
+  ///
+  /// This removes the association between the two models without deleting
+  /// the related record.
+  Future<void> facility(
+    _i1.DatabaseSession session,
+    TrainingBatch trainingBatch, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (trainingBatch.id == null) {
+      throw ArgumentError.notNull('trainingBatch.id');
+    }
+
+    var $trainingBatch = trainingBatch.copyWith(facilityId: null);
+    await session.db.updateRow<TrainingBatch>(
+      $trainingBatch,
+      columns: [TrainingBatch.t.facilityId],
       transaction: transaction,
     );
   }

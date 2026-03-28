@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Pharma LMS typography matching Figma reference.
+/// Vyuh lms typography matching Figma reference.
 class AppTypography {
   AppTypography._();
 
@@ -55,7 +55,7 @@ class AppTypography {
         color: baseColor,
       ),
       titleSmall: TextStyle(
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: FontWeight.w500,
         height: 1.5,
         color: baseColor,
@@ -73,7 +73,7 @@ class AppTypography {
         color: baseColor,
       ),
       bodySmall: TextStyle(
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.w400,
         height: 1.5,
         color: baseColor,
@@ -91,7 +91,7 @@ class AppTypography {
         color: baseColor,
       ),
       labelSmall: TextStyle(
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.w500,
         height: 1.5,
         color: baseColor,

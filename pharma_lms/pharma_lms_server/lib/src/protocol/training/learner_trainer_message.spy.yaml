@@ -1,0 +1,17 @@
+### Message between a learner and the course trainer for a given course version.
+class: LearnerTrainerMessage
+
+table: learner_trainer_message
+
+fields:
+  courseVersion: CourseVersion?, relation
+  fromUser: PharmaUser?, relation
+  toUser: PharmaUser?, relation
+  body: String
+  parentMessage: LearnerTrainerMessage?, relation(optional)
+  readAt: DateTime?
+  createdAt: DateTime, default=now
+
+indexes:
+  learner_trainer_cv_idx:
+    fields: courseVersionId, createdAt

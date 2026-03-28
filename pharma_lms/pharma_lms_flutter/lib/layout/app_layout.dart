@@ -162,6 +162,8 @@ class _AdminTopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showBreadcrumb = breadcrumbItems.isNotEmpty;
+    final width = MediaQuery.of(context).size.width;
+    final showSearch = width >= 900;
 
     return Container(
       height: _kTopBarHeight,
@@ -204,13 +206,31 @@ class _AdminTopBar extends ConsumerWidget {
 
           const Spacer(),
 
-          // ── Search ────────────────────────────────────────────────────────
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 260),
-            child: _SearchField(),
-          ),
-
-          const SizedBox(width: AppSpacing.s3),
+          if (showSearch) ...[
+            // ── Search ────────────────────────────────────────────────────────
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: _SearchField(),
+            ),
+            const SizedBox(width: AppSpacing.s3),
+          ] else
+            IconButton(
+              tooltip: 'Search',
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Search'),
+                  content: SizedBox(width: 420, child: _SearchField()),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+              icon: const Icon(Icons.search),
+            ),
 
           // ── Notifications ─────────────────────────────────────────────────
           _NotificationBell(count: 0), // TODO: wire to admin notification provider

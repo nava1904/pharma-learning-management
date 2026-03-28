@@ -47,6 +47,8 @@ abstract class PharmaUser
     bool? mfaEnabled,
     double? compliancePercent,
     this.roles,
+    this.customMetadataJson,
+    this.biometricCredentialId,
   }) : status = status ?? 'active',
        createdAt = createdAt ?? DateTime.now(),
        timezone = timezone ?? 'UTC',
@@ -79,6 +81,8 @@ abstract class PharmaUser
     bool? mfaEnabled,
     double? compliancePercent,
     List<String>? roles,
+    String? customMetadataJson,
+    String? biometricCredentialId,
   }) = _PharmaUserImpl;
 
   factory PharmaUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -135,6 +139,9 @@ abstract class PharmaUser
           : _i6.Protocol().deserialize<List<String>>(
               jsonSerialization['roles'],
             ),
+      customMetadataJson: jsonSerialization['customMetadataJson'] as String?,
+      biometricCredentialId:
+          jsonSerialization['biometricCredentialId'] as String?,
     );
   }
 
@@ -213,6 +220,12 @@ abstract class PharmaUser
   /// List of roles assigned to the user.
   List<String>? roles;
 
+  /// Site-specific JSON attributes (Vault-style extension without codegen churn).
+  String? customMetadataJson;
+
+  /// Opaque WebAuthn / biometric credential id for step-up auth (roadmap).
+  String? biometricCredentialId;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -245,6 +258,8 @@ abstract class PharmaUser
     bool? mfaEnabled,
     double? compliancePercent,
     List<String>? roles,
+    String? customMetadataJson,
+    String? biometricCredentialId,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -275,6 +290,9 @@ abstract class PharmaUser
       if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
       if (compliancePercent != null) 'compliancePercent': compliancePercent,
       if (roles != null) 'roles': roles?.toJson(),
+      if (customMetadataJson != null) 'customMetadataJson': customMetadataJson,
+      if (biometricCredentialId != null)
+        'biometricCredentialId': biometricCredentialId,
     };
   }
 
@@ -308,6 +326,9 @@ abstract class PharmaUser
       if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
       if (compliancePercent != null) 'compliancePercent': compliancePercent,
       if (roles != null) 'roles': roles?.toJson(),
+      if (customMetadataJson != null) 'customMetadataJson': customMetadataJson,
+      if (biometricCredentialId != null)
+        'biometricCredentialId': biometricCredentialId,
     };
   }
 
@@ -380,6 +401,8 @@ class _PharmaUserImpl extends PharmaUser {
     bool? mfaEnabled,
     double? compliancePercent,
     List<String>? roles,
+    String? customMetadataJson,
+    String? biometricCredentialId,
   }) : super._(
          id: id,
          email: email,
@@ -406,6 +429,8 @@ class _PharmaUserImpl extends PharmaUser {
          mfaEnabled: mfaEnabled,
          compliancePercent: compliancePercent,
          roles: roles,
+         customMetadataJson: customMetadataJson,
+         biometricCredentialId: biometricCredentialId,
        );
 
   /// Returns a shallow copy of this [PharmaUser]
@@ -438,6 +463,8 @@ class _PharmaUserImpl extends PharmaUser {
     Object? mfaEnabled = _Undefined,
     Object? compliancePercent = _Undefined,
     Object? roles = _Undefined,
+    Object? customMetadataJson = _Undefined,
+    Object? biometricCredentialId = _Undefined,
   }) {
     return PharmaUser(
       id: id is int? ? id : this.id,
@@ -475,6 +502,12 @@ class _PharmaUserImpl extends PharmaUser {
       roles: roles is List<String>?
           ? roles
           : this.roles?.map((e0) => e0).toList(),
+      customMetadataJson: customMetadataJson is String?
+          ? customMetadataJson
+          : this.customMetadataJson,
+      biometricCredentialId: biometricCredentialId is String?
+          ? biometricCredentialId
+          : this.biometricCredentialId,
     );
   }
 }
@@ -587,6 +620,18 @@ class PharmaUserUpdateTable extends _i1.UpdateTable<PharmaUserTable> {
         table.roles,
         value,
       );
+
+  _i1.ColumnValue<String, String> customMetadataJson(String? value) =>
+      _i1.ColumnValue(
+        table.customMetadataJson,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> biometricCredentialId(String? value) =>
+      _i1.ColumnValue(
+        table.biometricCredentialId,
+        value,
+      );
 }
 
 class PharmaUserTable extends _i1.Table<int?> {
@@ -677,6 +722,14 @@ class PharmaUserTable extends _i1.Table<int?> {
       'roles',
       this,
     );
+    customMetadataJson = _i1.ColumnString(
+      'customMetadataJson',
+      this,
+    );
+    biometricCredentialId = _i1.ColumnString(
+      'biometricCredentialId',
+      this,
+    );
   }
 
   late final PharmaUserUpdateTable updateTable;
@@ -748,6 +801,12 @@ class PharmaUserTable extends _i1.Table<int?> {
 
   /// List of roles assigned to the user.
   late final _i1.ColumnSerializable<List<String>> roles;
+
+  /// Site-specific JSON attributes (Vault-style extension without codegen churn).
+  late final _i1.ColumnString customMetadataJson;
+
+  /// Opaque WebAuthn / biometric credential id for step-up auth (roadmap).
+  late final _i1.ColumnString biometricCredentialId;
 
   _i2.DepartmentTable get department {
     if (_department != null) return _department!;
@@ -824,6 +883,8 @@ class PharmaUserTable extends _i1.Table<int?> {
     mfaEnabled,
     compliancePercent,
     roles,
+    customMetadataJson,
+    biometricCredentialId,
   ];
 
   @override

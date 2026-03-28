@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
 
 /// User Role Assignment Screen
 /// 
@@ -34,63 +37,63 @@ class UserRoleAssignmentScreen extends ConsumerStatefulWidget {
 
 class _UserRoleAssignmentScreenState
     extends ConsumerState<UserRoleAssignmentScreen> {
-  late Map<String, bool> roleAssignments = {
-    'EMPLOYEE': true,
-    'TRAINER': false,
-    'ADMIN': false,
-  };
-
-  final roleDescriptions = {
-    'EMPLOYEE': 'Can access assigned courses and complete training',
-    'TRAINER': 'Can create and manage courses, view learner progress',
-    'ADMIN': 'Full system access, user management, reporting, configuration',
-  };
-
-  final rolePermissions = {
-    'EMPLOYEE': [
-      'View assigned courses',
-      'Complete training modules',
-      'View certificates',
-      'Access training materials',
-    ],
-    'TRAINER': [
-      'Create and edit courses',
-      'Manage training materials',
-      'View learner progress',
-      'Generate reports',
-      'Assign courses to users',
-    ],
-    'ADMIN': [
-      'Full system access',
-      'Manage users (create, edit, deactivate)',
-      'Manage roles and permissions',
-      'Configure system settings',
-      'View audit logs',
-      'Generate compliance reports',
-    ],
-  };
+  bool _loading = true;
+  String? _error;
+  List<String> _roles = const [];
+  String? _selectedRoleCode;
+  final _reasonController = TextEditingController();
 
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final roles = await client.adminUserManagement.listPortalRoles();
+      final current = await client.adminUserManagement.getUserPortalRoles(userId: widget.userId);
+      setState(() {
+        _roles = roles.map((r) => r.code).toList()..sort();
+        _selectedRoleCode = current.isNotEmpty ? current.first : null;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
 
   Future<void> _saveRoles() async {
     setState(() => isLoading = true);
 
     try {
-      // TODO: Call backend endpoint to update roles
-      // await ref.read(assignRoleProvider.notifier).assignRoles(
-      //   widget.userId,
-      //   roles: roleAssignments.entries
-      //       .where((e) => e.value)
-      //       .map((e) => e.key)
-      //       .toList(),
-      // );
+      final selected = _selectedRoleCode;
+      if (selected == null || selected.trim().isEmpty) {
+        throw Exception('Select a role');
+      }
 
-      await Future.delayed(const Duration(seconds: 1));
+      final me = await ref.read(currentUserProvider.future);
+      if (me?.id == null) throw Exception('Not authenticated');
+
+      await client.adminUserManagement.setUserPortalRole(
+        userId: widget.userId,
+        roleCode: selected,
+        reason: _reasonController.text.trim().isEmpty ? null : _reasonController.text.trim(),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Roles updated for ${widget.userName}'),
+            content: Text('Role updated for ${widget.userName}'),
             backgroundColor: PharmaColors.success,
           ),
         );
@@ -114,6 +117,29 @@ class _UserRoleAssignmentScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Manage Roles'),
+          elevation: 0,
+          backgroundColor: PharmaColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Manage Roles'),
+          elevation: 0,
+          backgroundColor: PharmaColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(child: Text('Failed to load roles: $_error')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Roles'),
@@ -161,7 +187,24 @@ class _UserRoleAssignmentScreenState
               ),
             ),
             SizedBox(height: PharmaSpacing.md),
-            ...roleAssignments.keys.map((role) => _buildRoleCard(role)),
+            ..._roles.map(
+              (code) => RadioListTile<String>(
+                title: Text(code),
+                value: code,
+                groupValue: _selectedRoleCode,
+                onChanged: isLoading ? null : (v) => setState(() => _selectedRoleCode = v),
+              ),
+            ),
+
+            SizedBox(height: PharmaSpacing.md),
+            TextField(
+              controller: _reasonController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Reason (recommended for regulated changes)',
+                border: OutlineInputBorder(),
+              ),
+            ),
 
             SizedBox(height: PharmaSpacing.lg),
 
@@ -206,110 +249,6 @@ class _UserRoleAssignmentScreenState
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleCard(String role) {
-    final isSelected = roleAssignments[role]!;
-    final permissions = rolePermissions[role] ?? [];
-
-    return Card(
-      margin: EdgeInsets.only(bottom: PharmaSpacing.md),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? PharmaColors.primary : PharmaColors.borderLight,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(PharmaSpacing.sm),
-          color: isSelected ? PharmaColors.emerald50 : PharmaColors.cardBg,
-        ),
-        child: Column(
-          children: [
-            // Role Header with Toggle
-            Padding(
-              padding: EdgeInsets.all(PharmaSpacing.md),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: (value) {
-                      setState(() {
-                        roleAssignments[role] = value ?? false;
-                      });
-                    },
-                    activeColor: PharmaColors.primary,
-                  ),
-                  SizedBox(width: PharmaSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          role,
-                          style: PharmaTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? PharmaColors.primary
-                                : PharmaColors.textPrimary,
-                          ),
-                        ),
-                        SizedBox(height: PharmaSpacing.xs),
-                        Text(
-                          roleDescriptions[role] ?? '',
-                          style: PharmaTypography.caption.copyWith(
-                            color: PharmaColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Permissions List
-            if (isSelected) ...[
-              Divider(height: 0, color: PharmaColors.borderLight),
-              Padding(
-                padding: EdgeInsets.all(PharmaSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Permissions',
-                      style: PharmaTypography.caption.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: PharmaColors.textSecondary,
-                      ),
-                    ),
-                    SizedBox(height: PharmaSpacing.sm),
-                    ...permissions.map(
-                      (permission) => Padding(
-                        padding: EdgeInsets.only(bottom: PharmaSpacing.xs),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: PharmaColors.success,
-                            ),
-                            SizedBox(width: PharmaSpacing.sm),
-                            Text(
-                              permission,
-                              style: PharmaTypography.caption,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),

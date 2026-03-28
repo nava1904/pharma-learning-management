@@ -16,3 +16,19 @@ fields:
   createdBy: PharmaUser?, relation(optional)
   ### Organization for multi-tenant.
   organization: Organization?, relation
+  ### Site-specific JSON attributes (curricula tags, therapeutic area, etc.).
+  customMetadataJson: String?
+  ### Preview/teaser video URL (YouTube, Vimeo, etc.).
+  previewVideoUrl: String?
+  ### Cover image URL for the course.
+  imageUrl: String?
+  ### Comma-separated tags (difficulty, therapeutic area, etc.).
+  tags: String?
+  ### Date the course was published.
+  publishedAt: DateTime?
+  ### Whether self-enrollment is disabled (admin/manager assignment only).
+  disableSelfEnrollment: bool, default=false
+  ### Course category (e.g., GMP, Quality, Safety).
+  category: String?
+  ### Whether this course is featured/promoted.
+  featured: bool, default=false

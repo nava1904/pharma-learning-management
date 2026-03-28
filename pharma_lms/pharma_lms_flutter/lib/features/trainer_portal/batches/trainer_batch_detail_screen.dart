@@ -17,8 +17,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
+import '../../../core/client.dart';
 import '../../../design_system/pharma_design_system.dart';
 import '../../../providers/trainer_batch_providers.dart';
+import '../../shared/communication_sheets.dart';
 
 class TrainerBatchDetailScreen extends ConsumerWidget {
   const TrainerBatchDetailScreen({super.key, required this.batchId});
@@ -102,17 +104,84 @@ class _BatchDetailContent extends ConsumerStatefulWidget {
 class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // Per-participant progress & assessment data, keyed by userId
+  Map<int, _ParticipantMetrics> _participantMetrics = {};
+  bool _metricsLoading = false;
+  BatchTrainingAnalytics? _batchAnalytics;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
+    _loadBatchAnalytics();
+    _loadParticipantMetrics();
+  }
+
+  Future<void> _loadBatchAnalytics() async {
+    final id = widget.batch.id;
+    if (id == null) return;
+    try {
+      final a = await client.analytics.getBatchTrainingAnalytics(id);
+      if (mounted) setState(() => _batchAnalytics = a);
+    } catch (_) {
+      if (mounted) setState(() => _batchAnalytics = null);
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadParticipantMetrics() async {
+    setState(() => _metricsLoading = true);
+    try {
+      final participants = await client.trainingBatch.listBatchParticipantsForEmployee(widget.batch.id!);
+      final batch = widget.batch;
+      final metrics = <int, _ParticipantMetrics>{};
+
+      for (final p in participants) {
+        double progressPct = 0;
+        int timeSpentSeconds = 0;
+        String assessmentStatus = 'not_attempted';
+
+        try {
+          final enrollments = await client.training.getEnrollmentsForUser(p.userId);
+          final enrollment = enrollments.cast<Enrollment?>().firstWhere(
+            (e) => e!.courseVersionId == batch.courseVersionId,
+            orElse: () => null,
+          );
+          if (enrollment?.id != null) {
+            final prog = await client.training.getEnrollmentProgress(enrollment!.id!);
+            progressPct = (prog['progressPct'] as num?)?.toDouble() ?? 0;
+            timeSpentSeconds = (prog['timeSpentSeconds'] as num?)?.toInt() ?? 0;
+          }
+        } catch (_) {}
+
+        try {
+          final assessment = await client.assessment.getAssessmentForCourse(batch.courseVersionId);
+          if (assessment?.id != null) {
+            final attemptCount = await client.assessment.getAttemptCount(
+              assessmentId: assessment!.id!,
+              userId: p.userId,
+            );
+            if (attemptCount > 0) {
+              assessmentStatus = 'attempted';
+            }
+          }
+        } catch (_) {}
+
+        metrics[p.userId] = _ParticipantMetrics(
+          progressPct: progressPct,
+          timeSpentSeconds: timeSpentSeconds,
+          assessmentStatus: assessmentStatus,
+        );
+      }
+      if (mounted) setState(() { _participantMetrics = metrics; _metricsLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _metricsLoading = false);
+    }
   }
 
   @override
@@ -232,6 +301,8 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
         ),
         const SizedBox(height: PharmaSpacing.md),
 
+        _buildBatchAnalyticsCard(batch),
+
         // ── PROGRESS CARD (for active/completed) ──
         if (isActive || isCompleted)
           _buildProgressCard(batch),
@@ -241,7 +312,7 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
         _buildActionButtons(batch, isScheduled, isActive, isCompleted),
         const SizedBox(height: PharmaSpacing.sectionGap),
 
-        // ── TABS: Participants, Attendance, Reports ──
+        // ── TABS: Announcements, Participants, Attendance, Reports ──
         Container(
           decoration: BoxDecoration(
             color: PharmaColors.cardBg,
@@ -252,10 +323,12 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
             children: [
               TabBar(
                 controller: _tabController,
+                isScrollable: true,
                 labelColor: PharmaColors.emerald600,
                 unselectedLabelColor: PharmaColors.textSecondary,
                 indicatorColor: PharmaColors.emerald600,
                 tabs: const [
+                  Tab(text: 'Announcements'),
                   Tab(text: 'Participants'),
                   Tab(text: 'Attendance'),
                   Tab(text: 'Reports'),
@@ -266,6 +339,7 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
+                    TrainerBatchAnnouncementsTab(batchId: widget.batch.id!),
                     _buildParticipantsTab(),
                     _buildAttendanceTab(),
                     _buildReportsTab(),
@@ -331,6 +405,150 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
               color: color,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBatchAnalyticsCard(TrainingBatch batch) {
+    final a = _batchAnalytics;
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        border: Border.all(color: PharmaColors.borderLight),
+        borderRadius: BorderRadius.circular(PharmaRadius.md),
+      ),
+      child: a == null
+          ? Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: PharmaSpacing.md),
+                Expanded(
+                  child: Text(
+                    'Loading roster analytics…',
+                    style: PharmaTypography.caption
+                        .copyWith(color: PharmaColors.textSecondary),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.analytics_outlined,
+                        size: 20, color: PharmaColors.emerald600),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Batch analytics',
+                      style: PharmaTypography.headingSmall.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Roster, enrollments, time on content, assignments, and assessments for this course version.',
+                  style: PharmaTypography.caption
+                      .copyWith(color: PharmaColors.textTertiary),
+                ),
+                const SizedBox(height: PharmaSpacing.md),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    _buildAnalyticsChip(
+                        'Roster', '${a.rosterCount}', PharmaColors.info),
+                    _buildAnalyticsChip(
+                        'Enrollments', '${a.enrollmentCount}', PharmaColors.info),
+                    _buildAnalyticsChip('Completed',
+                        '${a.completedEnrollments}', PharmaColors.success),
+                    _buildAnalyticsChip('In progress',
+                        '${a.inProgressEnrollments}', PharmaColors.warningText),
+                    _buildAnalyticsChip(
+                        'Overdue', '${a.overdueEnrollments}', PharmaColors.danger),
+                    _buildAnalyticsChip(
+                      'Time on content',
+                      '${(a.totalTimeSpentSeconds / 3600.0).toStringAsFixed(1)} h',
+                      PharmaColors.emerald600,
+                    ),
+                    _buildAnalyticsChip(
+                      'Active assignments',
+                      '${a.activeTrainingAssignmentCount}',
+                      PharmaColors.warningText,
+                    ),
+                    _buildAnalyticsChip(
+                      'Assessment attempts',
+                      '${a.assessmentAttemptCount}',
+                      PharmaColors.info,
+                    ),
+                    _buildAnalyticsChip(
+                      'Passed attempts',
+                      '${a.passedAssessmentAttemptCount}',
+                      PharmaColors.success,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: PharmaSpacing.md),
+                Text(
+                  'Average material progress (roster)',
+                  style: PharmaTypography.caption.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (a.averageMaterialProgressPct.clamp(0.0, 100.0)) /
+                        100,
+                    minHeight: 10,
+                    backgroundColor: PharmaColors.gray100,
+                    color: PharmaColors.emerald600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${a.averageMaterialProgressPct.toStringAsFixed(1)}%',
+                  style: PharmaTypography.caption
+                      .copyWith(color: PharmaColors.textSecondary),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildAnalyticsChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: PharmaColors.pageBg,
+        borderRadius: BorderRadius.circular(PharmaRadius.sm),
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: PharmaTypography.bodyMedium.copyWith(
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            style: PharmaTypography.caption
+                .copyWith(color: PharmaColors.textTertiary),
           ),
         ],
       ),
@@ -489,8 +707,8 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
   }
 
   Widget _buildParticipantsTab() {
-    // In production, this would use batchParticipantsProvider
-    // For now, show placeholder with mock data structure
+    final participantsAsync = ref.watch(batchParticipantsProvider(widget.batch.id!));
+
     return Padding(
       padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
       child: Column(
@@ -499,114 +717,169 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Enrolled Participants',
-                style: PharmaTypography.headingSmall,
-              ),
-              TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.person_add_rounded, size: 18),
-                label: const Text('Add Participant'),
-              ),
+              Text('Enrolled Participants', style: PharmaTypography.headingSmall),
+              if (_metricsLoading)
+                const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           ),
-          const SizedBox(height: PharmaSpacing.md),
+          const SizedBox(height: PharmaSpacing.sm),
+          // Column headers
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: PharmaColors.pageBg,
+              borderRadius: BorderRadius.circular(PharmaRadius.sm),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 44),
+                Expanded(flex: 3, child: Text('PARTICIPANT', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600, color: PharmaColors.textTertiary, letterSpacing: 0.5))),
+                Expanded(flex: 2, child: Text('PROGRESS', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600, color: PharmaColors.textTertiary, letterSpacing: 0.5))),
+                Expanded(flex: 2, child: Text('ASSESSMENT', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600, color: PharmaColors.textTertiary, letterSpacing: 0.5))),
+                Expanded(flex: 1, child: Text('TIME', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600, color: PharmaColors.textTertiary, letterSpacing: 0.5))),
+              ],
+            ),
+          ),
+          const SizedBox(height: PharmaSpacing.xs),
           Expanded(
-            child: widget.batch.enrolledCount == 0
-                ? Center(
+            child: participantsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error loading participants: $e', style: PharmaTypography.caption)),
+              data: (participants) {
+                if (participants.isEmpty) {
+                  return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.people_outline, size: 48, color: PharmaColors.gray400),
                         const SizedBox(height: PharmaSpacing.sm),
-                        Text(
-                          'No participants enrolled yet',
-                          style: PharmaTypography.body.copyWith(
-                            color: PharmaColors.textSecondary,
-                          ),
-                        ),
+                        Text('No participants enrolled yet', style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary)),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    itemCount: widget.batch.enrolledCount,
-                    itemBuilder: (context, index) => _buildParticipantRow(index),
-                  ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: participants.length,
+                  itemBuilder: (context, index) => _buildParticipantDataRow(participants[index]),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildParticipantRow(int index) {
-    // Mock participant data
-    final names = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson', 'Eva Martinez'];
-    final depts = ['Quality Assurance', 'Manufacturing', 'R&D', 'Packaging', 'Quality Control'];
-    
+  Widget _buildParticipantDataRow(BatchParticipantInfo p) {
+    final metrics = _participantMetrics[p.userId];
+    final progressPct = metrics?.progressPct ?? 0;
+    final timeSpent = metrics?.timeSpentSeconds ?? 0;
+    final assessmentStatus = metrics?.assessmentStatus ?? 'not_attempted';
+
+    final hours = timeSpent ~/ 3600;
+    final minutes = (timeSpent % 3600) ~/ 60;
+    final timeStr = hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m';
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: PharmaSpacing.sm),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: PharmaColors.borderLight),
-        ),
+        border: Border(bottom: BorderSide(color: PharmaColors.borderLight)),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 18,
+            radius: 16,
             backgroundColor: PharmaColors.emerald100,
             child: Text(
-              names[index % names.length].substring(0, 1),
-              style: const TextStyle(
-                color: PharmaColors.emerald700,
-                fontWeight: FontWeight.w600,
-              ),
+              p.firstName.isNotEmpty ? p.firstName.substring(0, 1) : '?',
+              style: const TextStyle(color: PharmaColors.emerald700, fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
-          const SizedBox(width: PharmaSpacing.md),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  names[index % names.length],
-                  style: PharmaTypography.body.copyWith(fontWeight: FontWeight.w500),
+                Text('${p.firstName} ${p.lastName}', style: PharmaTypography.body.copyWith(fontWeight: FontWeight.w500)),
+                Text(p.email, style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progressPct / 100,
+                      backgroundColor: PharmaColors.gray200,
+                      valueColor: AlwaysStoppedAnimation(
+                        progressPct >= 100 ? PharmaColors.success : PharmaColors.emerald600,
+                      ),
+                      minHeight: 6,
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text(
-                  depts[index % depts.length],
-                  style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+                  '${progressPct.toStringAsFixed(0)}%',
+                  style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: _buildParticipantStatusBadge(index % 3 == 0 ? 'completed' : 'in_progress'),
+            flex: 2,
+            child: _buildAssessmentBadge(assessmentStatus),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, size: 20),
-            onPressed: () {},
+          Expanded(
+            flex: 1,
+            child: Text(
+              timeSpent > 0 ? timeStr : '--',
+              style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildParticipantStatusBadge(String status) {
-    final isCompleted = status == 'completed';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isCompleted ? PharmaColors.successBg : PharmaColors.warningBg,
-        borderRadius: BorderRadius.circular(PharmaRadius.sm),
-      ),
-      child: Text(
-        isCompleted ? 'Completed' : 'In Progress',
-        style: PharmaTypography.caption.copyWith(
-          color: isCompleted ? PharmaColors.success : PharmaColors.warning,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+  Widget _buildAssessmentBadge(String status) {
+    Color color;
+    String label;
+    IconData icon;
+    switch (status) {
+      case 'passed':
+        color = PharmaColors.success;
+        label = 'Passed';
+        icon = Icons.check_circle_rounded;
+        break;
+      case 'failed':
+        color = PharmaColors.danger;
+        label = 'Failed';
+        icon = Icons.cancel_rounded;
+        break;
+      case 'attempted':
+        color = PharmaColors.info;
+        label = 'Attempted';
+        icon = Icons.pending_rounded;
+        break;
+      default:
+        color = PharmaColors.gray400;
+        label = 'Not Taken';
+        icon = Icons.remove_circle_outline;
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(label, style: PharmaTypography.caption.copyWith(color: color, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 
@@ -836,4 +1109,16 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
       const SnackBar(content: Text('Certificate issuance dialog would open here')),
     );
   }
+}
+
+class _ParticipantMetrics {
+  final double progressPct;
+  final int timeSpentSeconds;
+  final String assessmentStatus;
+
+  _ParticipantMetrics({
+    required this.progressPct,
+    required this.timeSpentSeconds,
+    required this.assessmentStatus,
+  });
 }

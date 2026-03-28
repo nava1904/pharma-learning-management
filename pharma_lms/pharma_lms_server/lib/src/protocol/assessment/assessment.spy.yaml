@@ -19,3 +19,9 @@ fields:
   ### Number of questions to display from the bank.
   ### TRN-WF-03: Must be <= totalQuestions / 2 for adequate randomization.
   questionsToDisplay: int?
+  ### Whether to show correct answers after submission.
+  showAnswers: bool, default=false
+  ### Whether to show previous submission history to the learner.
+  showSubmissionHistory: bool, default=false
+  ### Limit the number of questions shown (used with randomize).
+  limitQuestions: int?

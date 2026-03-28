@@ -73,11 +73,13 @@ class _MyTrainingScreenState extends ConsumerState<MyTrainingScreen> {
         ref.invalidate(assignmentsProvider);
         ref.invalidate(enrollmentResumeLabelsProvider);
         ref.invalidate(userComplianceProvider);
+        ref.invalidate(certificatesProvider);
         await Future.wait([
           ref.refresh(enrollmentsProvider.future),
           ref.refresh(assignmentsProvider.future),
           ref.refresh(enrollmentResumeLabelsProvider.future),
           ref.refresh(userComplianceProvider.future),
+          ref.refresh(certificatesProvider.future),
         ]);
       },
       child: userAsync.when(
@@ -91,6 +93,7 @@ class _MyTrainingScreenState extends ConsumerState<MyTrainingScreen> {
           final resumeLabels = resumeLabelsAsync.valueOrNull ?? {};
           final compliance = complianceAsync.valueOrNull;
           final overdueCount = compliance?.overdueCount ?? 0;
+          final certificates = ref.watch(certificatesProvider).valueOrNull ?? [];
 
           _loadProgressForEnrollments(enrollments);
 
@@ -98,6 +101,7 @@ class _MyTrainingScreenState extends ConsumerState<MyTrainingScreen> {
             userId: user.id!,
             enrollments: enrollments,
             assignments: assignments,
+            certificates: certificates,
             resumeLabels: resumeLabels,
             overdueCount: overdueCount,
             progressCache: _progressCache,
@@ -170,6 +174,7 @@ class _MyTrainingContent extends StatelessWidget {
     required this.userId,
     required this.enrollments,
     required this.assignments,
+    required this.certificates,
     required this.resumeLabels,
     required this.overdueCount,
     required this.progressCache,
@@ -184,6 +189,7 @@ class _MyTrainingContent extends StatelessWidget {
   final int userId;
   final List<Enrollment> enrollments;
   final List<TrainingAssignment> assignments;
+  final List<Certificate> certificates;
   final Map<int, String> resumeLabels;
   final int overdueCount;
   final Map<int, double> progressCache;
@@ -199,6 +205,14 @@ class _MyTrainingContent extends StatelessWidget {
         .where((a) =>
             a.courseVersionId == enrollment.courseVersionId && a.userId == userId)
         .firstOrNull;
+  }
+
+  int? _certificateIdForEnrollment(Enrollment enrollment) {
+    final cvId = enrollment.courseVersionId;
+    for (final c in certificates) {
+      if (c.courseVersionId == cvId && c.id != null) return c.id;
+    }
+    return null;
   }
 
   DateTime _getDueDate(Enrollment enrollment) {
@@ -366,7 +380,12 @@ class _MyTrainingContent extends StatelessWidget {
                   progress: progressCache[enrollment.id] ?? 0.0,
                   onTap: () {
                     if (enrollment.status == 'completed') {
-                      context.go('/employee/credentials');
+                      final certId = _certificateIdForEnrollment(enrollment);
+                      if (certId != null) {
+                        context.push('/certificate/$certId');
+                      } else {
+                        context.go('/employee/credentials');
+                      }
                     } else {
                       final course = enrollment.courseVersion?.course;
                       context.go(

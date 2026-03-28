@@ -28,7 +28,11 @@ abstract class AssessmentResult
     required this.answer,
     required this.correct,
     this.points,
-  });
+    bool? needsManualGrading,
+    this.manualScore,
+    this.gradedById,
+    this.gradedAt,
+  }) : needsManualGrading = needsManualGrading ?? false;
 
   factory AssessmentResult({
     int? id,
@@ -39,6 +43,10 @@ abstract class AssessmentResult
     required String answer,
     required bool correct,
     int? points,
+    bool? needsManualGrading,
+    int? manualScore,
+    int? gradedById,
+    DateTime? gradedAt,
   }) = _AssessmentResultImpl;
 
   factory AssessmentResult.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -59,6 +67,16 @@ abstract class AssessmentResult
       answer: jsonSerialization['answer'] as String,
       correct: _i1.BoolJsonExtension.fromJson(jsonSerialization['correct']),
       points: jsonSerialization['points'] as int?,
+      needsManualGrading: jsonSerialization['needsManualGrading'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['needsManualGrading'],
+            ),
+      manualScore: jsonSerialization['manualScore'] as int?,
+      gradedById: jsonSerialization['gradedById'] as int?,
+      gradedAt: jsonSerialization['gradedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['gradedAt']),
     );
   }
 
@@ -88,6 +106,18 @@ abstract class AssessmentResult
   /// Points earned.
   int? points;
 
+  /// Whether this result requires manual instructor grading (open_ended, unscored short_answer).
+  bool needsManualGrading;
+
+  /// Instructor-assigned score override (null until graded).
+  int? manualScore;
+
+  /// Instructor who graded this result.
+  int? gradedById;
+
+  /// Timestamp of instructor grading.
+  DateTime? gradedAt;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -103,6 +133,10 @@ abstract class AssessmentResult
     String? answer,
     bool? correct,
     int? points,
+    bool? needsManualGrading,
+    int? manualScore,
+    int? gradedById,
+    DateTime? gradedAt,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -116,6 +150,10 @@ abstract class AssessmentResult
       'answer': answer,
       'correct': correct,
       if (points != null) 'points': points,
+      'needsManualGrading': needsManualGrading,
+      if (manualScore != null) 'manualScore': manualScore,
+      if (gradedById != null) 'gradedById': gradedById,
+      if (gradedAt != null) 'gradedAt': gradedAt?.toJson(),
     };
   }
 
@@ -131,6 +169,10 @@ abstract class AssessmentResult
       'answer': answer,
       'correct': correct,
       if (points != null) 'points': points,
+      'needsManualGrading': needsManualGrading,
+      if (manualScore != null) 'manualScore': manualScore,
+      if (gradedById != null) 'gradedById': gradedById,
+      if (gradedAt != null) 'gradedAt': gradedAt?.toJson(),
     };
   }
 
@@ -182,6 +224,10 @@ class _AssessmentResultImpl extends AssessmentResult {
     required String answer,
     required bool correct,
     int? points,
+    bool? needsManualGrading,
+    int? manualScore,
+    int? gradedById,
+    DateTime? gradedAt,
   }) : super._(
          id: id,
          attemptId: attemptId,
@@ -191,6 +237,10 @@ class _AssessmentResultImpl extends AssessmentResult {
          answer: answer,
          correct: correct,
          points: points,
+         needsManualGrading: needsManualGrading,
+         manualScore: manualScore,
+         gradedById: gradedById,
+         gradedAt: gradedAt,
        );
 
   /// Returns a shallow copy of this [AssessmentResult]
@@ -206,6 +256,10 @@ class _AssessmentResultImpl extends AssessmentResult {
     String? answer,
     bool? correct,
     Object? points = _Undefined,
+    bool? needsManualGrading,
+    Object? manualScore = _Undefined,
+    Object? gradedById = _Undefined,
+    Object? gradedAt = _Undefined,
   }) {
     return AssessmentResult(
       id: id is int? ? id : this.id,
@@ -220,6 +274,10 @@ class _AssessmentResultImpl extends AssessmentResult {
       answer: answer ?? this.answer,
       correct: correct ?? this.correct,
       points: points is int? ? points : this.points,
+      needsManualGrading: needsManualGrading ?? this.needsManualGrading,
+      manualScore: manualScore is int? ? manualScore : this.manualScore,
+      gradedById: gradedById is int? ? gradedById : this.gradedById,
+      gradedAt: gradedAt is DateTime? ? gradedAt : this.gradedAt,
     );
   }
 }
@@ -252,6 +310,27 @@ class AssessmentResultUpdateTable
     table.points,
     value,
   );
+
+  _i1.ColumnValue<bool, bool> needsManualGrading(bool value) => _i1.ColumnValue(
+    table.needsManualGrading,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> manualScore(int? value) => _i1.ColumnValue(
+    table.manualScore,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> gradedById(int? value) => _i1.ColumnValue(
+    table.gradedById,
+    value,
+  );
+
+  _i1.ColumnValue<DateTime, DateTime> gradedAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.gradedAt,
+        value,
+      );
 }
 
 class AssessmentResultTable extends _i1.Table<int?> {
@@ -278,6 +357,23 @@ class AssessmentResultTable extends _i1.Table<int?> {
       'points',
       this,
     );
+    needsManualGrading = _i1.ColumnBool(
+      'needsManualGrading',
+      this,
+      hasDefault: true,
+    );
+    manualScore = _i1.ColumnInt(
+      'manualScore',
+      this,
+    );
+    gradedById = _i1.ColumnInt(
+      'gradedById',
+      this,
+    );
+    gradedAt = _i1.ColumnDateTime(
+      'gradedAt',
+      this,
+    );
   }
 
   late final AssessmentResultUpdateTable updateTable;
@@ -300,6 +396,18 @@ class AssessmentResultTable extends _i1.Table<int?> {
 
   /// Points earned.
   late final _i1.ColumnInt points;
+
+  /// Whether this result requires manual instructor grading (open_ended, unscored short_answer).
+  late final _i1.ColumnBool needsManualGrading;
+
+  /// Instructor-assigned score override (null until graded).
+  late final _i1.ColumnInt manualScore;
+
+  /// Instructor who graded this result.
+  late final _i1.ColumnInt gradedById;
+
+  /// Timestamp of instructor grading.
+  late final _i1.ColumnDateTime gradedAt;
 
   _i2.AssessmentAttemptTable get attempt {
     if (_attempt != null) return _attempt!;
@@ -335,6 +443,10 @@ class AssessmentResultTable extends _i1.Table<int?> {
     answer,
     correct,
     points,
+    needsManualGrading,
+    manualScore,
+    gradedById,
+    gradedAt,
   ];
 
   @override

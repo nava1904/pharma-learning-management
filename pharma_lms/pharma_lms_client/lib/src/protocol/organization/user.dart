@@ -45,6 +45,8 @@ abstract class PharmaUser implements _i1.SerializableModel {
     bool? mfaEnabled,
     double? compliancePercent,
     this.roles,
+    this.customMetadataJson,
+    this.biometricCredentialId,
   }) : status = status ?? 'active',
        createdAt = createdAt ?? DateTime.now(),
        timezone = timezone ?? 'UTC',
@@ -77,6 +79,8 @@ abstract class PharmaUser implements _i1.SerializableModel {
     bool? mfaEnabled,
     double? compliancePercent,
     List<String>? roles,
+    String? customMetadataJson,
+    String? biometricCredentialId,
   }) = _PharmaUserImpl;
 
   factory PharmaUser.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -133,6 +137,9 @@ abstract class PharmaUser implements _i1.SerializableModel {
           : _i6.Protocol().deserialize<List<String>>(
               jsonSerialization['roles'],
             ),
+      customMetadataJson: jsonSerialization['customMetadataJson'] as String?,
+      biometricCredentialId:
+          jsonSerialization['biometricCredentialId'] as String?,
     );
   }
 
@@ -209,6 +216,12 @@ abstract class PharmaUser implements _i1.SerializableModel {
   /// List of roles assigned to the user.
   List<String>? roles;
 
+  /// Site-specific JSON attributes (Vault-style extension without codegen churn).
+  String? customMetadataJson;
+
+  /// Opaque WebAuthn / biometric credential id for step-up auth (roadmap).
+  String? biometricCredentialId;
+
   /// Returns a shallow copy of this [PharmaUser]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -238,6 +251,8 @@ abstract class PharmaUser implements _i1.SerializableModel {
     bool? mfaEnabled,
     double? compliancePercent,
     List<String>? roles,
+    String? customMetadataJson,
+    String? biometricCredentialId,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -268,6 +283,9 @@ abstract class PharmaUser implements _i1.SerializableModel {
       if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
       if (compliancePercent != null) 'compliancePercent': compliancePercent,
       if (roles != null) 'roles': roles?.toJson(),
+      if (customMetadataJson != null) 'customMetadataJson': customMetadataJson,
+      if (biometricCredentialId != null)
+        'biometricCredentialId': biometricCredentialId,
     };
   }
 
@@ -306,6 +324,8 @@ class _PharmaUserImpl extends PharmaUser {
     bool? mfaEnabled,
     double? compliancePercent,
     List<String>? roles,
+    String? customMetadataJson,
+    String? biometricCredentialId,
   }) : super._(
          id: id,
          email: email,
@@ -332,6 +352,8 @@ class _PharmaUserImpl extends PharmaUser {
          mfaEnabled: mfaEnabled,
          compliancePercent: compliancePercent,
          roles: roles,
+         customMetadataJson: customMetadataJson,
+         biometricCredentialId: biometricCredentialId,
        );
 
   /// Returns a shallow copy of this [PharmaUser]
@@ -364,6 +386,8 @@ class _PharmaUserImpl extends PharmaUser {
     Object? mfaEnabled = _Undefined,
     Object? compliancePercent = _Undefined,
     Object? roles = _Undefined,
+    Object? customMetadataJson = _Undefined,
+    Object? biometricCredentialId = _Undefined,
   }) {
     return PharmaUser(
       id: id is int? ? id : this.id,
@@ -401,6 +425,12 @@ class _PharmaUserImpl extends PharmaUser {
       roles: roles is List<String>?
           ? roles
           : this.roles?.map((e0) => e0).toList(),
+      customMetadataJson: customMetadataJson is String?
+          ? customMetadataJson
+          : this.customMetadataJson,
+      biometricCredentialId: biometricCredentialId is String?
+          ? biometricCredentialId
+          : this.biometricCredentialId,
     );
   }
 }

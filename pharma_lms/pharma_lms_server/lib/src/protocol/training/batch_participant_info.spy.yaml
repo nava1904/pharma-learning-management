@@ -1,0 +1,9 @@
+### Safe roster row for employee batch UI (no sensitive fields).
+class: BatchParticipantInfo
+
+fields:
+  userId: int
+  firstName: String
+  lastName: String
+  email: String
+  role: String?

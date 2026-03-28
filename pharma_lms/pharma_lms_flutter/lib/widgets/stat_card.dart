@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_colors.dart';
+import '../design_system/pharma_design_system.dart';
 
 /// Stat card for dashboard metrics (label, value, icon).
 class StatCard extends StatelessWidget {
@@ -9,8 +9,8 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.iconBackgroundColor = AppColors.indigo100,
-    this.iconColor = AppColors.indigo600,
+    this.iconBackgroundColor = PharmaColors.infoBg,
+    this.iconColor = PharmaColors.info,
   });
 
   final String label;
@@ -22,11 +22,12 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.slate200),
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -38,31 +39,31 @@ class StatCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.slate600,
-                      ),
+                  style: PharmaTypography.body.copyWith(
+                    color: PharmaColors.textSecondary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.slate900,
-                      ),
+                  style: PharmaTypography.headingMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: PharmaColors.textPrimary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: PharmaSpacing.sm),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(PharmaSpacing.md),
             decoration: BoxDecoration(
               color: iconBackgroundColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: PharmaRadius.cardRadius,
             ),
             child: Icon(icon, size: 24, color: iconColor),
           ),

@@ -37,11 +37,24 @@ class ExamGeneratorScreen extends ConsumerStatefulWidget {
   ConsumerState<ExamGeneratorScreen> createState() => _ExamGeneratorScreenState();
 }
 
+final _orgCoursesProvider = FutureProvider<List<Course>>((ref) async {
+  final user = await ref.watch(currentUserProvider.future);
+  return client.course.listCourses(organizationId: user?.organizationId);
+});
+
 class _ExamGeneratorScreenState extends ConsumerState<ExamGeneratorScreen> {
   final List<Question> _examQuestions = [];
   int? _selectedBankId;
   String _examTitle = 'Question Paper';
   String _instructions = 'Answer all questions.';
+  int _passingScore = 80;
+
+  // Save-to-server state
+  Course? _selectedCourse;
+  CourseVersion? _selectedCourseVersion;
+  List<CourseVersion> _courseVersions = [];
+  bool _loadingVersions = false;
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +87,125 @@ class _ExamGeneratorScreenState extends ConsumerState<ExamGeneratorScreen> {
     );
   }
 
+  Future<void> _loadCourseVersions(int courseId) async {
+    setState(() => _loadingVersions = true);
+    try {
+      final versions = await client.course.getCourseVersions(courseId);
+      if (mounted) {
+        setState(() {
+          _courseVersions = versions;
+          _selectedCourseVersion = versions.isNotEmpty ? versions.first : null;
+          _loadingVersions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingVersions = false);
+    }
+  }
+
+  Future<void> _saveExamToServer() async {
+    if (_examQuestions.isEmpty) return;
+    if (_selectedCourseVersion == null || _selectedBankId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a course version and question bank before saving')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await client.assessmentBuilder.createAssessment(
+        courseVersionId: _selectedCourseVersion!.id!,
+        questionBankId: _selectedBankId!,
+        passingScore: _passingScore,
+        randomize: true,
+        questionsToDisplay: _examQuestions.length,
+        showAnswers: false,
+        showSubmissionHistory: false,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assessment saved to server. Submit for QA review to publish.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e')),
+        );
+      }
+    }
+    if (mounted) setState(() => _saving = false);
+  }
+
+  void _showPreviewDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
+        title: Row(
+          children: [
+            const Icon(Icons.preview_rounded, size: 20),
+            const SizedBox(width: 8),
+            Text(_examTitle),
+            const Spacer(),
+            IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+          ],
+        ),
+        content: SizedBox(
+          width: 600,
+          height: 500,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Date: ${DateTime.now().toString().substring(0, 10)}', style: PharmaTypography.caption),
+                const SizedBox(height: 8),
+                Text(_instructions, style: PharmaTypography.body),
+                const Divider(height: 24),
+                ..._examQuestions.asMap().entries.map((entry) {
+                  final i = entry.key + 1;
+                  final q = entry.value;
+                  List<String>? options;
+                  try {
+                    final list = jsonDecode(q.optionsJson) as List<dynamic>?;
+                    options = list?.map((e) => e.toString()).toList();
+                  } catch (_) {}
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$i. ${q.text}', style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+                        if (options != null && options.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20, top: 6),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: options.asMap().entries.map((o) => Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text('${String.fromCharCode(65 + o.key)}. ${o.value}', style: PharmaTypography.body),
+                              )).toList(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () { Navigator.pop(ctx); _generatePdf(); },
+            icon: const Icon(Icons.picture_as_pdf, size: 16),
+            label: const Text('Save as PDF'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     return Row(
       children: [
@@ -85,23 +217,33 @@ class _ExamGeneratorScreenState extends ConsumerState<ExamGeneratorScreen> {
             children: [
               Text(
                 'Exam generator',
-                style: PharmaTypography.headingLarge.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: PharmaTypography.headingLarge.copyWith(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               Text(
-                'Build a question paper and export as PDF',
-                style: PharmaTypography.body
-                    .copyWith(color: PharmaColors.textTertiary),
+                'Build a question paper, preview, save to server, or export PDF',
+                style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
               ),
             ],
           ),
         ),
-        FilledButton.icon(
+        OutlinedButton.icon(
+          onPressed: _examQuestions.isEmpty ? null : _showPreviewDialog,
+          icon: const Icon(Icons.preview_rounded, size: 16),
+          label: const Text('Preview'),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
           onPressed: _examQuestions.isEmpty ? null : _generatePdf,
-          icon: const Icon(Icons.picture_as_pdf, size: 18),
-          label: const Text('Generate question paper PDF'),
+          icon: const Icon(Icons.picture_as_pdf, size: 16),
+          label: const Text('PDF'),
+        ),
+        const SizedBox(width: 8),
+        FilledButton.icon(
+          onPressed: (_examQuestions.isEmpty || _saving) ? null : _saveExamToServer,
+          icon: _saving
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.cloud_upload_rounded, size: 16),
+          label: const Text('Save Exam'),
           style: FilledButton.styleFrom(
             backgroundColor: PharmaColors.emerald600,
             foregroundColor: PharmaColors.cardBg,
@@ -221,6 +363,57 @@ class _ExamGeneratorScreenState extends ConsumerState<ExamGeneratorScreen> {
               border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
             ),
           ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: Builder(builder: (context) {
+                final coursesAsync = ref.watch(_orgCoursesProvider);
+                final courses = coursesAsync.valueOrNull ?? [];
+                return DropdownButtonFormField<Course>(
+                  initialValue: _selectedCourse,
+                  items: courses.map((c) => DropdownMenuItem(value: c, child: Text(c.title, overflow: TextOverflow.ellipsis))).toList(),
+                  onChanged: (c) {
+                    setState(() { _selectedCourse = c; _selectedCourseVersion = null; _courseVersions = []; });
+                    if (c?.id != null) _loadCourseVersions(c!.id!);
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Link to Course',
+                    hintText: 'Select course',
+                    border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                  ),
+                  isExpanded: true,
+                );
+              }),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 160,
+              child: _loadingVersions
+                  ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+                  : DropdownButtonFormField<CourseVersion>(
+                      initialValue: _selectedCourseVersion,
+                      items: _courseVersions.map((v) => DropdownMenuItem(value: v, child: Text('v${v.version}'))).toList(),
+                      onChanged: (v) => setState(() => _selectedCourseVersion = v),
+                      decoration: InputDecoration(
+                        labelText: 'Version',
+                        border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 100,
+              child: TextField(
+                onChanged: (v) => _passingScore = int.tryParse(v) ?? 80,
+                decoration: InputDecoration(
+                  labelText: 'Pass %',
+                  hintText: '80',
+                  border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ]),
           const SizedBox(height: 16),
           if (_examQuestions.isEmpty)
             Padding(

@@ -1,6 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart' show JobRole;
+import 'package:pharma_lms_client/pharma_lms_client.dart' show JobRole, TrainingMatrix;
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import '../widgets/admin_page_frame.dart';
@@ -173,10 +175,19 @@ class _AdminJobSpecListScreenState extends ConsumerState<AdminJobSpecListScreen>
     );
   }
 
+  int _matrixCourseCount(JobRole role) {
+    final raw = role.trainingMatrixJson;
+    if (raw == null || raw.trim().isEmpty) return 0;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded.length;
+      if (decoded is Map) return decoded.length;
+    } catch (_) {}
+    return 0;
+  }
+
   Widget _buildJobSpecCard(JobRole role) {
-    // Simulate competency data - in production would come from backend
-    final requiredCourses = (role.id ?? 1) * 2 + 3;
-    final complianceRate = 70 + ((role.id ?? 1) * 5 % 25);
+    final matrixCount = _matrixCourseCount(role);
 
     return Container(
       padding: EdgeInsets.all(PharmaSpacing.cardPadding),
@@ -217,45 +228,22 @@ class _AdminJobSpecListScreenState extends ConsumerState<AdminJobSpecListScreen>
             ],
           ),
           SizedBox(height: PharmaSpacing.md),
-          // Required Courses
           Row(
             children: [
               Icon(Icons.school, size: 16, color: PharmaColors.textTertiary),
               SizedBox(width: PharmaSpacing.xs),
-              Text('$requiredCourses required courses', style: PharmaTypography.caption),
-            ],
-          ),
-          SizedBox(height: PharmaSpacing.sm),
-          // Compliance Rate Bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Compliance', style: PharmaTypography.caption),
-                  Text(
-                    '$complianceRate%',
-                    style: PharmaTypography.caption.copyWith(
-                      color: complianceRate >= 80 ? PharmaColors.success : PharmaColors.warning,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: PharmaSpacing.xs),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: complianceRate / 100,
-                  backgroundColor: PharmaColors.gray200,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    complianceRate >= 80 ? PharmaColors.success : PharmaColors.warning,
-                  ),
-                  minHeight: 6,
+              Expanded(
+                child: Text(
+                  '$matrixCount courses in role matrix (${role.code})',
+                  style: PharmaTypography.caption,
                 ),
               ),
             ],
+          ),
+          SizedBox(height: PharmaSpacing.sm),
+          Text(
+            'Open Training Matrix to edit mandatory curriculum for this role.',
+            style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
           ),
           const Spacer(),
           Row(
@@ -353,63 +341,153 @@ class _AdminJobSpecListScreenState extends ConsumerState<AdminJobSpecListScreen>
 // CREATE JOB SPEC SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminJobSpecCreateScreen extends StatelessWidget {
+class AdminJobSpecCreateScreen extends ConsumerWidget {
   const AdminJobSpecCreateScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _JobSpecTemplate(
-        title: 'Create Job Spec',
-        subtitle: 'Define role expectations and required training.',
-      );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// TRAINING MATRIX SCREEN
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class AdminTrainingMatrixScreen extends StatelessWidget {
-  const AdminTrainingMatrixScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const _JobSpecTemplate(
-        title: 'Training Matrix',
-        subtitle: 'Department and role-level compliance matrix.',
-      );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// GAP ANALYSIS SCREEN
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class AdminGapAnalysisScreen extends StatelessWidget {
-  const AdminGapAnalysisScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const _JobSpecTemplate(
-        title: 'Gap Analysis',
-        subtitle: 'Identify missing training against role requirements.',
-      );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _JobSpecTemplate extends StatelessWidget {
-  const _JobSpecTemplate({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
-  @override
-  Widget build(BuildContext context) => AdminPageFrame(
-        title: title,
-        subtitle: subtitle,
-        children: const [
-          AdminSectionCard(
-            title: 'Coming Soon',
-            child: AdminPlaceholderTable(
-              columns: ['Feature', 'Status', 'ETA'],
-              rows: [
-                ['Full implementation', 'In Progress', 'Q2 2026'],
-              ],
-            ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final roles = ref.watch(adminJobRolesProvider);
+    return AdminPageFrame(
+      title: 'Create Job Spec',
+      subtitle: 'Job roles are seeded per department. Extend curriculum via Training Matrix.',
+      children: [
+        AdminSectionCard(
+          title: 'Existing roles',
+          child: roles.when(
+            loading: () => const CircularProgressIndicator(),
+            error: (e, _) => Text('$e'),
+            data: (list) {
+              if (list.isEmpty) {
+                return Text(
+                  'No job roles returned for the default department query.',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                );
+              }
+              return AdminDataTable(
+                columns: const ['Role', 'Code', 'Dept ID', 'Matrix courses'],
+                rows: list
+                    .map(
+                      (r) => [
+                        r.name,
+                        r.code,
+                        '${r.departmentId}',
+                        '${_JobSpecHelpers.matrixCourseCount(r)}',
+                      ],
+                    )
+                    .toList(),
+              );
+            },
           ),
-        ],
-      );
+        ),
+        AdminSectionCard(
+          title: 'Next step',
+          child: Text(
+            'Use Training Matrix to map courses to a job role. New role records require a server migration or seed in this deployment.',
+            style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _JobSpecHelpers {
+  static int matrixCourseCount(JobRole role) {
+    final raw = role.trainingMatrixJson;
+    if (raw == null || raw.trim().isEmpty) return 0;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded.length;
+      if (decoded is Map) return decoded.length;
+    } catch (_) {}
+    return 0;
+  }
+}
+
+class AdminTrainingMatrixScreen extends ConsumerWidget {
+  const AdminTrainingMatrixScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(adminTrainingMatrixEntriesProvider);
+
+    return AdminPageFrame(
+      title: 'Training Matrix',
+      subtitle: 'Role-to-course mappings (org-wide).',
+      children: [
+        AdminSectionCard(
+          title: 'Entries',
+          child: async.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (entries) {
+              if (entries.isEmpty) {
+                return Text(
+                  'No matrix entries.',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                );
+              }
+              return AdminDataTable(
+                columns: const ['Job role ID', 'Course', 'Mandatory', 'Due days from hire'],
+                rows: entries.take(400).map((TrainingMatrix e) {
+                  final title = e.course?.title ?? 'Course ${e.courseId}';
+                  return [
+                    '${e.jobRoleId}',
+                    title,
+                    e.isMandatory ? 'yes' : 'no',
+                    '${e.dueDaysFromHire}',
+                  ];
+                }).toList(),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AdminGapAnalysisScreen extends ConsumerWidget {
+  const AdminGapAnalysisScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(adminDepartmentComplianceSummaryProvider);
+
+    return AdminPageFrame(
+      title: 'Gap Analysis',
+      subtitle: 'Departments with overdue training and low compliance.',
+      children: [
+        AdminSectionCard(
+          title: 'Department gaps',
+          child: async.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (rows) {
+              final filtered = rows.where((r) => r.overdue > 0 || r.complianceRate < 90).toList();
+              if (filtered.isEmpty) {
+                return Text(
+                  'No departments with overdue>0 or compliance<90%.',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                );
+              }
+              return AdminDataTable(
+                columns: const ['Department', 'Overdue', 'Compliant', 'Rate %'],
+                rows: filtered
+                    .map(
+                      (r) => [
+                        r.departmentName ?? '${r.departmentId ?? ""}',
+                        '${r.overdue}',
+                        '${r.compliant}',
+                        r.complianceRate.toStringAsFixed(1),
+                      ],
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -30,3 +30,17 @@ fields:
   notes: String?
   ### Created timestamp.
   createdAt: DateTime, default=now
+  ### Optional validated facility / room (capacity enforcement roadmap).
+  facility: Facility?, relation(optional)
+  ### Session start time (HH:mm format).
+  startTime: String?
+  ### Session end time (HH:mm format).
+  endTime: String?
+  ### Delivery medium: online, offline, hybrid.
+  medium: String?
+  ### Meeting/conference URL for online/hybrid batches.
+  meetingUrl: String?
+  ### Batch category.
+  category: String?
+  ### Long description.
+  description: String?

@@ -24,6 +24,7 @@ abstract class Notification
     required this.userId,
     this.user,
     required this.type,
+    this.body,
     this.enrollmentId,
     this.enrollment,
     this.sentAt,
@@ -39,6 +40,7 @@ abstract class Notification
     required int userId,
     _i2.PharmaUser? user,
     required String type,
+    String? body,
     int? enrollmentId,
     _i3.Enrollment? enrollment,
     DateTime? sentAt,
@@ -58,6 +60,7 @@ abstract class Notification
               jsonSerialization['user'],
             ),
       type: jsonSerialization['type'] as String,
+      body: jsonSerialization['body'] as String?,
       enrollmentId: jsonSerialization['enrollmentId'] as int?,
       enrollment: jsonSerialization['enrollment'] == null
           ? null
@@ -90,8 +93,11 @@ abstract class Notification
   /// The user to notify.
   _i2.PharmaUser? user;
 
-  /// Type: assignment, reminder_30d, reminder_14d, reminder_7d, reminder_3d, overdue, cert_expiry, cert_expiry_90d, cert_expiry_60d, cert_expiry_30d, cert_expiry_7d, cert_expired, compliance_alert.
+  /// Type: assignment, reminder_30d, reminder_14d, reminder_7d, reminder_3d, overdue, cert_expiry, cert_expiry_90d, cert_expiry_60d, cert_expiry_30d, cert_expiry_7d, cert_expired, compliance_alert, sme_invite, sme_comment, sme_resolved.
   String type;
+
+  /// Short in-app message (optional; avoids generic placeholder text).
+  String? body;
 
   int? enrollmentId;
 
@@ -124,6 +130,7 @@ abstract class Notification
     int? userId,
     _i2.PharmaUser? user,
     String? type,
+    String? body,
     int? enrollmentId,
     _i3.Enrollment? enrollment,
     DateTime? sentAt,
@@ -140,6 +147,7 @@ abstract class Notification
       'userId': userId,
       if (user != null) 'user': user?.toJson(),
       'type': type,
+      if (body != null) 'body': body,
       if (enrollmentId != null) 'enrollmentId': enrollmentId,
       if (enrollment != null) 'enrollment': enrollment?.toJson(),
       if (sentAt != null) 'sentAt': sentAt?.toJson(),
@@ -158,6 +166,7 @@ abstract class Notification
       'userId': userId,
       if (user != null) 'user': user?.toJsonForProtocol(),
       'type': type,
+      if (body != null) 'body': body,
       if (enrollmentId != null) 'enrollmentId': enrollmentId,
       if (enrollment != null) 'enrollment': enrollment?.toJsonForProtocol(),
       if (sentAt != null) 'sentAt': sentAt?.toJson(),
@@ -212,6 +221,7 @@ class _NotificationImpl extends Notification {
     required int userId,
     _i2.PharmaUser? user,
     required String type,
+    String? body,
     int? enrollmentId,
     _i3.Enrollment? enrollment,
     DateTime? sentAt,
@@ -224,6 +234,7 @@ class _NotificationImpl extends Notification {
          userId: userId,
          user: user,
          type: type,
+         body: body,
          enrollmentId: enrollmentId,
          enrollment: enrollment,
          sentAt: sentAt,
@@ -242,6 +253,7 @@ class _NotificationImpl extends Notification {
     int? userId,
     Object? user = _Undefined,
     String? type,
+    Object? body = _Undefined,
     Object? enrollmentId = _Undefined,
     Object? enrollment = _Undefined,
     Object? sentAt = _Undefined,
@@ -255,6 +267,7 @@ class _NotificationImpl extends Notification {
       userId: userId ?? this.userId,
       user: user is _i2.PharmaUser? ? user : this.user?.copyWith(),
       type: type ?? this.type,
+      body: body is String? ? body : this.body,
       enrollmentId: enrollmentId is int? ? enrollmentId : this.enrollmentId,
       enrollment: enrollment is _i3.Enrollment?
           ? enrollment
@@ -280,6 +293,11 @@ class NotificationUpdateTable extends _i1.UpdateTable<NotificationTable> {
 
   _i1.ColumnValue<String, String> type(String value) => _i1.ColumnValue(
     table.type,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> body(String? value) => _i1.ColumnValue(
+    table.body,
     value,
   );
 
@@ -329,6 +347,10 @@ class NotificationTable extends _i1.Table<int?> {
       'type',
       this,
     );
+    body = _i1.ColumnString(
+      'body',
+      this,
+    );
     enrollmentId = _i1.ColumnInt(
       'enrollmentId',
       this,
@@ -364,8 +386,11 @@ class NotificationTable extends _i1.Table<int?> {
   /// The user to notify.
   _i2.PharmaUserTable? _user;
 
-  /// Type: assignment, reminder_30d, reminder_14d, reminder_7d, reminder_3d, overdue, cert_expiry, cert_expiry_90d, cert_expiry_60d, cert_expiry_30d, cert_expiry_7d, cert_expired, compliance_alert.
+  /// Type: assignment, reminder_30d, reminder_14d, reminder_7d, reminder_3d, overdue, cert_expiry, cert_expiry_90d, cert_expiry_60d, cert_expiry_30d, cert_expiry_7d, cert_expired, compliance_alert, sme_invite, sme_comment, sme_resolved.
   late final _i1.ColumnString type;
+
+  /// Short in-app message (optional; avoids generic placeholder text).
+  late final _i1.ColumnString body;
 
   late final _i1.ColumnInt enrollmentId;
 
@@ -418,6 +443,7 @@ class NotificationTable extends _i1.Table<int?> {
     id,
     userId,
     type,
+    body,
     enrollmentId,
     sentAt,
     deliveryStatus,

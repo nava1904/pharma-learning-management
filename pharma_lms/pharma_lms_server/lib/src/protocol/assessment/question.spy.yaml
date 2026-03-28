@@ -8,12 +8,12 @@ fields:
   questionBank: QuestionBank?, relation
   ### Question text.
   text: String
-  ### Type: multiple_choice, true_false.
+  ### Type: multiple_choice, true_false, short_answer, open_ended.
   questionType: String
-  ### Options as JSON array.
+  ### Options as JSON array. Empty for short_answer/open_ended.
   optionsJson: String
-  ### Correct answer index or value.
-  correctAnswer: String
+  ### Correct answer index or value. JSON array of accepted answers for short_answer. Null for open_ended.
+  correctAnswer: String?
   ### Difficulty: easy, medium, hard.
   difficulty: String?
   ### Regulatory tag (e.g., '21 CFR 11', 'GMP', 'ICH Q10').

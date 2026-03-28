@@ -31,7 +31,11 @@ class TrainingEndpoint extends Endpoint {
     if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
     return await TrainingAssignment.db.find(
       session,
-      where: (t) => t.userId.equals(userId),
+      where: (t) =>
+          t.userId.equals(userId) & t.status.equals('active'),
+      include: TrainingAssignment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
     );
   }
 
@@ -86,12 +90,35 @@ class TrainingEndpoint extends Endpoint {
       reason: reason,
       source: source,
     );
-    await TrainingAssignmentService.createEnrollment(
+    final enrollment = await TrainingAssignmentService.createEnrollment(
       session,
       userId: userId,
       courseVersionId: courseVersionId,
       assignmentId: assignment.id!,
     );
+
+    // Create in-app notification for the assigned user
+    try {
+      String courseTitle = 'a training course';
+      final cv = await CourseVersion.db.findById(session, courseVersionId);
+      if (cv != null) {
+        final c = await Course.db.findById(session, cv.courseId);
+        if (c != null) courseTitle = c.title;
+      }
+      await Notification.db.insertRow(
+        session,
+        Notification(
+          userId: userId,
+          type: 'training_assigned',
+          body: 'You have been assigned to "$courseTitle". Please complete it before the due date.',
+          enrollmentId: enrollment.id,
+          sentAt: DateTime.now(),
+          deliveryStatus: 'delivered',
+          channel: 'in_app',
+          createdAt: DateTime.now(),
+        ),
+      );
+    } catch (_) {}
 
     if (forceReassign && oldAssignmentId != null) {
       await AuditService.log(
@@ -708,6 +735,137 @@ class TrainingEndpoint extends Endpoint {
     );
 
     return enrollment;
+  }
+
+  /// Users who have an enrollment on any version of a course you created and published
+  /// (same rules as [CourseEndpoint.listTrainerPublishedCoursesForAssignment]).
+  ///
+  /// When [search] and [limit] are both omitted, returns every distinct learner (legacy).
+  /// When either is set, runs a bounded DB query (search uses ILIKE on name, email, employee id).
+  Future<List<PharmaUser>> listLearnersEnrolledInTrainerPublishedCourses(
+    Session session, {
+    String? search,
+    int? limit,
+  }) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return [];
+    final self = me!;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'assign')) {
+      return [];
+    }
+
+    final courseEndpoint = CourseEndpoint();
+    final courses =
+        await courseEndpoint.listTrainerPublishedCoursesForAssignment(session);
+    if (courses.isEmpty) return [];
+
+    final courseIds = courses.map((c) => c.id!).toSet();
+    final versions = await CourseVersion.db.find(
+      session,
+      where: (t) => t.courseId.inSet(courseIds),
+    );
+    final versionIds = versions.map((v) => v.id!).toList();
+    if (versionIds.isEmpty) return [];
+
+    final useBoundedQuery = search != null || limit != null;
+    if (!useBoundedQuery) {
+      final versionIdSet = versionIds.toSet();
+      final enrollments = await Enrollment.db.find(
+        session,
+        where: (t) => t.courseVersionId.inSet(versionIdSet),
+        include: Enrollment.include(user: PharmaUser.include()),
+      );
+
+      final byId = <int, PharmaUser>{};
+      for (final e in enrollments) {
+        final u = e.user;
+        if (u?.id == null) continue;
+        if (u!.organizationId != self.organizationId) continue;
+        byId[u.id!] = u;
+      }
+      final list = byId.values.toList();
+      list.sort(
+        (a, b) =>
+            '${a.firstName} ${a.lastName}'
+                .compareTo('${b.firstName} ${b.lastName}'),
+      );
+      return list;
+    }
+
+    final lim = (limit ?? 100).clamp(1, 500);
+    final inClause = versionIds.map((id) => id.toString()).join(',');
+    final orgId = self.organizationId;
+    final trimmed = search?.trim();
+    final useText = trimmed != null && trimmed.isNotEmpty;
+    final pat = useText ? '%${_escapeIlikePattern(trimmed)}%' : '';
+
+    final DatabaseResult result;
+    if (useText) {
+      result = await session.db.unsafeQuery(
+        '''
+SELECT DISTINCT u.id
+FROM enrollment e
+INNER JOIN pharma_user u ON u.id = e."userId"
+WHERE e."courseVersionId" IN ($inClause)
+  AND u."organizationId" = @orgId
+  AND u.status = 'active'
+  AND (
+    u."firstName" ILIKE @pat OR u."lastName" ILIKE @pat
+    OR u.email ILIKE @pat OR COALESCE(u."employeeId", '') ILIKE @pat
+  )
+ORDER BY u."firstName", u."lastName"
+LIMIT @lim
+''',
+        parameters: QueryParameters.named({
+          'orgId': orgId,
+          'pat': pat,
+          'lim': lim,
+        }),
+      );
+    } else {
+      result = await session.db.unsafeQuery(
+        '''
+SELECT DISTINCT u.id
+FROM enrollment e
+INNER JOIN pharma_user u ON u.id = e."userId"
+WHERE e."courseVersionId" IN ($inClause)
+  AND u."organizationId" = @orgId
+  AND u.status = 'active'
+ORDER BY u."firstName", u."lastName"
+LIMIT @lim
+''',
+        parameters: QueryParameters.named({
+          'orgId': orgId,
+          'lim': lim,
+        }),
+      );
+    }
+
+    final orderedIds = <int>[];
+    for (final row in result) {
+      final raw = row[0];
+      if (raw is int) {
+        orderedIds.add(raw);
+      } else if (raw is BigInt) {
+        orderedIds.add(raw.toInt());
+      }
+    }
+    if (orderedIds.isEmpty) return [];
+
+    final idSet = orderedIds.toSet();
+    final users = await PharmaUser.db.find(
+      session,
+      where: (u) => u.id.inSet(idSet),
+    );
+    final byId = {for (final u in users) if (u.id != null) u.id!: u};
+    return orderedIds.map((id) => byId[id]).whereType<PharmaUser>().toList();
+  }
+
+  static String _escapeIlikePattern(String s) {
+    return s
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
   }
 
   /// Get all enrollments for a specific course version (trainer view).

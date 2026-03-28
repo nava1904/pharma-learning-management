@@ -118,7 +118,7 @@ String pathForRole(AppRole role) {
     case AppRole.admin:
       return '/admin';
     case AppRole.qa:
-      return '/qa';
+      return '/qa/dashboard';
     case AppRole.trainer:
       return '/trainer';
     case AppRole.auditor:
@@ -131,13 +131,26 @@ String pathForRole(AppRole role) {
 /// Routes allowed per role. Used for sidebar filtering and route guards.
 bool pathAllowedForRole(String path, AppRole role) {
   if (path == '/' || path.isEmpty) return true;
-  if (path.startsWith('/employee') ||
-      path.startsWith('/courses') ||
-      path.startsWith('/learning') ||
-      path.startsWith('/training-timeline')) {
+  // Public certificate verification (also allowed without role in router redirect).
+  if (path.startsWith('/verify/')) return true;
+  if (path.startsWith('/assessment-v2')) {
     return role == AppRole.employee ||
         role == AppRole.admin ||
         role == AppRole.trainer;
+  }
+  if (path.startsWith('/employee')) {
+    // Trainers and QA may open the employee course viewer for preview (same UI as learners).
+    if ((role == AppRole.trainer || role == AppRole.qa) &&
+        path.startsWith('/employee/course/')) {
+      return true;
+    }
+    return role == AppRole.employee || role == AppRole.admin;
+  }
+  // Employee-style catalog (trainers use /trainer; admins may preview as learner).
+  if (path.startsWith('/courses') ||
+      path.startsWith('/learning') ||
+      path.startsWith('/training-timeline')) {
+    return role == AppRole.employee || role == AppRole.admin;
   }
   if (path.startsWith('/admin')) {
     if (path.contains('training-waivers')) {
@@ -184,7 +197,7 @@ bool pathAllowedForRole(String path, AppRole role) {
         role == AppRole.admin ||
         role == AppRole.trainer;
   }
-  return true;
+  return false;
 }
 
 /// Current selected role (for demo login or real auth). Null = not logged in.

@@ -1,0 +1,26 @@
+### Student submission for an assignment.
+class: AssignmentSubmission
+
+table: assignment_submission
+
+fields:
+  ### The assignment being submitted to.
+  assignment: Assignment?, relation
+  ### The user who submitted.
+  user: PharmaUser?, relation(optional)
+  ### URL submission.
+  submissionUrl: String?
+  ### File upload storage key.
+  storageKey: String?
+  ### Original file name.
+  fileName: String?
+  ### Status: submitted, graded, returned.
+  status: String, default='submitted'
+  ### Grade (0-100).
+  grade: int?
+  ### Instructor feedback.
+  feedback: String?
+  ### Submitted timestamp.
+  submittedAt: DateTime, default=now
+  ### Graded timestamp.
+  gradedAt: DateTime?

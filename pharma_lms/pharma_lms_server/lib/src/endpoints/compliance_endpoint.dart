@@ -63,4 +63,92 @@ class ComplianceEndpoint extends Endpoint {
       threshold: threshold,
     );
   }
+
+  /// E-signature readiness for the learner dashboard: signed training records,
+  /// pending retraining acknowledgement, and assessments awaiting signature.
+  Future<List<Map<String, dynamic>>> getEsignatureSummaryForUser(
+    Session session,
+    int userId,
+  ) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null || me!.id != userId) return [];
+
+    final out = <Map<String, dynamic>>[];
+
+    final records = await TrainingRecord.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+      orderBy: (t) => t.completedAt,
+      orderDescending: true,
+      limit: 8,
+      include: TrainingRecord.include(
+        esignature: ElectronicSignature.include(),
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    for (final r in records) {
+      final es = r.esignature;
+      out.add({
+        'kind': 'signed',
+        'courseTitle': r.courseVersion?.course?.title ?? 'Training',
+        'signedAt':
+            es?.timestamp.toIso8601String() ?? r.completedAt.toIso8601String(),
+        'integrityHash': es?.integrityHash,
+      });
+    }
+
+    final needAck = await Enrollment.db.find(
+      session,
+      where: (t) =>
+          t.userId.equals(userId) &
+          t.retrainingChangeSummary.notEquals(null) &
+          t.acknowledgedAt.equals(null),
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+      limit: 10,
+    );
+    for (final e in needAck) {
+      out.add({
+        'kind': 'pending_ack',
+        'courseTitle': e.courseVersion?.course?.title ?? 'Course',
+        'dueDate': null,
+      });
+    }
+
+    final attempts = await AssessmentAttempt.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.completedAt.notEquals(null),
+      orderBy: (t) => t.completedAt,
+      orderDescending: true,
+      limit: 15,
+      include: AssessmentAttempt.include(
+        enrollment: Enrollment.include(
+          courseVersion: CourseVersion.include(course: Course.include()),
+        ),
+      ),
+    );
+    for (final a in attempts) {
+      if (a.id == null) continue;
+      final sig = await ElectronicSignature.db.findFirstRow(
+        session,
+        where: (s) =>
+            s.userId.equals(userId) &
+            s.entityType.equals('assessment_attempt') &
+            s.entityId.equals(a.id!.toString()) &
+            s.isValid.equals(true),
+      );
+      if (sig != null) continue;
+      final title =
+          a.enrollment?.courseVersion?.course?.title ?? 'Assessment';
+      out.add({
+        'kind': 'pending_signature',
+        'courseTitle': title,
+        'attemptId': a.id,
+        'completedAt': a.completedAt?.toIso8601String(),
+      });
+    }
+
+    return out;
+  }
 }

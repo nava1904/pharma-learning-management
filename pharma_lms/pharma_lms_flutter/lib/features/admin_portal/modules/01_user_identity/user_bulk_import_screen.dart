@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
+import 'package:pharma_lms_flutter/core/file_download.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
 
 /// User Bulk Import Screen
 /// 
@@ -16,7 +23,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 /// - Display results (success/failures)
 /// 
 /// CSV Format:
-/// first_name,last_name,email,employee_id,phone,department,organization,role,hire_date
+/// employeeId,email,firstName,lastName,organizationId,siteId,departmentId,jobRoleId,role
 class UserBulkImportScreen extends ConsumerStatefulWidget {
   const UserBulkImportScreen({super.key});
 
@@ -30,52 +37,34 @@ class _UserBulkImportScreenState extends ConsumerState<UserBulkImportScreen> {
   String? selectedFileName;
   List<Map<String, String>> previewData = [];
   bool showPreview = false;
+  Uint8List? _csvBytes;
 
   Future<void> _selectFile() async {
-    // TODO: Use file picker to select CSV
-    // final result = await FilePicker.platform.pickFiles(
-    //   type: FileType.custom,
-    //   allowedExtensions: ['csv'],
-    // );
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      withData: true,
+    );
+    if (res == null || res.files.isEmpty) return;
 
-    // TEMPORARY: Simulate file selection
+    final file = res.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to read CSV bytes'),
+          backgroundColor: PharmaColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final parsed = _parseCsvPreview(bytes);
     setState(() {
-      selectedFileName = 'users_import_20240321.csv';
-      previewData = [
-        {
-          'first_name': 'John',
-          'last_name': 'Employee1',
-          'email': 'john.e1@pharmatest.com',
-          'employee_id': 'EMP101',
-          'phone': '+1 (555) 111-1111',
-          'department': 'Sales',
-          'organization': 'HQ',
-          'role': 'EMPLOYEE',
-          'hire_date': '2024-03-21',
-        },
-        {
-          'first_name': 'Sarah',
-          'last_name': 'Trainer1',
-          'email': 'sarah.trainer@pharmatest.com',
-          'employee_id': 'EMP102',
-          'phone': '+1 (555) 222-2222',
-          'department': 'Training',
-          'organization': 'Training Center',
-          'role': 'TRAINER',
-          'hire_date': '2024-03-20',
-        },
-        {
-          'first_name': 'Mike',
-          'last_name': 'Employee2',
-          'email': 'mike.e2@pharmatest.com',
-          'employee_id': 'EMP103',
-          'phone': '+1 (555) 333-3333',
-          'department': 'Operations',
-          'organization': 'HQ',
-          'role': 'EMPLOYEE',
-          'hire_date': '2024-03-19',
-        },
-      ];
+      selectedFileName = file.name;
+      _csvBytes = bytes;
+      previewData = parsed;
       showPreview = true;
     });
   }
@@ -84,17 +73,19 @@ class _UserBulkImportScreenState extends ConsumerState<UserBulkImportScreen> {
     setState(() => isLoading = true);
 
     try {
-      // TODO: Call backend endpoint to bulk import users
-      // final result = await ref.read(bulkImportUsersProvider.notifier).importUsers(
-      //   csvData: previewData,
-      // );
+      final bytes = _csvBytes;
+      if (bytes == null) throw Exception('No CSV selected');
 
-      // TEMPORARY: Simulate import
-      await Future.delayed(const Duration(seconds: 2));
+      final me = await ref.read(currentUserProvider.future);
+      if (me?.id == null) throw Exception('Not authenticated');
 
-      if (mounted) {
-        _showImportResults();
-      }
+      final result = await client.admin.bulkImportUsers(
+        csvBase64: base64Encode(bytes),
+        assignedById: me!.id!,
+      );
+
+      if (!mounted) return;
+      _showImportResults(imported: result.imported, errors: result.errors);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +102,29 @@ class _UserBulkImportScreenState extends ConsumerState<UserBulkImportScreen> {
     }
   }
 
-  void _showImportResults() {
+  List<Map<String, String>> _parseCsvPreview(Uint8List bytes) {
+    final csv = utf8.decode(bytes);
+    final lines = csv.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    if (lines.isEmpty) return [];
+
+    final headers = lines.first
+        .split(',')
+        .map((s) => s.trim().replaceAll('"', ''))
+        .toList();
+
+    final out = <Map<String, String>>[];
+    for (var i = 1; i < lines.length && out.length < 20; i++) {
+      final cols = lines[i].split(',').map((s) => s.trim().replaceAll('"', '')).toList();
+      final row = <String, String>{};
+      for (var c = 0; c < headers.length; c++) {
+        row[headers[c]] = c < cols.length ? cols[c] : '';
+      }
+      out.add(row);
+    }
+    return out;
+  }
+
+  void _showImportResults({required int imported, required List<String> errors}) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -120,17 +133,26 @@ class _UserBulkImportScreenState extends ConsumerState<UserBulkImportScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildResultRow('Successful', '3', PharmaColors.success),
-            _buildResultRow('Failed', '0', PharmaColors.danger),
-            _buildResultRow('Skipped', '0', PharmaColors.warning),
+            _buildResultRow('Imported', '$imported', PharmaColors.success),
+            _buildResultRow('Errors', '${errors.length}', errors.isEmpty ? PharmaColors.success : PharmaColors.danger),
             SizedBox(height: PharmaSpacing.md),
             Text(
-              'All users have been imported successfully!',
+              errors.isEmpty
+                  ? 'All rows imported successfully.'
+                  : 'Some rows failed validation. You can download the error report.',
               style: PharmaTypography.caption,
             ),
           ],
         ),
         actions: [
+          if (errors.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                final bytes = Uint8List.fromList(utf8.encode(errors.join('\n')));
+                await saveBytesToFile(bytes, 'user_bulk_import_errors.txt');
+              },
+              child: const Text('Download Errors'),
+            ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogContext);
@@ -206,8 +228,8 @@ class _UserBulkImportScreenState extends ConsumerState<UserBulkImportScreen> {
                   ),
                   SizedBox(height: PharmaSpacing.sm),
                   Text(
-                    'first_name, last_name, email, employee_id, phone, '
-                    'department, organization, role, hire_date',
+                    'employeeId, email, firstName, lastName, organizationId, '
+                    'siteId, departmentId, jobRoleId, role',
                     style: PharmaTypography.caption.copyWith(
                       color: PharmaColors.infoText,
                       fontFamily: 'monospace',
@@ -215,7 +237,7 @@ class _UserBulkImportScreenState extends ConsumerState<UserBulkImportScreen> {
                   ),
                   SizedBox(height: PharmaSpacing.md),
                   Text(
-                    'All fields except phone are required. Email and employee_id must be unique.',
+                    'All fields are required. IDs must be valid integers. Role must exist (e.g. admin, trainer, employee, qa_manager...).',
                     style: PharmaTypography.caption.copyWith(
                       color: PharmaColors.infoText,
                     ),

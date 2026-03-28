@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// VYUH LMS — CREDENTIALS WALLET (Screen 6)
+// Vyuh lms — credentials wallet (screen 6)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Master Prompt Section 3.6: Credentials Wallet

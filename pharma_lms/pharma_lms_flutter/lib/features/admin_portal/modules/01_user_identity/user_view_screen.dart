@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
+import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 
 /// User View Screen
 /// 
@@ -39,7 +42,6 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
   bool isLoading = true;
   String? errorMessage;
   
-  // Mock user data
   late Map<String, dynamic> userData;
 
   @override
@@ -50,31 +52,33 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      // TODO: Fetch user data from backend
-      // final user = await ref.read(adminUserDetailProvider(widget.userId).future);
-      
-      // TEMPORARY: Mock user data
-      await Future.delayed(const Duration(milliseconds: 500));
-      
+      final user = await ref.read(adminUserDetailProvider(widget.userId).future);
       if (mounted) {
-        setState(() {
-          userData = {
-            'id': widget.userId,
-            'employee_id': 'EMP002',
-            'first_name': 'Jane',
-            'last_name': 'Trainer',
-            'email': 'jane.trainer@pharmatest.com',
-            'phone': '+1 (555) 234-5678',
-            'organization': 'Training Center',
-            'department': 'Training',
-            'role': 'TRAINER',
-            'status': 'active',
-            'hire_date': '2024-02-01',
-            'created_at': '2024-01-15T10:30:00Z',
-            'last_login': '2024-03-20T14:22:00Z',
-          };
-          isLoading = false;
-        });
+        if (user == null) {
+          setState(() {
+            errorMessage = 'User not found';
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            userData = {
+              'id': user.id,
+              'employee_id': user.employeeId,
+              'first_name': user.firstName,
+              'last_name': user.lastName,
+              'email': user.email,
+              // 'phone': user.phone ?? '', // PharmaUser has no phone field
+              'organization': user.organizationId.toString(),
+              'department': user.departmentId.toString(),
+              'role': user.jobRole?.name ?? '',
+              'status': user.status,
+              'hire_date': user.hireDate?.toString() ?? '',
+              'created_at': user.createdAt.toString(),
+              'last_login': user.lastLogin?.toString() ?? '',
+            };
+            isLoading = false;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -104,9 +108,9 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: PharmaColors.danger,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              // TODO: Call backend endpoint
+              await ref.read(adminDeactivateUserProvider(widget.userId).future);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -137,22 +141,30 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: PharmaColors.primary,
-            ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              // TODO: Call backend endpoint
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Password reset email sent to ${userData['email']}',
+              try {
+                await client.emailIdp.startPasswordReset(
+                  email: userData['email'] as String,
+                );
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Password reset email requested for ${userData['email']}'),
+                    backgroundColor: PharmaColors.success,
                   ),
-                  backgroundColor: PharmaColors.success,
-                ),
-              );
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to request password reset: $e'),
+                    backgroundColor: PharmaColors.danger,
+                  ),
+                );
+              }
             },
-            child: const Text('Send Email'),
+            child: const Text('Send Reset Email'),
           ),
         ],
       ),
@@ -201,8 +213,7 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
             icon: const Icon(Icons.edit),
             tooltip: 'Edit User',
             onPressed: () {
-              // TODO: Navigate to edit screen
-              // context.push('/users/${widget.userId}/edit');
+              context.push('/admin/users/directory/view/${widget.userId}/edit');
             },
           ),
           IconButton(
@@ -227,7 +238,6 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
               [
                 _buildInfoRow('Email', userData['email']),
                 _buildInfoRow('Employee ID', userData['employee_id']),
-                _buildInfoRow('Phone', userData['phone']),
                 _buildInfoRow('Status', statusLabel, statusColor),
               ],
             ),
@@ -454,7 +464,7 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
-                  // TODO: Navigate to edit screen
+                  context.push('/admin/users/directory/view/${widget.userId}/edit');
                 },
               ),
               ElevatedButton.icon(
@@ -474,7 +484,10 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
-                  // TODO: Navigate to audit trail screen
+                  context.push(
+                    '/admin/users/directory/view/${widget.userId}/audit-trail',
+                    extra: '${userData['first_name']} ${userData['last_name']}',
+                  );
                 },
               ),
               ElevatedButton.icon(
@@ -485,7 +498,10 @@ class _UserViewScreenState extends ConsumerState<UserViewScreen> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
-                  // TODO: Navigate to access logs screen
+                  context.push(
+                    '/admin/users/directory/view/${widget.userId}/access-logs',
+                    extra: '${userData['first_name']} ${userData['last_name']}',
+                  );
                 },
               ),
               ElevatedButton.icon(

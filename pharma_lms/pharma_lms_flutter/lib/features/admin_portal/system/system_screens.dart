@@ -1,11 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' show Organization;
+import 'package:pharma_lms_flutter/core/client.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SYSTEM SETTINGS SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/// Keys stored in `system_configuration` for the signed-in organization.
+abstract final class _OrgSettingKeys {
+  static const supportEmail = 'support_email';
+  static const timezone = 'timezone';
+  static const primaryLanguage = 'primary_language';
+  static const dateFormat = 'date_format';
+  static const passwordExpiryDays = 'password_expiry_days';
+  static const sessionTimeoutMinutes = 'session_timeout_minutes';
+  static const mfaRequired = 'mfa_required';
+  static const auditRetentionYears = 'audit_retention_years';
+}
+
+abstract final class _OrgSettingDefaults {
+  static String val(String key) => switch (key) {
+        _OrgSettingKeys.supportEmail => '',
+        _OrgSettingKeys.timezone => 'UTC',
+        _OrgSettingKeys.primaryLanguage => 'en-US',
+        _OrgSettingKeys.dateFormat => 'YYYY-MM-DD',
+        _OrgSettingKeys.passwordExpiryDays => '90',
+        _OrgSettingKeys.sessionTimeoutMinutes => '30',
+        _OrgSettingKeys.mfaRequired => 'false',
+        _OrgSettingKeys.auditRetentionYears => '7',
+        _ => '',
+      };
+}
 
 class AdminSystemSettingsScreen extends ConsumerStatefulWidget {
   const AdminSystemSettingsScreen({super.key});
@@ -15,34 +45,159 @@ class AdminSystemSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsScreen> {
-  // Sample settings - in production would come from backend
-  final Map<String, dynamic> _settings = {
-    'orgName': 'PharmaCorp India Pvt Ltd',
-    'timezone': 'Asia/Kolkata',
-    'primaryLanguage': 'en-US',
-    'dateFormat': 'DD/MM/YYYY',
-    'passwordExpiryDays': 90,
-    'sessionTimeoutMinutes': 30,
-    'mfaEnabled': true,
-    'auditRetentionYears': 7,
-  };
+  int? _organizationId;
+
+  final _orgName = TextEditingController();
+  final _orgCode = TextEditingController();
+  final _supportEmail = TextEditingController();
+  final _passwordExpiryDays = TextEditingController();
+  final _sessionTimeoutMinutes = TextEditingController();
+  final _auditRetentionYears = TextEditingController();
+
+  String _timezone = _OrgSettingDefaults.val(_OrgSettingKeys.timezone);
+  String _primaryLanguage = _OrgSettingDefaults.val(_OrgSettingKeys.primaryLanguage);
+  String _dateFormat = _OrgSettingDefaults.val(_OrgSettingKeys.dateFormat);
+  bool _mfaRequired = false;
+
+  bool _loading = true;
+  bool _saving = false;
+  String? _loadError;
+
+  static const _timezones = ['UTC', 'Asia/Kolkata', 'America/New_York', 'Europe/London'];
+  static const _languages = ['en-US', 'en-GB', 'hi-IN', 'fr-FR', 'de-DE'];
+  static const _dateFormats = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _orgName.dispose();
+    _orgCode.dispose();
+    _supportEmail.dispose();
+    _passwordExpiryDays.dispose();
+    _sessionTimeoutMinutes.dispose();
+    _auditRetentionYears.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      if (user == null) {
+        setState(() {
+          _loading = false;
+          _loadError = 'Not signed in';
+        });
+        return;
+      }
+      final orgId = user.organizationId;
+      final org = await client.organization.getOrganization(orgId);
+      final rows = await client.organization.listOrganizationSettings(orgId);
+      final map = {for (final r in rows) r.key: r.value};
+
+      String pick(String key) => (map[key] != null && map[key]!.isNotEmpty) ? map[key]! : _OrgSettingDefaults.val(key);
+
+      if (!mounted) return;
+      setState(() {
+        _organizationId = orgId;
+        _orgName.text = org?.name ?? '';
+        _orgCode.text = org?.code ?? '';
+        _supportEmail.text = pick(_OrgSettingKeys.supportEmail);
+        _passwordExpiryDays.text = pick(_OrgSettingKeys.passwordExpiryDays);
+        _sessionTimeoutMinutes.text = pick(_OrgSettingKeys.sessionTimeoutMinutes);
+        _auditRetentionYears.text = pick(_OrgSettingKeys.auditRetentionYears);
+        _timezone = pick(_OrgSettingKeys.timezone);
+        if (!_timezones.contains(_timezone)) _timezone = _timezones.first;
+        _primaryLanguage = pick(_OrgSettingKeys.primaryLanguage);
+        if (!_languages.contains(_primaryLanguage)) _primaryLanguage = _languages.first;
+        _dateFormat = pick(_OrgSettingKeys.dateFormat);
+        if (!_dateFormats.contains(_dateFormat)) _dateFormat = _dateFormats.first;
+        _mfaRequired = pick(_OrgSettingKeys.mfaRequired).toLowerCase() == 'true';
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadError = '$e';
+        });
+      }
+    }
+  }
+
+  Future<void> _save() async {
+    final orgId = _organizationId;
+    if (orgId == null) return;
+    setState(() => _saving = true);
+    try {
+      await client.organization.updateOrganization(
+        organizationId: orgId,
+        name: _orgName.text.trim().isEmpty ? null : _orgName.text.trim(),
+        code: _orgCode.text.trim().isEmpty ? null : _orgCode.text.trim(),
+      );
+
+      Future<void> put(String key, String value) =>
+          client.organization.upsertOrganizationSetting(organizationId: orgId, key: key, value: value);
+
+      await put(_OrgSettingKeys.supportEmail, _supportEmail.text.trim());
+      await put(_OrgSettingKeys.timezone, _timezone);
+      await put(_OrgSettingKeys.primaryLanguage, _primaryLanguage);
+      await put(_OrgSettingKeys.dateFormat, _dateFormat);
+      await put(_OrgSettingKeys.passwordExpiryDays, _passwordExpiryDays.text.trim());
+      await put(_OrgSettingKeys.sessionTimeoutMinutes, _sessionTimeoutMinutes.text.trim());
+      await put(_OrgSettingKeys.mfaRequired, _mfaRequired ? 'true' : 'false');
+      await put(_OrgSettingKeys.auditRetentionYears, _auditRetentionYears.text.trim());
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings saved')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e'), backgroundColor: PharmaColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_loadError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_loadError!, style: TextStyle(color: PharmaColors.danger)),
+            TextButton(onPressed: _load, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(PharmaSpacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Page Header
           _buildPageHeader(),
           SizedBox(height: PharmaSpacing.sectionGap),
-
-          // Settings Sections
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left Column
               Expanded(
                 child: Column(
                   children: [
@@ -53,7 +208,6 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
                 ),
               ),
               SizedBox(width: PharmaSpacing.md),
-              // Right Column
               Expanded(
                 child: Column(
                   children: [
@@ -80,19 +234,17 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
             Text('System Settings', style: PharmaTypography.displayLarge),
             SizedBox(height: PharmaSpacing.xs),
             Text(
-              'Organization profile, timezone, locale, and defaults',
+              'Organization profile and org-scoped configuration (database)',
               style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
             ),
           ],
         ),
         ElevatedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Settings saved successfully')),
-            );
-          },
-          icon: const Icon(Icons.save_outlined, size: 18),
-          label: const Text('Save Changes'),
+          onPressed: _saving ? null : _save,
+          icon: _saving
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.save_outlined, size: 18),
+          label: Text(_saving ? 'Saving…' : 'Save Changes'),
           style: ElevatedButton.styleFrom(
             backgroundColor: PharmaColors.emerald600,
             foregroundColor: Colors.white,
@@ -107,9 +259,11 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
       title: 'Organization',
       icon: Icons.business_outlined,
       children: [
-        _buildTextSetting('Organization Name', _settings['orgName'], (v) {}),
+        _buildLabeledField('Organization name', _orgName),
         SizedBox(height: PharmaSpacing.md),
-        _buildTextSetting('Support Email', 'support@pharmacorp.com', (v) {}),
+        _buildLabeledField('Organization code', _orgCode),
+        SizedBox(height: PharmaSpacing.md),
+        _buildLabeledField('Support email', _supportEmail),
       ],
     );
   }
@@ -119,26 +273,11 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
       title: 'Localization',
       icon: Icons.language_outlined,
       children: [
-        _buildDropdownSetting(
-          'Timezone',
-          _settings['timezone'],
-          ['Asia/Kolkata', 'America/New_York', 'Europe/London', 'UTC'],
-          (v) {},
-        ),
+        _buildDropdown('Timezone', _timezone, _timezones, (v) => setState(() => _timezone = v ?? _timezone)),
         SizedBox(height: PharmaSpacing.md),
-        _buildDropdownSetting(
-          'Primary Language',
-          _settings['primaryLanguage'],
-          ['en-US', 'en-GB', 'hi-IN', 'fr-FR', 'de-DE'],
-          (v) {},
-        ),
+        _buildDropdown('Primary language', _primaryLanguage, _languages, (v) => setState(() => _primaryLanguage = v ?? _primaryLanguage)),
         SizedBox(height: PharmaSpacing.md),
-        _buildDropdownSetting(
-          'Date Format',
-          _settings['dateFormat'],
-          ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'],
-          (v) {},
-        ),
+        _buildDropdown('Date format', _dateFormat, _dateFormats, (v) => setState(() => _dateFormat = v ?? _dateFormat)),
       ],
     );
   }
@@ -148,11 +287,21 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
       title: 'Security',
       icon: Icons.security_outlined,
       children: [
-        _buildNumberSetting('Password Expiry (days)', _settings['passwordExpiryDays'], (v) {}),
+        _buildLabeledField('Password expiry (days)', _passwordExpiryDays, number: true),
         SizedBox(height: PharmaSpacing.md),
-        _buildNumberSetting('Session Timeout (minutes)', _settings['sessionTimeoutMinutes'], (v) {}),
+        _buildLabeledField('Session timeout (minutes)', _sessionTimeoutMinutes, number: true),
         SizedBox(height: PharmaSpacing.md),
-        _buildToggleSetting('Multi-Factor Authentication', _settings['mfaEnabled'], (v) {}),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Require MFA (policy flag)', style: PharmaTypography.body),
+            Switch(
+              value: _mfaRequired,
+              onChanged: (v) => setState(() => _mfaRequired = v),
+              activeThumbColor: PharmaColors.emerald600,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -162,7 +311,7 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
       title: 'Compliance',
       icon: Icons.verified_outlined,
       children: [
-        _buildNumberSetting('Audit Log Retention (years)', _settings['auditRetentionYears'], (v) {}),
+        _buildLabeledField('Audit log retention (years)', _auditRetentionYears, number: true),
         SizedBox(height: PharmaSpacing.md),
         Container(
           padding: EdgeInsets.all(PharmaSpacing.sm),
@@ -176,7 +325,7 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
               SizedBox(width: PharmaSpacing.sm),
               Expanded(
                 child: Text(
-                  'FDA 21 CFR Part 11 compliant audit logging enabled',
+                  'Values persist in system_configuration. MFA enforcement still depends on auth/MFA services.',
                   style: PharmaTypography.caption.copyWith(color: PharmaColors.info),
                 ),
               ),
@@ -213,15 +362,15 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
     );
   }
 
-  Widget _buildTextSetting(String label, String value, Function(String) onChanged) {
+  Widget _buildLabeledField(String label, TextEditingController c, {bool number = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
         SizedBox(height: PharmaSpacing.xs),
         TextField(
-          controller: TextEditingController(text: value),
-          onChanged: onChanged,
+          controller: c,
+          keyboardType: number ? TextInputType.number : TextInputType.text,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(PharmaRadius.sm)),
             contentPadding: EdgeInsets.symmetric(horizontal: PharmaSpacing.md, vertical: PharmaSpacing.sm),
@@ -231,14 +380,14 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
     );
   }
 
-  Widget _buildDropdownSetting(String label, String value, List<String> options, Function(String?) onChanged) {
+  Widget _buildDropdown(String label, String value, List<String> options, void Function(String?) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
         SizedBox(height: PharmaSpacing.xs),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          initialValue: options.contains(value) ? value : options.first,
           items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
@@ -249,56 +398,60 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
       ],
     );
   }
-
-  Widget _buildNumberSetting(String label, int value, Function(int) onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
-        SizedBox(height: PharmaSpacing.xs),
-        TextField(
-          controller: TextEditingController(text: value.toString()),
-          keyboardType: TextInputType.number,
-          onChanged: (v) => onChanged(int.tryParse(v) ?? value),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(PharmaRadius.sm)),
-            contentPadding: EdgeInsets.symmetric(horizontal: PharmaSpacing.md, vertical: PharmaSpacing.sm),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildToggleSetting(String label, bool value, Function(bool) onChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: PharmaTypography.body),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: PharmaColors.emerald600,
-        ),
-      ],
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SYSTEM HEALTH SCREEN
+// SYSTEM HEALTH SCREEN (live: analytics.getSystemHealth)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminSystemHealthScreen extends ConsumerWidget {
+class AdminSystemHealthScreen extends ConsumerStatefulWidget {
   const AdminSystemHealthScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdminSystemHealthScreen> createState() => _AdminSystemHealthScreenState();
+}
+
+class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScreen> {
+  Map<String, dynamic>? _health;
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final h = await client.analytics.getSystemHealth();
+      if (mounted) {
+        setState(() {
+          _health = h;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = '$e';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(PharmaSpacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Page Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -308,73 +461,76 @@ class AdminSystemHealthScreen extends ConsumerWidget {
                   Text('System Health', style: PharmaTypography.displayLarge),
                   SizedBox(height: PharmaSpacing.xs),
                   Text(
-                    'Service health, storage, queue lag, and response metrics',
+                    'Database connectivity, job queue (DLQ), and recent scheduled jobs (IT-02).',
                     style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: PharmaSpacing.sm, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: PharmaColors.successBg,
-                      borderRadius: BorderRadius.circular(PharmaRadius.sm),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle, size: 14, color: PharmaColors.success),
-                        const SizedBox(width: 4),
-                        Text(
-                          'All Systems Operational',
-                          style: PharmaTypography.caption.copyWith(
-                            color: PharmaColors.success,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: PharmaSpacing.md),
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Refresh'),
-                  ),
-                ],
+              OutlinedButton.icon(
+                onPressed: _loading ? null : _load,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh'),
               ),
             ],
           ),
           SizedBox(height: PharmaSpacing.sectionGap),
-
-          // Health Metrics
-          _buildHealthMetrics(),
-          SizedBox(height: PharmaSpacing.sectionGap),
-
-          // Services Status
-          _buildServicesStatus(),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(_error!, style: TextStyle(color: PharmaColors.danger)),
+            )
+          else if (_loading && _health == null)
+            const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+          else if (_health != null) ...[
+            _buildMetricRow(context),
+            SizedBox(height: PharmaSpacing.sectionGap),
+            _buildRecentJobs(_health!),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildHealthMetrics() {
-    return Row(
+  Widget _buildMetricRow(BuildContext context) {
+    final h = _health!;
+    final dbOk = h['databaseConnected'] == true;
+    final dlq = h['dlqCount'];
+    final lag = h['kafkaConsumerLag'];
+    return Wrap(
+      spacing: PharmaSpacing.md,
+      runSpacing: PharmaSpacing.md,
       children: [
-        _buildHealthCard('API Response', '45ms', Icons.speed_outlined, PharmaColors.success),
-        SizedBox(width: PharmaSpacing.md),
-        _buildHealthCard('Database', '99.9%', Icons.storage_outlined, PharmaColors.success),
-        SizedBox(width: PharmaSpacing.md),
-        _buildHealthCard('Queue Lag', '0.2s', Icons.queue_outlined, PharmaColors.success),
-        SizedBox(width: PharmaSpacing.md),
-        _buildHealthCard('Storage Used', '45%', Icons.cloud_outlined, PharmaColors.info),
+        _buildHealthCard(
+          'Database',
+          dbOk ? 'Connected' : 'Unreachable',
+          Icons.storage_outlined,
+          dbOk ? PharmaColors.success : PharmaColors.danger,
+        ),
+        _buildHealthCard(
+          'Dead-letter queue',
+          dlq == null ? '—' : '$dlq unresolved',
+          Icons.queue_outlined,
+          (dlq is int && dlq > 0) ? PharmaColors.warningText : PharmaColors.success,
+        ),
+        _buildHealthCard(
+          'Event consumer lag',
+          lag == null ? '—' : '$lag',
+          Icons.hub_outlined,
+          PharmaColors.info,
+        ),
       ],
     );
   }
 
   Widget _buildHealthCard(String label, String value, IconData icon, Color color) {
-    return Expanded(
+    return SizedBox(
+      width: 200,
       child: Container(
         padding: EdgeInsets.all(PharmaSpacing.cardPadding),
         decoration: BoxDecoration(
@@ -386,22 +542,9 @@ class AdminSystemHealthScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: color),
-                const Spacer(),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ),
+            Icon(icon, size: 20, color: color),
             SizedBox(height: PharmaSpacing.md),
-            Text(value, style: PharmaTypography.displayLarge),
+            Text(value, style: PharmaTypography.headingSmall),
             SizedBox(height: PharmaSpacing.xs),
             Text(label, style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
           ],
@@ -410,16 +553,17 @@ class AdminSystemHealthScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildServicesStatus() {
-    final services = [
-      {'name': 'Web Application', 'status': 'operational', 'uptime': '99.99%'},
-      {'name': 'API Gateway', 'status': 'operational', 'uptime': '99.98%'},
-      {'name': 'Database Cluster', 'status': 'operational', 'uptime': '99.99%'},
-      {'name': 'File Storage', 'status': 'operational', 'uptime': '99.95%'},
-      {'name': 'Email Service', 'status': 'operational', 'uptime': '99.90%'},
-      {'name': 'Background Jobs', 'status': 'operational', 'uptime': '99.97%'},
-    ];
-
+  Widget _buildRecentJobs(Map<String, dynamic> h) {
+    final raw = h['recentJobs'];
+    final jobs = raw is List ? raw : <dynamic>[];
+    final rows = <List<String>>[];
+    for (final j in jobs) {
+      if (j is! Map) continue;
+      final name = j['jobName']?.toString() ?? '';
+      final status = j['status']?.toString() ?? '';
+      final started = j['startedAt']?.toString() ?? '';
+      rows.add([name, status, started]);
+    }
     return Container(
       padding: EdgeInsets.all(PharmaSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -431,47 +575,18 @@ class AdminSystemHealthScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Services Status', style: PharmaTypography.headingSmall),
+          Text('Recent scheduled jobs', style: PharmaTypography.headingSmall),
           SizedBox(height: PharmaSpacing.md),
-          ...services.map((s) => _buildServiceRow(s)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceRow(Map<String, String> service) {
-    final isOperational = service['status'] == 'operational';
-    
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: PharmaSpacing.sm),
-      child: Row(
-        children: [
-          Icon(
-            isOperational ? Icons.check_circle : Icons.error,
-            size: 18,
-            color: isOperational ? PharmaColors.success : PharmaColors.danger,
-          ),
-          SizedBox(width: PharmaSpacing.md),
-          Expanded(child: Text(service['name']!, style: PharmaTypography.body)),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: PharmaSpacing.sm, vertical: 2),
-            decoration: BoxDecoration(
-              color: isOperational ? PharmaColors.successBg : PharmaColors.dangerBg,
-              borderRadius: BorderRadius.circular(PharmaRadius.sm),
+          if (rows.isEmpty)
+            Text(
+              'No recent job logs.',
+              style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+            )
+          else
+            AdminDataTable(
+              columns: const ['Job', 'Status', 'Started'],
+              rows: rows,
             ),
-            child: Text(
-              service['status']!.toUpperCase(),
-              style: PharmaTypography.caption.copyWith(
-                color: isOperational ? PharmaColors.success : PharmaColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SizedBox(width: PharmaSpacing.md),
-          Text(
-            service['uptime']!,
-            style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
-          ),
         ],
       ),
     );
@@ -479,76 +594,206 @@ class AdminSystemHealthScreen extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// OTHER SYSTEM SCREENS - Placeholders
+// INTEGRATION & POLICY (org context + links to implemented admin modules)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminHrIntegrationScreen extends StatelessWidget {
+class AdminHrIntegrationScreen extends ConsumerWidget {
   const AdminHrIntegrationScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _SystemTemplate(
-        title: 'HR Integration',
-        subtitle: 'Manage SAP/Workday/Oracle sync connectivity and jobs.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SystemIntegrationFrame(
+      title: 'HR Integration',
+      subtitle:
+          'HRIS connectors are deployed outside this UI (Serverpod + your IdP). Below is live organization context from the database.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _orgSummary(ref),
+          SizedBox(height: PharmaSpacing.md),
+          Wrap(
+            spacing: PharmaSpacing.sm,
+            runSpacing: PharmaSpacing.sm,
+            children: [
+              OutlinedButton(
+                onPressed: () => context.push('/admin/system/settings'),
+                child: const Text('Session & org settings'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.push('/admin/users/import'),
+                child: const Text('Bulk user import'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class AdminApiKeysScreen extends StatelessWidget {
+class AdminApiKeysScreen extends ConsumerWidget {
   const AdminApiKeysScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _SystemTemplate(
-        title: 'API Keys',
-        subtitle: 'Create and rotate integration API credentials.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SystemIntegrationFrame(
+      title: 'API Keys',
+      subtitle:
+          'Production API keys are issued via your API gateway or infrastructure — not stored in this Flutter client. Organization context is loaded live.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _orgSummary(ref),
+          SizedBox(height: PharmaSpacing.md),
+          OutlinedButton(
+            onPressed: () => context.push('/admin/system/settings'),
+            child: const Text('Organization settings'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class AdminValidationDocsScreen extends StatelessWidget {
+class AdminValidationDocsScreen extends ConsumerWidget {
   const AdminValidationDocsScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _SystemTemplate(
-        title: 'Validation Docs',
-        subtitle: 'URS, FS, DQ, IQ, OQ, PQ validation records.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SystemIntegrationFrame(
+      title: 'Validation Docs',
+      subtitle:
+          'Store URS/FS/IQ/OQ/PQ evidence in your QMS. Use the audit trail integrity check in Admin for CSV computerized system verification.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _orgSummary(ref),
+          SizedBox(height: PharmaSpacing.md),
+          Wrap(
+            spacing: PharmaSpacing.sm,
+            runSpacing: PharmaSpacing.sm,
+            children: [
+              OutlinedButton(
+                onPressed: () => context.push('/admin/audit/integrity'),
+                child: const Text('Audit trail integrity check'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.push('/admin/audit/trail'),
+                child: const Text('Audit trail'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class AdminRetentionPolicyScreen extends StatelessWidget {
+class AdminRetentionPolicyScreen extends ConsumerWidget {
   const AdminRetentionPolicyScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _SystemTemplate(
-        title: 'Retention Policies',
-        subtitle: 'Regulatory and legal data retention controls.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SystemIntegrationFrame(
+      title: 'Retention Policies',
+      subtitle:
+          'Configure audit log retention (years) in System Settings; exports respect organization scope.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _orgSummary(ref),
+          SizedBox(height: PharmaSpacing.md),
+          OutlinedButton(
+            onPressed: () => context.push('/admin/system/settings'),
+            child: const Text('Open retention & audit settings'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class AdminGdprScreen extends StatelessWidget {
+class AdminGdprScreen extends ConsumerWidget {
   const AdminGdprScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _SystemTemplate(
-        title: 'GDPR / DSAR',
-        subtitle: 'Data portability, erasure, and pseudonymization workflows.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SystemIntegrationFrame(
+      title: 'GDPR / DSAR',
+      subtitle:
+          'User records are partitioned by organization in the database. Process DSAR through your DPO workflow; use Admin to locate users.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _orgSummary(ref),
+          SizedBox(height: PharmaSpacing.md),
+          OutlinedButton(
+            onPressed: () => context.push('/admin/users/directory'),
+            child: const Text('User directory'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
-// ═══════════════════════════════════════════════════════════════════════════════
+Widget _orgSummary(WidgetRef ref) {
+  return FutureBuilder<Organization?>(
+    future: ref.read(currentUserProvider.future).then((u) async {
+      if (u == null) return null;
+      return client.organization.getOrganization(u.organizationId);
+    }),
+    builder: (context, snap) {
+      if (snap.connectionState == ConnectionState.waiting) {
+        return Text(
+          'Loading organization…',
+          style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+        );
+      }
+      if (snap.hasError || !snap.hasData) {
+        return Text(
+          'Sign in to view organization context.',
+          style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+        );
+      }
+      final org = snap.data;
+      if (org == null) {
+        return const Text('Organization not found.');
+      }
+      return AdminDataTable(
+        columns: const ['Field', 'Value'],
+        rows: [
+          ['Organization', org.name],
+          ['Code', org.code],
+          ['Created', org.createdAt.toLocal().toString().split('.').first],
+        ],
+      );
+    },
+  );
+}
 
-class _SystemTemplate extends StatelessWidget {
-  const _SystemTemplate({required this.title, required this.subtitle});
+class _SystemIntegrationFrame extends StatelessWidget {
+  const _SystemIntegrationFrame({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
   final String title;
   final String subtitle;
+  final Widget child;
+
   @override
-  Widget build(BuildContext context) => AdminPageFrame(
-        title: title,
-        subtitle: subtitle,
-        children: const [
-          AdminSectionCard(
-            title: 'Coming Soon',
-            child: AdminPlaceholderTable(
-              columns: ['Feature', 'Status', 'ETA'],
-              rows: [
-                ['Full implementation', 'In Progress', 'Q2 2026'],
-              ],
-            ),
-          ),
-        ],
-      );
+  Widget build(BuildContext context) {
+    return AdminPageFrame(
+      title: title,
+      subtitle: subtitle,
+      children: [
+        AdminSectionCard(
+          title: 'Organization context',
+          child: child,
+        ),
+      ],
+    );
+  }
 }

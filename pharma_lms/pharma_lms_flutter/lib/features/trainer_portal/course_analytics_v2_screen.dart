@@ -123,6 +123,29 @@ class _CourseAnalyticsV2ScreenState
     }
   }
 
+  /// Each menu value must appear exactly once (Flutter [DropdownButton] asserts otherwise).
+  List<CourseVersion> get _dropdownVersions {
+    final seen = <int>{};
+    final out = <CourseVersion>[];
+    for (final v in _allVersions) {
+      final id = v.id;
+      if (id == null) continue;
+      if (seen.add(id)) out.add(v);
+    }
+    return out;
+  }
+
+  /// [DropdownButton] requires [value] to be null or equal to exactly one item.
+  int? get _dropdownValue {
+    final id = _selectedVersion?.id;
+    if (id == null) return null;
+    var matches = 0;
+    for (final v in _dropdownVersions) {
+      if (v.id == id) matches++;
+    }
+    return matches == 1 ? id : null;
+  }
+
   int get _enrolledCount => _enrollments.length;
 
   int get _completedCount =>
@@ -176,6 +199,8 @@ class _CourseAnalyticsV2ScreenState
           _buildHeader(),
           const SizedBox(height: PharmaSpacing.sectionGap),
           _buildStatsRow(),
+          const SizedBox(height: 16),
+          _buildEngagementRow(),
           const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,6 +209,8 @@ class _CourseAnalyticsV2ScreenState
                 flex: 5,
                 child: Column(
                   children: [
+                    _buildAverageProgressCard(),
+                    const SizedBox(height: 20),
                     _buildCompletionTimeline(),
                     const SizedBox(height: 20),
                     _buildScoreDistribution(),
@@ -245,7 +272,7 @@ class _CourseAnalyticsV2ScreenState
             ],
           ),
         ),
-        if (_allVersions.length > 1) ...[
+        if (_dropdownVersions.length > 1) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
@@ -253,13 +280,13 @@ class _CourseAnalyticsV2ScreenState
               borderRadius: PharmaRadius.inputRadius,
             ),
             child: DropdownButton<int>(
-              value: _selectedVersion?.id,
+              value: _dropdownValue,
               underline: const SizedBox.shrink(),
               isDense: true,
               style: PharmaTypography.caption.copyWith(
                 color: PharmaColors.textPrimary,
               ),
-              items: _allVersions.map((v) {
+              items: _dropdownVersions.map((v) {
                 return DropdownMenuItem(
                   value: v.id,
                   child: Text('v${v.version}'),
@@ -267,7 +294,7 @@ class _CourseAnalyticsV2ScreenState
               }).toList(),
               onChanged: (vId) {
                 if (vId == null) return;
-                final version = _allVersions.firstWhere((v) => v.id == vId);
+                final version = _dropdownVersions.firstWhere((v) => v.id == vId);
                 _loadVersionData(version);
               },
             ),
@@ -359,6 +386,51 @@ class _CourseAnalyticsV2ScreenState
           PharmaColors.info,
           'certificates issued',
         ),
+      ].map(
+            (w) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: w,
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildEngagementRow() {
+    final hours =
+        ((_analytics?.totalTimeSpentSeconds ?? 0) / 3600.0).toStringAsFixed(1);
+    return Row(
+      children: [
+        _statCard(
+          'Time on content',
+          '$hours h',
+          Icons.timer_outlined,
+          PharmaColors.info,
+          'material progress (sum)',
+        ),
+        _statCard(
+          'Training assignments',
+          '${_analytics?.activeTrainingAssignmentCount ?? 0}',
+          Icons.assignment_outlined,
+          PharmaColors.warningText,
+          'active for enrolled learners',
+        ),
+        _statCard(
+          'Coursework submissions',
+          '${_analytics?.courseworkSubmissionCount ?? 0}',
+          Icons.upload_file,
+          PharmaColors.emerald600,
+          'lesson assignment submissions',
+        ),
+        _statCard(
+          'Assessment attempts',
+          '${_analytics?.assessmentAttemptCount ?? 0}',
+          Icons.quiz_outlined,
+          PharmaColors.info,
+          '${_analytics?.passedAssessmentAttemptCount ?? 0} passed',
+        ),
       ]
           .map(
             (w) => Expanded(
@@ -369,6 +441,56 @@ class _CourseAnalyticsV2ScreenState
             ),
           )
           .toList(),
+    );
+  }
+
+  Widget _buildAverageProgressCard() {
+    final pct = (_analytics?.averageMaterialProgressPct ?? 0.0)
+        .clamp(0.0, 100.0);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Average material progress',
+            style: PharmaTypography.headingSmall.copyWith(fontSize: 15),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Mean progress % across material progress rows linked to enrollments for this version.',
+            style: PharmaTypography.caption
+                .copyWith(color: PharmaColors.textTertiary),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: pct / 100,
+                    minHeight: 12,
+                    backgroundColor: PharmaColors.gray100,
+                    color: PharmaColors.emerald600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${pct.toStringAsFixed(1)}%',
+                style: PharmaTypography.bodyMedium
+                    .copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

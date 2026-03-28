@@ -1,0 +1,11 @@
+class: DashboardItem
+
+fields:
+  type: String
+  title: String?
+  detail: String?
+  dueDate: DateTime?
+  value: double?
+  count: int?
+  status: String?
+  id: String?

@@ -9,7 +9,7 @@ fields:
   ### The course version.
   courseVersion: CourseVersion?, relation
   ### The training record.
-  trainingRecord: TrainingRecord?, relation
+  trainingRecord: TrainingRecord?, relation(optional)
   ### When issued.
   issuedAt: DateTime, default=now
   ### When it expires.
@@ -17,6 +17,6 @@ fields:
   ### QR code for verification.
   qrCode: String?
   ### Electronic signature.
-  esignature: ElectronicSignature?, relation
+  esignature: ElectronicSignature?, relation(optional)
   ### Status: active, obsolete, expired. Obsolete when course version superseded; expired when past expiresAt.
   status: String, default='active'

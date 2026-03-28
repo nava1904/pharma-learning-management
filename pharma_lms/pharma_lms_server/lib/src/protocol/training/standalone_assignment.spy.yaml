@@ -1,0 +1,27 @@
+### Trainer-authored assignment (open-ended / MCQ) not tied to a course lesson.
+class: StandaloneAssignment
+
+table: standalone_assignment
+
+fields:
+  organization: Organization?, relation
+  createdBy: PharmaUser?, relation
+  title: String
+  instructions: String?
+  dueAt: DateTime
+  ### open_ended | mcq | mixed
+  contentKind: String, default='open_ended'
+  questionBank: QuestionBank?, relation(optional)
+  courseVersion: CourseVersion?, relation(optional)
+  ### individual | department | batch
+  targetType: String, default='individual'
+  targetDepartmentId: int?
+  targetBatchId: int?
+  ### draft | published | closed
+  status: String, default='draft'
+  publishedAt: DateTime?
+  createdAt: DateTime, default=now
+
+indexes:
+  standalone_assignment_org_idx:
+    fields: organizationId, status, dueAt

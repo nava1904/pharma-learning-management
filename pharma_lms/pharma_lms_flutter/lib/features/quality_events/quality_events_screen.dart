@@ -379,7 +379,7 @@ class _QualityEventsScreenState extends ConsumerState<QualityEventsScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/qa'),
+              context.canPop() ? context.pop() : context.go('/qa/dashboard'),
         ),
         actions: [
           DropdownButton<String?>(

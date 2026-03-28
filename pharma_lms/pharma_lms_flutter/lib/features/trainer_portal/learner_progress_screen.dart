@@ -12,7 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 import 'package:intl/intl.dart';
 
+import '../../core/certificate_pdf_service.dart';
 import '../../core/client.dart';
+import '../../core/file_download.dart';
 import '../../design_system/pharma_components.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
@@ -106,6 +108,36 @@ class _LearnerProgressScreenState
   String _searchQuery = '';
   String _filterCompliance = 'All';
   _LearnerSummary? _selectedLearner;
+  List<AssessmentAttempt> _attemptsForDetail = [];
+  bool _loadingAttempts = false;
+
+  Future<void> _loadAttemptsForLearner(int? userId) async {
+    if (userId == null) {
+      setState(() {
+        _attemptsForDetail = [];
+        _loadingAttempts = false;
+      });
+      return;
+    }
+    setState(() => _loadingAttempts = true);
+    try {
+      final list =
+          await client.assessment.listCompletedAttemptsForUser(userId: userId);
+      if (mounted) {
+        setState(() {
+          _attemptsForDetail = list;
+          _loadingAttempts = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _attemptsForDetail = [];
+          _loadingAttempts = false;
+        });
+      }
+    }
+  }
 
   List<_LearnerSummary> _applyFilters(List<_LearnerSummary> all) {
     return all.where((l) {
@@ -454,10 +486,12 @@ class _LearnerProgressScreenState
           DataColumn(label: Text('CERTS'), numeric: true),
         ],
         rows: filtered
-            .map((l) => DataRow(
+                .map((l) => DataRow(
                   selected: _selectedLearner == l,
-                  onSelectChanged: (_) =>
-                      setState(() => _selectedLearner = l),
+                  onSelectChanged: (_) async {
+                    setState(() => _selectedLearner = l);
+                    await _loadAttemptsForLearner(l.user.id);
+                  },
                   cells: [
                     DataCell(Row(
                         mainAxisSize: MainAxisSize.min,
@@ -561,8 +595,12 @@ class _LearnerProgressScreenState
                     ]),
               ),
               IconButton(
-                  onPressed: () =>
-                      setState(() => _selectedLearner = null),
+                  onPressed: () {
+                    setState(() {
+                      _selectedLearner = null;
+                      _attemptsForDetail = [];
+                    });
+                  },
                   icon: Icon(Icons.close,
                       size: 18, color: PharmaColors.textTertiary)),
             ]),
@@ -582,6 +620,69 @@ class _LearnerProgressScreenState
             _detailRow('Overdue', '${l.overdue}', PharmaColors.danger),
             _detailRow('Certifications', '${l.certificates.length}',
                 PharmaColors.warningText),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _loadingAttempts
+                  ? null
+                  : () async {
+                      final bytes = await generateLearnerTranscriptPdf(
+                        user: l.user,
+                        enrollments: l.enrollments,
+                        attempts: _attemptsForDetail,
+                        certificates: l.certificates,
+                      );
+                      final safe = l.user.email
+                          .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+                      await saveBytesToFile(bytes, '${safe}_transcript.pdf');
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Transcript PDF saved'),
+                        ),
+                      );
+                    },
+              icon: const Icon(Icons.picture_as_pdf, size: 18),
+              label: const Text('Download PDF transcript'),
+              style: FilledButton.styleFrom(
+                backgroundColor: PharmaColors.emerald600,
+                foregroundColor: PharmaColors.cardBg,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'Assessment history (read-only)',
+              style: PharmaTypography.labelLarge.copyWith(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            if (_loadingAttempts)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_attemptsForDetail.isEmpty)
+              Text(
+                'No completed attempts on record.',
+                style: PharmaTypography.caption,
+              )
+            else
+              ..._attemptsForDetail.take(8).map(_assessmentAttemptRow),
+            if (_attemptsForDetail.length > 8)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  '+ ${_attemptsForDetail.length - 8} more in PDF',
+                  style: PharmaTypography.caption.copyWith(
+                    color: PharmaColors.emerald600,
+                  ),
+                ),
+              ),
             const SizedBox(height: 20),
 
             // Enrollment detail list
@@ -634,9 +735,50 @@ class _LearnerProgressScreenState
     }
   }
 
+  Widget _assessmentAttemptRow(AssessmentAttempt a) {
+    final title = a.assessment?.courseVersion?.course?.title ??
+        'Assessment attempt';
+    final when = a.completedAt != null
+        ? DateFormat('MMM d, yyyy').format(a.completedAt!)
+        : '—';
+    final score = a.score != null ? '${a.score}%' : '—';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.fact_check, size: 14, color: PharmaColors.info),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: PharmaTypography.caption.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Score $score · $when',
+                  style: PharmaTypography.caption.copyWith(
+                    color: PharmaColors.textTertiary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _enrollmentRow(Enrollment e) {
     final courseName = e.courseVersion?.course?.title ??
-        'Course #${e.courseVersionId}';
+        'Assigned course';
     final version = e.courseVersion?.version ?? '';
 
     Color statusColor;

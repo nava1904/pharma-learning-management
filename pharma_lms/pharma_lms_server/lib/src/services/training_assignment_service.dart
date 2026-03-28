@@ -6,7 +6,8 @@ import 'event_service.dart';
 
 /// Training assignment service for creating and managing assignments.
 class TrainingAssignmentService {
-  /// Check if user has an active (non-completed) enrollment for a course version.
+  /// True if the user already has an enrollment that should block a new assignment
+  /// (in progress, not started, overdue, etc.). Completed and cancelled do not block.
   static Future<bool> hasActiveEnrollment(
     Session session, {
     required int userId,
@@ -17,7 +18,8 @@ class TrainingAssignmentService {
       where: (t) =>
           t.userId.equals(userId) &
           t.courseVersionId.equals(courseVersionId) &
-          t.status.notEquals('completed'),
+          t.status.notEquals('completed') &
+          t.status.notEquals('cancelled'),
     );
     return existing.isNotEmpty;
   }

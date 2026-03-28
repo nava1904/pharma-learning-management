@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -435,17 +437,102 @@ class _AdminNotificationTemplateScreenState extends ConsumerState<AdminNotificat
   }
 
   void _showCreateTemplateDialog(BuildContext context) {
+    final nameCtl = TextEditingController();
+    final bodyCtl = TextEditingController();
+    final subjectCtl = TextEditingController();
+    var type = 'general';
+    var channel = 'in_app';
+    var status = 'draft';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Notification Template'),
-        content: const Text('Template builder coming soon...'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (dialogContext) => Consumer(
+        builder: (ctx, ref, _) {
+          return StatefulBuilder(
+            builder: (context, setLocal) {
+              return AlertDialog(
+                title: const Text('Create notification template'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(controller: nameCtl, decoration: const InputDecoration(labelText: 'Name')),
+                      TextField(
+                        controller: subjectCtl,
+                        decoration: const InputDecoration(labelText: 'Subject (optional)'),
+                      ),
+                      TextField(
+                        controller: bodyCtl,
+                        maxLines: 4,
+                        decoration: const InputDecoration(labelText: 'Body template'),
+                      ),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        initialValue: type,
+                        items: const [
+                          DropdownMenuItem(value: 'general', child: Text('general')),
+                          DropdownMenuItem(value: 'reminder', child: Text('reminder')),
+                          DropdownMenuItem(value: 'alert', child: Text('alert')),
+                        ],
+                        onChanged: (v) => setLocal(() => type = v ?? type),
+                      ),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Channel'),
+                        initialValue: channel,
+                        items: const [
+                          DropdownMenuItem(value: 'in_app', child: Text('in_app')),
+                          DropdownMenuItem(value: 'email', child: Text('email')),
+                        ],
+                        onChanged: (v) => setLocal(() => channel = v ?? channel),
+                      ),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Status'),
+                        initialValue: status,
+                        items: const [
+                          DropdownMenuItem(value: 'draft', child: Text('draft')),
+                          DropdownMenuItem(value: 'active', child: Text('active')),
+                        ],
+                        onChanged: (v) => setLocal(() => status = v ?? status),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+                  FilledButton(
+                    onPressed: () async {
+                      final user = await ref.read(currentUserProvider.future);
+                      if (user?.id == null) return;
+                      try {
+                        await client.notificationTemplate.createTemplate(
+                          organizationId: user!.organizationId,
+                          name: nameCtl.text.trim(),
+                          type: type,
+                          channel: channel,
+                          subject: subjectCtl.text.trim().isEmpty ? null : subjectCtl.text.trim(),
+                          bodyTemplate: bodyCtl.text.trim(),
+                          status: status,
+                        );
+                        ref.invalidate(adminNotificationTemplatesProvider);
+                        if (dialogContext.mounted) Navigator.pop(dialogContext);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Template created')));
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$e'), backgroundColor: PharmaColors.danger),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Create'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -455,50 +542,126 @@ class _AdminNotificationTemplateScreenState extends ConsumerState<AdminNotificat
 // REMINDER RULES SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminReminderRulesScreen extends StatelessWidget {
+class AdminReminderRulesScreen extends ConsumerWidget {
   const AdminReminderRulesScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _NotificationTemplate(
-        title: 'Reminder Rules',
-        subtitle: 'Configure reminder timing and escalation.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(adminNotificationTemplatesProvider);
+
+    return AdminPageFrame(
+      title: 'Reminder Rules',
+      subtitle: 'Templates tagged as reminders (type or name filter).',
+      children: [
+        AdminSectionCard(
+          title: 'Reminder templates',
+          child: async.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (templates) {
+              final rows = templates
+                  .where(
+                    (t) =>
+                        t.type.toLowerCase().contains('remind') ||
+                        t.name.toLowerCase().contains('remind'),
+                  )
+                  .map(
+                    (t) => [t.name, t.type, t.channel, t.status, t.triggerEvent ?? '—'],
+                  )
+                  .toList();
+              if (rows.isEmpty) {
+                return Text(
+                  'No reminder-style templates. Create one from Notification Templates.',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                );
+              }
+              return AdminDataTable(
+                columns: const ['Name', 'Type', 'Channel', 'Status', 'Trigger'],
+                rows: rows,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BROADCAST SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminBroadcastScreen extends StatelessWidget {
+class AdminBroadcastScreen extends ConsumerStatefulWidget {
   const AdminBroadcastScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _NotificationTemplate(
-        title: 'Broadcast',
-        subtitle: 'Send urgent communication to selected audiences.',
-      );
+  ConsumerState<AdminBroadcastScreen> createState() => _AdminBroadcastScreenState();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
-// ═══════════════════════════════════════════════════════════════════════════════
+class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
+  final _message = TextEditingController();
+  bool _busy = false;
 
-class _NotificationTemplate extends StatelessWidget {
-  const _NotificationTemplate({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
   @override
-  Widget build(BuildContext context) => AdminPageFrame(
-        title: title,
-        subtitle: subtitle,
-        children: const [
-          AdminSectionCard(
-            title: 'Coming Soon',
-            child: AdminPlaceholderTable(
-              columns: ['Feature', 'Status', 'ETA'],
-              rows: [
-                ['Full implementation', 'In Progress', 'Q2 2026'],
-              ],
-            ),
-          ),
-        ],
+  void dispose() {
+    _message.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    setState(() => _busy = true);
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      if (user == null) throw Exception('Not authenticated');
+      final n = await client.notification.broadcastInAppToOrganization(
+        organizationId: user.organizationId,
+        message: _message.text,
+        type: 'admin_broadcast',
       );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Queued in-app notifications: $n')),
+      );
+      _message.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: PharmaColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AdminPageFrame(
+      title: 'Broadcast',
+      subtitle: 'Send an in-app notification to every user in your organization.',
+      children: [
+        AdminSectionCard(
+          title: 'Message',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _message,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Message',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: PharmaSpacing.md),
+              FilledButton(
+                onPressed: _busy ? null : _send,
+                child: Text(_busy ? 'Sending…' : 'Broadcast to organization'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

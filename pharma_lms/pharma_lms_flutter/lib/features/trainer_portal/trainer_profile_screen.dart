@@ -151,7 +151,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
 
     final orgName = orgAsync.whenOrNull(data: (org) => org?.name) ?? '—';
 
-    final employeeId = user?.employeeId ?? (user?.id != null ? 'ID-${user.id}' : '—');
+    final employeeId = user?.employeeId ?? 'Not assigned';
 
     final memberSince = user?.createdAt != null
         ? DateFormat('MMM yyyy').format(user.createdAt as DateTime)
@@ -226,7 +226,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
                     child: Text(
                       'TRAINER / SME',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: PharmaColors.emerald600,
                         letterSpacing: 0.5,

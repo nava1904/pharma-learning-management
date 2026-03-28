@@ -7,13 +7,16 @@
 // compliance, analytics, audit log.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart' hide Material;
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../core/client.dart';
+import '../../core/file_download.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
 
@@ -28,6 +31,8 @@ class TrainerReportsScreen extends ConsumerStatefulWidget {
 class _TrainerReportsScreenState extends ConsumerState<TrainerReportsScreen> {
   bool _exportingLearnerProgress = false;
   bool _exportingAudit = false;
+  bool _exportingMatrix = false;
+  bool _exportingAssessment = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,8 +71,28 @@ class _TrainerReportsScreenState extends ConsumerState<TrainerReportsScreen> {
           subtitle: 'Per-learner training history, compliance status, certifications',
           onOpen: () => context.go('/trainer/reports/learner-progress'),
           onExport: _exportLearnerProgressCsv,
-          exportLabel: 'Export CSV',
+          exportLabel: 'Save CSV file',
           exporting: _exportingLearnerProgress,
+        ),
+        const SizedBox(height: 12),
+        _ReportCard(
+          icon: Icons.grid_on_outlined,
+          title: 'Completion matrix',
+          subtitle: 'Employees × courses grid — who completed which training',
+          onOpen: () => context.go('/trainer/reports/completion-matrix'),
+          onExport: _exportCompletionMatrixCsv,
+          exportLabel: 'Save CSV file',
+          exporting: _exportingMatrix,
+        ),
+        const SizedBox(height: 12),
+        _ReportCard(
+          icon: Icons.assessment_outlined,
+          title: 'Assessment performance',
+          subtitle: 'Per-learner scores for a course version (TrainingRecord export)',
+          onOpen: () => context.go('/trainer/analytics'),
+          onExport: _exportAssessmentPerformanceCsv,
+          exportLabel: 'Save CSV file',
+          exporting: _exportingAssessment,
         ),
         const SizedBox(height: 12),
         _ReportCard(
@@ -92,7 +117,7 @@ class _TrainerReportsScreenState extends ConsumerState<TrainerReportsScreen> {
           subtitle: 'Immutable audit trail — 21 CFR Part 11 compliant',
           onOpen: () => context.go('/trainer/audit-log'),
           onExport: _exportAuditCsv,
-          exportLabel: 'Export CSV',
+          exportLabel: 'Save CSV file',
           exporting: _exportingAudit,
         ),
       ],
@@ -107,10 +132,11 @@ class _TrainerReportsScreenState extends ConsumerState<TrainerReportsScreen> {
         organizationId: user?.organizationId,
       );
       if (!mounted) return;
-      await Clipboard.setData(ClipboardData(text: csv));
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      await saveBytesToFile(bytes, 'learner_progress.csv');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Learner progress CSV copied to clipboard')),
+          const SnackBar(content: Text('Saved learner_progress.csv')),
         );
       }
     } catch (e) {
@@ -124,6 +150,70 @@ class _TrainerReportsScreenState extends ConsumerState<TrainerReportsScreen> {
     }
   }
 
+  Future<void> _exportCompletionMatrixCsv() async {
+    setState(() => _exportingMatrix = true);
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      final csv = await client.analytics.exportCompletionMatrixCsv(
+        organizationId: user?.organizationId,
+      );
+      if (!mounted) return;
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      await saveBytesToFile(bytes, 'completion_matrix.csv');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved completion_matrix.csv')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exportingMatrix = false);
+    }
+  }
+
+  Future<void> _exportAssessmentPerformanceCsv() async {
+    final user = await ref.read(currentUserProvider.future);
+    if (user == null) return;
+    final courses =
+        await client.course.listCourses(organizationId: user.organizationId);
+    if (!mounted) return;
+    final picked = await showDialog<_AssessmentCsvSelection>(
+      context: context,
+      builder: (ctx) => _AssessmentCsvPickerDialog(courses: courses),
+    );
+    if (picked?.version.id == null) return;
+    setState(() => _exportingAssessment = true);
+    try {
+      final csv = await client.analytics.exportCourseAnalyticsCsv(
+        courseVersionId: picked!.version.id!,
+      );
+      if (!mounted) return;
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      final slug =
+          '${picked.course.title}_v${picked.version.version}'
+              .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      await saveBytesToFile(bytes, '${slug}_assessment_performance.csv');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assessment performance CSV saved')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exportingAssessment = false);
+    }
+  }
+
   Future<void> _exportAuditCsv() async {
     setState(() => _exportingAudit = true);
     try {
@@ -133,10 +223,11 @@ class _TrainerReportsScreenState extends ConsumerState<TrainerReportsScreen> {
         limit: 1000,
       );
       if (!mounted) return;
-      await Clipboard.setData(ClipboardData(text: csv));
+      final bytes = Uint8List.fromList(utf8.encode(csv));
+      await saveBytesToFile(bytes, 'audit_log_30d.csv');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Audit log CSV copied to clipboard')),
+          const SnackBar(content: Text('Saved audit_log_30d.csv')),
         );
       }
     } catch (e) {
@@ -234,6 +325,120 @@ class _ReportCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _AssessmentCsvSelection {
+  const _AssessmentCsvSelection({
+    required this.course,
+    required this.version,
+  });
+
+  final Course course;
+  final CourseVersion version;
+}
+
+class _AssessmentCsvPickerDialog extends StatefulWidget {
+  const _AssessmentCsvPickerDialog({required this.courses});
+
+  final List<Course> courses;
+
+  @override
+  State<_AssessmentCsvPickerDialog> createState() =>
+      _AssessmentCsvPickerDialogState();
+}
+
+class _AssessmentCsvPickerDialogState extends State<_AssessmentCsvPickerDialog> {
+  Course? _course;
+  List<CourseVersion> _versions = [];
+  CourseVersion? _version;
+  bool _loadingVers = false;
+
+  Future<void> _onCourse(Course? c) async {
+    setState(() {
+      _course = c;
+      _version = null;
+      _versions = [];
+      _loadingVers = c?.id != null;
+    });
+    if (c?.id == null) return;
+    final v = await client.course.getCourseVersions(c!.id!);
+    if (!mounted) return;
+    setState(() {
+      _versions = v;
+      _version = v.isNotEmpty ? v.first : null;
+      _loadingVers = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Export assessment CSV'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<Course>(
+              initialValue: _course,
+              items: widget.courses
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(c.title, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _onCourse,
+              decoration: const InputDecoration(labelText: 'Course'),
+              isExpanded: true,
+            ),
+            const SizedBox(height: 12),
+            if (_loadingVers)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else if (_versions.isNotEmpty)
+              DropdownButtonFormField<CourseVersion>(
+                initialValue: _version,
+                items: _versions
+                    .map(
+                      (v) => DropdownMenuItem(
+                        value: v,
+                        child: Text('v${v.version} (${v.status})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => setState(() => _version = v),
+                decoration: const InputDecoration(labelText: 'Version'),
+                isExpanded: true,
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _version?.id == null || _course == null
+              ? null
+              : () => Navigator.pop(
+                    context,
+                    _AssessmentCsvSelection(
+                      course: _course!,
+                      version: _version!,
+                    ),
+                  ),
+          child: const Text('Export'),
+        ),
+      ],
     );
   }
 }

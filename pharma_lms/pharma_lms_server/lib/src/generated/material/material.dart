@@ -23,6 +23,7 @@ abstract class Material
     required this.title,
     required this.materialType,
     this.storageKey,
+    this.contentUrl,
     required this.organizationId,
     this.organization,
   });
@@ -32,6 +33,7 @@ abstract class Material
     required String title,
     required String materialType,
     String? storageKey,
+    String? contentUrl,
     required int organizationId,
     _i2.Organization? organization,
   }) = _MaterialImpl;
@@ -42,6 +44,7 @@ abstract class Material
       title: jsonSerialization['title'] as String,
       materialType: jsonSerialization['materialType'] as String,
       storageKey: jsonSerialization['storageKey'] as String?,
+      contentUrl: jsonSerialization['contentUrl'] as String?,
       organizationId: jsonSerialization['organizationId'] as int,
       organization: jsonSerialization['organization'] == null
           ? null
@@ -67,6 +70,9 @@ abstract class Material
   /// S3/MinIO storage key.
   String? storageKey;
 
+  /// URL for embedded content (Google Docs/Sheets/Slides, external video links).
+  String? contentUrl;
+
   int organizationId;
 
   /// Organization for multi-tenant.
@@ -83,6 +89,7 @@ abstract class Material
     String? title,
     String? materialType,
     String? storageKey,
+    String? contentUrl,
     int? organizationId,
     _i2.Organization? organization,
   });
@@ -94,6 +101,7 @@ abstract class Material
       'title': title,
       'materialType': materialType,
       if (storageKey != null) 'storageKey': storageKey,
+      if (contentUrl != null) 'contentUrl': contentUrl,
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
     };
@@ -107,6 +115,7 @@ abstract class Material
       'title': title,
       'materialType': materialType,
       if (storageKey != null) 'storageKey': storageKey,
+      if (contentUrl != null) 'contentUrl': contentUrl,
       'organizationId': organizationId,
       if (organization != null)
         'organization': organization?.toJsonForProtocol(),
@@ -151,6 +160,7 @@ class _MaterialImpl extends Material {
     required String title,
     required String materialType,
     String? storageKey,
+    String? contentUrl,
     required int organizationId,
     _i2.Organization? organization,
   }) : super._(
@@ -158,6 +168,7 @@ class _MaterialImpl extends Material {
          title: title,
          materialType: materialType,
          storageKey: storageKey,
+         contentUrl: contentUrl,
          organizationId: organizationId,
          organization: organization,
        );
@@ -171,6 +182,7 @@ class _MaterialImpl extends Material {
     String? title,
     String? materialType,
     Object? storageKey = _Undefined,
+    Object? contentUrl = _Undefined,
     int? organizationId,
     Object? organization = _Undefined,
   }) {
@@ -179,6 +191,7 @@ class _MaterialImpl extends Material {
       title: title ?? this.title,
       materialType: materialType ?? this.materialType,
       storageKey: storageKey is String? ? storageKey : this.storageKey,
+      contentUrl: contentUrl is String? ? contentUrl : this.contentUrl,
       organizationId: organizationId ?? this.organizationId,
       organization: organization is _i2.Organization?
           ? organization
@@ -205,6 +218,11 @@ class MaterialUpdateTable extends _i1.UpdateTable<MaterialTable> {
     value,
   );
 
+  _i1.ColumnValue<String, String> contentUrl(String? value) => _i1.ColumnValue(
+    table.contentUrl,
+    value,
+  );
+
   _i1.ColumnValue<int, int> organizationId(int value) => _i1.ColumnValue(
     table.organizationId,
     value,
@@ -226,6 +244,10 @@ class MaterialTable extends _i1.Table<int?> {
       'storageKey',
       this,
     );
+    contentUrl = _i1.ColumnString(
+      'contentUrl',
+      this,
+    );
     organizationId = _i1.ColumnInt(
       'organizationId',
       this,
@@ -242,6 +264,9 @@ class MaterialTable extends _i1.Table<int?> {
 
   /// S3/MinIO storage key.
   late final _i1.ColumnString storageKey;
+
+  /// URL for embedded content (Google Docs/Sheets/Slides, external video links).
+  late final _i1.ColumnString contentUrl;
 
   late final _i1.ColumnInt organizationId;
 
@@ -267,6 +292,7 @@ class MaterialTable extends _i1.Table<int?> {
     title,
     materialType,
     storageKey,
+    contentUrl,
     organizationId,
   ];
 

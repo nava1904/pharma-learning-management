@@ -12,7 +12,7 @@ import '../../providers/auth_provider.dart';
 import 'oidc_sign_in_widget.dart';
 
 /// ═══════════════════════════════════════════════════════════════════════════════
-/// PHARMA LMS — LOGIN SCREEN (Render-inspired Design)
+/// Vyuh lms — login screen (Render-inspired design)
 /// ═══════════════════════════════════════════════════════════════════════════════
 ///
 /// Design System:
@@ -32,6 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
   late AnimationController _gridAnimController;
   late AnimationController _beamAnimController;
+  late EmailAuthController _emailAuthController;
 
   // ─── Design Tokens (8pt grid) ───
   static const double s1 = 8;
@@ -67,15 +68,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       duration: const Duration(seconds: 8),
     )..repeat();
 
+    _emailAuthController = EmailAuthController(
+      client: client,
+      startScreen: EmailFlowScreen.login,
+      onAuthenticated: _onAuthenticated,
+      onError: (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Authentication failed: $error'),
+            backgroundColor: AppColors.destructive,
+          ),
+        );
+      },
+    )..addListener(_onEmailAuthChanged);
+
     if (client.auth.isAuthenticated && ref.read(selectedRoleProvider) == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _onAuthenticated());
     }
+  }
+
+  void _onEmailAuthChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _gridAnimController.dispose();
     _beamAnimController.dispose();
+    _emailAuthController
+      ..removeListener(_onEmailAuthChanged)
+      ..dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocusNode.dispose();
@@ -355,16 +378,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 color: brandAccent.withValues(alpha: 0.3),
               ),
             ),
-            child: const Icon(
-              Icons.biotech_rounded,
-              size: 36,
+            child: VyuhLogo(
+              height: 36,
+              width: 36,
               color: Colors.white,
             ),
           ),
           const SizedBox(height: s2), // 16px
-          const Text(
-            'Pharma LMS',
-            style: TextStyle(
+          Text(
+            PharmaBrand.name,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -461,7 +484,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 // Logo and brand name
                 Row(
                   children: [
-                      VyuhLogo(height: s4, width: s4, color: Colors.white), // 32px
+                    VyuhLogo(height: s4, width: s4, color: Colors.white), // 32px
                     const SizedBox(width: s2), // 16px
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,7 +572,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 // Stats row with proper spacing
                 Row(
                   children: [
-                    _buildStatItem('500+', 'Pharma\nCompanies'),
+                    _buildStatItem('500+', 'Enterprise\norganizations'),
                     const SizedBox(width: s4), // 32px
                     _buildStatItem('2M+', 'Trained\nUsers'),
                     const SizedBox(width: s4), // 32px
@@ -744,21 +767,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
         const SizedBox(height: s3), // 24px
 
-        // Serverpod SignInWidget
-        SignInWidget(
-          client: client,
-          onAuthenticated: _onAuthenticated,
-          onError: (error) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Authentication failed: $error'),
-                  backgroundColor: AppColors.destructive,
-                ),
-              );
-            }
-          },
-        ),
+        // Custom Serverpod email auth flow
+        _buildCustomEmailAuthWidget(),
         const SizedBox(height: s3), // 24px
 
         // Divider - refined
@@ -831,6 +841,310 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
       ],
     );
+  }
+
+  Widget _buildCustomEmailAuthWidget() {
+    final screen = _emailAuthController.currentScreen;
+    final loading = _emailAuthController.isLoading;
+    final error = _emailAuthController.errorMessage;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (error != null && error.isNotEmpty) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: s2),
+            padding: const EdgeInsets.all(s2),
+            decoration: BoxDecoration(
+              color: AppColors.destructive.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.destructive.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Text(
+              error,
+              style: const TextStyle(
+                color: AppColors.destructive,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+        Text(
+          _authTitleFor(screen),
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: s1),
+        Text(
+          _authSubtitleFor(screen),
+          style: TextStyle(
+            fontSize: 14,
+            color: textSecondary.withValues(alpha: 0.8),
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: s3),
+        _buildAuthInputSection(screen, loading),
+        const SizedBox(height: s2),
+        SizedBox(
+          height: 48,
+          child: ElevatedButton(
+            onPressed: loading ? null : _submitCurrentAuthStep,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: brandAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    _actionLabelFor(screen),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: s2),
+        _buildAuthFooterActions(screen, loading),
+      ],
+    );
+  }
+
+  Widget _buildAuthInputSection(EmailFlowScreen screen, bool loading) {
+    switch (screen) {
+      case EmailFlowScreen.login:
+        return Column(
+          children: [
+            _buildAuthTextField(
+              controller: _emailAuthController.emailController,
+              hintText: 'Email',
+              icon: Icons.email_outlined,
+              enabled: !loading,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 10),
+            _buildAuthTextField(
+              controller: _emailAuthController.passwordController,
+              hintText: 'Password',
+              icon: Icons.lock_outline,
+              enabled: !loading,
+              obscureText: true,
+            ),
+          ],
+        );
+      case EmailFlowScreen.startRegistration:
+      case EmailFlowScreen.requestPasswordReset:
+        return _buildAuthTextField(
+          controller: _emailAuthController.emailController,
+          hintText: 'Email',
+          icon: Icons.email_outlined,
+          enabled: !loading,
+          keyboardType: TextInputType.emailAddress,
+        );
+      case EmailFlowScreen.verifyRegistration:
+      case EmailFlowScreen.verifyPasswordReset:
+        return Column(
+          children: [
+            _buildAuthTextField(
+              controller: _emailAuthController.verificationCodeController,
+              hintText: 'Verification code',
+              icon: Icons.verified_user_outlined,
+              enabled: !loading,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: s1),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: loading
+                    ? null
+                    : () => _emailAuthController.resendVerificationCode(),
+                child: const Text('Resend code'),
+              ),
+            ),
+          ],
+        );
+      case EmailFlowScreen.completeRegistration:
+      case EmailFlowScreen.completePasswordReset:
+        return _buildAuthTextField(
+          controller: _emailAuthController.passwordController,
+          hintText: screen == EmailFlowScreen.completeRegistration
+              ? 'Create password'
+              : 'New password',
+          icon: Icons.lock_outline,
+          enabled: !loading,
+          obscureText: true,
+        );
+    }
+  }
+
+  Widget _buildAuthTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool enabled = true,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hintText,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: s2, vertical: 14),
+        prefixIcon: Icon(icon, size: 18, color: textSecondary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: borderLight),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: borderLight),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: brandAccent.withValues(alpha: 0.9)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuthFooterActions(EmailFlowScreen screen, bool loading) {
+    if (screen == EmailFlowScreen.login) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          TextButton(
+            onPressed: loading
+                ? null
+                : () => _emailAuthController
+                    .navigateTo(EmailFlowScreen.startRegistration),
+            child: const Text('Create account'),
+          ),
+          TextButton(
+            onPressed: loading
+                ? null
+                : () => _emailAuthController
+                    .navigateTo(EmailFlowScreen.requestPasswordReset),
+            child: const Text('Forgot password?'),
+          ),
+        ],
+      );
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton(
+        onPressed: loading
+            ? null
+            : () => _emailAuthController.navigateTo(EmailFlowScreen.login),
+        child: const Text('Back to sign in'),
+      ),
+    );
+  }
+
+  Future<void> _submitCurrentAuthStep() async {
+    switch (_emailAuthController.currentScreen) {
+      case EmailFlowScreen.login:
+        await _emailAuthController.login();
+        break;
+      case EmailFlowScreen.startRegistration:
+        await _emailAuthController.startRegistration();
+        break;
+      case EmailFlowScreen.verifyRegistration:
+        await _emailAuthController.verifyRegistrationCode();
+        break;
+      case EmailFlowScreen.completeRegistration:
+        await _emailAuthController.finishRegistration();
+        break;
+      case EmailFlowScreen.requestPasswordReset:
+        await _emailAuthController.startPasswordReset();
+        break;
+      case EmailFlowScreen.verifyPasswordReset:
+        await _emailAuthController.verifyPasswordResetCode();
+        break;
+      case EmailFlowScreen.completePasswordReset:
+        await _emailAuthController.finishPasswordReset();
+        break;
+    }
+  }
+
+  String _authTitleFor(EmailFlowScreen screen) {
+    switch (screen) {
+      case EmailFlowScreen.login:
+        return 'Welcome back';
+      case EmailFlowScreen.startRegistration:
+        return 'Create account';
+      case EmailFlowScreen.verifyRegistration:
+        return 'Verify email';
+      case EmailFlowScreen.completeRegistration:
+        return 'Set password';
+      case EmailFlowScreen.requestPasswordReset:
+        return 'Reset password';
+      case EmailFlowScreen.verifyPasswordReset:
+        return 'Verify reset code';
+      case EmailFlowScreen.completePasswordReset:
+        return 'Set new password';
+    }
+  }
+
+  String _authSubtitleFor(EmailFlowScreen screen) {
+    switch (screen) {
+      case EmailFlowScreen.login:
+        return 'Sign in to access your training dashboard';
+      case EmailFlowScreen.startRegistration:
+        return 'Register your work email to get started';
+      case EmailFlowScreen.verifyRegistration:
+        return 'Enter the verification code sent to your email';
+      case EmailFlowScreen.completeRegistration:
+        return 'Create a secure password for your account';
+      case EmailFlowScreen.requestPasswordReset:
+        return 'Enter your email to receive a reset code';
+      case EmailFlowScreen.verifyPasswordReset:
+        return 'Enter the code we sent to your email';
+      case EmailFlowScreen.completePasswordReset:
+        return 'Choose a new password for your account';
+    }
+  }
+
+  String _actionLabelFor(EmailFlowScreen screen) {
+    switch (screen) {
+      case EmailFlowScreen.login:
+        return 'Sign in';
+      case EmailFlowScreen.startRegistration:
+        return 'Continue';
+      case EmailFlowScreen.verifyRegistration:
+      case EmailFlowScreen.verifyPasswordReset:
+        return 'Verify';
+      case EmailFlowScreen.completeRegistration:
+        return 'Create account';
+      case EmailFlowScreen.requestPasswordReset:
+        return 'Send reset code';
+      case EmailFlowScreen.completePasswordReset:
+        return 'Update password';
+    }
   }
 }
 

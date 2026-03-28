@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
+import '../../design_system/pharma_components.dart';
 import '../../design_system/pharma_design_system.dart';
 
 /// SCR-17 — Public Certificate Verification.
@@ -71,19 +72,14 @@ class _PublicVerifyScreenState extends State<PublicVerifyScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 36,
+                    VyuhLogo(
                       height: 36,
-                      decoration: BoxDecoration(
-                        color: PharmaColors.emerald600,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.verified_user,
-                          color: Colors.white, size: 20),
+                      width: 36,
+                      color: PharmaColors.emerald600,
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Pharma LMS',
+                      PharmaBrand.name,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: PharmaColors.textPrimary,

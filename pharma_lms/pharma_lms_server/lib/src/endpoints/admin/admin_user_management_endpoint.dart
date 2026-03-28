@@ -264,6 +264,81 @@ class AdminUserManagementEndpoint extends Endpoint {
     }
   }
 
+  /// List all portal roles that can be assigned to users (e.g. admin/trainer/employee).
+  Future<List<Role>> listPortalRoles(Session session) async {
+    await RbacHelper.requirePermission(session, resource: 'users', action: 'read');
+    return Role.db.find(session, orderBy: (t) => t.code);
+  }
+
+  /// Get current portal role codes for a user.
+  Future<List<String>> getUserPortalRoles(Session session, {required int userId}) async {
+    await RbacHelper.requirePermission(session, resource: 'users', action: 'read');
+    final rows = await UserRole.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+    if (rows.isEmpty) return [];
+
+    final roleIds = rows.map((r) => r.roleId).whereType<int>().toSet();
+    if (roleIds.isEmpty) return [];
+
+    final roles = await Role.db.find(
+      session,
+      where: (t) => t.id.inSet(roleIds),
+    );
+    return roles.map((r) => r.code).toList()..sort();
+  }
+
+  /// Replace the user portal role with a single role code.
+  ///
+  /// Notes:
+  /// - Current UI uses a single portal role at a time (matches seeding + most flows).
+  /// - We keep the API shape as a single replace operation for auditability.
+  Future<void> setUserPortalRole(
+    Session session, {
+    required int userId,
+    required String roleCode,
+    String? reason,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'users', action: 'update');
+
+    final code = roleCode.trim().toLowerCase();
+    if (code.isEmpty) throw Exception('roleCode is required');
+
+    final user = await PharmaUser.db.findById(session, userId);
+    if (user == null) throw Exception('User not found');
+
+    final role = await Role.db.findFirstRow(
+      session,
+      where: (t) => t.code.equals(code),
+    );
+    if (role == null) throw Exception('Role not found: $code');
+
+    await UserRole.db.deleteWhere(
+      session,
+      where: (t) => t.userId.equals(userId),
+    );
+    await UserRole.db.insertRow(
+      session,
+      UserRole(userId: userId, roleId: role.id!),
+    );
+
+    await _auditLog(
+      session,
+      'USER_ROLE_SET',
+      'Set portal role to "$code"',
+      targetId: userId,
+    );
+    if ((reason ?? '').trim().isNotEmpty) {
+      await _auditLog(
+        session,
+        'USER_ROLE_REASON',
+        reason!.trim(),
+        targetId: userId,
+      );
+    }
+  }
+
   /// Helper: Write to audit trail
   Future<void> _auditLog(Session session, String action, String? details, {int? targetId}) async {
     try {

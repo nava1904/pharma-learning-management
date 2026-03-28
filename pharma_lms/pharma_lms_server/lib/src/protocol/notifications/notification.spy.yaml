@@ -6,8 +6,10 @@ table: notification
 fields:
   ### The user to notify.
   user: PharmaUser?, relation
-  ### Type: assignment, reminder_30d, reminder_14d, reminder_7d, reminder_3d, overdue, cert_expiry, cert_expiry_90d, cert_expiry_60d, cert_expiry_30d, cert_expiry_7d, cert_expired, compliance_alert.
+  ### Type: assignment, reminder_30d, reminder_14d, reminder_7d, reminder_3d, overdue, cert_expiry, cert_expiry_90d, cert_expiry_60d, cert_expiry_30d, cert_expiry_7d, cert_expired, compliance_alert, sme_invite, sme_comment, sme_resolved.
   type: String
+  ### Short in-app message (optional; avoids generic placeholder text).
+  body: String?
   ### Enrollment this notification relates to.
   enrollment: Enrollment?, relation(optional)
   ### When sent.

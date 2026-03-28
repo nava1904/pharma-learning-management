@@ -487,7 +487,6 @@ class AdminCertificateExpiryScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _CertificateTemplate extends StatelessWidget {
@@ -501,7 +500,7 @@ class _CertificateTemplate extends StatelessWidget {
         children: const [
           AdminSectionCard(
             title: 'Coming Soon',
-            child: AdminPlaceholderTable(
+            child: AdminDataTable(
               columns: ['Feature', 'Status', 'ETA'],
               rows: [
                 ['Full implementation', 'In Progress', 'Q2 2026'],

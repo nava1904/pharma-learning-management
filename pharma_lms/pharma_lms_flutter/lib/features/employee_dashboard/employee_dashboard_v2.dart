@@ -12,22 +12,16 @@
 //   FR-07-01 AC-04: Recent activity: last 5 completed courses with date
 //   FR-07-01 AC-05: Unread notifications badge (via shell header)
 //   FR-07-01 AC-06: SOP retraining queue
-//   FR-07-01 AC-07: Dashboard loads within 3 seconds P95
+//   FR-07-01 AC-07: Dashboard loads w  ithin 3 seconds P95
 //   FR-07-01 AC-08: Data freshness ≤ 5 min cache TTL; "Last updated" shown
 //   EMP-WF-02: View Dashboard event workflow (AccessLog page_view)
 //   EMP-01: User story — compliance %, urgency sort, expiring certs, recent activity
 //
-// Layout (matches React Overview.tsx):
+// Layout:
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │  Welcome Card: Hello {name} + email + stats grid + avatar                  │
-// ├──────────────────────────────────────┬──────────────────────────────────────┤
-// │  Hours Spent (BarChart)             │  Performance (AreaChart + mini-stats)│
-// ├──────────────────────────────────────┴──────────────────────────────────────┤
-// │  Continue Learning (3-card grid with images + progress)                    │
-// ├────────────────────────────────────┬────────────────────────────────────────┤
-// │  Upcoming Deadlines               │  Recent Activity                      │
-// ├────────────────────────────────────┴────────────────────────────────────────┤
-// │  Compliance Alerts (overdue, SOP retraining, cert expiry)                 │
+// ├─────────────────────────────────────────────────────────────────────────────┤
+// │  Continue Learning, overdue / deadlines, recent activity, e-sign, alerts   │
 // └─────────────────────────────────────────────────────────────────────────────┘
 //
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -37,9 +31,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' show Enrollment;
 
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../providers/user_provider.dart';
+import '../shared/communication_sheets.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD SCREEN
@@ -67,7 +64,9 @@ class EmployeeDashboardV2 extends ConsumerWidget {
             Text('$e', style: PharmaTypography.caption),
             const SizedBox(height: 16),
             TextButton.icon(
-              onPressed: () => ref.invalidate(dashboardSummaryProvider),
+              onPressed: () {
+                invalidateEmployeeDashboard(ref);
+              },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
@@ -95,136 +94,89 @@ class _DashboardContent extends ConsumerWidget {
     return RefreshIndicator(
       color: PharmaColors.emerald600,
       onRefresh: () async {
-        ref.invalidate(dashboardSummaryProvider);
+        invalidateEmployeeDashboard(ref);
+        await ref.read(dashboardSummaryProvider.future);
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ─────────────────────────────────────────────────────────────
-            // 0. COMPLIANCE BANNERS — FRD SCR-03 Zone 1
-            // Conditional banners: overdue (red), cert revoked (persistent),
-            // SOP retraining (orange), waiver (purple)
-            // ─────────────────────────────────────────────────────────────
-            if (summary.compliance.overdueCount > 0)
-              _ComplianceBanner(
-                color: PharmaColors.danger,
-                bgColor: PharmaColors.dangerBg,
-                icon: Icons.error_rounded,
-                title: '${summary.compliance.overdueCount} Overdue Training${summary.compliance.overdueCount > 1 ? 's' : ''}',
-                subtitle: 'Immediate action required — complete before next audit.',
-                actionLabel: 'View Overdue',
-                onAction: () => context.go('/employee/lessons'),
-              ),
-            if (summary.complianceAlerts.any((a) => a['type'] == 'cert_revoked'))
-              _ComplianceBanner(
-                color: PharmaColors.danger,
-                bgColor: PharmaColors.dangerBg,
-                icon: Icons.gpp_bad_rounded,
-                title: 'Certificate Revoked',
-                subtitle: 'One or more certificates have been revoked. Retraining required.',
-                actionLabel: 'View Details',
-                onAction: () => context.go('/employee/credentials'),
-              ),
-            if (summary.complianceAlerts.any((a) => a['type'] == 'sop_retraining'))
-              _ComplianceBanner(
-                color: PharmaColors.orangeText,
-                bgColor: PharmaColors.orangeBg,
-                icon: Icons.description_outlined,
-                title: 'SOP Retraining Required',
-                subtitle: 'Updated SOPs require acknowledgement and retraining.',
-                actionLabel: 'Start Retraining',
-                onAction: () => context.go('/employee/lessons'),
-              ),
+            // 1. Page header — "Compliance & activity" + greeting + avatar
+            _ComplianceDashboardHeader(summary: summary),
+            const SizedBox(height: 16),
 
-            // ─────────────────────────────────────────────────────────────
-            // 1. WELCOME CARD (React: white card with stats + avatar)
-            // ─────────────────────────────────────────────────────────────
-            _WelcomeCard(summary: summary),
-            const SizedBox(height: PharmaSpacing.sectionGap),
-
-            // ─────────────────────────────────────────────────────────────
-            // 2. CHARTS ROW (React: grid-cols-2 gap-6)
-            // ─────────────────────────────────────────────────────────────
+            // 2. TOP ROW — Compliance overview (donut + scores) | Overdue table
             LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 900;
-                return isNarrow
-                    ? Column(
-                        children: [
-                          _HoursSpentChart(monthlyHours: summary.monthlyHours),
-                          const SizedBox(height: PharmaSpacing.gridGap),
-                          _PerformanceChart(summary: summary),
-                        ],
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _HoursSpentChart(monthlyHours: summary.monthlyHours)),
-                          const SizedBox(width: PharmaSpacing.gridGap),
-                          Expanded(child: _PerformanceChart(summary: summary)),
-                        ],
-                      );
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ComplianceOverviewCard(summary: summary),
+                      const SizedBox(height: 12),
+                      _EsignatureReadinessCard(summary: summary),
+                      const SizedBox(height: 12),
+                      _OverdueTrainingsBreakdownCard(summary: summary),
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 5, child: Column(
+                      children: [
+                        _ComplianceOverviewCard(summary: summary),
+                        const SizedBox(height: 12),
+                        _EsignatureReadinessCard(summary: summary),
+                      ],
+                    )),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 5, child: _OverdueTrainingsBreakdownCard(summary: summary)),
+                  ],
+                );
               },
             ),
-            const SizedBox(height: PharmaSpacing.sectionGap),
+            const SizedBox(height: 20),
 
-            // ─────────────────────────────────────────────────────────────
-            // 3. CONTINUE LEARNING (React: 3-card grid with images)
-            // ─────────────────────────────────────────────────────────────
-            if (summary.inProgress.isNotEmpty || summary.toDo.isNotEmpty) ...[
-              _ContinueLearningSection(
-                enrollments: [...summary.inProgress, ...summary.toDo].take(3).toList(),
-              ),
-              const SizedBox(height: PharmaSpacing.sectionGap),
-            ],
-
-            // ─────────────────────────────────────────────────────────────
-            // 4. UPCOMING DEADLINES + RECENT ACTIVITY (two-column)
-            // FR-07-01 AC-02: Urgency-sorted assignments
-            // FR-07-01 AC-04: Recent activity last 5 completed
-            // ─────────────────────────────────────────────────────────────
+            // 3. SECOND ROW — Recent activity | Learning progress
             LayoutBuilder(
               builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 900;
-                return isNarrow
-                    ? Column(
-                        children: [
-                          _UpcomingDeadlinesCard(dueDates: summary.upcomingDueDates),
-                          const SizedBox(height: PharmaSpacing.gridGap),
-                          _RecentActivityCard(activities: summary.recentActivity),
-                        ],
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _UpcomingDeadlinesCard(dueDates: summary.upcomingDueDates)),
-                          const SizedBox(width: PharmaSpacing.gridGap),
-                          Expanded(child: _RecentActivityCard(activities: summary.recentActivity)),
-                        ],
-                      );
+                final isNarrow = constraints.maxWidth < 1000;
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _RecentActivityCard(activities: summary.recentActivity),
+                      const SizedBox(height: 12),
+                      _LearningProgressCarousel(summary: summary),
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 5, child: _RecentActivityCard(activities: summary.recentActivity)),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 5, child: _LearningProgressCarousel(summary: summary)),
+                  ],
+                );
               },
             ),
 
-            // ─────────────────────────────────────────────────────────────
-            // 5. COMPLIANCE ALERTS — PHARMA REGULATORY CRITICAL
-            // FR-07-01 AC-03: Expiring certificates (30/60/90)
-            // FR-07-01 AC-06: SOP retraining queue
-            // ─────────────────────────────────────────────────────────────
+            // 4. COMPLIANCE ALERTS — PHARMA REGULATORY CRITICAL
             if (summary.complianceAlerts.isNotEmpty || summary.compliance.overdueCount > 0) ...[
-              const SizedBox(height: PharmaSpacing.sectionGap),
+              const SizedBox(height: 20),
               _ComplianceAlertsSection(
                 alerts: summary.complianceAlerts,
                 overdueCount: summary.compliance.overdueCount,
               ),
             ],
 
-            // ─────────────────────────────────────────────────────────────
             // 6. LAST UPDATED TIMESTAMP (FR-07-01 AC-08)
-            // ─────────────────────────────────────────────────────────────
-            const SizedBox(height: PharmaSpacing.lg),
+            const SizedBox(height: 20),
             Center(
               child: Text(
                 lastUpdated != null
@@ -235,7 +187,7 @@ class _DashboardContent extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: PharmaSpacing.lg),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -252,11 +204,711 @@ class _DashboardContent extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 1. WELCOME CARD
-// React: bg-white rounded-lg p-6 shadow-sm border-gray-200
-// Contains: greeting + email + 3 stat cards + user avatar
+// COMPLIANCE DASHBOARD — Header + top row + second row (reference layout)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+class _ComplianceDashboardHeader extends StatelessWidget {
+  const _ComplianceDashboardHeader({required this.summary});
+
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Compliance & activity',
+                style: PharmaTypography.caption.copyWith(
+                  color: PharmaColors.textTertiary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Hello, ${summary.user.firstName}',
+                style: PharmaTypography.headingLarge.copyWith(fontSize: 22),
+              ),
+            ],
+          ),
+        ),
+        // Avatar removed
+      ],
+    );
+  }
+}
+
+class _ComplianceOverviewCard extends StatelessWidget {
+  const _ComplianceOverviewCard({required this.summary});
+
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final rate = summary.complianceScorePercent.round();
+    final perf = summary.performanceScorePercent;
+    final c = summary.enrollmentCompleteCount;
+    final ip = summary.enrollmentInProgressCount;
+    final od = summary.enrollmentOverdueCount;
+    final sum = c + ip + od;
+
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Compliance overview', style: PharmaTypography.headingMedium),
+          const SizedBox(height: PharmaSpacing.md),
+          if (sum == 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'No enrollments yet',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+                ),
+              ),
+            )
+          else
+            Row(
+              children: [
+                SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 44,
+                      sections: [
+                        if (c > 0)
+                          PieChartSectionData(
+                            color: PharmaColors.emerald500,
+                            value: c.toDouble(),
+                            radius: 28,
+                            showTitle: false,
+                          ),
+                        if (ip > 0)
+                          PieChartSectionData(
+                            color: PharmaColors.warning,
+                            value: ip.toDouble(),
+                            radius: 28,
+                            showTitle: false,
+                          ),
+                        if (od > 0)
+                          PieChartSectionData(
+                            color: PharmaColors.danger,
+                            value: od.toDouble(),
+                            radius: 28,
+                            showTitle: false,
+                          ),
+                        if (c == 0 && ip == 0 && od == 0)
+                          PieChartSectionData(
+                            color: PharmaColors.gray200,
+                            value: 1,
+                            radius: 28,
+                            showTitle: false,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: PharmaSpacing.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$rate%',
+                        style: PharmaTypography.headingLarge.copyWith(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: PharmaColors.emerald700,
+                        ),
+                      ),
+                      Text(
+                        'Compliance score (target 100%)',
+                        style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+                      ),
+                      const SizedBox(height: PharmaSpacing.sm),
+                      Text(
+                        summary.hasAssessmentScores && perf != null
+                            ? 'Performance score: ${perf.round()}%'
+                            : 'Performance score: —',
+                        style: PharmaTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: PharmaColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Average assessment score',
+                        style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: PharmaSpacing.md),
+          Text(
+            'Compliance score: $rate% (target 100%)',
+            style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+          ),
+          const SizedBox(height: PharmaSpacing.sm),
+          Wrap(
+            spacing: PharmaSpacing.md,
+            runSpacing: 8,
+            children: [
+              _LegendDot(color: PharmaColors.danger, label: '$od overdue (enrollments)'),
+              _LegendDot(color: PharmaColors.emerald500, label: '$c complete'),
+              _LegendDot(color: PharmaColors.warning, label: '$ip in progress'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: PharmaTypography.caption),
+      ],
+    );
+  }
+}
+
+/// Nested scrollables on web: [Scrollbar] must use the same [ScrollController] as the
+/// [ListView], or the bar has no [ScrollPosition] (PrimaryScrollController mismatch).
+class _LinkedScrollbarList extends StatefulWidget {
+  const _LinkedScrollbarList({
+    required this.height,
+    required this.itemCount,
+    required this.itemBuilder,
+    this.separatorBuilder,
+    this.scrollDirection = Axis.vertical,
+  });
+
+  final double height;
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+  final IndexedWidgetBuilder? separatorBuilder;
+  final Axis scrollDirection;
+
+  @override
+  State<_LinkedScrollbarList> createState() => _LinkedScrollbarListState();
+}
+
+class _LinkedScrollbarListState extends State<_LinkedScrollbarList> {
+  late final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: widget.height,
+      child: Scrollbar(
+        controller: _controller,
+        thumbVisibility: true,
+        child: widget.separatorBuilder != null
+            ? ListView.separated(
+                controller: _controller,
+                scrollDirection: widget.scrollDirection,
+                padding: EdgeInsets.zero,
+                itemCount: widget.itemCount,
+                separatorBuilder: widget.separatorBuilder!,
+                itemBuilder: widget.itemBuilder,
+              )
+            : ListView.builder(
+                controller: _controller,
+                scrollDirection: widget.scrollDirection,
+                padding: EdgeInsets.zero,
+                itemCount: widget.itemCount,
+                itemBuilder: widget.itemBuilder,
+              ),
+      ),
+    );
+  }
+}
+
+Map<String, dynamic>? _dueRowForEnrollment(
+  Enrollment e,
+  DashboardSummary summary,
+) {
+  final title = e.courseVersion?.course?.title;
+  for (final d in summary.upcomingDueDates) {
+    if (e.assignmentId != null && d['assignmentId'] == e.assignmentId) {
+      return d;
+    }
+    if (title != null && d['courseTitle'] == title) return d;
+  }
+  return null;
+}
+
+class _OverdueTrainingsBreakdownCard extends StatelessWidget {
+  const _OverdueTrainingsBreakdownCard({required this.summary});
+
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final overdue = List<Map<String, dynamic>>.from(summary.overdueItems);
+
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Overdue trainings', style: PharmaTypography.headingMedium),
+          const SizedBox(height: PharmaSpacing.md),
+          if (overdue.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  summary.overdueDetailIncomplete
+                      ? 'Overdue items are reported by compliance, but this list could not be loaded. '
+                          'Pull to refresh. If the problem persists, open Assigned training or My Learning.'
+                      : 'No overdue items. This list shows active assignments past their due date '
+                          'and expired certificates. If you just created an account or have no assignments yet, '
+                          'nothing will appear here.',
+                  textAlign: TextAlign.center,
+                  style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+                ),
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text('Course', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+                ),
+                Expanded(
+                  child: Text('Tag', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+                ),
+                Expanded(
+                  child: Text('Overdue', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(width: 72),
+              ],
+            ),
+            const Divider(height: 16),
+            _LinkedScrollbarList(
+              height: 300,
+              itemCount: overdue.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                    final item = overdue[index];
+                    final kind = item['kind'] as String? ?? 'assignment';
+                    final title = item['courseTitle'] as String? ?? 'Course';
+                    final tag = item['regulatoryTag'] as String? ??
+                        item['courseCategory'] as String? ??
+                        item['sopNumber'] as String? ??
+                        'GMP';
+                    final days = item['daysOverdue'] as int? ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: PharmaTypography.body,
+                                ),
+                                if (kind == 'certificate_expired')
+                                  Text(
+                                    'Expired certificate',
+                                    style: PharmaTypography.caption
+                                        .copyWith(color: PharmaColors.textTertiary),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              tag,
+                              style: PharmaTypography.caption,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '$days days',
+                              style: PharmaTypography.caption.copyWith(
+                                color: PharmaColors.danger,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 88,
+                            child: FilledButton(
+                              onPressed: () {
+                                if (kind == 'certificate_expired') {
+                                  context.go('/employee/credentials');
+                                } else {
+                                  context.go('/employee/lessons');
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                backgroundColor: PharmaColors.danger,
+                              ),
+                              child: Text(
+                                kind == 'certificate_expired' ? 'Renew' : 'Start',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+            ),
+            if (overdue.length > 4)
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: () => context.go('/employee/lessons'),
+                  child: Text('View all ${overdue.length}'),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EsignatureReadinessCard extends StatelessWidget {
+  const _EsignatureReadinessCard({required this.summary});
+
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = summary.esignatureSummary;
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('E-signature readiness', style: PharmaTypography.headingMedium),
+          const SizedBox(height: PharmaSpacing.md),
+          if (rows.isEmpty)
+            Text(
+              'No pending signatures or recent e-signatures. Items appear when training requires acknowledgement or when you complete signed training records.',
+              style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+            )
+          else
+            ...rows.take(6).map((row) {
+              final kind = row['kind'] as String? ?? '';
+              final title = row['courseTitle'] as String? ?? 'Training';
+              if (kind == 'signed') {
+                final at = row['signedAt'] as String?;
+                final hash = row['integrityHash'] as String?;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: PharmaTypography.bodyMedium),
+                            if (at != null)
+                              Text(
+                                'Signed: ${_fmtShort(at)}',
+                                style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+                              ),
+                            if (hash != null && hash.isNotEmpty)
+                              Text(
+                                hash.length > 24 ? '${hash.substring(0, 24)}…' : hash,
+                                style: PharmaTypography.caption.copyWith(
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                  color: PharmaColors.textTertiary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.emerald50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'E-signed',
+                          style: PharmaTypography.caption.copyWith(
+                            color: PharmaColors.emerald700,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: PharmaTypography.bodyMedium),
+                          Text(
+                            kind == 'pending_ack'
+                                ? 'Retraining acknowledgement required'
+                                : 'Signature required to finalize training',
+                            style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed: () => context.go('/employee/lessons'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: PharmaColors.danger,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      child: const Text('Sign now', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  String _fmtShort(String iso) {
+    try {
+      return DateFormat.yMMMd().format(DateTime.parse(iso).toLocal());
+    } catch (_) {
+      return iso;
+    }
+  }
+}
+
+class _LearningProgressCarousel extends StatelessWidget {
+  const _LearningProgressCarousel({required this.summary});
+
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final list = [...summary.inProgress, ...summary.toDo];
+    final dueLookup = <int, Map<String, dynamic>>{};
+    for (final d in summary.upcomingDueDates) {
+      final aid = d['assignmentId'] as int?;
+      if (aid != null) dueLookup[aid] = d;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Learning progress', style: PharmaTypography.headingMedium),
+          const SizedBox(height: PharmaSpacing.md),
+          if (list.isEmpty)
+            Text(
+              'No active courses',
+              style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+            )
+          else
+            _LinkedScrollbarList(
+              height: 220,
+              scrollDirection: Axis.horizontal,
+              itemCount: list.length.clamp(0, 16),
+              separatorBuilder: (_, _) => const SizedBox(width: PharmaSpacing.md),
+              itemBuilder: (context, index) {
+                    final e = list[index];
+                    final course = e.courseVersion?.course;
+                    Map<String, dynamic>? due;
+                    if (e.assignmentId != null) {
+                      due = dueLookup[e.assignmentId!];
+                    }
+                    due ??= _dueRowForEnrollment(e, summary);
+                    final isOverdue = due?['isOverdue'] == true;
+                    final priority = due?['priority'] as String?;
+                    final progress = _progressFromStatus(e.status);
+                    return SizedBox(
+                      width: 200,
+                      child: Material(
+                        color: PharmaColors.surface,
+                        borderRadius: PharmaRadius.cardRadius,
+                        child: InkWell(
+                          onTap: () => context.go(
+                            '/employee/course/${course?.id ?? e.courseVersionId}',
+                            extra: {
+                              'courseVersionId': e.courseVersionId.toString(),
+                              'enrollmentId': e.id?.toString(),
+                            },
+                          ),
+                          borderRadius: PharmaRadius.cardRadius,
+                          child: Container(
+                            padding: const EdgeInsets.all(PharmaSpacing.md),
+                            decoration: BoxDecoration(
+                              borderRadius: PharmaRadius.cardRadius,
+                              border: Border.all(color: PharmaColors.borderLight),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        course?.title ?? 'Course',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    if (isOverdue)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: PharmaColors.dangerBg,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'Overdue',
+                                          style: PharmaTypography.caption.copyWith(
+                                            color: PharmaColors.danger,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: progress / 100,
+                                    minHeight: 6,
+                                    backgroundColor: PharmaColors.gray200,
+                                    color: PharmaColors.emerald500,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (due != null)
+                                  Text(
+                                    'Due: ${_dueLabel(due)}',
+                                    style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+                                  ),
+                                if (priority != null && priority.isNotEmpty)
+                                  Text(
+                                    'Priority: $priority',
+                                    style: PharmaTypography.caption.copyWith(
+                                      color: priority.toLowerCase() == 'high'
+                                          ? PharmaColors.danger
+                                          : PharmaColors.warning,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+            ),
+        ],
+      ),
+    );
+  }
+
+  double _progressFromStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 100;
+      case 'in_progress':
+        return 45;
+      default:
+        return 8;
+    }
+  }
+
+  String _dueLabel(Map<String, dynamic> due) {
+    final iso = due['dueDate'] as String?;
+    if (iso == null) return '—';
+    try {
+      return DateFormat.yMMMd().format(DateTime.parse(iso).toLocal());
+    } catch (_) {
+      return iso;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. WELCOME CARD (retained for future / alternate layouts)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ignore: unused_element
 class _WelcomeCard extends StatelessWidget {
   const _WelcomeCard({required this.summary});
 
@@ -383,7 +1035,7 @@ class _WelcomeCard extends StatelessWidget {
 
     final stats = [
       _StatData(
-        title: 'OVERDUE',
+        title: 'OVERDUE (ITEMS)',
         value: summary.compliance.overdueCount.toString(),
         icon: Icons.error_rounded,
         accentColor: PharmaColors.danger,
@@ -507,309 +1159,10 @@ class _StatItem extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 2A. HOURS SPENT CHART
-// React: BarChart with emerald-500 bars, rounded-[8,8,0,0]
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _HoursSpentChart extends StatelessWidget {
-  const _HoursSpentChart({required this.monthlyHours});
-
-  final List<Map<String, dynamic>> monthlyHours;
-
-  @override
-  Widget build(BuildContext context) {
-    final chartData = monthlyHours.isNotEmpty
-        ? monthlyHours
-        : [
-            {'month': 'Jan', 'hours': 0.0},
-            {'month': 'Feb', 'hours': 0.0},
-            {'month': 'Mar', 'hours': 0.0},
-            {'month': 'Apr', 'hours': 0.0},
-            {'month': 'May', 'hours': 0.0},
-          ];
-
-    return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: PharmaColors.cardBg,
-        borderRadius: PharmaRadius.cardRadius,
-        border: Border.all(color: PharmaColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Hours Spent', style: PharmaTypography.headingMedium),
-              Text(
-                'Last ${chartData.length} months',
-                style: PharmaTypography.body.copyWith(
-                  color: PharmaColors.emerald600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: PharmaSpacing.xxl),
-          SizedBox(
-            height: 250,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: _getMaxY(chartData),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: _getInterval(chartData),
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: PharmaColors.borderLight,
-                    strokeWidth: 1,
-                    dashArray: [5, 5],
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: _getInterval(chartData),
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        return Text(value.toInt().toString(), style: PharmaTypography.caption);
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final idx = value.toInt();
-                        if (idx < 0 || idx >= chartData.length) return const SizedBox();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(chartData[idx]['month'] as String? ?? '', style: PharmaTypography.caption),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => PharmaColors.gray900,
-                    tooltipRoundedRadius: 6,
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      return BarTooltipItem(
-                        '${rod.toY.toStringAsFixed(1)}h',
-                        const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-                      );
-                    },
-                  ),
-                ),
-                barGroups: chartData.asMap().entries.map((entry) {
-                  return BarChartGroupData(
-                    x: entry.key,
-                    barRods: [
-                      BarChartRodData(
-                        toY: (entry.value['hours'] as num?)?.toDouble() ?? 0,
-                        color: PharmaColors.emerald500,
-                        width: 28,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  double _getMaxY(List<Map<String, dynamic>> data) {
-    if (data.isEmpty) return 10;
-    final maxHours = data.map((d) => (d['hours'] as num?)?.toDouble() ?? 0).fold<double>(0, (a, b) => a > b ? a : b);
-    if (maxHours == 0) return 10;
-    return (maxHours * 1.2).ceilToDouble();
-  }
-
-  double _getInterval(List<Map<String, dynamic>> data) {
-    final maxY = _getMaxY(data);
-    if (maxY <= 10) return 2;
-    if (maxY <= 50) return 10;
-    if (maxY <= 100) return 20;
-    return (maxY / 5).ceilToDouble();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 2B. PERFORMANCE CHART
-// React: AreaChart + 3 mini-stat cards (Total Hours, Avg. Score, Courses)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _PerformanceChart extends StatelessWidget {
-  const _PerformanceChart({required this.summary});
-
-  final DashboardSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final totalEnrollments = summary.inProgress.length + summary.toDo.length + summary.completed.length;
-    final avgScore = summary.averageQuizScore > 0
-        ? '${summary.averageQuizScore.toInt()}%'
-        : '${summary.compliance.complianceRate.toInt()}%';
-
-    final List<FlSpot> spots;
-    if (summary.weeklyProgress.isNotEmpty) {
-      spots = summary.weeklyProgress.asMap().entries.map((e) {
-        final completed = (e.value['completed'] as num?)?.toDouble() ?? 0;
-        final total = (e.value['total'] as num?)?.toDouble() ?? 1;
-        return FlSpot(e.key.toDouble(), total > 0 ? (completed / total * 100) : 0);
-      }).toList();
-    } else {
-      final completionRate = totalEnrollments > 0
-          ? (summary.completed.length / totalEnrollments * 100)
-          : 0.0;
-      spots = List.generate(6, (i) {
-        final progress = completionRate * (i + 1) / 6;
-        return FlSpot(i.toDouble(), progress.clamp(0, 100));
-      });
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: PharmaColors.cardBg,
-        borderRadius: PharmaRadius.cardRadius,
-        border: Border.all(color: PharmaColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Performance', style: PharmaTypography.headingMedium),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.md, vertical: PharmaSpacing.xs),
-                decoration: BoxDecoration(
-                  color: PharmaColors.emerald50,
-                  borderRadius: PharmaRadius.pillRadius,
-                ),
-                child: Text(
-                  '${summary.learningStreak}🔥',
-                  style: PharmaTypography.caption.copyWith(color: PharmaColors.emerald700, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: PharmaSpacing.lg),
-          Row(
-            children: [
-              Expanded(child: _MiniStat(label: 'Total Hours', value: summary.totalHoursThisYear.toStringAsFixed(0))),
-              const SizedBox(width: PharmaSpacing.lg),
-              Expanded(child: _MiniStat(label: 'Avg. Score', value: avgScore)),
-              const SizedBox(width: PharmaSpacing.lg),
-              Expanded(child: _MiniStat(label: 'Courses', value: totalEnrollments.toString())),
-            ],
-          ),
-          const SizedBox(height: PharmaSpacing.lg),
-          SizedBox(
-            height: 150,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 25,
-                  getDrawingHorizontalLine: (value) => FlLine(color: PharmaColors.borderLight, strokeWidth: 1, dashArray: [5, 5]),
-                ),
-                borderData: FlBorderData(show: false),
-                titlesData: const FlTitlesData(
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => PharmaColors.gray900,
-                    tooltipRoundedRadius: 6,
-                    getTooltipItems: (spots) {
-                      return spots.map((spot) {
-                        return LineTooltipItem(
-                          '${spot.y.toStringAsFixed(0)}%',
-                          const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-                minY: 0,
-                maxY: 100,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: true,
-                    color: PharmaColors.emerald500,
-                    barWidth: 2,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          PharmaColors.emerald500.withValues(alpha: 0.3),
-                          PharmaColors.emerald500.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: PharmaTypography.caption),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: PharmaColors.textPrimary),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // 3. CONTINUE LEARNING SECTION
-// React: bg-white rounded-lg p-6, grid-cols-3 gap-4
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ignore: unused_element
 class _ContinueLearningSection extends StatelessWidget {
   const _ContinueLearningSection({required this.enrollments});
 
@@ -1007,9 +1360,9 @@ class _CourseCardState extends State<_CourseCard> {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 4A. UPCOMING DEADLINES CARD
-// FR-07-01 AC-02: Assignments sorted urgency-first
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ignore: unused_element
 class _UpcomingDeadlinesCard extends StatelessWidget {
   const _UpcomingDeadlinesCard({required this.dueDates});
 
@@ -1118,13 +1471,74 @@ class _UpcomingDeadlinesCard extends StatelessWidget {
 // FR-07-01 AC-04: Last 5 completed courses with date
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _RecentActivityCard extends StatelessWidget {
+int? _parseActivityInt(Object? v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString());
+}
+
+/// Opens the course viewer for context, then the instructor thread (highlighting [messageId] if present).
+Future<void> _openActivityMessageThread(
+  BuildContext context,
+  WidgetRef ref,
+  Map<String, dynamic> item,
+) async {
+  final cvId = _parseActivityInt(item['courseVersionId']);
+  if (cvId == null || cvId <= 0) return;
+  final courseId = _parseActivityInt(item['courseId']);
+  final messageId = _parseActivityInt(item['messageId']);
+  final courseTitle = item['courseTitle'] as String? ?? 'Course';
+
+  if (courseId != null && courseId > 0) {
+    final enrollments = await ref.read(enrollmentsProvider.future);
+    Enrollment? match;
+    for (final e in enrollments) {
+      if (e.courseVersionId == cvId) {
+        match = e;
+        break;
+      }
+    }
+    final user = ref.read(currentUserProvider).valueOrNull;
+    if (!context.mounted) return;
+    context.push('/employee/course/$courseId', extra: {
+      'courseVersionId': cvId.toString(),
+      if (match?.id != null) 'enrollmentId': match!.id!.toString(),
+      if (match != null) 'enrollmentStatus': match.status,
+      if (user?.id != null) 'userId': user!.id!.toString(),
+      'courseTitle': courseTitle,
+    });
+    await Future<void>.delayed(Duration.zero);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        openLearnerInstructorChat(
+          context,
+          courseVersionId: cvId,
+          courseTitle: courseTitle,
+          focusMessageId: messageId,
+        );
+      }
+    });
+    return;
+  }
+
+  if (context.mounted) {
+    await openLearnerInstructorChat(
+      context,
+      courseVersionId: cvId,
+      courseTitle: courseTitle,
+      focusMessageId: messageId,
+    );
+  }
+}
+
+class _RecentActivityCard extends ConsumerWidget {
   const _RecentActivityCard({required this.activities});
 
   final List<Map<String, dynamic>> activities;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -1135,62 +1549,236 @@ class _RecentActivityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Recent Activity', style: PharmaTypography.headingMedium),
+          Text('Recent activity', style: PharmaTypography.headingMedium),
           const SizedBox(height: PharmaSpacing.lg),
           if (activities.isEmpty)
-            const _EmptyState(icon: Icons.history_rounded, message: 'No recent activity')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: PharmaSpacing.lg),
+              child: Column(
+                children: [
+                  Icon(Icons.history_rounded, size: 32, color: PharmaColors.textQuaternary),
+                  const SizedBox(height: PharmaSpacing.sm),
+                  Text(
+                    'No recent activity yet. Events appear here after enrollments, assessments, '
+                    'messages to your instructor, and recorded training actions. Run the demo seed '
+                    'or complete a course to see history.',
+                    textAlign: TextAlign.center,
+                    style: PharmaTypography.caption.copyWith(color: PharmaColors.textQuaternary),
+                  ),
+                ],
+              ),
+            )
           else
-            ...activities.take(5).map((item) {
-              final action = item['action'] as String? ?? '';
-              final entityType = item['entityType'] as String? ?? '';
-              final timestamp = item['timestamp'] as String? ?? '';
-              final courseTitle = item['courseTitle'] as String?;
-              final (icon, color, bgColor, label) = _getActivityStyle(action, entityType);
+            _LinkedScrollbarList(
+              height: 280,
+              itemCount: activities.length.clamp(0, 20),
+              itemBuilder: (context, index) {
+                    final item = activities[index];
+                    final action = item['action'] as String? ?? '';
+                    final entityType = item['entityType'] as String? ?? '';
+                    final timestamp = item['timestamp'] as String? ?? '';
+                    final courseTitle = item['courseTitle'] as String?;
+                    final detail = item['detail'] as String?;
+                    final (icon, color, bgColor, label) =
+                        _getActivityStyle(action, entityType);
+                    final headline = _activityHeadline(action, entityType, courseTitle, label);
+                    final isMessageActivity = entityType == 'learner_trainer_message' &&
+                        (action == 'LearnerMessageSent' ||
+                            action == 'InstructorReplyReceived');
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-                      child: Icon(icon, color: color, size: 18),
-                    ),
-                    const SizedBox(width: PharmaSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(courseTitle ?? label, style: PharmaTypography.bodyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 2),
-                          Text(label, style: PharmaTypography.caption),
-                        ],
-                      ),
-                    ),
-                    Text(_formatTimestamp(timestamp), style: PharmaTypography.caption),
-                  ],
-                ),
-              );
-            }),
+                    final row = Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                              color: bgColor, shape: BoxShape.circle),
+                          child: Icon(icon, color: color, size: 18),
+                        ),
+                        const SizedBox(width: PharmaSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                headline,
+                                style: PharmaTypography.bodyMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (detail != null && detail.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  detail,
+                                  style: PharmaTypography.caption
+                                      .copyWith(color: PharmaColors.textSecondary),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              const SizedBox(height: 2),
+                              Text(label, style: PharmaTypography.caption),
+                            ],
+                          ),
+                        ),
+                        Text(_formatTimestamp(timestamp),
+                            style: PharmaTypography.caption),
+                      ],
+                    );
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
+                      child: isMessageActivity
+                          ? Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => _openActivityMessageThread(
+                                  context,
+                                  ref,
+                                  item,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: PharmaSpacing.xs,
+                                    horizontal: 2,
+                                  ),
+                                  child: row,
+                                ),
+                              ),
+                            )
+                          : row,
+                    );
+                  },
+            ),
         ],
       ),
     );
   }
 
+  String _activityHeadline(
+    String action,
+    String entityType,
+    String? courseTitle,
+    String fallback,
+  ) {
+    // Comprehensive mapping for all known and possible event types
+    if (action == 'LearnerMessageSent' && courseTitle != null) {
+      return 'Message sent: $courseTitle';
+    }
+    if (action == 'InstructorReplyReceived' && courseTitle != null) {
+      return 'Instructor reply: $courseTitle';
+    }
+    if (action == 'TrainingCompleted' && courseTitle != null) {
+      return 'Completed: $courseTitle';
+    }
+    if (action == 'EnrollmentStarted' && courseTitle != null) {
+      return 'Started: $courseTitle';
+    }
+    if (action == 'EnrollmentCreated' && courseTitle != null) {
+      return 'Enrolled: $courseTitle';
+    }
+    if (action == 'CertificateIssued' && courseTitle != null) {
+      return 'Certificate earned: $courseTitle';
+    }
+    if (action == 'AssessmentCompleted' && courseTitle != null) {
+      return 'Assessment completed: $courseTitle';
+    }
+    if (entityType == 'assessment_attempt' || action.toLowerCase().contains('assessment')) {
+      return courseTitle != null ? 'Assessment: $courseTitle' : fallback;
+    }
+    if (entityType == 'certificate' && courseTitle != null) {
+      return 'Certificate: $courseTitle';
+    }
+    if (entityType == 'learner_trainer_message' && courseTitle != null) {
+      return 'Message: $courseTitle';
+    }
+    if (entityType == 'training_record' && courseTitle != null) {
+      return 'Training record: $courseTitle';
+    }
+    if (entityType == 'enrollment' && courseTitle != null) {
+      return 'Enrollment: $courseTitle';
+    }
+    if (entityType == 'User') {
+      return 'User event';
+    }
+    if (entityType == 'Lesson' && courseTitle != null) {
+      return 'Lesson: $courseTitle';
+    }
+    if (entityType == 'Assessment' && courseTitle != null) {
+      return 'Assessment: $courseTitle';
+    }
+    if (courseTitle != null && courseTitle.isNotEmpty) return courseTitle;
+    // Fallback for unknown types
+    return fallback.isNotEmpty ? fallback : 'Activity';
+  }
+
   (IconData, Color, Color, String) _getActivityStyle(String action, String entityType) {
+    // Comprehensive mapping for all known and possible event types
     switch (action) {
+      case 'LearnerMessageSent':
+        return (
+          Icons.send_rounded,
+          PharmaColors.emerald600,
+          PharmaColors.emerald50,
+          'Message to instructor'
+        );
+      case 'InstructorReplyReceived':
+        return (
+          Icons.mark_chat_read_rounded,
+          PharmaColors.info,
+          PharmaColors.infoBg,
+          'Reply from instructor'
+        );
       case 'TrainingCompleted':
-        return (Icons.check_circle_rounded, PharmaColors.success, PharmaColors.successBg, 'Completed training');
+        return (Icons.check_circle_rounded, PharmaColors.success,
+            PharmaColors.successBg, 'Course completed');
       case 'EnrollmentStarted':
-        return (Icons.play_circle_rounded, PharmaColors.info, PharmaColors.infoBg, 'Started course');
+        return (Icons.play_circle_rounded, PharmaColors.info,
+            PharmaColors.infoBg, 'Started course');
       case 'EnrollmentCreated':
-        return (Icons.add_circle_rounded, PharmaColors.emerald600, PharmaColors.emerald50, 'Enrolled in course');
+        return (Icons.add_circle_rounded, PharmaColors.emerald600,
+            PharmaColors.emerald50, 'Enrolled in course');
       case 'CertificateIssued':
-        return (Icons.workspace_premium_rounded, PharmaColors.warning, PharmaColors.warningBg, 'Certificate earned');
+        return (Icons.workspace_premium_rounded, PharmaColors.warning,
+            PharmaColors.warningBg, 'Certificate earned');
+      case 'AssessmentCompleted':
+        return (Icons.emoji_events_outlined, PharmaColors.warning,
+            PharmaColors.warningBg, 'Assessment completed');
+      // Add more known backend actions here as needed
       default:
-        if (entityType == 'certificate') return (Icons.workspace_premium_rounded, PharmaColors.warning, PharmaColors.warningBg, 'Certificate action');
-        if (entityType == 'assessment_attempt') return (Icons.quiz_rounded, PharmaColors.info, PharmaColors.infoBg, 'Quiz completed');
-        return (Icons.info_outlined, PharmaColors.textTertiary, PharmaColors.gray100, 'Activity');
+        // Map by entityType for any new or custom backend event types
+        switch (entityType) {
+          case 'certificate':
+            return (Icons.workspace_premium_rounded, PharmaColors.warning,
+                PharmaColors.warningBg, 'Certificate');
+          case 'assessment_attempt':
+            return (Icons.quiz_rounded, PharmaColors.info, PharmaColors.infoBg,
+                'Assessment activity');
+          case 'learner_trainer_message':
+            return (Icons.forum_outlined, PharmaColors.emerald600,
+                PharmaColors.emerald50, 'Message');
+          case 'training_record':
+            return (Icons.history_rounded, PharmaColors.info, PharmaColors.infoBg,
+                'Training record');
+          case 'enrollment':
+            return (Icons.school_rounded, PharmaColors.info, PharmaColors.infoBg,
+                'Enrollment');
+          case 'User':
+            return (Icons.person_rounded, PharmaColors.info, PharmaColors.infoBg,
+                'User event');
+          case 'Lesson':
+            return (Icons.menu_book_rounded, PharmaColors.info, PharmaColors.infoBg,
+                'Lesson');
+          case 'Assessment':
+            return (Icons.quiz_rounded, PharmaColors.info, PharmaColors.infoBg,
+                'Assessment');
+          default:
+            // Fallback for unknown types
+            return (Icons.info_outlined, PharmaColors.textTertiary,
+                PharmaColors.gray100, 'Activity');
+        }
     }
   }
 

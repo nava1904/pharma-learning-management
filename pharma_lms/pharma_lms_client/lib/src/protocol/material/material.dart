@@ -21,6 +21,7 @@ abstract class Material implements _i1.SerializableModel {
     required this.title,
     required this.materialType,
     this.storageKey,
+    this.contentUrl,
     required this.organizationId,
     this.organization,
   });
@@ -30,6 +31,7 @@ abstract class Material implements _i1.SerializableModel {
     required String title,
     required String materialType,
     String? storageKey,
+    String? contentUrl,
     required int organizationId,
     _i2.Organization? organization,
   }) = _MaterialImpl;
@@ -40,6 +42,7 @@ abstract class Material implements _i1.SerializableModel {
       title: jsonSerialization['title'] as String,
       materialType: jsonSerialization['materialType'] as String,
       storageKey: jsonSerialization['storageKey'] as String?,
+      contentUrl: jsonSerialization['contentUrl'] as String?,
       organizationId: jsonSerialization['organizationId'] as int,
       organization: jsonSerialization['organization'] == null
           ? null
@@ -63,6 +66,9 @@ abstract class Material implements _i1.SerializableModel {
   /// S3/MinIO storage key.
   String? storageKey;
 
+  /// URL for embedded content (Google Docs/Sheets/Slides, external video links).
+  String? contentUrl;
+
   int organizationId;
 
   /// Organization for multi-tenant.
@@ -76,6 +82,7 @@ abstract class Material implements _i1.SerializableModel {
     String? title,
     String? materialType,
     String? storageKey,
+    String? contentUrl,
     int? organizationId,
     _i2.Organization? organization,
   });
@@ -87,6 +94,7 @@ abstract class Material implements _i1.SerializableModel {
       'title': title,
       'materialType': materialType,
       if (storageKey != null) 'storageKey': storageKey,
+      if (contentUrl != null) 'contentUrl': contentUrl,
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
     };
@@ -106,6 +114,7 @@ class _MaterialImpl extends Material {
     required String title,
     required String materialType,
     String? storageKey,
+    String? contentUrl,
     required int organizationId,
     _i2.Organization? organization,
   }) : super._(
@@ -113,6 +122,7 @@ class _MaterialImpl extends Material {
          title: title,
          materialType: materialType,
          storageKey: storageKey,
+         contentUrl: contentUrl,
          organizationId: organizationId,
          organization: organization,
        );
@@ -126,6 +136,7 @@ class _MaterialImpl extends Material {
     String? title,
     String? materialType,
     Object? storageKey = _Undefined,
+    Object? contentUrl = _Undefined,
     int? organizationId,
     Object? organization = _Undefined,
   }) {
@@ -134,6 +145,7 @@ class _MaterialImpl extends Material {
       title: title ?? this.title,
       materialType: materialType ?? this.materialType,
       storageKey: storageKey is String? ? storageKey : this.storageKey,
+      contentUrl: contentUrl is String? ? contentUrl : this.contentUrl,
       organizationId: organizationId ?? this.organizationId,
       organization: organization is _i2.Organization?
           ? organization

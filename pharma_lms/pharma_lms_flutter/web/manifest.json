@@ -1,11 +1,11 @@
 {
-    "name": "pharma_lms_flutter",
-    "short_name": "pharma_lms_flutter",
+    "name": "Vyuh lms",
+    "short_name": "Vyuh lms",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Vyuh lms — enterprise learning management.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

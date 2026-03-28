@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
+// **Deprecated module.** Prefer `admin_providers_v2.dart` and the shared client from
+// `lib/core/client.dart`. No feature screens should import this file; it remains only
+// for historical reference and gradual removal of duplicate mock/TODO providers.
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVERPOD CLIENT PROVIDER
 // ═══════════════════════════════════════════════════════════════════════════════

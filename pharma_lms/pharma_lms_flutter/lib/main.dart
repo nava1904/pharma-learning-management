@@ -6,11 +6,14 @@ import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 import 'core/client.dart';
 import 'core/theme/app_theme.dart';
+import 'core/webview_platform_registrar.dart';
+import 'design_system/pharma_design_system.dart';
 import 'routes/app_router.dart';
 import 'widgets/session_timeout_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerWebViewPlatformForWeb();
 
   // Ignore clipboard paste_fail on web (browser blocks clipboard without user gesture).
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -55,7 +58,7 @@ class PharmaLmsApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     return SessionTimeoutWrapper(
       child: MaterialApp.router(
-        title: 'Pharma LMS',
+        title: PharmaBrand.name,
         theme: AppTheme.light,
         routerConfig: router,
       ),

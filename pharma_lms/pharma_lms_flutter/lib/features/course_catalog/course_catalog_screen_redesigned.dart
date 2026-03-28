@@ -1,14 +1,7 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — COURSE CATALOG SCREEN (S5) — SERVERPOD WIRED
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Route: /employee/course-catalog
-// Browse all available courses and enroll
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../core/client.dart';
@@ -16,20 +9,24 @@ import '../../design_system/tokens.dart';
 import '../../design_system/components.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
+import 'course_catalog_metadata.dart';
 
-/// Course Catalog screen with Serverpod wiring
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA LMS — COURSE CATALOG SCREEN (S5) — SERVERPOD WIRED
+// ═══════════════════════════════════════════════════════════════════════════════
+
 class CourseCatalogScreenRedesigned extends ConsumerStatefulWidget {
   const CourseCatalogScreenRedesigned({super.key});
 
   @override
-  ConsumerState<CourseCatalogScreenRedesigned> createState() =>
-      _CourseCatalogScreenRedesignedState();
+  ConsumerState<CourseCatalogScreenRedesigned> createState() => _CourseCatalogScreenRedesignedState();
 }
 
-class _CourseCatalogScreenRedesignedState
-    extends ConsumerState<CourseCatalogScreenRedesigned> {
+class _CourseCatalogScreenRedesignedState extends ConsumerState<CourseCatalogScreenRedesigned> {
   String _searchQuery = '';
   String _selectedCategory = 'All';
+  String _selectedStatus = 'All';
+  String _selectedRegulatory = 'All';
   String _sortBy = 'title';
   bool _sortAscending = true;
 
@@ -55,15 +52,19 @@ class _CourseCatalogScreenRedesignedState
             enrollments: enrollments,
             searchQuery: _searchQuery,
             selectedCategory: _selectedCategory,
+            selectedStatus: _selectedStatus,
+            selectedRegulatory: _selectedRegulatory,
             sortBy: _sortBy,
             sortAscending: _sortAscending,
             onSearchChanged: (v) => setState(() => _searchQuery = v),
             onCategoryChanged: (c) => setState(() => _selectedCategory = c),
+            onStatusChanged: (s) => setState(() => _selectedStatus = s),
+            onRegulatoryChanged: (r) => setState(() => _selectedRegulatory = r),
             onSortChanged: (by, asc) => setState(() {
               _sortBy = by;
               _sortAscending = asc;
             }),
-            onEnroll: (course) => _handleEnroll(course),
+            onEnroll: _handleEnroll,
             onView: _handleView,
           );
         },
@@ -79,11 +80,11 @@ class _CourseCatalogScreenRedesignedState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SkeletonLoader(height: 32, width: 200),
+          const SkeletonLoader(height: 32, width: 200),
           const SizedBox(height: AppSpacing.s2),
-          SkeletonLoader(height: 20, width: 300),
+          const SkeletonLoader(height: 20, width: 300),
           const SizedBox(height: AppSpacing.s6),
-          SkeletonLoader(height: 48),
+          const SkeletonLoader(height: 48),
           const SizedBox(height: AppSpacing.s6),
           GridView.builder(
             shrinkWrap: true,
@@ -121,107 +122,96 @@ class _CourseCatalogScreenRedesignedState
     final user = ref.read(currentUserProvider).valueOrNull;
     if (user?.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please log in to enroll'),
-          backgroundColor: AppColors.danger,
-        ),
+        const SnackBar(content: Text('Please log in to enroll'), backgroundColor: AppColors.danger),
       );
       return;
     }
 
-    // Show confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Enroll in Course'),
         content: Text('Would you like to enroll in "${course.title}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Enroll'),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Enroll')),
         ],
       ),
     );
 
     if (confirm == true && mounted) {
       try {
-        // Resolve course version: backend expects courseVersionId, not course id
         final versions = await client.course.getCourseVersions(course.id!);
         if (versions.isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No course version available to enroll.'),
-                backgroundColor: AppColors.danger,
-              ),
+              const SnackBar(content: Text('No course version available.'), backgroundColor: AppColors.danger),
             );
           }
           return;
         }
-        // Prefer effective or approved, else first non-obsolete
         CourseVersion version = versions.firstWhere(
           (v) => v.status == 'effective' || v.status == 'approved',
-          orElse: () => versions.firstWhere(
-            (v) => v.status != 'obsolete',
-            orElse: () => versions.first,
-          ),
+          orElse: () => versions.firstWhere((v) => v.status != 'obsolete', orElse: () => versions.first),
         );
-        final courseVersionId = version.id!;
-        await client.training.selfEnroll(
-          userId: user!.id!,
-          courseVersionId: courseVersionId,
-        );
+        
+        await client.training.selfEnroll(userId: user!.id!, courseVersionId: version.id!);
+        
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully enrolled in ${course.title}'),
-            backgroundColor: AppColors.success,
-          ),
+          SnackBar(content: Text('Successfully enrolled in ${course.title}'), backgroundColor: AppColors.success),
         );
         ref.invalidate(enrollmentsProvider);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Enrollment failed: ${e.toString().replaceAll('Exception: ', '')}'),
-              backgroundColor: AppColors.danger,
-            ),
+            SnackBar(content: Text('Enrollment failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: AppColors.danger),
           );
         }
       }
     }
   }
 
-  /// Resolve a course version for viewing (catalog shows Course; viewer needs courseVersionId).
   Future<void> _handleView(Course course) async {
     final versions = await client.course.getCourseVersions(course.id!);
     if (versions.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No course version available to view.'),
-            backgroundColor: AppColors.danger,
-          ),
+          const SnackBar(content: Text('No course version available to view.'), backgroundColor: AppColors.danger),
         );
       }
       return;
     }
+    
     CourseVersion version = versions.firstWhere(
       (v) => v.status == 'effective' || v.status == 'approved',
-      orElse: () => versions.firstWhere(
-        (v) => v.status != 'obsolete',
-        orElse: () => versions.first,
-      ),
+      orElse: () => versions.firstWhere((v) => v.status != 'obsolete', orElse: () => versions.first),
     );
+    
     final courseVersionId = version.id!;
+    final user = ref.read(currentUserProvider).valueOrNull;
+    int? enrollmentId;
+    String? enrollmentStatus;
+    
+    if (user?.id != null) {
+      try {
+        final enrollments = await client.training.getEnrollmentsForUser(user!.id!);
+        for (final e in enrollments) {
+          if (e.courseVersionId == courseVersionId) {
+            enrollmentId = e.id;
+            enrollmentStatus = e.status;
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+    
     if (!mounted) return;
-    context.go('/employee/course/${course.id}', extra: {
+    context.go('/course/${course.id}', extra: {
       'courseVersionId': courseVersionId.toString(),
+      if (enrollmentId != null) 'enrollmentId': enrollmentId.toString(),
+      if (enrollmentStatus != null) 'enrollmentStatus': enrollmentStatus,
+      if (user?.id != null) 'userId': user!.id!.toString(),
     });
   }
 }
@@ -232,10 +222,14 @@ class _CatalogContent extends StatelessWidget {
     required this.enrollments,
     required this.searchQuery,
     required this.selectedCategory,
+    required this.selectedStatus,
+    required this.selectedRegulatory,
     required this.sortBy,
     required this.sortAscending,
     required this.onSearchChanged,
     required this.onCategoryChanged,
+    required this.onStatusChanged,
+    required this.onRegulatoryChanged,
     required this.onSortChanged,
     required this.onEnroll,
     required this.onView,
@@ -245,43 +239,23 @@ class _CatalogContent extends StatelessWidget {
   final List<Enrollment> enrollments;
   final String searchQuery;
   final String selectedCategory;
+  final String selectedStatus;
+  final String selectedRegulatory;
   final String sortBy;
   final bool sortAscending;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onCategoryChanged;
+  final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String> onRegulatoryChanged;
   final void Function(String, bool) onSortChanged;
   final ValueChanged<Course> onEnroll;
   final ValueChanged<Course> onView;
 
-  /// Course ids for which the user has at least one enrollment (enrollments include courseVersion.course).
-  Set<int> get _enrolledCourseIds {
-    return enrollments
-        .map((e) => e.courseVersion?.course?.id)
-        .whereType<int>()
-        .toSet();
-  }
-
-  // Use status as filtering option
-  List<String> get _statusFilters {
-    final statuses = courses
-        .map((c) => c.status)
-        .toSet()
-        .toList();
-    statuses.sort();
-    return ['All', ...statuses];
-  }
+  Set<int> get _enrolledCourseIds => enrollments.map((e) => e.courseVersion?.course?.id).whereType<int>().toSet();
 
   List<Course> get _filteredCourses {
     var filtered = courses.toList();
 
-    // Filter by status
-    if (selectedCategory != 'All') {
-      filtered = filtered
-          .where((c) => c.status == selectedCategory)
-          .toList();
-    }
-
-    // Filter by search
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase();
       filtered = filtered.where((c) {
@@ -291,19 +265,12 @@ class _CatalogContent extends StatelessWidget {
       }).toList();
     }
 
-    // Sort
     switch (sortBy) {
       case 'title':
-        filtered.sort((a, b) => sortAscending
-            ? a.title.compareTo(b.title)
-            : b.title.compareTo(a.title));
+        filtered.sort((a, b) => sortAscending ? a.title.compareTo(b.title) : b.title.compareTo(a.title));
         break;
       case 'status':
-        filtered.sort((a, b) {
-          final aStatus = a.status;
-          final bStatus = b.status;
-          return sortAscending ? aStatus.compareTo(bStatus) : bStatus.compareTo(aStatus);
-        });
+        filtered.sort((a, b) => sortAscending ? a.status.compareTo(b.status) : b.status.compareTo(a.status));
         break;
     }
 
@@ -313,29 +280,85 @@ class _CatalogContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredCourses;
+    
+    final totalCourses = filtered.length;
+    final enrolledCount = enrollments.where((e) => e.status != 'completed').length;
+    final mandatoryCount = filtered.where((c) => (c.tags ?? '').contains('Mandatory')).length;
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppSpacing.s6),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          const SizedBox(height: AppSpacing.s6),
-          _buildFilterBar(),
-          const SizedBox(height: AppSpacing.s5),
+          // Header Row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '${filtered.length} course${filtered.length == 1 ? '' : 's'} available',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.n500),
+                'Course catalog',
+                style: AppTypography.display.copyWith(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  color: Colors.black87,
+                ),
               ),
-              const Spacer(),
+              SizedBox(
+                width: 280,
+                height: 40,
+                child: TextField(
+                  onChanged: onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Search',
+                    hintStyle: AppTypography.body.copyWith(color: AppColors.n400),
+                    prefixIcon: const Icon(Icons.search, color: AppColors.n400, size: 20),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppColors.blue, width: 2),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.s4),
+          const SizedBox(height: 24),
+          
+          // Filters
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _FilterDropdown(value: selectedCategory, items: const {'All': 'Category: All'}, onChanged: onCategoryChanged),
+              _FilterDropdown(value: selectedStatus, items: const {'All': 'Status: All'}, onChanged: onStatusChanged),
+              _FilterDropdown(value: selectedRegulatory, items: const {'All': 'Regulatory: All'}, onChanged: onRegulatoryChanged),
+              _FilterDropdown(value: sortBy, items: const {'title': 'Sort: Title A-Z', 'status': 'Sort: Status'}, onChanged: (v) => onSortChanged(v, true)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Summary
+          Text(
+            '$totalCourses courses · $enrolledCount enrolled · $mandatoryCount mandatory',
+            style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 16),
+          
+          // Grid
           if (filtered.isEmpty)
-            AppEmptyState(
+             AppEmptyState(
               icon: Icons.search_off_outlined,
               title: 'No Courses Found',
               description: 'Try adjusting your filters or search terms.',
@@ -346,36 +369,34 @@ class _CatalogContent extends StatelessWidget {
               },
             )
           else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 1200
-                    ? 4
-                    : constraints.maxWidth > 800
-                        ? 3
-                        : constraints.maxWidth > 500
-                            ? 2
-                            : 1;
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: AppSpacing.s4,
-                    crossAxisSpacing: AppSpacing.s4,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final course = filtered[index];
-                    final isEnrolled = course.id != null && _enrolledCourseIds.contains(course.id);
-                    return _CourseCard(
-                      course: course,
-                      isEnrolled: isEnrolled,
-                      onEnroll: () => onEnroll(course),
-                      onView: () => onView(course),
-                    );
-                  },
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 420,
+                mainAxisExtent: 240, 
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final course = filtered[index];
+                final isEnrolled = course.id != null && _enrolledCourseIds.contains(course.id);
+                Enrollment? courseEnrollment;
+                
+                for (final e in enrollments) {
+                  if (e.courseVersion?.course?.id == course.id || e.courseVersionId == course.id) {
+                    courseEnrollment = e;
+                    break;
+                  }
+                }
+                
+                return _CourseCard(
+                  course: course,
+                  enrollment: courseEnrollment,
+                  isEnrolled: isEnrolled,
+                  onEnroll: () => onEnroll(course),
+                  onView: () => onView(course),
                 );
               },
             ),
@@ -383,132 +404,35 @@ class _CatalogContent extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Course Catalog',
-          style: AppTypography.display.copyWith(
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s2),
-        Text(
-          'Browse available courses and enroll in training',
-          style: AppTypography.body.copyWith(color: AppColors.n500),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterBar() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
-      decoration: BoxDecoration(
-        color: AppColors.n0,
-        borderRadius: AppRadius.br2,
-        boxShadow: AppShadows.sh1,
-      ),
-      child: Wrap(
-        spacing: AppSpacing.s4,
-        runSpacing: AppSpacing.s3,
-        children: [
-          SizedBox(
-            width: 300,
-            child: TextField(
-              onChanged: onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search courses by title, description, or SOP...',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.n400),
-                prefixIcon: Icon(Icons.search, color: AppColors.n400, size: 20),
-                filled: true,
-                fillColor: AppColors.n50,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s4,
-                  vertical: AppSpacing.s3,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: AppRadius.br2,
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppRadius.br2,
-                  borderSide: BorderSide(color: AppColors.n200),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: AppRadius.br2,
-                  borderSide: BorderSide(color: AppColors.blue, width: 2),
-                ),
-              ),
-              style: AppTypography.body,
-            ),
-          ),
-          _FilterDropdown(
-            value: selectedCategory,
-            items: {for (var c in _statusFilters) c: c},
-            onChanged: onCategoryChanged,
-            label: 'Status',
-          ),
-          _FilterDropdown(
-            value: sortBy,
-            items: const {
-              'title': 'Title',
-              'status': 'Status',
-            },
-            onChanged: (v) => onSortChanged(v, sortAscending),
-            label: 'Sort By',
-          ),
-          IconButton(
-            onPressed: () => onSortChanged(sortBy, !sortAscending),
-            icon: Icon(
-              sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-              size: 20,
-              color: AppColors.n500,
-            ),
-            tooltip: sortAscending ? 'Sort Ascending' : 'Sort Descending',
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _FilterDropdown extends StatelessWidget {
-  const _FilterDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    required this.label,
-  });
-
+  const _FilterDropdown({required this.value, required this.items, required this.onChanged});
+  
   final String value;
   final Map<String, String> items;
   final ValueChanged<String> onChanged;
-  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: AppSpacing.s1),
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: AppColors.n0,
-        borderRadius: AppRadius.br2,
-        border: Border.all(color: AppColors.n200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-          style: AppTypography.body.copyWith(color: AppColors.n700),
-          items: items.entries.map((e) {
-            return DropdownMenuItem(value: e.key, child: Text(e.value));
-          }).toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
+          icon: const Padding(
+            padding: EdgeInsets.only(left: 6),
+            child: Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black54),
+          ),
+          style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500),
+          items: items.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+          onChanged: (v) { if (v != null) onChanged(v); },
         ),
       ),
     );
@@ -518,176 +442,270 @@ class _FilterDropdown extends StatelessWidget {
 class _CourseCard extends StatelessWidget {
   const _CourseCard({
     required this.course,
+    this.enrollment,
     required this.isEnrolled,
     required this.onEnroll,
     required this.onView,
   });
 
   final Course course;
+  final Enrollment? enrollment;
   final bool isEnrolled;
   final VoidCallback onEnroll;
   final VoidCallback onView;
 
-  Color _getStatusColor() {
-    final status = course.status.toLowerCase();
-    if (status == 'approved') return AppColors.success;
-    if (status == 'pending_qa') return AppColors.warning;
-    if (status == 'archived') return AppColors.n500;
-    return AppColors.blue; // draft
-  }
-
-  String _getStatusLabel() {
-    switch (course.status.toLowerCase()) {
-      case 'approved':
-        return 'Approved';
-      case 'pending_qa':
-        return 'Pending QA';
-      case 'archived':
-        return 'Archived';
-      case 'draft':
-        return 'Draft';
-      default:
-        return course.status;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.n0,
-      borderRadius: AppRadius.br2,
-      child: InkWell(
-        onTap: onView,
-        borderRadius: AppRadius.br2,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.s4),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.br2,
-            border: Border.all(
-              color: isEnrolled ? AppColors.success.withValues(alpha: 0.5) : AppColors.n200,
-              width: isEnrolled ? 2 : 1,
-            ),
-            boxShadow: AppShadows.sh1,
-          ),
-          child: Column(
+    final meta = CourseCatalogMetadata.fromCourse(course);
+    final tags = (course.tags ?? '').split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+    
+    final bool isMandatory = meta.isMandatory ?? tags.contains('Mandatory');
+    final bool isOptional = tags.contains('Optional') || (!isMandatory);
+    final bool isContentApproved = tags.contains('Content approved');
+    
+    final List<String> regulatoryTags = tags.where((t) => t == 'GMP' || t == '21 CFR').toList();
+    
+    final status = enrollment?.status ?? 'not_started';
+    final progress = _calculateProgress(status, enrollment);
+    final isCompleted = status.toLowerCase() == 'completed';
+    final isEnrolledLocally = isEnrolled || status != 'not_started'; 
+    final hasSop = course.sopNumber?.isNotEmpty == true;
+
+    // Get the cover photo URL from the backend model
+    final coverage = course.imageUrl?.trim() ?? '';
+
+    // Due Date mapping from backend
+    final DateTime? dueDate = enrollment?.assignment?.dueDate;
+    final String dueDateFormatted = dueDate != null ? DateFormat('MMM d, yyyy').format(dueDate) : 'No due date';
+
+    // Fallback Contextual Icon Logic
+    IconData courseIcon = Icons.science_outlined;
+    if (course.title.toLowerCase().contains('aseptic')) {
+      courseIcon = Icons.science_outlined; 
+    } else if (course.title.toLowerCase().contains('audit')) {
+      courseIcon = Icons.fact_check_outlined; 
+    } else {
+      courseIcon = Icons.article_outlined; 
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1.0),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. TOP SECTION: Cover Photo/Icon + Title/Badges
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s2,
-                      vertical: AppSpacing.s1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor().withValues(alpha: 0.1),
-                      borderRadius: AppRadius.br1,
-                    ),
-                    child: Text(
-                      _getStatusLabel(),
-                      style: AppTypography.caption.copyWith(
-                        color: _getStatusColor(),
-                        fontWeight: FontWeight.w600,
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                clipBehavior: Clip.hardEdge, 
+                child: coverage.isNotEmpty
+                    ? Image.network(
+                        coverage,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Icon(courseIcon, color: Colors.grey.shade600, size: 28),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(courseIcon, color: Colors.grey.shade600, size: 28),
                       ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      course.title,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Colors.black87, height: 1.2),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const Spacer(),
-                  if (isEnrolled)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s2,
-                        vertical: AppSpacing.s1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.1),
-                        borderRadius: AppRadius.br1,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check_circle, size: 14, color: AppColors.success),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Enrolled',
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (isMandatory)
+                          _StatusBadge(label: 'Mandatory', bgColor: const Color(0xFFFFEBEE), textColor: const Color(0xFFC62828)),
+                        if (!isMandatory)
+                          _StatusBadge(label: 'Optional', bgColor: Colors.grey.shade100, textColor: Colors.grey.shade800),
+                        if (isContentApproved)
+                          _StatusBadge(
+                            label: 'Content approved', 
+                            bgColor: const Color(0xFFE8F5E9), 
+                            textColor: const Color(0xFF2E7D32),
+                            icon: Icons.check_circle,
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s3),
-              Text(
-                course.title,
-                style: AppTypography.title.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  ],
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppSpacing.s2),
-              if (course.sopNumber != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-                  child: Text(
-                    course.sopNumber!,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.blue,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              if (course.description != null)
-                Expanded(
-                  child: Text(
-                    course.description!,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.n500),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              const Spacer(),
-              Row(
-                children: [
-                  const Spacer(),
-                  if (isEnrolled)
-                    FilledButton(
-                      onPressed: onView,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.blue,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s3,
-                          vertical: AppSpacing.s2,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text('Continue', style: TextStyle(fontSize: 12)),
-                    )
-                  else
-                    OutlinedButton(
-                      onPressed: onEnroll,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.blue,
-                        side: BorderSide(color: AppColors.blue),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s3,
-                          vertical: AppSpacing.s2,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text('Enroll', style: TextStyle(fontSize: 12)),
-                    ),
-                ],
               ),
             ],
           ),
-        ),
+          
+          const Spacer(),
+          
+          // 2. MIDDLE SECTION: Due Date & SOP
+          Row(
+            children: [
+              Text(
+                'Due: $dueDateFormatted',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontWeight: FontWeight.w500),
+              ),
+              if (hasSop) ...[
+                const SizedBox(width: 12),
+                Icon(Icons.article_outlined, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  course.sopNumber!,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
+              ],
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // 3. PROGRESS TEXT & BAR
+          Text(
+            isCompleted ? 'Completed' : (isEnrolledLocally ? 'In progress · ${progress.toInt()}%' : 'Not started'),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (progress.clamp(0.0, 100.0)) / 100.0,
+              minHeight: 4,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation<Color>(isCompleted ? Colors.green : AppColors.blue),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 4. BOTTOM SECTION: Tags & Action Button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: regulatoryTags.map((tag) {
+                    final is21Cfr = tag.contains('21 CFR');
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: is21Cfr ? Colors.blue.shade50 : Colors.orange.shade50, 
+                        borderRadius: BorderRadius.circular(12)
+                      ),
+                      child: Text(
+                        tag, 
+                        style: TextStyle(
+                          fontSize: 12, 
+                          fontWeight: FontWeight.w700, 
+                          color: is21Cfr ? Colors.blue.shade800 : Colors.orange.shade800
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(
+                height: 34,
+                width: 96,
+                child: isCompleted
+                    ? ElevatedButton(
+                        onPressed: null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.grey.shade600,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: const Text('Completed', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      )
+                    : isEnrolledLocally
+                        ? ElevatedButton(
+                            onPressed: onView,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.blue,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: const Text('Continue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          )
+                        : OutlinedButton(
+                            onPressed: onEnroll,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.blue,
+                              side: const BorderSide(color: AppColors.blue, width: 1.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: const Text('Enroll', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _calculateProgress(String status, Enrollment? enrollment) {
+    if (enrollment?.completedAt != null || status.toLowerCase() == 'completed') return 100.0;
+    if (status.toLowerCase() == 'in_progress') return 30.0;
+    if (status.toLowerCase() == 'overdue') return 75.0;
+    return 0.0;
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color bgColor;
+  final Color textColor;
+  final IconData? icon;
+
+  const _StatusBadge({
+    required this.label, 
+    required this.bgColor, 
+    required this.textColor, 
+    this.icon
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(6)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: textColor),
+            const SizedBox(width: 4),
+          ],
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor)),
+        ],
       ),
     );
   }

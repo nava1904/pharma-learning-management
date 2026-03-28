@@ -1,0 +1,13 @@
+### Summary row for trainer "Messages" inbox (learner ↔ instructor threads).
+class: LearnerSupportThreadSummary
+
+fields:
+  courseVersionId: int
+  courseId: int
+  courseTitle: String
+  lastMessageBody: String
+  lastMessageAt: DateTime
+  lastFromUserId: int
+  lastFromName: String
+  messageCount: int
+  unreadForTrainer: int

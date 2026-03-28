@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
@@ -48,12 +50,15 @@ class CourseBuilderEndpoint extends Endpoint {
     required int materialId,
     int orderIndex = 0,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final module = await Module.db.findById(session, moduleId);
     if (module == null) throw Exception('Module not found');
     await _ensureVersionEditable(session, module.courseVersionId);
-    return await Lesson.db.insertRow(
+    final created = await Lesson.db.insertRow(
       session,
       Lesson(
         moduleId: moduleId,
@@ -61,8 +66,23 @@ class CourseBuilderEndpoint extends Endpoint {
         materialId: materialId,
         orderIndex: orderIndex,
         durationMinutes: durationMinutes,
+        lessonType: lessonType,
+        minEngagementMinutes: minEngagementMinutes,
+        prerequisiteMode: prerequisiteMode,
       ),
     );
+    await AuditService.log(
+      session,
+      entityType: 'lesson',
+      entityId: created.id.toString(),
+      action: 'LessonCreated',
+      newValueJson: jsonEncode(_lessonAuditMap(
+        courseVersionId: module.courseVersionId,
+        moduleId: moduleId,
+        lesson: created,
+      )),
+    );
+    return created;
   }
 
   Future<Lesson> updateLesson(
@@ -72,6 +92,9 @@ class CourseBuilderEndpoint extends Endpoint {
     int? materialId,
     int? orderIndex,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'course', action: 'write');
     final lesson = await Lesson.db.findById(session, lessonId);
@@ -84,8 +107,24 @@ class CourseBuilderEndpoint extends Endpoint {
       materialId: materialId ?? lesson.materialId,
       orderIndex: orderIndex ?? lesson.orderIndex,
       durationMinutes: durationMinutes ?? lesson.durationMinutes,
+      lessonType: lessonType ?? lesson.lessonType,
+      minEngagementMinutes: minEngagementMinutes ?? lesson.minEngagementMinutes,
+      prerequisiteMode: prerequisiteMode ?? lesson.prerequisiteMode,
     );
-    return await Lesson.db.updateRow(session, updated);
+    final oldJson =
+        jsonEncode(_lessonAuditMap(courseVersionId: module.courseVersionId, moduleId: lesson.moduleId, lesson: lesson));
+    final newJson =
+        jsonEncode(_lessonAuditMap(courseVersionId: module.courseVersionId, moduleId: updated.moduleId, lesson: updated));
+    final result = await Lesson.db.updateRow(session, updated);
+    await AuditService.log(
+      session,
+      entityType: 'lesson',
+      entityId: lessonId.toString(),
+      action: 'LessonUpdated',
+      oldValueJson: oldJson,
+      newValueJson: newJson,
+    );
+    return result;
   }
 
   /// Create new course version. TC-07: if course has approved version, only allow draft.
@@ -634,4 +673,25 @@ class CourseBuilderEndpoint extends Endpoint {
       throw Exception('Cannot edit approved/effective course version');
     }
   }
+}
+
+/// Compact JSON for lesson audit rows (title truncated; no full HTML).
+Map<String, dynamic> _lessonAuditMap({
+  required int courseVersionId,
+  required int moduleId,
+  required Lesson lesson,
+}) {
+  final t = lesson.title;
+  return {
+    'courseVersionId': courseVersionId,
+    'moduleId': moduleId,
+    if (lesson.id != null) 'lessonId': lesson.id,
+    'title': t.length > 120 ? '${t.substring(0, 120)}…' : t,
+    'materialId': lesson.materialId,
+    'orderIndex': lesson.orderIndex,
+    'durationMinutes': lesson.durationMinutes,
+    'minEngagementMinutes': lesson.minEngagementMinutes,
+    'lessonType': lesson.lessonType,
+    'prerequisiteMode': lesson.prerequisiteMode,
+  };
 }

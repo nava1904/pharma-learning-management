@@ -14,50 +14,60 @@ class AccessReviewTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Employee')),
-        DataColumn(label: Text('Dept / Role')),
-        DataColumn(label: Text('Site')),
-        DataColumn(label: Text('Hire Date')),
-        DataColumn(label: Text('Compliance')),
-        DataColumn(label: Text('Status')),
-        DataColumn(label: Text('MFA')),
-        DataColumn(label: Text('Last Login')),
-        DataColumn(label: Text('Login Risk')),
-        DataColumn(label: Text('Actions')),
-      ],
-      rows: rows.map((row) => DataRow(cells: [
-        DataCell(_EmployeeCell(row)),
-        DataCell(Text(row.deptRole)),
-        DataCell(Text(row.site)),
-        DataCell(Text(row.hireDate)),
-        DataCell(_ComplianceCell(row.compliancePercent)),
-        DataCell(_StatusCell(row.status)),
-        DataCell(_MfaCell(row.mfaType)),
-        DataCell(Text(row.lastLogin)),
-        DataCell(_LoginRiskCell(row.loginRisk)),
-        DataCell(Row(
-          children: [
-            ElevatedButton(
-              onPressed: () => onRecertify(row),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text('Recertify Access'),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () => onRevoke(row),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Revoke Access'),
-            ),
-          ],
-        )),
-      ])).toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: DataTable(
+            columns: const [
+              DataColumn(label: Text('Employee')),
+              DataColumn(label: Text('Dept / Role')),
+              DataColumn(label: Text('Site')),
+              DataColumn(label: Text('Hire Date')),
+              DataColumn(label: Text('Compliance')),
+              DataColumn(label: Text('Status')),
+              DataColumn(label: Text('MFA')),
+              DataColumn(label: Text('Last Login')),
+              DataColumn(label: Text('Login Risk')),
+              DataColumn(label: Text('Actions')),
+            ],
+            rows: rows.map((row) => DataRow(cells: [
+              DataCell(_EmployeeCell(row)),
+              DataCell(Text(row.deptRole)),
+              DataCell(Text(row.site)),
+              DataCell(Text(row.hireDate)),
+              DataCell(_ComplianceCell(row.compliancePercent)),
+              DataCell(_StatusCell(row.status)),
+              DataCell(_MfaCell(row.mfaType)),
+              DataCell(Text(row.lastLogin)),
+              DataCell(_LoginRiskCell(row.loginRisk)),
+              DataCell(Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => onRecertify(row),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    child: const Text('Recertify'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => onRevoke(row),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text('Revoke'),
+                  ),
+                ],
+              )),
+            ])).toList(),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class AccessReviewRowData {
+  final int reviewId;
   final String employeeName;
   final String employeeId;
   final String deptRole;
@@ -69,8 +79,10 @@ class AccessReviewRowData {
   final String lastLogin;
   final String loginRisk;
   final String avatarUrl;
+  final String decision;
 
   AccessReviewRowData({
+    required this.reviewId,
     required this.employeeName,
     required this.employeeId,
     required this.deptRole,
@@ -82,6 +94,7 @@ class AccessReviewRowData {
     required this.lastLogin,
     required this.loginRisk,
     required this.avatarUrl,
+    required this.decision,
   });
 }
 
@@ -90,15 +103,32 @@ class _EmployeeCell extends StatelessWidget {
   const _EmployeeCell(this.row);
   @override
   Widget build(BuildContext context) {
+    final initials = row.employeeName.trim().isEmpty
+        ? '?'
+        : row.employeeName
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((p) => p.isNotEmpty)
+            .take(2)
+            .map((p) => p[0])
+            .join()
+            .toUpperCase();
     return Row(
       children: [
-        CircleAvatar(backgroundImage: NetworkImage(row.avatarUrl), radius: 16),
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: Colors.blueGrey.shade100,
+          backgroundImage: row.avatarUrl.trim().isEmpty ? null : NetworkImage(row.avatarUrl),
+          child: row.avatarUrl.trim().isEmpty
+              ? Text(initials, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))
+              : null,
+        ),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(row.employeeName, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(row.employeeId, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('Access review', style: const TextStyle(fontSize: 14, color: Colors.grey)),
           ],
         ),
       ],
@@ -126,7 +156,9 @@ class _StatusCell extends StatelessWidget {
   const _StatusCell(this.status);
   @override
   Widget build(BuildContext context) {
-    Color color = status == 'ACTIVE' ? Colors.green : Colors.red;
+    final normalized = status.trim().toLowerCase();
+    final isActive = normalized == 'active';
+    Color color = isActive ? Colors.green : Colors.red;
     return Text(status, style: TextStyle(color: color, fontWeight: FontWeight.bold));
   }
 }
@@ -156,7 +188,7 @@ class _LoginRiskCell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(loginRisk, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),

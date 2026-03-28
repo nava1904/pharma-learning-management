@@ -181,6 +181,9 @@ class AssessmentBuilderEndpoint extends Endpoint {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool showAnswers = false,
+    bool showSubmissionHistory = false,
+    int? limitQuestions,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     
@@ -210,6 +213,9 @@ class AssessmentBuilderEndpoint extends Endpoint {
         timeLimitMinutes: timeLimitMinutes,
         maxAttempts: maxAttempts,
         questionsToDisplay: questionsToDisplay,
+        showAnswers: showAnswers,
+        showSubmissionHistory: showSubmissionHistory,
+        limitQuestions: limitQuestions,
       ),
     );
     
@@ -232,6 +238,9 @@ class AssessmentBuilderEndpoint extends Endpoint {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     final assessment = await Assessment.db.findById(session, assessmentId);
@@ -259,6 +268,9 @@ class AssessmentBuilderEndpoint extends Endpoint {
       timeLimitMinutes: timeLimitMinutes ?? assessment.timeLimitMinutes,
       maxAttempts: maxAttempts ?? assessment.maxAttempts,
       questionsToDisplay: questionsToDisplay ?? assessment.questionsToDisplay,
+      showAnswers: showAnswers ?? assessment.showAnswers,
+      showSubmissionHistory: showSubmissionHistory ?? assessment.showSubmissionHistory,
+      limitQuestions: limitQuestions ?? assessment.limitQuestions,
     );
     final result = await Assessment.db.updateRow(session, updated);
     await AuditService.log(
@@ -320,5 +332,60 @@ class AssessmentBuilderEndpoint extends Endpoint {
         'randomize': assessment.randomize,
       },
     };
+  }
+
+  /// Admin/Trainer: List assessments for an organization (basic admin visibility).
+  Future<List<Assessment>> listAssessments(
+    Session session, {
+    int? organizationId,
+    int limit = 200,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
+
+    final clamped = limit.clamp(1, 500);
+    if (organizationId == null) {
+      return Assessment.db.find(
+        session,
+        limit: clamped,
+        orderBy: (t) => t.id,
+        orderDescending: true,
+      );
+    }
+
+    // Assessments are tied to CourseVersion; CourseVersion -> Course -> organizationId.
+    // Serverpod ORM can't easily express this join here, so we fetch versions in-org then filter.
+    final courseVersions = await CourseVersion.db.find(
+      session,
+      where: (t) => t.course.organizationId.equals(organizationId),
+      include: CourseVersion.include(course: Course.include()),
+      limit: 1000,
+    );
+    final versionIds = courseVersions.map((v) => v.id).whereType<int>().toSet();
+    if (versionIds.isEmpty) return [];
+
+    return Assessment.db.find(
+      session,
+      where: (t) => t.courseVersionId.inSet(versionIds),
+      limit: clamped,
+      orderBy: (t) => t.id,
+      orderDescending: true,
+    );
+  }
+
+  /// Admin/Trainer: List attempts for an assessment.
+  Future<List<AssessmentAttempt>> listAssessmentAttempts(
+    Session session, {
+    required int assessmentId,
+    int limit = 200,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
+    final clamped = limit.clamp(1, 500);
+    return AssessmentAttempt.db.find(
+      session,
+      where: (t) => t.assessmentId.equals(assessmentId),
+      limit: clamped,
+      orderBy: (t) => t.id,
+      orderDescending: true,
+    );
   }
 }

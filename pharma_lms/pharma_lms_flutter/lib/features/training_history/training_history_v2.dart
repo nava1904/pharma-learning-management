@@ -182,7 +182,7 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
                       child: pw.Opacity(
                         opacity: 0.04,
                         child: pw.Text(
-                          'VYUH LMS',
+                          'Vyuh lms',
                           style: pw.TextStyle(fontSize: 120, fontWeight: pw.FontWeight.bold, color: PdfColors.grey),
                         ),
                       ),
@@ -574,7 +574,14 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
                           message: 'View Certificate',
                           child: IconButton(
                             icon: Icon(Icons.workspace_premium_rounded, size: 18, color: PharmaColors.emerald600),
-                            onPressed: () => context.go('/employee/credentials'),
+                            onPressed: () {
+                              final id = item.certificateId;
+                              if (id != null) {
+                                context.push('/certificate/$id');
+                              } else {
+                                context.go('/employee/credentials');
+                              }
+                            },
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                           ),
@@ -583,7 +590,13 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
                         message: 'View Course',
                         child: IconButton(
                           icon: Icon(Icons.chevron_right_rounded, size: 20, color: PharmaColors.textQuaternary),
-                          onPressed: () => context.go('/employee/course/${item.courseVersionId}'),
+                          onPressed: () => context.go(
+                            '/employee/course/${item.courseVersionId}',
+                            extra: {
+                              'courseVersionId': item.courseVersionId,
+                              'enrollmentId': item.enrollmentId.toString(),
+                            },
+                          ),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
@@ -783,10 +796,11 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
       recordMap[r.enrollmentId] = r;
     }
 
-    // Build set of courseVersionIds that have certificates
-    final certifiedVersionIds = <int>{};
+    final certIdByCourseVersionId = <int, int>{};
     for (final c in certificates) {
-      certifiedVersionIds.add(c.courseVersionId);
+      if (c.id != null) {
+        certIdByCourseVersionId[c.courseVersionId] = c.id!;
+      }
     }
 
     return enrollments.map((e) {
@@ -799,6 +813,8 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
           ? 100.0
           : _progressCache[e.id] ?? 0.0;
 
+      final certificateId = certIdByCourseVersionId[e.courseVersionId];
+
       return _HistoryItem(
         enrollmentId: e.id ?? 0,
         courseVersionId: e.courseVersionId,
@@ -807,7 +823,8 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
         completedDate: completedDate,
         status: e.status,
         score: record?.score,
-        hasCertificate: certifiedVersionIds.contains(e.courseVersionId),
+        hasCertificate: certificateId != null,
+        certificateId: certificateId,
         progressPct: progressPct,
       );
     }).toList()
@@ -915,6 +932,7 @@ class _HistoryItem {
   final String status;
   final int? score;
   final bool hasCertificate;
+  final int? certificateId;
   final double progressPct;
 
   _HistoryItem({
@@ -926,6 +944,7 @@ class _HistoryItem {
     required this.status,
     this.score,
     this.hasCertificate = false,
+    this.certificateId,
     this.progressPct = 0.0,
   });
 }

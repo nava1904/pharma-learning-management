@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart' show QuestionBank, Question;
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' show QuestionBank, Question, Assessment, AssessmentAttempt;
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
 import '../widgets/admin_page_frame.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -380,13 +386,26 @@ class _AdminQuestionBankScreenState extends ConsumerState<AdminQuestionBankScree
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Call create endpoint
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Creating question bank: ${nameController.text}')),
-              );
-              ref.invalidate(adminQuestionBanksProvider);
+            onPressed: () async {
+              try {
+                final me = await ref.read(currentUserProvider.future);
+                if (me?.id == null) throw Exception('Not authenticated');
+                await client.assessment.createQuestionBank(
+                  name: nameController.text.trim(),
+                  organizationId: me!.organizationId,
+                );
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Question bank created')),
+                );
+                ref.invalidate(adminQuestionBanksProvider);
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Create failed: $e')),
+                );
+              }
             },
             child: const Text('Create'),
           ),
@@ -406,9 +425,35 @@ class _AdminQuestionBankScreenState extends ConsumerState<AdminQuestionBankScree
             const Text('Import questions from CSV or JSON file'),
             SizedBox(height: PharmaSpacing.md),
             OutlinedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                // TODO: File picker
+                final res = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: const ['json', 'csv'],
+                  withData: true,
+                );
+                if (res == null || res.files.isEmpty) return;
+                final file = res.files.first;
+                final bytes = file.bytes;
+                if (bytes == null) return;
+
+                try {
+                  final questions = _parseImportFile(file.name, bytes);
+                  await client.assessment.importQuestionsToBank(
+                    targetBankId: bankId,
+                    questions: questions,
+                  );
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Imported ${questions.length} questions')),
+                  );
+                  ref.invalidate(adminQuestionsProvider(bankId));
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Import failed: $e')),
+                  );
+                }
               },
               icon: const Icon(Icons.upload_file),
               label: const Text('Select File'),
@@ -426,19 +471,148 @@ class _AdminQuestionBankScreenState extends ConsumerState<AdminQuestionBankScree
   }
 
   void _showAddQuestionDialog(int bankId) {
+    final text = TextEditingController();
+    final type = TextEditingController(text: 'multiple_choice');
+    final optionsJson = TextEditingController(text: '["A","B","C","D"]');
+    final correct = TextEditingController(text: 'A');
+    final difficulty = TextEditingController(text: 'easy');
+    final regulatoryTag = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Question'),
-        content: const Text('Question builder coming soon...'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: text,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Question text',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: type,
+                decoration: const InputDecoration(
+                  labelText: 'Question type (e.g. multiple_choice, true_false)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: optionsJson,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Options JSON (for MCQ)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: correct,
+                decoration: const InputDecoration(
+                  labelText: 'Correct answer',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: difficulty,
+                decoration: const InputDecoration(
+                  labelText: 'Difficulty (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: regulatoryTag,
+                decoration: const InputDecoration(
+                  labelText: 'Regulatory tag (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await client.assessmentBuilder.createQuestion(
+                  questionBankId: bankId,
+                  text: text.text,
+                  questionType: type.text,
+                  optionsJson: optionsJson.text,
+                  correctAnswer: correct.text,
+                  difficulty: difficulty.text.trim().isEmpty ? null : difficulty.text.trim(),
+                  regulatoryTag: regulatoryTag.text.trim().isEmpty ? null : regulatoryTag.text.trim(),
+                );
+                if (!mounted) return;
+                Navigator.pop(context);
+                ref.invalidate(adminQuestionsProvider(bankId));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Question added')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Add failed: $e')),
+                );
+              }
+            },
+            child: const Text('Add'),
+          ),
         ],
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _parseImportFile(String name, Uint8List bytes) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.json')) {
+      final decoded = jsonDecode(utf8.decode(bytes));
+      if (decoded is! List) throw Exception('JSON must be an array of question objects');
+      return decoded.cast<Map>().map((m) => Map<String, dynamic>.from(m)).toList();
+    }
+
+    // CSV: text,questionType,optionsJson,correctAnswer,difficulty,regulatoryTag
+    final csv = utf8.decode(bytes);
+    final lines = csv.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    if (lines.isEmpty) return [];
+    final headers = lines.first.split(',').map((s) => s.trim()).toList();
+    final idx = <String, int>{};
+    for (var i = 0; i < headers.length; i++) {
+      idx[headers[i]] = i;
+    }
+    int col(String k) => idx[k] ?? -1;
+
+    final out = <Map<String, dynamic>>[];
+    for (var i = 1; i < lines.length; i++) {
+      final cols = lines[i].split(',').map((s) => s.trim().replaceAll('"', '')).toList();
+      String v(String k) {
+        final c = col(k);
+        if (c < 0 || c >= cols.length) return '';
+        return cols[c];
+      }
+
+      out.add({
+        'text': v('text'),
+        'questionType': v('questionType'),
+        'optionsJson': v('optionsJson'),
+        'correctAnswer': v('correctAnswer'),
+        'difficulty': v('difficulty'),
+        'regulatoryTag': v('regulatoryTag'),
+      });
+    }
+    return out;
   }
 
   Widget _buildLoadingState() {
@@ -482,10 +656,47 @@ class _AdminQuestionBankScreenState extends ConsumerState<AdminQuestionBankScree
 class AdminAssessmentListScreen extends StatelessWidget {
   const AdminAssessmentListScreen({super.key});
   @override
-  Widget build(BuildContext context) => const _AssessmentTemplate(
-        title: 'Assessments',
-        subtitle: 'Track assessment versions and publishing states.',
-      );
+  Widget build(BuildContext context) => const _AdminAssessmentListBody();
+}
+
+class _AdminAssessmentListBody extends ConsumerWidget {
+  const _AdminAssessmentListBody();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final meAsync = ref.watch(currentUserProvider);
+    return meAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (me) {
+        if (me == null) return const Center(child: Text('Not authenticated'));
+        final assessmentsAsync = ref.watch(adminAssessmentsProvider(me.organizationId));
+        return AdminPageFrame(
+          title: 'Assessments',
+          subtitle: 'Track assessment configurations.',
+          children: [
+            AdminSectionCard(
+              title: 'Assessments',
+              child: assessmentsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Text('Failed to load assessments: $e'),
+                data: (assessments) {
+                  if (assessments.isEmpty) return const Text('No assessments found.');
+                  return Column(
+                    children: assessments.map((a) {
+                      return ListTile(
+                        title: Text('Assessment #${a.id ?? '-'}'),
+                        subtitle: Text('courseVersionId=${a.courseVersionId} • bankId=${a.questionBankId} • passing=${a.passingScore}%'),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -495,10 +706,125 @@ class AdminAssessmentListScreen extends StatelessWidget {
 class AdminAssessmentCreateScreen extends StatelessWidget {
   const AdminAssessmentCreateScreen({super.key});
   @override
-  Widget build(BuildContext context) => const _AssessmentTemplate(
-        title: 'Create Assessment',
-        subtitle: 'Build and approve assessments for courses.',
-      );
+  Widget build(BuildContext context) => const _AdminAssessmentCreateBody();
+}
+
+class _AdminAssessmentCreateBody extends ConsumerStatefulWidget {
+  const _AdminAssessmentCreateBody();
+
+  @override
+  ConsumerState<_AdminAssessmentCreateBody> createState() => _AdminAssessmentCreateBodyState();
+}
+
+class _AdminAssessmentCreateBodyState extends ConsumerState<_AdminAssessmentCreateBody> {
+  final _courseVersionId = TextEditingController();
+  final _passingScore = TextEditingController(text: '80');
+  int? _questionBankId;
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final meAsync = ref.watch(currentUserProvider);
+    final banksAsync = ref.watch(adminQuestionBanksProvider);
+
+    return meAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (me) {
+        if (me == null) return const Center(child: Text('Not authenticated'));
+        return AdminPageFrame(
+          title: 'Create Assessment',
+          subtitle: 'Create an assessment for a course version.',
+          children: [
+            AdminSectionCard(
+              title: 'Assessment',
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _courseVersionId,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Course Version ID',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: PharmaSpacing.md),
+                  banksAsync.when(
+                    loading: () => const CircularProgressIndicator(),
+                    error: (e, _) => Text('Failed to load banks: $e'),
+                    data: (banks) {
+                      return DropdownButtonFormField<int>(
+                        initialValue: _questionBankId,
+                        decoration: const InputDecoration(
+                          labelText: 'Question Bank',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: banks
+                            .where((b) => b.id != null)
+                            .map((b) => DropdownMenuItem(value: b.id!, child: Text(b.name)))
+                            .toList(),
+                        onChanged: _saving ? null : (v) => setState(() => _questionBankId = v),
+                      );
+                    },
+                  ),
+                  SizedBox(height: PharmaSpacing.md),
+                  TextField(
+                    controller: _passingScore,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Passing Score (%)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: PharmaSpacing.md),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: _saving
+                          ? null
+                          : () async {
+                              setState(() => _saving = true);
+                              try {
+                                final cvId = int.tryParse(_courseVersionId.text.trim());
+                                final pass = int.tryParse(_passingScore.text.trim());
+                                final bankId = _questionBankId;
+                                if (cvId == null || cvId <= 0) throw Exception('Invalid courseVersionId');
+                                if (bankId == null) throw Exception('Select a question bank');
+                                if (pass == null || pass < 10 || pass > 100) throw Exception('Invalid passing score');
+
+                                await client.assessmentBuilder.createAssessment(
+                                  courseVersionId: cvId,
+                                  questionBankId: bankId,
+                                  passingScore: pass,
+                                  randomize: true,
+                                  showAnswers: false,
+                                  showSubmissionHistory: false,
+                                );
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Assessment created')),
+                                );
+                                ref.invalidate(adminAssessmentsProvider(me.organizationId));
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Create failed: $e')),
+                                );
+                              } finally {
+                                if (mounted) setState(() => _saving = false);
+                              }
+                            },
+                      child: Text(_saving ? 'Creating...' : 'Create'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -508,34 +834,62 @@ class AdminAssessmentCreateScreen extends StatelessWidget {
 class AdminAttemptReviewScreen extends StatelessWidget {
   const AdminAttemptReviewScreen({super.key});
   @override
-  Widget build(BuildContext context) => const _AssessmentTemplate(
-        title: 'Attempt Review',
-        subtitle: 'Review learner attempts and manual grading actions.',
-      );
+  Widget build(BuildContext context) => const _AdminAttemptReviewBody();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
-// ═══════════════════════════════════════════════════════════════════════════════
+class _AdminAttemptReviewBody extends ConsumerStatefulWidget {
+  const _AdminAttemptReviewBody();
 
-class _AssessmentTemplate extends StatelessWidget {
-  const _AssessmentTemplate({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
   @override
-  Widget build(BuildContext context) => AdminPageFrame(
-        title: title,
-        subtitle: subtitle,
-        children: const [
+  ConsumerState<_AdminAttemptReviewBody> createState() => _AdminAttemptReviewBodyState();
+}
+
+class _AdminAttemptReviewBodyState extends ConsumerState<_AdminAttemptReviewBody> {
+  final _assessmentId = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final assessmentId = int.tryParse(_assessmentId.text.trim());
+    final attemptsAsync = assessmentId == null ? null : ref.watch(adminAssessmentAttemptsProvider(assessmentId));
+
+    return AdminPageFrame(
+      title: 'Attempt Review',
+      subtitle: 'Review learner attempts.',
+      children: [
+        AdminSectionCard(
+          title: 'Filter',
+          child: TextField(
+            controller: _assessmentId,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Assessment ID',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        if (attemptsAsync != null)
           AdminSectionCard(
-            title: 'Coming Soon',
-            child: AdminPlaceholderTable(
-              columns: ['Feature', 'Status', 'ETA'],
-              rows: [
-                ['Full implementation', 'In Progress', 'Q2 2026'],
-              ],
+            title: 'Attempts',
+            child: attemptsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Failed to load attempts: $e'),
+              data: (attempts) {
+                if (attempts.isEmpty) return const Text('No attempts found.');
+                return Column(
+                  children: attempts.map((a) {
+                    return ListTile(
+                      title: Text('Attempt #${a.id ?? '-'}'),
+                      subtitle: Text(
+                        'userId=${a.userId} • completed=${a.completedAt != null} • score=${a.score ?? '—'}',
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ),
-        ],
-      );
+      ],
+    );
+  }
 }

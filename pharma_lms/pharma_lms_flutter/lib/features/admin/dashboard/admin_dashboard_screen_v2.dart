@@ -86,7 +86,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
           title: 'Priority Queues',
           subtitle: 'Live administrative work queues across modules.',
           child: queuesAsync.when(
-            data: (queues) => AdminPlaceholderTable(
+            data: (queues) => AdminDataTable(
               columns: ['Queue', 'Count', 'SLA', 'Owner'],
               rows: queues
                   .map((q) => [q.name, q.count.toString(), q.sla, q.owner])
@@ -125,7 +125,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                   batchesAsync.when(
                     data: (batches) => batches.isEmpty
                         ? const Text('No active batches.')
-                        : AdminPlaceholderTable(
+                        : AdminDataTable(
                             columns: ['Batch', 'Status', 'Start', 'End', 'Location'],
                             rows: batches
                                 .where((b) => b.status == 'scheduled' || b.status == 'in_progress')
@@ -171,7 +171,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                         if (!snapshot.hasData) {
                           return const Text('No overdue data.');
                         }
-                        return AdminPlaceholderTable(
+                        return AdminDataTable(
                           columns: ['Department', 'Overdue Enrollments'],
                           rows: snapshot.data!,
                         );

@@ -1,0 +1,10 @@
+### Groups courses into a named curriculum (credit / requirements roadmap).
+class: Curriculum
+
+table: curriculum
+
+fields:
+  organization: Organization?, relation
+  name: String
+  code: String
+  description: String?

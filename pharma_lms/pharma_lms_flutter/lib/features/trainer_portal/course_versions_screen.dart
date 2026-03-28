@@ -78,6 +78,17 @@ class _CourseVersionsScreenState extends State<CourseVersionsScreen> {
                 ],
               ),
             ),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/trainer/courses/${widget.courseId}/sme'),
+              icon: const Icon(Icons.groups_2_outlined, size: 18),
+              label: const Text('SME collaboration'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.emerald600,
+                side: BorderSide(color: PharmaColors.emerald600.withValues(alpha: 0.45)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(width: 10),
             FilledButton.icon(
               onPressed: _showCreateVersionDialog,
               icon: const Icon(Icons.add, size: 18),

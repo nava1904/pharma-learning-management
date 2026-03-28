@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Certificate PDF generation with Vyuh LMS watermark (platform-agnostic).
+// Certificate PDF generation with Vyuh lms watermark (platform-agnostic).
 // Used by CertificationScreenV2, CertificateScreen, CredentialsWalletScreen,
 // and Downloads screen.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -19,7 +19,7 @@ String _formatPdfDate(DateTime date) {
   return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }
 
-/// Generates a certificate PDF with Vyuh LMS diagonal watermark.
+/// Generates a certificate PDF with Vyuh lms diagonal watermark.
 /// [certificate] must have courseVersion.course, user, and optionally user.organization loaded.
 Future<Uint8List> generateCertificatePdf(Certificate certificate) async {
   final courseTitle = certificate.courseVersion?.course?.title ?? 'Training Course';
@@ -48,7 +48,7 @@ Future<Uint8List> generateCertificatePdf(Certificate certificate) async {
       build: (pw.Context context) {
         return pw.Stack(
           children: [
-            // Watermark - VYUH LMS diagonal
+            // Watermark — Vyuh lms (diagonal)
             pw.Positioned.fill(
               child: pw.Center(
                 child: pw.Transform.rotate(
@@ -56,7 +56,7 @@ Future<Uint8List> generateCertificatePdf(Certificate certificate) async {
                   child: pw.Opacity(
                     opacity: 0.04,
                     child: pw.Text(
-                      'VYUH LMS',
+                      'Vyuh lms',
                       style: pw.TextStyle(
                         fontSize: 120,
                         fontWeight: pw.FontWeight.bold,
@@ -80,7 +80,7 @@ Future<Uint8List> generateCertificatePdf(Certificate certificate) async {
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                            'VYUH LMS',
+                            'Vyuh lms',
                             style: pw.TextStyle(
                               fontSize: 24,
                               fontWeight: pw.FontWeight.bold,
@@ -220,7 +220,7 @@ Future<Uint8List> generateCertificatePdf(Certificate certificate) async {
                           crossAxisAlignment: pw.CrossAxisAlignment.end,
                           children: [
                             pw.Text(
-                              'Powered by Vyuh LMS',
+                              'Powered by Vyuh lms',
                               style: pw.TextStyle(
                                 fontSize: 10,
                                 fontWeight: pw.FontWeight.bold,
@@ -241,6 +241,139 @@ Future<Uint8List> generateCertificatePdf(Certificate certificate) async {
             ),
           ],
         );
+      },
+    ),
+  );
+
+  return Uint8List.fromList(await pdf.save());
+}
+
+/// Read-only training transcript (enrollments, assessment attempts, certificates).
+Future<Uint8List> generateLearnerTranscriptPdf({
+  required PharmaUser user,
+  required List<Enrollment> enrollments,
+  required List<AssessmentAttempt> attempts,
+  required List<Certificate> certificates,
+}) async {
+  const textDark = PdfColor.fromInt(0xFF1E293B);
+  const textLight = PdfColor.fromInt(0xFF64748B);
+  const brandPrimary = PdfColor.fromInt(0xFF0066FF);
+  final generatedAt = DateTime.now();
+
+  final pdf = pw.Document();
+  pdf.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      build: (pw.Context context) {
+        return [
+          pw.Text(
+            'Training transcript',
+            style: pw.TextStyle(
+              fontSize: 20,
+              fontWeight: pw.FontWeight.bold,
+              color: brandPrimary,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Vyuh lms — read-only summary for compliance review',
+            style: pw.TextStyle(fontSize: 10, color: textLight),
+          ),
+          pw.SizedBox(height: 20),
+          pw.Text(
+            '${user.firstName} ${user.lastName}',
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: textDark,
+            ),
+          ),
+          pw.Text(user.email, style: pw.TextStyle(fontSize: 11, color: textLight)),
+          if (user.employeeId != null && user.employeeId!.isNotEmpty)
+            pw.Text(
+              'Employee ID: ${user.employeeId}',
+              style: pw.TextStyle(fontSize: 11, color: textLight),
+            ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Generated: ${_formatPdfDate(generatedAt)}',
+            style: pw.TextStyle(fontSize: 10, color: textLight),
+          ),
+          pw.SizedBox(height: 20),
+          if (enrollments.isNotEmpty) ...[
+            pw.Text(
+              'Enrollments',
+              style: pw.TextStyle(
+                fontSize: 13,
+                fontWeight: pw.FontWeight.bold,
+                color: textDark,
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            ...enrollments.map((e) {
+              final title =
+                  e.courseVersion?.course?.title ?? 'Course #${e.courseVersionId}';
+              final ver = e.courseVersion?.version ?? '';
+              final line =
+                  '• $title${ver.isNotEmpty ? ' (v$ver)' : ''} — ${e.status.replaceAll('_', ' ')}';
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4),
+                child: pw.Text(line, style: pw.TextStyle(fontSize: 10, color: textDark)),
+              );
+            }),
+            pw.SizedBox(height: 16),
+          ],
+          if (attempts.isNotEmpty) ...[
+            pw.Text(
+              'Completed assessments',
+              style: pw.TextStyle(
+                fontSize: 13,
+                fontWeight: pw.FontWeight.bold,
+                color: textDark,
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            ...attempts.map((a) {
+              final courseTitle = a.assessment?.courseVersion?.course?.title ??
+                  'Assessment #${a.assessmentId}';
+              final when = a.completedAt != null
+                  ? _formatPdfDate(a.completedAt!)
+                  : '—';
+              final score = a.score != null ? '${a.score}%' : '—';
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4),
+                child: pw.Text(
+                  '• $courseTitle — score $score — $when (immutable attempt record)',
+                  style: pw.TextStyle(fontSize: 10, color: textDark),
+                ),
+              );
+            }),
+            pw.SizedBox(height: 16),
+          ],
+          if (certificates.isNotEmpty) ...[
+            pw.Text(
+              'Certificates on file',
+              style: pw.TextStyle(
+                fontSize: 13,
+                fontWeight: pw.FontWeight.bold,
+                color: textDark,
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            ...certificates.map((c) {
+              final title =
+                  c.courseVersion?.course?.title ?? 'Course #${c.courseVersionId}';
+              final issued = _formatPdfDate(c.issuedAt);
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4),
+                child: pw.Text(
+                  '• $title — issued $issued',
+                  style: pw.TextStyle(fontSize: 10, color: textDark),
+                ),
+              );
+            }),
+          ],
+        ];
       },
     ),
   );

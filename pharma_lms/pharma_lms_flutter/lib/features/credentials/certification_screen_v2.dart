@@ -155,7 +155,7 @@ class CertificationScreenV2 extends ConsumerWidget {
             }
 
             items.add(_CertItem(
-              title: cert.courseVersion?.course?.title ?? 'Certificate #${cert.id}',
+              title: cert.courseVersion?.course?.title ?? 'Certificate',
               status: certStatus,
               issuedDate: cert.issuedAt,
               expiresDate: cert.expiresAt,
@@ -172,7 +172,7 @@ class CertificationScreenV2 extends ConsumerWidget {
           if (enrollment.status == 'in_progress' &&
               !certifiedCourseVersionIds.contains(enrollment.courseVersionId)) {
             items.add(_CertItem(
-              title: enrollment.courseVersion?.course?.title ?? 'Course #${enrollment.courseVersionId}',
+              title: enrollment.courseVersion?.course?.title ?? 'Assigned course',
               status: 'in-progress',
               courseVersionId: enrollment.courseVersionId,
               requirements: 'Complete all modules and pass final exam',
@@ -186,7 +186,7 @@ class CertificationScreenV2 extends ConsumerWidget {
           if ((enrollment.status == 'assigned' || enrollment.status == 'not_started') &&
               !certifiedCourseVersionIds.contains(enrollment.courseVersionId)) {
             items.add(_CertItem(
-              title: enrollment.courseVersion?.course?.title ?? 'Course #${enrollment.courseVersionId}',
+              title: enrollment.courseVersion?.course?.title ?? 'Assigned course',
               status: 'locked',
               courseVersionId: enrollment.courseVersionId,
               requirements: 'Start the course to begin your certification path',
@@ -575,7 +575,10 @@ class _CertCard extends StatelessWidget {
                           OutlinedButton.icon(
                             onPressed: () {
                               if (item.courseVersionId != null) {
-                                context.go('/employee/course/${item.courseVersionId}');
+                                context.go(
+                                  '/employee/course/${item.courseVersionId}',
+                                  extra: {'courseVersionId': item.courseVersionId},
+                                );
                               }
                             },
                             icon: Icon(Icons.refresh_rounded, size: 16, color: PharmaColors.warning),
@@ -596,7 +599,10 @@ class _CertCard extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: () {
                         if (item.courseVersionId != null) {
-                          context.go('/employee/course/${item.courseVersionId}');
+                          context.go(
+                            '/employee/course/${item.courseVersionId}',
+                            extra: {'courseVersionId': item.courseVersionId},
+                          );
                         }
                       },
                       icon: const Icon(Icons.replay_rounded, size: 16),

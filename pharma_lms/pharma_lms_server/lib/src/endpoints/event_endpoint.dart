@@ -8,7 +8,7 @@ import '../services/system_automation_service.dart';
 import '../services/audit_service.dart';
 import '../audit_event_types.dart';
 
-/// Event trigger endpoint - stub for manual testing of workflow events.
+/// Event trigger endpoint — invokes workflow processors (Kafka/future calls, automation services).
 /// Triggers future calls (SOP update retraining, employee onboarding).
 /// Implements all Pharma LMS event workflows per GMP and 21 CFR Part 11.
 class EventEndpoint extends Endpoint {

@@ -4,10 +4,9 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/client.dart';
-import '../../core/theme/app_colors.dart';
+import '../../design_system/pharma_design_system.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/stat_card.dart';
-import '../esignature/esignature_screen.dart' show showEsignatureModal;
 
 // Define providers
 final auditReadinessProvider = FutureProvider<double>((ref) async {
@@ -48,7 +47,7 @@ class QACommandCenterScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.slate50,
+      backgroundColor: PharmaColors.pageBg,
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(auditReadinessProvider);
@@ -76,18 +75,21 @@ class QACommandCenterScreen extends ConsumerWidget {
   Widget _buildHeroSliver(BuildContext context, WidgetRef ref) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(PortalLayout.contentPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Quality & Compliance Command Center',
-              style: Theme.of(context).textTheme.headlineLarge,
+              style: PharmaTypography.headingLarge.copyWith(
+                fontWeight: FontWeight.w800,
+                color: PharmaColors.textPrimary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: PharmaSpacing.lg),
             Wrap(
-              spacing: 16,
-              runSpacing: 16,
+              spacing: PharmaSpacing.lg,
+              runSpacing: PharmaSpacing.lg,
               children: [
                 StatCard(
                   label: 'Audit Readiness',
@@ -97,8 +99,8 @@ class QACommandCenterScreen extends ConsumerWidget {
                         loading: () => 'Loading...',
                         error: (e, st) => 'Error',
                       ),
-                  iconBackgroundColor: AppColors.backgroundAlt,
-                  iconColor: AppColors.indigo600,
+                  iconBackgroundColor: PharmaColors.infoBg,
+                  iconColor: PharmaColors.info,
                 ),
                 StatCard(
                   label: 'Open Quality Events',
@@ -108,8 +110,8 @@ class QACommandCenterScreen extends ConsumerWidget {
                         loading: () => 'Loading...',
                         error: (e, st) => 'Error',
                       ),
-                  iconBackgroundColor: AppColors.backgroundAlt,
-                  iconColor: AppColors.amber600,
+                  iconBackgroundColor: PharmaColors.warningBg,
+                  iconColor: PharmaColors.warningText,
                 ),
                 StatCard(
                   label: 'Active SLA Breaches',
@@ -119,8 +121,8 @@ class QACommandCenterScreen extends ConsumerWidget {
                         loading: () => 'Loading...',
                         error: (e, st) => 'Error',
                       ),
-                  iconBackgroundColor: AppColors.backgroundAlt,
-                  iconColor: AppColors.destructive,
+                  iconBackgroundColor: PharmaColors.dangerBg,
+                  iconColor: PharmaColors.danger,
                 ),
                 StatCard(
                   label: 'Pending Approvals',
@@ -130,8 +132,8 @@ class QACommandCenterScreen extends ConsumerWidget {
                         loading: () => 'Loading...',
                         error: (e, st) => 'Error',
                       ),
-                  iconBackgroundColor: AppColors.backgroundAlt,
-                  iconColor: AppColors.teal600,
+                  iconBackgroundColor: PharmaColors.emerald50,
+                  iconColor: PharmaColors.emerald600,
                 ),
               ],
             ),
@@ -151,18 +153,18 @@ class QACommandCenterScreen extends ConsumerWidget {
         }
         return SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(PortalLayout.contentPadding),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(PharmaSpacing.lg),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.destructive.withValues(alpha: 0.1),
-                    AppColors.amber600.withValues(alpha: 0.1),
+                    PharmaColors.danger.withValues(alpha: 0.08),
+                    PharmaColors.warning.withValues(alpha: 0.08),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+                borderRadius: PharmaRadius.cardRadius,
+                border: Border.all(color: PharmaColors.danger.withValues(alpha: 0.25)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,33 +172,33 @@ class QACommandCenterScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(PharmaSpacing.sm),
                         decoration: BoxDecoration(
-                          color: AppColors.destructive.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          color: PharmaColors.dangerBg,
+                          borderRadius: PharmaRadius.cardRadius,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.trending_down,
-                          color: AppColors.destructive,
+                          color: PharmaColors.danger,
                           size: 20,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: PharmaSpacing.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Compliance Drop Alert',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.destructive,
+                              style: PharmaTypography.headingSmall.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: PharmaColors.danger,
                               ),
                             ),
                             Text(
                               '${alerts.length} department(s) below 90% compliance threshold',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.slate600,
+                              style: PharmaTypography.caption.copyWith(
+                                color: PharmaColors.textSecondary,
                               ),
                             ),
                           ],
@@ -205,21 +207,22 @@ class QACommandCenterScreen extends ConsumerWidget {
                       FilledButton.tonal(
                         onPressed: () => context.push('/compliance-report'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.destructive.withValues(alpha: 0.2),
+                          backgroundColor: PharmaColors.dangerBg,
+                          foregroundColor: PharmaColors.danger,
                         ),
                         child: const Text('View Report'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: PharmaSpacing.md),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: PharmaSpacing.sm,
+                    runSpacing: PharmaSpacing.sm,
                     children: alerts.map((dept) => Chip(
                       avatar: CircleAvatar(
-                        backgroundColor: dept.complianceRate < 80 
-                            ? AppColors.destructive 
-                            : AppColors.amber600,
+                        backgroundColor: dept.complianceRate < 80
+                            ? PharmaColors.danger
+                            : PharmaColors.warning,
                         child: Text(
                           '${dept.complianceRate.toStringAsFixed(0)}%',
                           style: const TextStyle(
@@ -231,8 +234,8 @@ class QACommandCenterScreen extends ConsumerWidget {
                       ),
                       label: Text(dept.departmentName ?? 'Unknown'),
                       backgroundColor: dept.complianceRate < 80
-                          ? AppColors.destructive.withValues(alpha: 0.1)
-                          : AppColors.amber600.withValues(alpha: 0.1),
+                          ? PharmaColors.dangerBg
+                          : PharmaColors.warningBg,
                     )).toList(),
                   ),
                 ],
@@ -249,7 +252,7 @@ class QACommandCenterScreen extends ConsumerWidget {
   Widget _buildQuickActionsRow(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: PortalLayout.contentPadding, vertical: PharmaSpacing.sm),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -289,10 +292,10 @@ class QACommandCenterScreen extends ConsumerWidget {
   Widget _buildPendingCourseReviewsHeader(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+        padding: const EdgeInsets.fromLTRB(PortalLayout.contentPadding, PharmaSpacing.lg, PortalLayout.contentPadding, PharmaSpacing.sm),
         child: Text(
           'Pending Course Reviews',
-          style: Theme.of(context).textTheme.titleLarge,
+          style: PharmaTypography.headingSmall.copyWith(fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -306,7 +309,7 @@ class QACommandCenterScreen extends ConsumerWidget {
         if (courseVersions.isEmpty) {
           return const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(PortalLayout.contentPadding),
               child: EmptyState(message: 'No pending course reviews.'),
             ),
           );
@@ -326,7 +329,7 @@ class QACommandCenterScreen extends ConsumerWidget {
       ),
       error: (e, st) => const SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(PortalLayout.contentPadding),
           child: EmptyState(message: 'Failed to load course reviews.'),
         ),
       ),
@@ -336,10 +339,10 @@ class QACommandCenterScreen extends ConsumerWidget {
   Widget _buildActiveSLABreachesHeader(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+        padding: const EdgeInsets.fromLTRB(PortalLayout.contentPadding, PharmaSpacing.lg, PortalLayout.contentPadding, PharmaSpacing.sm),
         child: Text(
           'Active SLA Breaches',
-          style: Theme.of(context).textTheme.titleLarge,
+          style: PharmaTypography.headingSmall.copyWith(fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -353,7 +356,7 @@ class QACommandCenterScreen extends ConsumerWidget {
         if (breaches.isEmpty) {
           return const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(PortalLayout.contentPadding),
               child: EmptyState(message: 'No active SLA breaches.'),
             ),
           );
@@ -373,7 +376,7 @@ class QACommandCenterScreen extends ConsumerWidget {
       ),
       error: (e, st) => const SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(PortalLayout.contentPadding),
           child: EmptyState(message: 'Failed to load SLA breaches.'),
         ),
       ),
@@ -382,67 +385,45 @@ class QACommandCenterScreen extends ConsumerWidget {
 }
 
 /// Tile for reviewing/approving a course version
-class _CourseReviewTile extends StatefulWidget {
+class _CourseReviewTile extends ConsumerStatefulWidget {
   final CourseVersion course;
 
   const _CourseReviewTile({required this.course});
 
   @override
-  State<_CourseReviewTile> createState() => _CourseReviewTileState();
+  ConsumerState<_CourseReviewTile> createState() => _CourseReviewTileState();
 }
 
-class _CourseReviewTileState extends State<_CourseReviewTile> {
-  bool _loading = false;
-
-  Future<void> _approveCourse() async {
-    final esignatureId = await showEsignatureModal(
-      context,
-      entityType: 'course_version',
-      entityId: widget.course.id.toString(),
-      signatureMeaning: 'Approved for publication',
-    );
-
-    if (esignatureId == null || !mounted) return;
-
-    setState(() => _loading = true);
-    try {
-      await client.qa.approveCourseVersion(
-        courseVersionId: widget.course.id!,
-        passwordPlaintext: '', // E-signature already captured
-        signatureMeaning: 'Approved for publication',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Course approved successfully.')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to approve: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+class _CourseReviewTileState extends ConsumerState<_CourseReviewTile> {
+  void _openFullCourseReview() {
+    context.push('/qa/course/${widget.course.courseId}/review');
   }
 
   @override
   Widget build(BuildContext context) {
     final courseTitle = widget.course.course?.title ?? 'Course #${widget.course.courseId}';
-    return ListTile(
-      title: Text(courseTitle),
-      subtitle: Text('Version: ${widget.course.version}'),
-      trailing: _loading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : ElevatedButton(
-              onPressed: _approveCourse,
-              child: const Text('Review'),
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: PortalLayout.contentPadding, vertical: PharmaSpacing.xs),
+      child: Card(
+        elevation: 0,
+        color: PharmaColors.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: PharmaRadius.cardRadius,
+          side: const BorderSide(color: PharmaColors.borderLight),
+        ),
+        child: ListTile(
+          title: Text(courseTitle, style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          subtitle: Text(
+            'Version: ${widget.course.version} · ${widget.course.status}',
+            style: PharmaTypography.caption,
+          ),
+          trailing: FilledButton(
+            onPressed: _openFullCourseReview,
+            style: FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600, foregroundColor: PharmaColors.cardBg),
+            child: const Text('Open review'),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -465,7 +446,7 @@ class _SLABreachTileState extends State<_SLABreachTile> {
     try {
       // Navigate to SLA policy details
       if (mounted) {
-        context.push('/admin/sla-policies');
+        context.push('/admin/analytics/dashboard');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -476,19 +457,31 @@ class _SLABreachTileState extends State<_SLABreachTile> {
   Widget build(BuildContext context) {
     final policyMetric = widget.breach.slaPolicy?.metric ?? 'SLA Policy #${widget.breach.slaPolicyId}';
     final threshold = widget.breach.slaPolicy?.threshold.toStringAsFixed(0) ?? 'N/A';
-    return ListTile(
-      title: Text(policyMetric),
-      subtitle: Text('Threshold: $threshold% • Breached: ${_formatDate(widget.breach.breachedAt)}'),
-      trailing: _loading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : FilledButton.tonal(
-              onPressed: _viewDetails,
-              child: const Text('View'),
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: PortalLayout.contentPadding, vertical: PharmaSpacing.xs),
+      child: Card(
+        elevation: 0,
+        color: PharmaColors.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: PharmaRadius.cardRadius,
+          side: const BorderSide(color: PharmaColors.borderLight),
+        ),
+        child: ListTile(
+          title: Text(policyMetric, style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          subtitle: Text('Threshold: $threshold% • Breached: ${_formatDate(widget.breach.breachedAt)}', style: PharmaTypography.caption),
+          trailing: _loading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : FilledButton.tonal(
+                  onPressed: _viewDetails,
+                  style: FilledButton.styleFrom(foregroundColor: PharmaColors.emerald700),
+                  child: const Text('View'),
+                ),
+        ),
+      ),
     );
   }
 
@@ -512,21 +505,29 @@ class QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(right: 16),
+      margin: const EdgeInsets.only(right: PharmaSpacing.lg),
+      elevation: 0,
+      color: PharmaColors.cardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: PharmaRadius.cardRadius,
+        side: const BorderSide(color: PharmaColors.borderLight),
+      ),
       child: InkWell(
         onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        borderRadius: PharmaRadius.cardRadius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: PharmaSpacing.md),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 24, color: AppColors.primary),
-              const SizedBox(width: 8),
+              Icon(icon, size: 22, color: PharmaColors.emerald600),
+              const SizedBox(width: PharmaSpacing.sm),
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.primary,
-                    ),
+                style: PharmaTypography.bodyMedium.copyWith(
+                  color: PharmaColors.emerald700,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),

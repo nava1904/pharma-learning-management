@@ -67,10 +67,14 @@ class _EsignatureModalState extends State<EsignatureModal> {
   bool _biometricAvailable = false;
   bool _hasStoredToken = false;
   bool _biometricChecked = false;
+  String _signerPrintedName = '';
+  late final DateTime _manifestationStarted;
 
   @override
   void initState() {
     super.initState();
+    _manifestationStarted = DateTime.now().toUtc();
+    _loadSignerPrintedName();
     _loadMeanings();
     _checkBiometric();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -105,6 +109,19 @@ class _EsignatureModalState extends State<EsignatureModal> {
         _biometricChecked = true;
       });
     }
+  }
+
+  Future<void> _loadSignerPrintedName() async {
+    final uid = widget.userId;
+    if (uid == null) return;
+    try {
+      final u = await client.user.getUser(uid);
+      if (!mounted || u == null) return;
+      final name = '${u.firstName} ${u.lastName}'.trim();
+      setState(() {
+        _signerPrintedName = name.isNotEmpty ? name : u.email;
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadMeanings() async {
@@ -282,6 +299,40 @@ class _EsignatureModalState extends State<EsignatureModal> {
                 ],
               ),
               const SizedBox(height: 16),
+              if (_signerPrintedName.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PharmaColors.gray50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: PharmaColors.borderLight),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Signature manifestation',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Signer (printed name): $_signerPrintedName',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Session time (UTC): ${_manifestationStarted.toIso8601String()}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               if (_windowExpired) ...[
                 Card(
                   color: PharmaColors.dangerBg,

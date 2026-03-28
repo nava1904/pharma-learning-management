@@ -1,0 +1,24 @@
+### Live class session within a training batch.
+class: LiveClass
+
+table: live_class
+
+fields:
+  ### The training batch.
+  batch: TrainingBatch?, relation
+  ### Session title.
+  title: String
+  ### Session description.
+  description: String?
+  ### When the session is scheduled.
+  scheduledAt: DateTime
+  ### Duration in minutes.
+  durationMinutes: int, default=60
+  ### Meeting/conference URL.
+  meetingUrl: String?
+  ### Whether auto-recording is enabled.
+  autoRecording: bool, default=false
+  ### User who created this session.
+  createdBy: PharmaUser?, relation(optional)
+  ### Created timestamp.
+  createdAt: DateTime, default=now

@@ -1,0 +1,26 @@
+### Threaded SME review comment on a course version.
+class: SmeReviewComment
+
+table: sme_review_comment
+
+fields:
+  ### Course version being reviewed.
+  courseVersion: CourseVersion?, relation
+  ### Author (usually the SME).
+  author: PharmaUser?, relation
+  ### Section reference (e.g. module label or lesson id).
+  sectionRef: String
+  ### note, major, critical
+  severity: String, default='note'
+  ### Comment body.
+  body: String
+  ### Trainer marked resolved.
+  resolved: bool, default=false
+  ### Trainer response when resolving.
+  trainerResponse: String?
+  ### When resolved.
+  resolvedAt: DateTime?
+  ### Created timestamp.
+  createdAt: DateTime, default=now
+  ### Optional parent comment for threaded QA / trainer replies.
+  parentComment: SmeReviewComment?, relation(optional)

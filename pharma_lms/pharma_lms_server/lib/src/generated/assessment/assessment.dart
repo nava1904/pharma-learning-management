@@ -30,7 +30,12 @@ abstract class Assessment
     this.timeLimitMinutes,
     this.maxAttempts,
     this.questionsToDisplay,
-  }) : randomize = randomize ?? true;
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    this.limitQuestions,
+  }) : randomize = randomize ?? true,
+       showAnswers = showAnswers ?? false,
+       showSubmissionHistory = showSubmissionHistory ?? false;
 
   factory Assessment({
     int? id,
@@ -43,6 +48,9 @@ abstract class Assessment
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   }) = _AssessmentImpl;
 
   factory Assessment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -67,6 +75,15 @@ abstract class Assessment
       timeLimitMinutes: jsonSerialization['timeLimitMinutes'] as int?,
       maxAttempts: jsonSerialization['maxAttempts'] as int?,
       questionsToDisplay: jsonSerialization['questionsToDisplay'] as int?,
+      showAnswers: jsonSerialization['showAnswers'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['showAnswers']),
+      showSubmissionHistory: jsonSerialization['showSubmissionHistory'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['showSubmissionHistory'],
+            ),
+      limitQuestions: jsonSerialization['limitQuestions'] as int?,
     );
   }
 
@@ -103,6 +120,15 @@ abstract class Assessment
   /// TRN-WF-03: Must be <= totalQuestions / 2 for adequate randomization.
   int? questionsToDisplay;
 
+  /// Whether to show correct answers after submission.
+  bool showAnswers;
+
+  /// Whether to show previous submission history to the learner.
+  bool showSubmissionHistory;
+
+  /// Limit the number of questions shown (used with randomize).
+  int? limitQuestions;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -120,6 +146,9 @@ abstract class Assessment
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -135,6 +164,9 @@ abstract class Assessment
       if (timeLimitMinutes != null) 'timeLimitMinutes': timeLimitMinutes,
       if (maxAttempts != null) 'maxAttempts': maxAttempts,
       if (questionsToDisplay != null) 'questionsToDisplay': questionsToDisplay,
+      'showAnswers': showAnswers,
+      'showSubmissionHistory': showSubmissionHistory,
+      if (limitQuestions != null) 'limitQuestions': limitQuestions,
     };
   }
 
@@ -154,6 +186,9 @@ abstract class Assessment
       if (timeLimitMinutes != null) 'timeLimitMinutes': timeLimitMinutes,
       if (maxAttempts != null) 'maxAttempts': maxAttempts,
       if (questionsToDisplay != null) 'questionsToDisplay': questionsToDisplay,
+      'showAnswers': showAnswers,
+      'showSubmissionHistory': showSubmissionHistory,
+      if (limitQuestions != null) 'limitQuestions': limitQuestions,
     };
   }
 
@@ -207,6 +242,9 @@ class _AssessmentImpl extends Assessment {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   }) : super._(
          id: id,
          courseVersionId: courseVersionId,
@@ -218,6 +256,9 @@ class _AssessmentImpl extends Assessment {
          timeLimitMinutes: timeLimitMinutes,
          maxAttempts: maxAttempts,
          questionsToDisplay: questionsToDisplay,
+         showAnswers: showAnswers,
+         showSubmissionHistory: showSubmissionHistory,
+         limitQuestions: limitQuestions,
        );
 
   /// Returns a shallow copy of this [Assessment]
@@ -235,6 +276,9 @@ class _AssessmentImpl extends Assessment {
     Object? timeLimitMinutes = _Undefined,
     Object? maxAttempts = _Undefined,
     Object? questionsToDisplay = _Undefined,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    Object? limitQuestions = _Undefined,
   }) {
     return Assessment(
       id: id is int? ? id : this.id,
@@ -255,6 +299,12 @@ class _AssessmentImpl extends Assessment {
       questionsToDisplay: questionsToDisplay is int?
           ? questionsToDisplay
           : this.questionsToDisplay,
+      showAnswers: showAnswers ?? this.showAnswers,
+      showSubmissionHistory:
+          showSubmissionHistory ?? this.showSubmissionHistory,
+      limitQuestions: limitQuestions is int?
+          ? limitQuestions
+          : this.limitQuestions,
     );
   }
 }
@@ -296,6 +346,22 @@ class AssessmentUpdateTable extends _i1.UpdateTable<AssessmentTable> {
     table.questionsToDisplay,
     value,
   );
+
+  _i1.ColumnValue<bool, bool> showAnswers(bool value) => _i1.ColumnValue(
+    table.showAnswers,
+    value,
+  );
+
+  _i1.ColumnValue<bool, bool> showSubmissionHistory(bool value) =>
+      _i1.ColumnValue(
+        table.showSubmissionHistory,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> limitQuestions(int? value) => _i1.ColumnValue(
+    table.limitQuestions,
+    value,
+  );
 }
 
 class AssessmentTable extends _i1.Table<int?> {
@@ -330,6 +396,20 @@ class AssessmentTable extends _i1.Table<int?> {
       'questionsToDisplay',
       this,
     );
+    showAnswers = _i1.ColumnBool(
+      'showAnswers',
+      this,
+      hasDefault: true,
+    );
+    showSubmissionHistory = _i1.ColumnBool(
+      'showSubmissionHistory',
+      this,
+      hasDefault: true,
+    );
+    limitQuestions = _i1.ColumnInt(
+      'limitQuestions',
+      this,
+    );
   }
 
   late final AssessmentUpdateTable updateTable;
@@ -359,6 +439,15 @@ class AssessmentTable extends _i1.Table<int?> {
   /// Number of questions to display from the bank.
   /// TRN-WF-03: Must be <= totalQuestions / 2 for adequate randomization.
   late final _i1.ColumnInt questionsToDisplay;
+
+  /// Whether to show correct answers after submission.
+  late final _i1.ColumnBool showAnswers;
+
+  /// Whether to show previous submission history to the learner.
+  late final _i1.ColumnBool showSubmissionHistory;
+
+  /// Limit the number of questions shown (used with randomize).
+  late final _i1.ColumnInt limitQuestions;
 
   _i2.CourseVersionTable get courseVersion {
     if (_courseVersion != null) return _courseVersion!;
@@ -396,6 +485,9 @@ class AssessmentTable extends _i1.Table<int?> {
     timeLimitMinutes,
     maxAttempts,
     questionsToDisplay,
+    showAnswers,
+    showSubmissionHistory,
+    limitQuestions,
   ];
 
   @override

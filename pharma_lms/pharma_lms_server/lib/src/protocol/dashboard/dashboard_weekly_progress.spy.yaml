@@ -1,0 +1,6 @@
+class: DashboardWeeklyProgress
+fields:
+  weekStart: DateTime
+  hours: double
+  completedCourses: int
+  inProgressCourses: int

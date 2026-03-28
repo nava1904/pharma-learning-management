@@ -27,7 +27,13 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     required this.materialId,
     this.material,
     this.durationMinutes,
-  }) : orderIndex = orderIndex ?? 0;
+    this.lessonType,
+    this.minEngagementMinutes,
+    this.prerequisiteMode,
+    this.instructorNotes,
+    bool? includeInPreview,
+  }) : orderIndex = orderIndex ?? 0,
+       includeInPreview = includeInPreview ?? false;
 
   factory Lesson({
     int? id,
@@ -38,6 +44,11 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     required int materialId,
     _i3.Material? material,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
+    String? instructorNotes,
+    bool? includeInPreview,
   }) = _LessonImpl;
 
   factory Lesson.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -56,6 +67,15 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
               jsonSerialization['material'],
             ),
       durationMinutes: jsonSerialization['durationMinutes'] as int?,
+      lessonType: jsonSerialization['lessonType'] as String?,
+      minEngagementMinutes: jsonSerialization['minEngagementMinutes'] as int?,
+      prerequisiteMode: jsonSerialization['prerequisiteMode'] as String?,
+      instructorNotes: jsonSerialization['instructorNotes'] as String?,
+      includeInPreview: jsonSerialization['includeInPreview'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['includeInPreview'],
+            ),
     );
   }
 
@@ -85,6 +105,21 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
   /// Duration in minutes.
   int? durationMinutes;
 
+  /// Lesson type: PDF, Video, SCORM, xAPI, HTML, Checklist, google_doc, google_sheet, google_slide.
+  String? lessonType;
+
+  /// Minimum engagement time in minutes (server-enforced read time).
+  int? minEngagementMinutes;
+
+  /// Prerequisite mode: none, previous (complete previous lesson first).
+  String? prerequisiteMode;
+
+  /// Instructor notes (not shown to learners).
+  String? instructorNotes;
+
+  /// Whether this lesson is included in the course preview.
+  bool includeInPreview;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -100,6 +135,11 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     int? materialId,
     _i3.Material? material,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
+    String? instructorNotes,
+    bool? includeInPreview,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -113,6 +153,12 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       'materialId': materialId,
       if (material != null) 'material': material?.toJson(),
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
+      if (lessonType != null) 'lessonType': lessonType,
+      if (minEngagementMinutes != null)
+        'minEngagementMinutes': minEngagementMinutes,
+      if (prerequisiteMode != null) 'prerequisiteMode': prerequisiteMode,
+      if (instructorNotes != null) 'instructorNotes': instructorNotes,
+      'includeInPreview': includeInPreview,
     };
   }
 
@@ -128,6 +174,12 @@ abstract class Lesson implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       'materialId': materialId,
       if (material != null) 'material': material?.toJsonForProtocol(),
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
+      if (lessonType != null) 'lessonType': lessonType,
+      if (minEngagementMinutes != null)
+        'minEngagementMinutes': minEngagementMinutes,
+      if (prerequisiteMode != null) 'prerequisiteMode': prerequisiteMode,
+      if (instructorNotes != null) 'instructorNotes': instructorNotes,
+      'includeInPreview': includeInPreview,
     };
   }
 
@@ -179,6 +231,11 @@ class _LessonImpl extends Lesson {
     required int materialId,
     _i3.Material? material,
     int? durationMinutes,
+    String? lessonType,
+    int? minEngagementMinutes,
+    String? prerequisiteMode,
+    String? instructorNotes,
+    bool? includeInPreview,
   }) : super._(
          id: id,
          moduleId: moduleId,
@@ -188,6 +245,11 @@ class _LessonImpl extends Lesson {
          materialId: materialId,
          material: material,
          durationMinutes: durationMinutes,
+         lessonType: lessonType,
+         minEngagementMinutes: minEngagementMinutes,
+         prerequisiteMode: prerequisiteMode,
+         instructorNotes: instructorNotes,
+         includeInPreview: includeInPreview,
        );
 
   /// Returns a shallow copy of this [Lesson]
@@ -203,6 +265,11 @@ class _LessonImpl extends Lesson {
     int? materialId,
     Object? material = _Undefined,
     Object? durationMinutes = _Undefined,
+    Object? lessonType = _Undefined,
+    Object? minEngagementMinutes = _Undefined,
+    Object? prerequisiteMode = _Undefined,
+    Object? instructorNotes = _Undefined,
+    bool? includeInPreview,
   }) {
     return Lesson(
       id: id is int? ? id : this.id,
@@ -217,6 +284,17 @@ class _LessonImpl extends Lesson {
       durationMinutes: durationMinutes is int?
           ? durationMinutes
           : this.durationMinutes,
+      lessonType: lessonType is String? ? lessonType : this.lessonType,
+      minEngagementMinutes: minEngagementMinutes is int?
+          ? minEngagementMinutes
+          : this.minEngagementMinutes,
+      prerequisiteMode: prerequisiteMode is String?
+          ? prerequisiteMode
+          : this.prerequisiteMode,
+      instructorNotes: instructorNotes is String?
+          ? instructorNotes
+          : this.instructorNotes,
+      includeInPreview: includeInPreview ?? this.includeInPreview,
     );
   }
 }
@@ -248,6 +326,33 @@ class LessonUpdateTable extends _i1.UpdateTable<LessonTable> {
     table.durationMinutes,
     value,
   );
+
+  _i1.ColumnValue<String, String> lessonType(String? value) => _i1.ColumnValue(
+    table.lessonType,
+    value,
+  );
+
+  _i1.ColumnValue<int, int> minEngagementMinutes(int? value) => _i1.ColumnValue(
+    table.minEngagementMinutes,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> prerequisiteMode(String? value) =>
+      _i1.ColumnValue(
+        table.prerequisiteMode,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> instructorNotes(String? value) =>
+      _i1.ColumnValue(
+        table.instructorNotes,
+        value,
+      );
+
+  _i1.ColumnValue<bool, bool> includeInPreview(bool value) => _i1.ColumnValue(
+    table.includeInPreview,
+    value,
+  );
 }
 
 class LessonTable extends _i1.Table<int?> {
@@ -274,6 +379,27 @@ class LessonTable extends _i1.Table<int?> {
       'durationMinutes',
       this,
     );
+    lessonType = _i1.ColumnString(
+      'lessonType',
+      this,
+    );
+    minEngagementMinutes = _i1.ColumnInt(
+      'minEngagementMinutes',
+      this,
+    );
+    prerequisiteMode = _i1.ColumnString(
+      'prerequisiteMode',
+      this,
+    );
+    instructorNotes = _i1.ColumnString(
+      'instructorNotes',
+      this,
+    );
+    includeInPreview = _i1.ColumnBool(
+      'includeInPreview',
+      this,
+      hasDefault: true,
+    );
   }
 
   late final LessonUpdateTable updateTable;
@@ -296,6 +422,21 @@ class LessonTable extends _i1.Table<int?> {
 
   /// Duration in minutes.
   late final _i1.ColumnInt durationMinutes;
+
+  /// Lesson type: PDF, Video, SCORM, xAPI, HTML, Checklist, google_doc, google_sheet, google_slide.
+  late final _i1.ColumnString lessonType;
+
+  /// Minimum engagement time in minutes (server-enforced read time).
+  late final _i1.ColumnInt minEngagementMinutes;
+
+  /// Prerequisite mode: none, previous (complete previous lesson first).
+  late final _i1.ColumnString prerequisiteMode;
+
+  /// Instructor notes (not shown to learners).
+  late final _i1.ColumnString instructorNotes;
+
+  /// Whether this lesson is included in the course preview.
+  late final _i1.ColumnBool includeInPreview;
 
   _i2.ModuleTable get module {
     if (_module != null) return _module!;
@@ -331,6 +472,11 @@ class LessonTable extends _i1.Table<int?> {
     orderIndex,
     materialId,
     durationMinutes,
+    lessonType,
+    minEngagementMinutes,
+    prerequisiteMode,
+    instructorNotes,
+    includeInPreview,
   ];
 
   @override

@@ -1,0 +1,16 @@
+### Aggregated analytics for a training batch (roster + course version).
+class: BatchTrainingAnalytics
+
+fields:
+  batchId: int
+  courseVersionId: int?
+  rosterCount: int
+  enrollmentCount: int
+  completedEnrollments: int
+  inProgressEnrollments: int
+  overdueEnrollments: int
+  totalTimeSpentSeconds: int
+  averageMaterialProgressPct: double
+  activeTrainingAssignmentCount: int
+  assessmentAttemptCount: int
+  passedAssessmentAttemptCount: int

@@ -27,12 +27,12 @@ abstract class Certificate
     this.user,
     required this.courseVersionId,
     this.courseVersion,
-    required this.trainingRecordId,
+    this.trainingRecordId,
     this.trainingRecord,
     DateTime? issuedAt,
     this.expiresAt,
     this.qrCode,
-    required this.esignatureId,
+    this.esignatureId,
     this.esignature,
     String? status,
   }) : issuedAt = issuedAt ?? DateTime.now(),
@@ -44,12 +44,12 @@ abstract class Certificate
     _i2.PharmaUser? user,
     required int courseVersionId,
     _i3.CourseVersion? courseVersion,
-    required int trainingRecordId,
+    int? trainingRecordId,
     _i4.TrainingRecord? trainingRecord,
     DateTime? issuedAt,
     DateTime? expiresAt,
     String? qrCode,
-    required int esignatureId,
+    int? esignatureId,
     _i5.ElectronicSignature? esignature,
     String? status,
   }) = _CertificateImpl;
@@ -69,7 +69,7 @@ abstract class Certificate
           : _i6.Protocol().deserialize<_i3.CourseVersion>(
               jsonSerialization['courseVersion'],
             ),
-      trainingRecordId: jsonSerialization['trainingRecordId'] as int,
+      trainingRecordId: jsonSerialization['trainingRecordId'] as int?,
       trainingRecord: jsonSerialization['trainingRecord'] == null
           ? null
           : _i6.Protocol().deserialize<_i4.TrainingRecord>(
@@ -82,7 +82,7 @@ abstract class Certificate
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['expiresAt']),
       qrCode: jsonSerialization['qrCode'] as String?,
-      esignatureId: jsonSerialization['esignatureId'] as int,
+      esignatureId: jsonSerialization['esignatureId'] as int?,
       esignature: jsonSerialization['esignature'] == null
           ? null
           : _i6.Protocol().deserialize<_i5.ElectronicSignature>(
@@ -109,7 +109,7 @@ abstract class Certificate
   /// The course version.
   _i3.CourseVersion? courseVersion;
 
-  int trainingRecordId;
+  int? trainingRecordId;
 
   /// The training record.
   _i4.TrainingRecord? trainingRecord;
@@ -123,7 +123,7 @@ abstract class Certificate
   /// QR code for verification.
   String? qrCode;
 
-  int esignatureId;
+  int? esignatureId;
 
   /// Electronic signature.
   _i5.ElectronicSignature? esignature;
@@ -161,12 +161,12 @@ abstract class Certificate
       if (user != null) 'user': user?.toJson(),
       'courseVersionId': courseVersionId,
       if (courseVersion != null) 'courseVersion': courseVersion?.toJson(),
-      'trainingRecordId': trainingRecordId,
+      if (trainingRecordId != null) 'trainingRecordId': trainingRecordId,
       if (trainingRecord != null) 'trainingRecord': trainingRecord?.toJson(),
       'issuedAt': issuedAt.toJson(),
       if (expiresAt != null) 'expiresAt': expiresAt?.toJson(),
       if (qrCode != null) 'qrCode': qrCode,
-      'esignatureId': esignatureId,
+      if (esignatureId != null) 'esignatureId': esignatureId,
       if (esignature != null) 'esignature': esignature?.toJson(),
       'status': status,
     };
@@ -182,13 +182,13 @@ abstract class Certificate
       'courseVersionId': courseVersionId,
       if (courseVersion != null)
         'courseVersion': courseVersion?.toJsonForProtocol(),
-      'trainingRecordId': trainingRecordId,
+      if (trainingRecordId != null) 'trainingRecordId': trainingRecordId,
       if (trainingRecord != null)
         'trainingRecord': trainingRecord?.toJsonForProtocol(),
       'issuedAt': issuedAt.toJson(),
       if (expiresAt != null) 'expiresAt': expiresAt?.toJson(),
       if (qrCode != null) 'qrCode': qrCode,
-      'esignatureId': esignatureId,
+      if (esignatureId != null) 'esignatureId': esignatureId,
       if (esignature != null) 'esignature': esignature?.toJsonForProtocol(),
       'status': status,
     };
@@ -243,12 +243,12 @@ class _CertificateImpl extends Certificate {
     _i2.PharmaUser? user,
     required int courseVersionId,
     _i3.CourseVersion? courseVersion,
-    required int trainingRecordId,
+    int? trainingRecordId,
     _i4.TrainingRecord? trainingRecord,
     DateTime? issuedAt,
     DateTime? expiresAt,
     String? qrCode,
-    required int esignatureId,
+    int? esignatureId,
     _i5.ElectronicSignature? esignature,
     String? status,
   }) : super._(
@@ -277,12 +277,12 @@ class _CertificateImpl extends Certificate {
     Object? user = _Undefined,
     int? courseVersionId,
     Object? courseVersion = _Undefined,
-    int? trainingRecordId,
+    Object? trainingRecordId = _Undefined,
     Object? trainingRecord = _Undefined,
     DateTime? issuedAt,
     Object? expiresAt = _Undefined,
     Object? qrCode = _Undefined,
-    int? esignatureId,
+    Object? esignatureId = _Undefined,
     Object? esignature = _Undefined,
     String? status,
   }) {
@@ -294,14 +294,16 @@ class _CertificateImpl extends Certificate {
       courseVersion: courseVersion is _i3.CourseVersion?
           ? courseVersion
           : this.courseVersion?.copyWith(),
-      trainingRecordId: trainingRecordId ?? this.trainingRecordId,
+      trainingRecordId: trainingRecordId is int?
+          ? trainingRecordId
+          : this.trainingRecordId,
       trainingRecord: trainingRecord is _i4.TrainingRecord?
           ? trainingRecord
           : this.trainingRecord?.copyWith(),
       issuedAt: issuedAt ?? this.issuedAt,
       expiresAt: expiresAt is DateTime? ? expiresAt : this.expiresAt,
       qrCode: qrCode is String? ? qrCode : this.qrCode,
-      esignatureId: esignatureId ?? this.esignatureId,
+      esignatureId: esignatureId is int? ? esignatureId : this.esignatureId,
       esignature: esignature is _i5.ElectronicSignature?
           ? esignature
           : this.esignature?.copyWith(),
@@ -323,7 +325,7 @@ class CertificateUpdateTable extends _i1.UpdateTable<CertificateTable> {
     value,
   );
 
-  _i1.ColumnValue<int, int> trainingRecordId(int value) => _i1.ColumnValue(
+  _i1.ColumnValue<int, int> trainingRecordId(int? value) => _i1.ColumnValue(
     table.trainingRecordId,
     value,
   );
@@ -345,7 +347,7 @@ class CertificateUpdateTable extends _i1.UpdateTable<CertificateTable> {
     value,
   );
 
-  _i1.ColumnValue<int, int> esignatureId(int value) => _i1.ColumnValue(
+  _i1.ColumnValue<int, int> esignatureId(int? value) => _i1.ColumnValue(
     table.esignatureId,
     value,
   );
@@ -569,6 +571,8 @@ class CertificateRepository {
   const CertificateRepository._();
 
   final attachRow = const CertificateAttachRowRepository._();
+
+  final detachRow = const CertificateDetachRowRepository._();
 
   /// Returns a list of [Certificate]s matching the given query parameters.
   ///
@@ -950,6 +954,54 @@ class CertificateAttachRowRepository {
     }
 
     var $certificate = certificate.copyWith(esignatureId: esignature.id);
+    await session.db.updateRow<Certificate>(
+      $certificate,
+      columns: [Certificate.t.esignatureId],
+      transaction: transaction,
+    );
+  }
+}
+
+class CertificateDetachRowRepository {
+  const CertificateDetachRowRepository._();
+
+  /// Detaches the relation between this [Certificate] and the [TrainingRecord] set in `trainingRecord`
+  /// by setting the [Certificate]'s foreign key `trainingRecordId` to `null`.
+  ///
+  /// This removes the association between the two models without deleting
+  /// the related record.
+  Future<void> trainingRecord(
+    _i1.DatabaseSession session,
+    Certificate certificate, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (certificate.id == null) {
+      throw ArgumentError.notNull('certificate.id');
+    }
+
+    var $certificate = certificate.copyWith(trainingRecordId: null);
+    await session.db.updateRow<Certificate>(
+      $certificate,
+      columns: [Certificate.t.trainingRecordId],
+      transaction: transaction,
+    );
+  }
+
+  /// Detaches the relation between this [Certificate] and the [ElectronicSignature] set in `esignature`
+  /// by setting the [Certificate]'s foreign key `esignatureId` to `null`.
+  ///
+  /// This removes the association between the two models without deleting
+  /// the related record.
+  Future<void> esignature(
+    _i1.DatabaseSession session,
+    Certificate certificate, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (certificate.id == null) {
+      throw ArgumentError.notNull('certificate.id');
+    }
+
+    var $certificate = certificate.copyWith(esignatureId: null);
     await session.db.updateRow<Certificate>(
       $certificate,
       columns: [Certificate.t.esignatureId],

@@ -1,0 +1,18 @@
+### Instructor or admin post visible to batch roster (assignments, live session notes, general).
+class: BatchAnnouncement
+
+table: batch_announcement
+
+fields:
+  batch: TrainingBatch?, relation
+  title: String
+  body: String
+  ### general | assignment | live_session
+  kind: String, default='general'
+  relatedLiveClassId: int?
+  createdBy: PharmaUser?, relation(optional)
+  createdAt: DateTime, default=now
+
+indexes:
+  batch_announcement_batch_idx:
+    fields: batchId, createdAt

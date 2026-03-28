@@ -1,0 +1,7 @@
+class: DashboardComplianceAlert
+fields:
+  alertType: String
+  message: String
+  courseTitle: String?
+  dueDate: DateTime?
+  severity: String?

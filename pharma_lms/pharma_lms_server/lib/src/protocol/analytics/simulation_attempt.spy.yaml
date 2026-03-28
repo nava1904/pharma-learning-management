@@ -1,0 +1,12 @@
+### MSL / coaching simulation attempt (behavioral metrics as JSON).
+class: SimulationAttempt
+
+table: simulation_attempt
+
+fields:
+  user: PharmaUser?, relation
+  scenarioTitle: String
+  scorePercent: double?
+  metricsJson: String?
+  startedAt: DateTime, default=now
+  completedAt: DateTime?

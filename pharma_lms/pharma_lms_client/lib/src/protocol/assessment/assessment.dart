@@ -28,7 +28,12 @@ abstract class Assessment implements _i1.SerializableModel {
     this.timeLimitMinutes,
     this.maxAttempts,
     this.questionsToDisplay,
-  }) : randomize = randomize ?? true;
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    this.limitQuestions,
+  }) : randomize = randomize ?? true,
+       showAnswers = showAnswers ?? false,
+       showSubmissionHistory = showSubmissionHistory ?? false;
 
   factory Assessment({
     int? id,
@@ -41,6 +46,9 @@ abstract class Assessment implements _i1.SerializableModel {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   }) = _AssessmentImpl;
 
   factory Assessment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -65,6 +73,15 @@ abstract class Assessment implements _i1.SerializableModel {
       timeLimitMinutes: jsonSerialization['timeLimitMinutes'] as int?,
       maxAttempts: jsonSerialization['maxAttempts'] as int?,
       questionsToDisplay: jsonSerialization['questionsToDisplay'] as int?,
+      showAnswers: jsonSerialization['showAnswers'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['showAnswers']),
+      showSubmissionHistory: jsonSerialization['showSubmissionHistory'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['showSubmissionHistory'],
+            ),
+      limitQuestions: jsonSerialization['limitQuestions'] as int?,
     );
   }
 
@@ -99,6 +116,15 @@ abstract class Assessment implements _i1.SerializableModel {
   /// TRN-WF-03: Must be <= totalQuestions / 2 for adequate randomization.
   int? questionsToDisplay;
 
+  /// Whether to show correct answers after submission.
+  bool showAnswers;
+
+  /// Whether to show previous submission history to the learner.
+  bool showSubmissionHistory;
+
+  /// Limit the number of questions shown (used with randomize).
+  int? limitQuestions;
+
   /// Returns a shallow copy of this [Assessment]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -113,6 +139,9 @@ abstract class Assessment implements _i1.SerializableModel {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -128,6 +157,9 @@ abstract class Assessment implements _i1.SerializableModel {
       if (timeLimitMinutes != null) 'timeLimitMinutes': timeLimitMinutes,
       if (maxAttempts != null) 'maxAttempts': maxAttempts,
       if (questionsToDisplay != null) 'questionsToDisplay': questionsToDisplay,
+      'showAnswers': showAnswers,
+      'showSubmissionHistory': showSubmissionHistory,
+      if (limitQuestions != null) 'limitQuestions': limitQuestions,
     };
   }
 
@@ -151,6 +183,9 @@ class _AssessmentImpl extends Assessment {
     int? timeLimitMinutes,
     int? maxAttempts,
     int? questionsToDisplay,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    int? limitQuestions,
   }) : super._(
          id: id,
          courseVersionId: courseVersionId,
@@ -162,6 +197,9 @@ class _AssessmentImpl extends Assessment {
          timeLimitMinutes: timeLimitMinutes,
          maxAttempts: maxAttempts,
          questionsToDisplay: questionsToDisplay,
+         showAnswers: showAnswers,
+         showSubmissionHistory: showSubmissionHistory,
+         limitQuestions: limitQuestions,
        );
 
   /// Returns a shallow copy of this [Assessment]
@@ -179,6 +217,9 @@ class _AssessmentImpl extends Assessment {
     Object? timeLimitMinutes = _Undefined,
     Object? maxAttempts = _Undefined,
     Object? questionsToDisplay = _Undefined,
+    bool? showAnswers,
+    bool? showSubmissionHistory,
+    Object? limitQuestions = _Undefined,
   }) {
     return Assessment(
       id: id is int? ? id : this.id,
@@ -199,6 +240,12 @@ class _AssessmentImpl extends Assessment {
       questionsToDisplay: questionsToDisplay is int?
           ? questionsToDisplay
           : this.questionsToDisplay,
+      showAnswers: showAnswers ?? this.showAnswers,
+      showSubmissionHistory:
+          showSubmissionHistory ?? this.showSubmissionHistory,
+      limitQuestions: limitQuestions is int?
+          ? limitQuestions
+          : this.limitQuestions,
     );
   }
 }

@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — DESIGN SYSTEM V2
+// Vyuh lms — design system v2
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// Reverse-engineered from React/Tailwind reference: @Pharma LMS Learner Dashboard
+// Reverse-engineered from React/Tailwind reference learner dashboard patterns.
 // This is the single source of truth for all visual tokens.
 //
 // Color Palette extracted from Tailwind classes:
@@ -52,6 +52,7 @@ abstract class PharmaColors {
   static const Color emerald50 = Color(0xFFECFDF5);
   static const Color emerald100 = Color(0xFFD1FAE5);
   static const Color emerald200 = Color(0xFFA7F3D0);
+  static const Color emerald300 = Color(0xFF6EE7B7);
   static const Color emerald500 = Color(0xFF10B981);
   static const Color emerald600 = Color(0xFF059669);    // PRIMARY CTA color
   static const Color emerald700 = Color(0xFF047857);    // Hover state
@@ -143,7 +144,7 @@ abstract class PharmaBrand {
   static const String logoAssetPath = 'assets/images/logo_vyuh.png';
 
   /// Display name for the product.
-  static const String name = 'Vyuh LMS';
+  static const String name = 'Vyuh lms';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -167,6 +168,22 @@ abstract class PharmaSpacing {
   static const double pagePadding = 32.0;    // p-8 from React
   static const double sidebarPadding = 16.0; // p-4 from React
   static const double gridGap = 24.0;        // gap-6 from React
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PORTAL LAYOUT — Shared employee / trainer / admin / QA shells
+// ═══════════════════════════════════════════════════════════════════════════════
+
+abstract class PortalLayout {
+  PortalLayout._();
+
+  static const double sidebarWidth = 256.0;
+  static const double headerHeight = 64.0;
+  static const double breakpointDesktop = 1024.0;
+  static const double breakpointTablet = 768.0;
+
+  /// Main content padding when a screen does not add its own (prefer ListView padding).
+  static const double contentPadding = PharmaSpacing.pagePadding;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

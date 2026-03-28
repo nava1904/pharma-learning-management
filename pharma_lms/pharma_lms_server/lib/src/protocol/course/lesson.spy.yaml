@@ -14,3 +14,13 @@ fields:
   material: Material?, relation
   ### Duration in minutes.
   durationMinutes: int?
+  ### Lesson type: PDF, Video, SCORM, xAPI, HTML, Checklist, google_doc, google_sheet, google_slide.
+  lessonType: String?
+  ### Minimum engagement time in minutes (server-enforced read time).
+  minEngagementMinutes: int?
+  ### Prerequisite mode: none, previous (complete previous lesson first).
+  prerequisiteMode: String?
+  ### Instructor notes (not shown to learners).
+  instructorNotes: String?
+  ### Whether this lesson is included in the course preview.
+  includeInPreview: bool, default=false

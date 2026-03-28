@@ -1,0 +1,19 @@
+### User membership in an ILT training batch (roster).
+class: TrainingBatchParticipant
+
+table: training_batch_participant
+
+fields:
+  ### Batch cohort.
+  batch: TrainingBatch?, relation
+  ### Learner or mentor.
+  user: PharmaUser?, relation
+  ### When added to roster.
+  enrolledAt: DateTime, default=now
+  ### Optional: learner, mentor.
+  role: String?
+
+indexes:
+  batch_user_unique_idx:
+    fields: batchId, userId
+    unique: true

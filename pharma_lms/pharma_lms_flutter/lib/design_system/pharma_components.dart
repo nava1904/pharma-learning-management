@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — DESIGN SYSTEM COMPONENTS V2
+// Vyuh lms — design system components v2
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Shared UI components matching the React reference design system.
@@ -13,21 +13,23 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import 'pharma_design_system.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VYUH LOGO — Design system brand logo (use on login, shells, app layout)
+// Vyuh logo — design-system brand asset (login, shells, app layout)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Vyuh brand logo image. Use wherever "Vyuh LMS" branding is shown (login, sidebar, top bar).
+/// Vyuh brand logo image. Use wherever Vyuh lms branding is shown (login, sidebar, top bar).
 class VyuhLogo extends StatelessWidget {
   const VyuhLogo({
     super.key,
     this.height,
     this.width,
-    this.fit = BoxFit.contain, required Color color,
+    this.fit = BoxFit.contain,
+    required this.color,
   });
 
   final double? height;
   final double? width;
   final BoxFit fit;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +38,13 @@ class VyuhLogo extends StatelessWidget {
       height: height,
       width: width,
       fit: fit,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.school_rounded,
-        size: height ?? width ?? 32,
-        color: PharmaColors.emerald600,
+      errorBuilder: (_, _, _) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: Icon(
+          Icons.school_rounded,
+          size: height ?? width ?? 32,
+          color: color,
+        ),
       ),
     );
   }
@@ -251,7 +256,7 @@ class PharmaBadge extends StatelessWidget {
       child: Text(
         status?.label ?? label,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
           color: txtColor,
         ),
@@ -792,7 +797,7 @@ class PharmaHashDisplay extends StatelessWidget {
               displayHash,
               style: const TextStyle(
                 fontFamily: 'monospace',
-                fontSize: 10,
+                fontSize: 14,
                 color: PharmaColors.textSecondary,
                 letterSpacing: 0.5,
               ),
@@ -954,7 +959,7 @@ class PharmaNotificationCard extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(timestamp!, style: PharmaTypography.caption.copyWith(
-                        color: PharmaColors.textTertiary, fontSize: 11)),
+                        color: PharmaColors.textTertiary, fontSize: 14)),
                     ),
                 ],
               ),
@@ -1056,7 +1061,7 @@ class PharmaStatusTimeline extends StatelessWidget {
                       if (events[i]['timestamp'] != null)
                         Text(events[i]['timestamp'] as String,
                             style: PharmaTypography.caption.copyWith(
-                              color: PharmaColors.textTertiary, fontSize: 11)),
+                              color: PharmaColors.textTertiary, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -1090,7 +1095,7 @@ class PharmaSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 400),
+      constraints: const BoxConstraints(maxWidth: 520),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
@@ -1098,10 +1103,10 @@ class PharmaSearchBar extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
-          prefixIcon: Icon(Icons.search, size: 18, color: PharmaColors.gray400),
+          prefixIcon: Icon(Icons.search, size: 20, color: PharmaColors.gray400),
           suffixIcon: controller != null && (controller!.text.isNotEmpty)
               ? IconButton(
-                  icon: Icon(Icons.close, size: 16, color: PharmaColors.gray400),
+                  icon: Icon(Icons.close, size: 18, color: PharmaColors.gray400),
                   onPressed: () { controller!.clear(); onClear?.call(); },
                 )
               : null,
@@ -1119,7 +1124,7 @@ class PharmaSearchBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(PharmaRadius.lg),
             borderSide: BorderSide(color: PharmaColors.emerald600),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           isDense: true,
         ),
       ),

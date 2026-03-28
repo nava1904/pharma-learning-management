@@ -25,7 +25,7 @@ abstract class Question
     required this.text,
     required this.questionType,
     required this.optionsJson,
-    required this.correctAnswer,
+    this.correctAnswer,
     this.difficulty,
     this.regulatoryTag,
   });
@@ -37,7 +37,7 @@ abstract class Question
     required String text,
     required String questionType,
     required String optionsJson,
-    required String correctAnswer,
+    String? correctAnswer,
     String? difficulty,
     String? regulatoryTag,
   }) = _QuestionImpl;
@@ -54,7 +54,7 @@ abstract class Question
       text: jsonSerialization['text'] as String,
       questionType: jsonSerialization['questionType'] as String,
       optionsJson: jsonSerialization['optionsJson'] as String,
-      correctAnswer: jsonSerialization['correctAnswer'] as String,
+      correctAnswer: jsonSerialization['correctAnswer'] as String?,
       difficulty: jsonSerialization['difficulty'] as String?,
       regulatoryTag: jsonSerialization['regulatoryTag'] as String?,
     );
@@ -75,14 +75,14 @@ abstract class Question
   /// Question text.
   String text;
 
-  /// Type: multiple_choice, true_false.
+  /// Type: multiple_choice, true_false, short_answer, open_ended.
   String questionType;
 
-  /// Options as JSON array.
+  /// Options as JSON array. Empty for short_answer/open_ended.
   String optionsJson;
 
-  /// Correct answer index or value.
-  String correctAnswer;
+  /// Correct answer index or value. JSON array of accepted answers for short_answer. Null for open_ended.
+  String? correctAnswer;
 
   /// Difficulty: easy, medium, hard.
   String? difficulty;
@@ -117,7 +117,7 @@ abstract class Question
       'text': text,
       'questionType': questionType,
       'optionsJson': optionsJson,
-      'correctAnswer': correctAnswer,
+      if (correctAnswer != null) 'correctAnswer': correctAnswer,
       if (difficulty != null) 'difficulty': difficulty,
       if (regulatoryTag != null) 'regulatoryTag': regulatoryTag,
     };
@@ -134,7 +134,7 @@ abstract class Question
       'text': text,
       'questionType': questionType,
       'optionsJson': optionsJson,
-      'correctAnswer': correctAnswer,
+      if (correctAnswer != null) 'correctAnswer': correctAnswer,
       if (difficulty != null) 'difficulty': difficulty,
       if (regulatoryTag != null) 'regulatoryTag': regulatoryTag,
     };
@@ -180,7 +180,7 @@ class _QuestionImpl extends Question {
     required String text,
     required String questionType,
     required String optionsJson,
-    required String correctAnswer,
+    String? correctAnswer,
     String? difficulty,
     String? regulatoryTag,
   }) : super._(
@@ -206,7 +206,7 @@ class _QuestionImpl extends Question {
     String? text,
     String? questionType,
     String? optionsJson,
-    String? correctAnswer,
+    Object? correctAnswer = _Undefined,
     Object? difficulty = _Undefined,
     Object? regulatoryTag = _Undefined,
   }) {
@@ -219,7 +219,9 @@ class _QuestionImpl extends Question {
       text: text ?? this.text,
       questionType: questionType ?? this.questionType,
       optionsJson: optionsJson ?? this.optionsJson,
-      correctAnswer: correctAnswer ?? this.correctAnswer,
+      correctAnswer: correctAnswer is String?
+          ? correctAnswer
+          : this.correctAnswer,
       difficulty: difficulty is String? ? difficulty : this.difficulty,
       regulatoryTag: regulatoryTag is String?
           ? regulatoryTag
@@ -251,7 +253,7 @@ class QuestionUpdateTable extends _i1.UpdateTable<QuestionTable> {
     value,
   );
 
-  _i1.ColumnValue<String, String> correctAnswer(String value) =>
+  _i1.ColumnValue<String, String> correctAnswer(String? value) =>
       _i1.ColumnValue(
         table.correctAnswer,
         value,
@@ -312,13 +314,13 @@ class QuestionTable extends _i1.Table<int?> {
   /// Question text.
   late final _i1.ColumnString text;
 
-  /// Type: multiple_choice, true_false.
+  /// Type: multiple_choice, true_false, short_answer, open_ended.
   late final _i1.ColumnString questionType;
 
-  /// Options as JSON array.
+  /// Options as JSON array. Empty for short_answer/open_ended.
   late final _i1.ColumnString optionsJson;
 
-  /// Correct answer index or value.
+  /// Correct answer index or value. JSON array of accepted answers for short_answer. Null for open_ended.
   late final _i1.ColumnString correctAnswer;
 
   /// Difficulty: easy, medium, hard.

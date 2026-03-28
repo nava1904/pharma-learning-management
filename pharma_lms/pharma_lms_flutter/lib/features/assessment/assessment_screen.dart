@@ -101,6 +101,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         userId: _effectiveUserId,
         assessmentId: assessment.id!,
         enrollmentId: _effectiveEnrollmentId > 0 ? _effectiveEnrollmentId : null,
+        skipInterAttemptCooldown: false,
       );
 
       final attemptCount = await client.assessment.getAttemptCount(

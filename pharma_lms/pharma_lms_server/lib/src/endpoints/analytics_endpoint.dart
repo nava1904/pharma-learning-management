@@ -22,6 +22,12 @@ class AnalyticsEndpoint extends Endpoint {
         totalAttempts: 0,
         passedCount: 0,
         scoreDistributionJson: '{}',
+        totalTimeSpentSeconds: 0,
+        averageMaterialProgressPct: 0.0,
+        activeTrainingAssignmentCount: 0,
+        courseworkSubmissionCount: 0,
+        assessmentAttemptCount: 0,
+        passedAssessmentAttemptCount: 0,
       );
     }
     if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) {
@@ -31,17 +37,23 @@ class AnalyticsEndpoint extends Endpoint {
         totalAttempts: 0,
         passedCount: 0,
         scoreDistributionJson: '{}',
+        totalTimeSpentSeconds: 0,
+        averageMaterialProgressPct: 0.0,
+        activeTrainingAssignmentCount: 0,
+        courseworkSubmissionCount: 0,
+        assessmentAttemptCount: 0,
+        passedAssessmentAttemptCount: 0,
       );
     }
     final records = await TrainingRecord.db.find(
       session,
       where: (t) => t.courseVersionId.equals(courseVersionId),
     );
-    final assessment = await Assessment.db.findFirstRow(
+    final assessmentRow = await Assessment.db.findFirstRow(
       session,
       where: (t) => t.courseVersionId.equals(courseVersionId),
     );
-    final passingScore = assessment?.passingScore ?? 80;
+    final passingScore = assessmentRow?.passingScore ?? 80;
 
     var passedCount = 0;
     final buckets = <String, int>{
@@ -66,12 +78,110 @@ class AnalyticsEndpoint extends Endpoint {
     final total = records.length;
     final passRate = total > 0 ? passedCount / total : 0.0;
 
+    final enrollments = await Enrollment.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+    );
+    final enrollmentIds =
+        enrollments.map((e) => e.id).whereType<int>().toSet();
+    final enrolledUserIds = enrollments.map((e) => e.userId).toSet();
+
+    var totalTimeSpentSeconds = 0;
+    var averageMaterialProgressPct = 0.0;
+    if (enrollmentIds.isNotEmpty) {
+      final progresses = await MaterialProgress.db.find(
+        session,
+        where: (t) => t.enrollmentId.inSet(enrollmentIds),
+      );
+      for (final p in progresses) {
+        totalTimeSpentSeconds += p.timeSpentSeconds ?? 0;
+      }
+      if (progresses.isNotEmpty) {
+        final sumPct =
+            progresses.fold<int>(0, (s, p) => s + p.progressPct);
+        averageMaterialProgressPct = sumPct / progresses.length;
+      }
+    }
+
+    var activeTrainingAssignmentCount = 0;
+    if (enrolledUserIds.isNotEmpty) {
+      activeTrainingAssignmentCount = await TrainingAssignment.db.count(
+        session,
+        where: (t) =>
+            t.courseVersionId.equals(courseVersionId) &
+            t.status.equals('active') &
+            t.userId.inSet(enrolledUserIds),
+      );
+    } else {
+      activeTrainingAssignmentCount = await TrainingAssignment.db.count(
+        session,
+        where: (t) =>
+            t.courseVersionId.equals(courseVersionId) &
+            t.status.equals('active'),
+      );
+    }
+
+    var courseworkSubmissionCount = 0;
+    if (enrolledUserIds.isNotEmpty) {
+      final modules = await Module.db.find(
+        session,
+        where: (t) => t.courseVersionId.equals(courseVersionId),
+      );
+      final moduleIds = modules.map((m) => m.id).whereType<int>().toSet();
+      if (moduleIds.isNotEmpty) {
+        final lessons = await Lesson.db.find(
+          session,
+          where: (t) => t.moduleId.inSet(moduleIds),
+        );
+        final lessonIds = lessons.map((l) => l.id).whereType<int>().toSet();
+        if (lessonIds.isNotEmpty) {
+          final courseAssignments = await Assignment.db.find(
+            session,
+            where: (t) => t.lessonId.inSet(lessonIds),
+          );
+          final assignmentIds =
+              courseAssignments.map((a) => a.id).whereType<int>().toSet();
+          if (assignmentIds.isNotEmpty) {
+            courseworkSubmissionCount = await AssignmentSubmission.db.count(
+              session,
+              where: (t) =>
+                  t.assignmentId.inSet(assignmentIds) &
+                  t.userId.inSet(enrolledUserIds),
+            );
+          }
+        }
+      }
+    }
+
+    var assessmentAttemptCount = 0;
+    var passedAssessmentAttemptCount = 0;
+    final aid = assessmentRow?.id;
+    if (aid != null && enrolledUserIds.isNotEmpty) {
+      final attempts = await AssessmentAttempt.db.find(
+        session,
+        where: (t) =>
+            t.assessmentId.equals(aid) & t.userId.inSet(enrolledUserIds),
+      );
+      final completed =
+          attempts.where((a) => a.completedAt != null).toList();
+      assessmentAttemptCount = completed.length;
+      passedAssessmentAttemptCount = completed
+          .where((a) => (a.score ?? 0) >= passingScore)
+          .length;
+    }
+
     return CourseAnalytics(
       courseVersionId: courseVersionId,
       passRate: passRate,
       totalAttempts: total,
       passedCount: passedCount,
       scoreDistributionJson: jsonEncode(buckets),
+      totalTimeSpentSeconds: totalTimeSpentSeconds,
+      averageMaterialProgressPct: averageMaterialProgressPct,
+      activeTrainingAssignmentCount: activeTrainingAssignmentCount,
+      courseworkSubmissionCount: courseworkSubmissionCount,
+      assessmentAttemptCount: assessmentAttemptCount,
+      passedAssessmentAttemptCount: passedAssessmentAttemptCount,
     );
   }
 
@@ -198,6 +308,57 @@ class AnalyticsEndpoint extends Endpoint {
   Future<Map<String, dynamic>> runAuditTrailIntegrityCheck(Session session) async {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
     return await ScheduledJobService.runAuditTrailIntegrityCheck(session);
+  }
+
+  /// Aggregate KPIs for the admin dashboard (org-scoped enrollments, compliance average).
+  Future<Map<String, dynamic>> getAdminDashboardKpis(Session session) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me == null) {
+      return {
+        'totalEnrollments': 0,
+        'overdueEnrollments': 0,
+        'complianceRatePercent': 0,
+      };
+    }
+    final canSee = await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read') ||
+        await RbacHelper.hasPermission(session, resource: 'admin', action: 'read');
+    if (!canSee) {
+      return {
+        'totalEnrollments': 0,
+        'overdueEnrollments': 0,
+        'complianceRatePercent': 0,
+      };
+    }
+    final orgId = me.organizationId;
+    final orgUsers = await PharmaUser.db.find(
+      session,
+      where: (t) => t.organizationId.equals(orgId),
+    );
+    final orgUserIds = orgUsers.map((u) => u.id).whereType<int>().toSet();
+    var totalEnrollments = 0;
+    var overdueEnrollments = 0;
+    if (orgUserIds.isNotEmpty) {
+      totalEnrollments = await Enrollment.db.count(
+        session,
+        where: (t) => t.userId.inSet(orgUserIds),
+      );
+      overdueEnrollments = await Enrollment.db.count(
+        session,
+        where: (t) => t.userId.inSet(orgUserIds) & t.status.equals('overdue'),
+      );
+    }
+    final summaries = await getDepartmentComplianceSummary(session);
+    var avgCompliance = 0.0;
+    if (summaries.isNotEmpty) {
+      avgCompliance =
+          summaries.map((s) => s.complianceRate).reduce((a, b) => a + b) / summaries.length;
+    }
+    final complianceRatePercent = (avgCompliance * 100).round().clamp(0, 100);
+    return {
+      'totalEnrollments': totalEnrollments,
+      'overdueEnrollments': overdueEnrollments,
+      'complianceRatePercent': complianceRatePercent,
+    };
   }
 
   /// Department compliance summary.
@@ -551,33 +712,206 @@ class AnalyticsEndpoint extends Endpoint {
     };
   }
 
-  /// 12-month compliance trend (FR-12-01 AC-05). Uses current snapshot per month.
-  Future<List<Map<String, dynamic>>> getComplianceTrend(
+  /// Compliance trend by calendar month. Prefers [AnalyticsSnapshot] rows; falls back
+  /// to live department averages only when no snapshot history exists.
+  Future<List<ComplianceTrendPoint>> getComplianceTrend(
     Session session, {
     int months = 12,
   }) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
     if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
+
     final now = DateTime.now();
-    final result = <Map<String, dynamic>>[];
-    final summary = await getDepartmentComplianceSummary(session);
-    final avgRate = summary.isEmpty
-        ? 0.0
-        : summary.map((s) => s.complianceRate).reduce((a, b) => a + b) /
-            summary.length;
+    final monthStarts = <DateTime>[];
     for (var i = months - 1; i >= 0; i--) {
-      var m = now.month - i;
       var y = now.year;
+      var m = now.month - i;
       while (m < 1) {
         m += 12;
         y--;
       }
-      result.add({
-        'month': '$y-${m.toString().padLeft(2, '0')}',
-        'complianceRate': avgRate,
-      });
+      monthStarts.add(DateTime(y, m));
+    }
+
+    final fromDate = monthStarts.first;
+    List<AnalyticsSnapshot> snapshots;
+    try {
+      snapshots = await AnalyticsSnapshot.db.find(
+        session,
+        where: (t) => t.snapshotDate >= fromDate,
+        orderBy: (t) => t.snapshotDate,
+      );
+    } catch (_) {
+      snapshots = await AnalyticsSnapshot.db.find(
+        session,
+        orderBy: (t) => t.snapshotDate,
+        orderDescending: true,
+        limit: 500,
+      );
+      snapshots = snapshots
+          .where((s) => !s.snapshotDate.isBefore(fromDate))
+          .toList()
+        ..sort((a, b) => a.snapshotDate.compareTo(b.snapshotDate));
+    }
+
+    var liveFallbackComputed = false;
+    var liveFallbackRate = 0.0;
+    Future<void> ensureLiveFallback() async {
+      if (liveFallbackComputed) return;
+      final summary = await getDepartmentComplianceSummary(session);
+      liveFallbackRate = summary.isEmpty
+          ? 0.0
+          : summary.map((s) => s.complianceRate).reduce((a, b) => a + b) /
+              summary.length;
+      liveFallbackComputed = true;
+    }
+
+    final result = <ComplianceTrendPoint>[];
+    for (final monthStart in monthStarts) {
+      final y = monthStart.year;
+      final m = monthStart.month;
+      final label = '$y-${m.toString().padLeft(2, '0')}';
+      final monthEnd = DateTime(y, m + 1);
+
+      final inMonth = snapshots
+          .where(
+            (s) =>
+                !s.snapshotDate.isBefore(monthStart) &&
+                s.snapshotDate.isBefore(monthEnd),
+          )
+          .toList();
+
+      late final double rate;
+      var fromSnap = false;
+      if (inMonth.isNotEmpty) {
+        rate = inMonth
+                .map((s) => s.orgComplianceRate)
+                .reduce((a, b) => a + b) /
+            inMonth.length;
+        fromSnap = true;
+      } else {
+        final before = snapshots
+            .where((s) => s.snapshotDate.isBefore(monthEnd))
+            .toList()
+          ..sort((a, b) => b.snapshotDate.compareTo(a.snapshotDate));
+        if (before.isNotEmpty) {
+          rate = before.first.orgComplianceRate;
+          fromSnap = true;
+        } else {
+          await ensureLiveFallback();
+          rate = liveFallbackRate;
+          fromSnap = false;
+        }
+      }
+
+      result.add(
+        ComplianceTrendPoint(
+          monthLabel: label,
+          complianceRatePercent: rate.clamp(0.0, 100.0),
+          fromSnapshot: fromSnap,
+        ),
+      );
     }
     return result;
+  }
+
+  /// Aggregates enrollments, time-on-content, assignments, and assessments for a batch roster.
+  Future<BatchTrainingAnalytics?> getBatchTrainingAnalytics(
+    Session session,
+    int batchId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) {
+      return null;
+    }
+
+    final batch = await TrainingBatch.db.findById(session, batchId);
+    if (batch == null) return null;
+
+    final participants = await TrainingBatchParticipant.db.find(
+      session,
+      where: (t) => t.batchId.equals(batchId),
+    );
+    final userIds = participants.map((p) => p.userId).whereType<int>().toSet();
+    final cvId = batch.courseVersionId;
+
+    final enrollments = userIds.isEmpty
+        ? <Enrollment>[]
+        : await Enrollment.db.find(
+            session,
+            where: (t) =>
+                t.courseVersionId.equals(cvId) & t.userId.inSet(userIds),
+          );
+
+    final enrollmentIds =
+        enrollments.map((e) => e.id).whereType<int>().toSet();
+    var totalTimeSpentSeconds = 0;
+    var averageMaterialProgressPct = 0.0;
+    if (enrollmentIds.isNotEmpty) {
+      final progresses = await MaterialProgress.db.find(
+        session,
+        where: (t) => t.enrollmentId.inSet(enrollmentIds),
+      );
+      for (final p in progresses) {
+        totalTimeSpentSeconds += p.timeSpentSeconds ?? 0;
+      }
+      if (progresses.isNotEmpty) {
+        final sumPct =
+            progresses.fold<int>(0, (s, p) => s + p.progressPct);
+        averageMaterialProgressPct = sumPct / progresses.length;
+      }
+    }
+
+    var activeTrainingAssignmentCount = 0;
+    if (userIds.isNotEmpty) {
+      activeTrainingAssignmentCount = await TrainingAssignment.db.count(
+        session,
+        where: (t) =>
+            t.courseVersionId.equals(cvId) &
+            t.status.equals('active') &
+            t.userId.inSet(userIds),
+      );
+    }
+
+    final assessmentRow = await Assessment.db.findFirstRow(
+      session,
+      where: (t) => t.courseVersionId.equals(cvId),
+    );
+    final passingScore = assessmentRow?.passingScore ?? 80;
+    var assessmentAttemptCount = 0;
+    var passedAssessmentAttemptCount = 0;
+    final aid = assessmentRow?.id;
+    if (aid != null && userIds.isNotEmpty) {
+      final attempts = await AssessmentAttempt.db.find(
+        session,
+        where: (t) =>
+            t.assessmentId.equals(aid) & t.userId.inSet(userIds),
+      );
+      final completed =
+          attempts.where((a) => a.completedAt != null).toList();
+      assessmentAttemptCount = completed.length;
+      passedAssessmentAttemptCount = completed
+          .where((a) => (a.score ?? 0) >= passingScore)
+          .length;
+    }
+
+    return BatchTrainingAnalytics(
+      batchId: batchId,
+      courseVersionId: cvId,
+      rosterCount: userIds.length,
+      enrollmentCount: enrollments.length,
+      completedEnrollments:
+          enrollments.where((e) => e.status == 'completed').length,
+      inProgressEnrollments:
+          enrollments.where((e) => e.status == 'in_progress').length,
+      overdueEnrollments:
+          enrollments.where((e) => e.status == 'overdue').length,
+      totalTimeSpentSeconds: totalTimeSpentSeconds,
+      averageMaterialProgressPct: averageMaterialProgressPct,
+      activeTrainingAssignmentCount: activeTrainingAssignmentCount,
+      assessmentAttemptCount: assessmentAttemptCount,
+      passedAssessmentAttemptCount: passedAssessmentAttemptCount,
+    );
   }
 
   /// SOP retraining velocity - % employees retrained per SOP within 30 days (FR-12-01 AC-04).
@@ -674,65 +1008,234 @@ class AnalyticsEndpoint extends Endpoint {
     }
   }
 
-  /// Recent activity for employee (last 5 training actions).
+  /// Recent activity for the learner: audit events for this user, outbound
+  /// learner messages, and enrollment milestones (merged, newest first).
   Future<List<Map<String, dynamic>>> getRecentActivity(
     Session session,
     int userId,
   ) async {
-    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
-    if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) return [];
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return [];
+    final canSelf = me!.id == userId;
+    final canAnalytics =
+        await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read');
+    if (!canSelf && !canAnalytics) return [];
+
+
+    final items = <Map<String, dynamic>>[];
+
+    // Fetch all audit events for this user, regardless of entityType
     final trail = await AuditTrail.db.find(
       session,
-      where: (t) =>
-          t.entityType.inSet({
-            'training_record',
-            'enrollment',
-            'certificate',
-            'assessment_attempt',
-          }),
+      where: (t) => t.userId.equals(userId),
       orderBy: (t) => t.timestamp,
       orderDescending: true,
-      limit: 20,
+      limit: 40,
     );
-    final filtered = <Map<String, dynamic>>[];
     for (final t in trail) {
-      final newVal = t.newValueJson;
-      if (newVal != null && newVal.contains('"userId":$userId')) {
-        filtered.add({
-          'action': t.action,
-          'entityType': t.entityType,
-          'timestamp': t.timestamp.toIso8601String(),
-        });
-        if (filtered.length >= 5) break;
-      }
+      items.add({
+        'action': t.action,
+        'entityType': t.entityType,
+        'timestamp': t.timestamp.toIso8601String(),
+      });
     }
-    if (filtered.length < 5) {
-      final enrollments = await Enrollment.db.find(
-        session,
-        where: (t) => t.userId.equals(userId),
-        orderBy: (t) => t.startedAt,
-        orderDescending: true,
-        limit: 5,
-        include: Enrollment.include(
+
+    final msgs = await LearnerTrainerMessage.db.find(
+      session,
+      where: (t) => t.fromUserId.equals(userId),
+      orderBy: (t) => t.createdAt,
+      orderDescending: true,
+      limit: 40, // Increased from 15 to 40
+      include: LearnerTrainerMessage.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    for (final m in msgs) {
+      var snippet = m.body;
+      if (snippet.length > 120) {
+        snippet = '${snippet.substring(0, 120)}…';
+      }
+      items.add({
+        'action': 'LearnerMessageSent',
+        'entityType': 'learner_trainer_message',
+        'timestamp': m.createdAt.toIso8601String(),
+        'courseTitle': m.courseVersion?.course?.title,
+        'detail': snippet,
+        'courseVersionId': m.courseVersionId,
+        'courseId': m.courseVersion?.course?.id,
+        'messageId': m.id,
+      });
+    }
+
+    final inboundMsgs = await LearnerTrainerMessage.db.find(
+      session,
+      where: (t) => t.toUserId.equals(userId),
+      orderBy: (t) => t.createdAt,
+      orderDescending: true,
+      limit: 40, // Increased from 15 to 40
+      include: LearnerTrainerMessage.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    for (final m in inboundMsgs) {
+      if (m.fromUserId == userId) continue;
+      var snippet = m.body;
+      if (snippet.length > 120) {
+        snippet = '${snippet.substring(0, 120)}…';
+      }
+      items.add({
+        'action': 'InstructorReplyReceived',
+        'entityType': 'learner_trainer_message',
+        'timestamp': m.createdAt.toIso8601String(),
+        'courseTitle': m.courseVersion?.course?.title,
+        'detail': snippet,
+        'courseVersionId': m.courseVersionId,
+        'courseId': m.courseVersion?.course?.id,
+        'messageId': m.id,
+      });
+    }
+
+    final enrollments = await Enrollment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+      orderBy: (t) => t.startedAt,
+      orderDescending: true,
+      limit: 12,
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    for (final e in enrollments) {
+      final tsResolved = e.completedAt ?? e.startedAt;
+      items.add({
+        'action': e.status == 'completed'
+            ? 'TrainingCompleted'
+            : e.startedAt != null
+                ? 'EnrollmentStarted'
+                : 'EnrollmentCreated',
+        'entityType': 'enrollment',
+        'timestamp': tsResolved?.toIso8601String() ??
+            DateTime.now().toIso8601String(),
+        'courseTitle': e.courseVersion?.course?.title,
+      });
+    }
+
+    final attempts = await AssessmentAttempt.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.completedAt.notEquals(null),
+      orderBy: (t) => t.completedAt,
+      orderDescending: true,
+      limit: 12,
+      include: AssessmentAttempt.include(
+        enrollment: Enrollment.include(
           courseVersion: CourseVersion.include(course: Course.include()),
         ),
-      );
-      for (final e in enrollments) {
-        if (filtered.length >= 5) break;
-        final ts = e.completedAt ?? e.startedAt;
-        filtered.add({
-          'action': e.status == 'completed'
-              ? 'TrainingCompleted'
-              : e.startedAt != null
-                  ? 'EnrollmentStarted'
-                  : 'EnrollmentCreated',
-          'entityType': 'enrollment',
-          'timestamp': ts?.toIso8601String() ?? DateTime.now().toIso8601String(),
-          'courseTitle': e.courseVersion?.course?.title,
+      ),
+    );
+    for (final a in attempts) {
+      final title =
+          a.enrollment?.courseVersion?.course?.title ?? 'Assessment';
+      items.add({
+        'action': 'AssessmentCompleted',
+        'entityType': 'assessment_attempt',
+        'timestamp': a.completedAt!.toIso8601String(),
+        'courseTitle': title,
+      });
+    }
+
+    items.sort((a, b) {
+      final ta = DateTime.tryParse(a['timestamp'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final tb = DateTime.tryParse(b['timestamp'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return tb.compareTo(ta);
+    });
+
+    final seen = <String>{};
+    final deduped = <Map<String, dynamic>>[];
+    for (final row in items) {
+      final key =
+          '${row['timestamp']}|${row['action']}|${row['entityType']}|${row['courseTitle'] ?? ''}|${row['detail'] ?? ''}|${row['courseVersionId'] ?? ''}|${row['messageId'] ?? ''}';
+      if (seen.contains(key)) continue;
+      seen.add(key);
+      deduped.add(row);
+      if (deduped.length >= 30) break; // Increased from 15 to 30
+    }
+    return deduped;
+  }
+
+  /// Unified overdue rows for the learner dashboard (assignments past due +
+  /// expired certificates). Matches [ComplianceCalculatorService.getUserCompliance]
+  /// overdue components for display (banner + table stay in sync).
+  Future<List<Map<String, dynamic>>> getOverdueDashboardItems(
+    Session session,
+    int userId,
+  ) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return [];
+    final canSelf = me!.id == userId;
+    final canAnalytics =
+        await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read');
+    if (!canSelf && !canAnalytics) return [];
+
+    final now = DateTime.now();
+    final items = <Map<String, dynamic>>[];
+
+    final assignments = await TrainingAssignment.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.status.equals('active'),
+      include: TrainingAssignment.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    for (final a in assignments) {
+      if (a.dueDate.isBefore(now)) {
+        final course = a.courseVersion?.course;
+        final daysOverdue = now.difference(a.dueDate).inDays;
+        items.add({
+          'kind': 'assignment',
+          'assignmentId': a.id,
+          'courseTitle': course?.title ?? 'Training',
+          'courseCategory': course?.category,
+          'sopNumber': course?.sopNumber,
+          'regulatoryTag': course?.category ??
+              (course?.sopNumber != null && course!.sopNumber!.isNotEmpty
+                  ? course.sopNumber
+                  : 'GMP'),
+          'daysOverdue': daysOverdue,
+          'isOverdue': true,
         });
       }
     }
-    return filtered;
+
+    final certs = await Certificate.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.status.notEquals('obsolete'),
+      include: Certificate.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
+    );
+    for (final c in certs) {
+      if (c.expiresAt != null && c.expiresAt!.isBefore(now)) {
+        final course = c.courseVersion?.course;
+        final daysOverdue = now.difference(c.expiresAt!).inDays;
+        items.add({
+          'kind': 'certificate_expired',
+          'certificateId': c.id,
+          'courseTitle': course?.title ?? 'Certificate',
+          'courseCategory': course?.category,
+          'sopNumber': course?.sopNumber,
+          'regulatoryTag': course?.category ?? 'Compliance',
+          'daysOverdue': daysOverdue,
+          'isOverdue': true,
+        });
+      }
+    }
+
+    items.sort(
+      (a, b) => (b['daysOverdue'] as int).compareTo(a['daysOverdue'] as int),
+    );
+    return items;
   }
 
   /// Get the count of open quality events.
@@ -872,6 +1375,29 @@ class AnalyticsEndpoint extends Endpoint {
     return totalScore / attempts.length;
   }
 
+  /// Count of completed assessment attempts (for N/A vs zero average on dashboard).
+  Future<int> getUserCompletedAssessmentAttemptCount(
+    Session session,
+    int userId,
+  ) async {
+    try {
+      await RbacHelper.getCurrentPharmaUser(session);
+    } catch (_) {
+      // Demo mode - continue
+    }
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return 0;
+    final canSelf = me!.id == userId;
+    final canAnalytics =
+        await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read');
+    if (!canSelf && !canAnalytics) return 0;
+
+    return await AssessmentAttempt.db.count(
+      session,
+      where: (t) => t.userId.equals(userId) & t.completedAt.notEquals(null),
+    );
+  }
+
   /// Get user's learning streak (consecutive days of activity).
   Future<int> getUserLearningStreak(
     Session session,
@@ -942,9 +1468,16 @@ class AnalyticsEndpoint extends Endpoint {
 
     return assignments.map((a) {
       final daysUntilDue = a.dueDate.difference(now).inDays;
+      final course = a.courseVersion?.course;
       return {
         'assignmentId': a.id,
-        'courseTitle': a.courseVersion?.course?.title ?? 'Unknown Course',
+        'courseTitle': course?.title ?? 'Unknown Course',
+        'courseCategory': course?.category,
+        'sopNumber': course?.sopNumber,
+        'regulatoryTag': course?.category ??
+            (course?.sopNumber != null && course!.sopNumber!.isNotEmpty
+                ? course.sopNumber
+                : 'GMP'),
         'dueDate': a.dueDate.toIso8601String(),
         'daysUntilDue': daysUntilDue,
         'priority': a.priority,
@@ -1081,11 +1614,106 @@ class AnalyticsEndpoint extends Endpoint {
       final userName = '${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}'.trim();
       final score = r.score ?? 0;
       final passed = score >= passingScore ? 'Yes' : 'No';
-      final completedAt = r.completedAt.toIso8601String() ?? '';
+      final completedAt = r.completedAt.toIso8601String();
       buffer.writeln('$email,$userName,$score,$passed,$completedAt');
     }
     
     return buffer.toString();
+  }
+
+  /// Employees × courses matrix with enrollment status (completion overview).
+  Future<String> exportCompletionMatrixCsv(
+    Session session, {
+    int? organizationId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me == null) return '';
+    final orgId = organizationId ?? me.organizationId;
+
+    final users = await PharmaUser.db.find(
+      session,
+      where: (t) => t.organizationId.equals(orgId) & t.status.equals('active'),
+    );
+    final courses = await Course.db.find(
+      session,
+      where: (t) => t.organizationId.equals(orgId),
+    );
+    final userIds = users.map((u) => u.id!).toSet();
+    final courseIds = courses.map((c) => c.id!).toSet();
+    if (userIds.isEmpty || courseIds.isEmpty) {
+      return 'Email,Name\n';
+    }
+
+    final enrollments = await Enrollment.db.find(
+      session,
+      include: Enrollment.include(
+        courseVersion: CourseVersion.include(),
+      ),
+    );
+
+    int statusRank(String s) {
+      switch (s) {
+        case 'completed':
+          return 4;
+        case 'in_progress':
+          return 3;
+        case 'not_started':
+          return 2;
+        default:
+          return s == 'cancelled' ? 0 : 1;
+      }
+    }
+
+    String mergeStatus(String? existing, String next) {
+      if (existing == null) return next;
+      if (statusRank(next) > statusRank(existing)) return next;
+      return existing;
+    }
+
+    final cell = <int, Map<int, String>>{};
+    for (final e in enrollments) {
+      final uid = e.userId;
+      final cv = e.courseVersion;
+      if (cv == null) continue;
+      final cid = cv.courseId;
+      if (!userIds.contains(uid) || !courseIds.contains(cid)) continue;
+      cell.putIfAbsent(uid, () => {});
+      cell[uid]![cid] = mergeStatus(cell[uid]![cid], e.status);
+    }
+
+    String esc(String? v) {
+      if (v == null || v.isEmpty) return '';
+      final t = v.replaceAll('"', '""');
+      if (t.contains(',') || t.contains('\n') || t.contains('"')) {
+        return '"$t"';
+      }
+      return t;
+    }
+
+    final sortedCourses = List<Course>.from(courses)
+      ..sort((a, b) => a.title.compareTo(b.title));
+    final sortedUsers = List<PharmaUser>.from(users)
+      ..sort((a, b) => '${a.firstName} ${a.lastName}'.compareTo('${b.firstName} ${b.lastName}'));
+
+    final buf = StringBuffer();
+    buf.write('${esc('Email')},${esc('Name')}');
+    for (final c in sortedCourses) {
+      buf.write(',${esc(c.title)}');
+    }
+    buf.writeln();
+
+    for (final u in sortedUsers) {
+      buf.write('${esc(u.email)},${esc('${u.firstName} ${u.lastName}'.trim())}');
+      final uid = u.id!;
+      for (final c in sortedCourses) {
+        final v = cell[uid]?[c.id!] ?? '';
+        buf.write(',${esc(v)}');
+      }
+      buf.writeln();
+    }
+
+    return buf.toString();
   }
 
   /// Export learner progress as CSV.

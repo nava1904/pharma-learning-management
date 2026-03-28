@@ -1,0 +1,8 @@
+class: DashboardUpcomingDueDate
+fields:
+  courseTitle: String
+  dueDate: DateTime
+  sopNumber: String?
+  progress: double?
+  tags: List<String>?
+  status: String?

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' show AuditTrail;
+import 'package:pharma_lms_flutter/core/client.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import '../widgets/admin_page_frame.dart';
@@ -145,6 +146,9 @@ class _AdminAuditTrailScreenState extends ConsumerState<AdminAuditTrailScreen> {
                 DropdownMenuItem(value: null, child: Text('All Types')),
                 DropdownMenuItem(value: 'user', child: Text('User')),
                 DropdownMenuItem(value: 'course', child: Text('Course')),
+                DropdownMenuItem(value: 'course_version', child: Text('Course version')),
+                DropdownMenuItem(value: 'lesson', child: Text('Lesson')),
+                DropdownMenuItem(value: 'lesson_block', child: Text('Lesson block')),
                 DropdownMenuItem(value: 'enrollment', child: Text('Enrollment')),
                 DropdownMenuItem(value: 'assessment', child: Text('Assessment')),
                 DropdownMenuItem(value: 'certificate', child: Text('Certificate')),
@@ -253,6 +257,7 @@ class _AdminAuditTrailScreenState extends ConsumerState<AdminAuditTrailScreen> {
                 _buildHeaderCell('Action', flex: 2),
                 _buildHeaderCell('Entity', flex: 2),
                 _buildHeaderCell('User', flex: 1),
+                _buildHeaderCell('Integrity', flex: 1),
                 _buildHeaderCell('IP Address', flex: 1),
                 _buildHeaderCell('Reason', flex: 2),
               ],
@@ -282,6 +287,9 @@ class _AdminAuditTrailScreenState extends ConsumerState<AdminAuditTrailScreen> {
   Widget _buildAuditRow(AuditTrail event) {
     final actionColor = _getActionColor(event.action);
     final formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+    final h = event.rowHash;
+    final hashPreview =
+        h == null || h.isEmpty ? '—' : (h.length > 8 ? '${h.substring(0, 8)}…' : h);
     
     return Container(
       padding: EdgeInsets.symmetric(
@@ -337,6 +345,36 @@ class _AdminAuditTrailScreenState extends ConsumerState<AdminAuditTrailScreen> {
             child: Text(
               event.userId != null ? 'User #${event.userId}' : 'System',
               style: PharmaTypography.caption,
+            ),
+          ),
+
+          // Integrity (rowHash present = HMAC/SHA evidence on server)
+          Expanded(
+            flex: 1,
+            child: Tooltip(
+              message: event.rowHash ?? 'No row hash stored',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    event.rowHash != null && event.rowHash!.isNotEmpty
+                        ? Icons.verified_outlined
+                        : Icons.help_outline,
+                    size: 18,
+                    color: event.rowHash != null && event.rowHash!.isNotEmpty
+                        ? PharmaColors.success
+                        : PharmaColors.textTertiary,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      hashPreview,
+                      style: PharmaTypography.caption.copyWith(fontFamily: 'monospace'),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           
@@ -462,50 +500,151 @@ class _AdminAuditTrailScreenState extends ConsumerState<AdminAuditTrailScreen> {
 // INTEGRITY CHECK SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminIntegrityCheckScreen extends StatelessWidget {
+class AdminIntegrityCheckScreen extends StatefulWidget {
   const AdminIntegrityCheckScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _AuditTemplate(
-        title: 'Integrity Check',
-        subtitle: 'HMAC chain and tamper-evidence verification.',
-      );
+  State<AdminIntegrityCheckScreen> createState() =>
+      _AdminIntegrityCheckScreenState();
+}
+
+class _AdminIntegrityCheckScreenState extends State<AdminIntegrityCheckScreen> {
+  Map<String, dynamic>? _lastResult;
+  bool _running = false;
+  String? _error;
+
+  Future<void> _runCheck() async {
+    setState(() {
+      _running = true;
+      _error = null;
+    });
+    try {
+      final r = await client.analytics.runAuditTrailIntegrityCheck();
+      if (mounted) {
+        setState(() {
+          _lastResult = r;
+          _running = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _running = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(PharmaSpacing.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shield_outlined, color: PharmaColors.emerald600, size: 28),
+              SizedBox(width: PharmaSpacing.sm),
+              Text('Audit integrity verification', style: PharmaTypography.displayLarge),
+            ],
+          ),
+          SizedBox(height: PharmaSpacing.xs),
+          Text(
+            'Run server-side audit trail integrity job (HMAC / hash verification). '
+            'Results are suitable for auditor review without database access.',
+            style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+          ),
+          SizedBox(height: PharmaSpacing.sectionGap),
+          FilledButton.icon(
+            onPressed: _running ? null : _runCheck,
+            icon: _running
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.fact_check_outlined),
+            label: Text(_running ? 'Running…' : 'Run integrity check'),
+          ),
+          if (_error != null) ...[
+            SizedBox(height: PharmaSpacing.md),
+            Text(_error!, style: TextStyle(color: PharmaColors.danger)),
+          ],
+          if (_lastResult != null) ...[
+            SizedBox(height: PharmaSpacing.lg),
+            Text('Last result', style: PharmaTypography.headingSmall),
+            SizedBox(height: PharmaSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(PharmaSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: PharmaColors.cardBg,
+                border: Border.all(color: PharmaColors.borderLight),
+                borderRadius: BorderRadius.circular(PharmaRadius.md),
+              ),
+              child: SelectableText(
+                _lastResult.toString(),
+                style: PharmaTypography.caption.copyWith(fontFamily: 'monospace'),
+              ),
+            ),
+          ],
+          SizedBox(height: PharmaSpacing.lg),
+          Text(
+            'Tip: Use Audit Trail to review per-event row hashes in the Integrity column.',
+            style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CAPA REGISTER SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminCapaRegisterScreen extends StatelessWidget {
+class AdminCapaRegisterScreen extends ConsumerWidget {
   const AdminCapaRegisterScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const _AuditTemplate(
-        title: 'CAPA Register',
-        subtitle: 'Corrective and preventive action lifecycle tracking.',
-      );
-}
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _AuditTemplate extends StatelessWidget {
-  const _AuditTemplate({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
   @override
-  Widget build(BuildContext context) => AdminPageFrame(
-        title: title,
-        subtitle: subtitle,
-        children: const [
-          AdminSectionCard(
-            title: 'Coming Soon',
-            child: AdminPlaceholderTable(
-              columns: ['Feature', 'Status', 'ETA'],
-              rows: [
-                ['Full implementation', 'In Progress', 'Q2 2026'],
-              ],
-            ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(adminCapasProvider);
+
+    return AdminPageFrame(
+      title: 'CAPA Register',
+      subtitle: 'Corrective and preventive actions from the quality module.',
+      children: [
+        AdminSectionCard(
+          title: 'CAPAs',
+          child: async.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (capas) {
+              if (capas.isEmpty) {
+                return Text(
+                  'No CAPAs found.',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                );
+              }
+              return AdminDataTable(
+                columns: const ['ID', 'Quality event', 'Status', 'Training required', 'Description'],
+                rows: capas.take(300).map((c) {
+                  final desc = (c.description ?? '').length > 80 ? '${(c.description ?? "").substring(0, 80)}…' : (c.description ?? '—');
+                  return [
+                    '${c.id ?? "—"}',
+                    '${c.qualityEventId}',
+                    c.status,
+                    c.trainingRequired ? 'yes' : 'no',
+                    desc,
+                  ];
+                }).toList(),
+              );
+            },
           ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 }

@@ -29,6 +29,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../design_system/pharma_design_system.dart';
+import 'course_catalog_metadata.dart';
 import '../../core/client.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/user_provider.dart';
@@ -67,6 +68,7 @@ class _CourseCatalogV2State extends ConsumerState<CourseCatalogV2> {
           filter: _filter,
           onFilterChanged: (f) => setState(() => _filter = f),
           onEnroll: (course) => _handleEnroll(course),
+          onOpenCourse: _openCourse,
         );
       },
     );
@@ -156,6 +158,40 @@ class _CourseCatalogV2State extends ConsumerState<CourseCatalogV2> {
       }
     }
   }
+
+  Future<void> _openCourse(Course course, Enrollment? enrollment) async {
+    var courseVersionId = enrollment?.courseVersionId ?? 0;
+    if (courseVersionId == 0) {
+      final versions = await client.course.getCourseVersions(course.id!);
+      if (versions.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No course version available to view.'),
+              backgroundColor: PharmaColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+      final version = versions.firstWhere(
+        (v) => v.status == 'effective' || v.status == 'approved',
+        orElse: () => versions.firstWhere(
+          (v) => v.status != 'obsolete',
+          orElse: () => versions.first,
+        ),
+      );
+      courseVersionId = version.id!;
+    }
+    final user = ref.read(currentUserProvider).valueOrNull;
+    if (!mounted) return;
+    context.go('/course/${course.id}', extra: {
+      'courseVersionId': courseVersionId.toString(),
+      if (enrollment?.id != null) 'enrollmentId': enrollment!.id!.toString(),
+      if (enrollment != null) 'enrollmentStatus': enrollment.status,
+      if (user?.id != null) 'userId': user!.id!.toString(),
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -169,6 +205,7 @@ class _CourseCatalogContent extends StatelessWidget {
     required this.filter,
     required this.onFilterChanged,
     required this.onEnroll,
+    required this.onOpenCourse,
   });
 
   final List<Course> courses;
@@ -176,6 +213,7 @@ class _CourseCatalogContent extends StatelessWidget {
   final String filter;
   final ValueChanged<String> onFilterChanged;
   final ValueChanged<Course> onEnroll;
+  final Future<void> Function(Course course, Enrollment? enrollment) onOpenCourse;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +297,9 @@ class _CourseCatalogContent extends StatelessWidget {
                     crossAxisCount: crossAxisCount,
                     mainAxisSpacing: PharmaSpacing.gridGap,
                     crossAxisSpacing: PharmaSpacing.gridGap,
-                    childAspectRatio: 0.75,
+                    // Taller cells than 0.75 — image + title + 2-line desc + meta + CTA/progress
+                    // was overflowing by ~9px on typical breakpoints.
+                    childAspectRatio: 0.68,
                   ),
                   itemCount: filteredCourses.length,
                   itemBuilder: (context, index) {
@@ -268,7 +308,7 @@ class _CourseCatalogContent extends StatelessWidget {
                     return _CourseCardV2(
                       course: course,
                       enrollment: enrollment,
-                      onTap: () => _navigateToCourse(context, course, enrollment),
+                      onTap: () => onOpenCourse(course, enrollment),
                       onEnroll: () => onEnroll(course),
                     );
                   },
@@ -278,13 +318,6 @@ class _CourseCatalogContent extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _navigateToCourse(BuildContext context, Course course, Enrollment? enrollment) {
-    context.go('/employee/course/${course.id}', extra: {
-      'courseVersionId': enrollment?.courseVersionId.toString() ?? course.id.toString(),
-      'enrollmentId': enrollment?.id?.toString(),
-    });
   }
 }
 
@@ -413,9 +446,31 @@ class _CourseCardV2State extends State<_CourseCardV2> {
   @override
   Widget build(BuildContext context) {
     final status = widget.enrollment?.status ?? 'not_enrolled';
-    // Calculate progress based on status (since progressPercentage isn't in the model)
-    final progress = _calculateProgress(status);
     final isEnrolled = widget.enrollment != null;
+    // Use CourseCatalogMetadata for custom fields
+    // Helper to parse due date from metadata if available
+    DateTime? metaJsonDate(CourseCatalogMetadata meta) {
+      // If you store due date in customMetadataJson, parse here
+      // Example: meta.dueDate (if you add it to CourseCatalogMetadata)
+      return null;
+    }
+
+    // Helper to get progress from enrollment or fallback
+    double enrollmentProgress(Enrollment? e, String status) {
+      // If you store progress in enrollment, use it; else fallback
+      // Example: e?.progressPercent ?? _calculateProgress(status)
+      return _calculateProgress(status);
+    }
+
+    final meta = CourseCatalogMetadata.fromCourse(widget.course);
+    final tags = (widget.course.tags ?? '').split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+    final isMandatory = meta.isMandatory ?? tags.contains('Mandatory');
+    final isContentApproved = tags.contains('Content approved');
+    final regulatoryTags = tags.where((t) => t == 'GMP' || t == '21 CFR').toList();
+    // Fallback: try meta, then null
+    final dueDate = metaJsonDate(meta) ?? null;
+    final sopNumber = widget.course.sopNumber;
+    final progress = enrollmentProgress(widget.enrollment, status);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -435,40 +490,24 @@ class _CourseCardV2State extends State<_CourseCardV2> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─────────────────────────────────────────────────────────────
-              // COURSE IMAGE
-              // From React: aspect-video with status badge
-              // ─────────────────────────────────────────────────────────────
+              // Cover image and status badge
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Stack(
                   children: [
-                    // Image/Placeholder
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        ),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            PharmaColors.emerald100,
-                            PharmaColors.emerald200,
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          _getCourseIcon(widget.course.title),
-                          size: 48,
-                          color: PharmaColors.emerald600,
-                        ),
-                      ),
-                    ),
-                    
-                    // Status badge
+                    (widget.course.imageUrl != null && widget.course.imageUrl!.trim().isNotEmpty)
+                        ? Image.network(
+                            widget.course.imageUrl!.trim(),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (_, __, ___) => _courseCardImageFallback(),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return _courseCardImageFallback();
+                            },
+                          )
+                        : _courseCardImageFallback(),
                     Positioned(
                       top: 12,
                       right: 12,
@@ -477,128 +516,198 @@ class _CourseCardV2State extends State<_CourseCardV2> {
                   ],
                 ),
               ),
-
-              // ─────────────────────────────────────────────────────────────
-              // COURSE INFO
-              // From React: p-5 with title, description, metadata, progress
-              // ─────────────────────────────────────────────────────────────
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(PharmaSpacing.xl),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      Text(
-                        widget.course.title,
-                        style: PharmaTypography.headingSmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Description
-                      Expanded(
-                        child: Text(
-                          widget.course.description ?? 'No description available',
-                          style: PharmaTypography.body.copyWith(
-                            color: PharmaColors.textSecondary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+              // Tags row
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 8, right: 12),
+                child: Row(
+                  children: [
+                    if (isMandatory)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(6),
                         ),
+                        child: Text('Mandatory', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600)),
                       ),
-                      
-                      // Metadata row
-                      const SizedBox(height: PharmaSpacing.lg),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time_rounded,
-                            size: 16,
-                            color: PharmaColors.textTertiary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '8 hours',
-                            style: PharmaTypography.caption,
-                          ),
-                          const SizedBox(width: PharmaSpacing.lg),
-                          Icon(
-                            Icons.people_outline_rounded,
-                            size: 16,
-                            color: PharmaColors.textTertiary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '1,250',
-                            style: PharmaTypography.caption,
-                          ),
-                        ],
+                    if (!isMandatory)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('Optional', style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w600)),
                       ),
-                      
-                      // Progress bar (only if enrolled and has progress)
-                      if (isEnrolled && progress > 0) ...[
-                        const SizedBox(height: PharmaSpacing.lg),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    if (isContentApproved)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              'Progress',
-                              style: PharmaTypography.caption.copyWith(
-                                color: PharmaColors.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              '${progress.toInt()}%',
-                              style: PharmaTypography.caption.copyWith(
-                                color: PharmaColors.emerald600,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            Icon(Icons.check_circle, color: Colors.green, size: 14),
+                            const SizedBox(width: 4),
+                            Text('Content approved', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600)),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: PharmaRadius.pillRadius,
-                          child: LinearProgressIndicator(
-                            value: progress / 100,
-                            backgroundColor: PharmaColors.gray200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              PharmaColors.emerald600,
-                            ),
-                            minHeight: 6,
-                          ),
+                      ),
+                    for (final tag in regulatoryTags)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.gray100,
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                      ],
-                      
-                      // Enroll button if not enrolled
-                      if (!isEnrolled) ...[
-                        const SizedBox(height: PharmaSpacing.lg),
-                        SizedBox(
-                          width: double.infinity,
-                          child: TextButton(
-                            onPressed: widget.onEnroll,
-                            style: TextButton.styleFrom(
-                              backgroundColor: PharmaColors.emerald600,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: PharmaSpacing.md,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: PharmaRadius.buttonRadius,
-                              ),
-                            ),
-                            child: const Text('Enroll Now'),
-                          ),
+                        child: Text(tag, style: TextStyle(color: PharmaColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    const Spacer(),
+                    if (isEnrolled)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.emerald100,
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, size: 14, color: PharmaColors.emerald600),
+                            const SizedBox(width: 4),
+                            Text('Enrolled', style: PharmaTypography.caption.copyWith(color: PharmaColors.emerald600, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Title
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 8, right: 12),
+                child: Text(
+                  widget.course.title,
+                  style: PharmaTypography.headingSmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Metadata row: Due date, SOP, Progress
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 8, right: 12),
+                child: Row(
+                  children: [
+                    if (dueDate != null)
+                      Text('Due: ', style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
+                    if (dueDate != null)
+                      Text(
+                        '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}-${dueDate.day.toString().padLeft(2, '0')}',
+                        style: PharmaTypography.caption.copyWith(color: Colors.red, fontWeight: FontWeight.w600),
+                      ),
+                    if (sopNumber != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.description_outlined, size: 14, color: PharmaColors.textTertiary),
+                      const SizedBox(width: 2),
+                      Text(sopNumber, style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
                     ],
+                    const Spacer(),
+                    if (progress > 0)
+                      Text('In progress : ${progress.toInt()}%', style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
+                    if (progress == 0)
+                      Text('Not started', style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary)),
+                  ],
+                ),
+              ),
+              // Progress bar
+              if (progress > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 12, top: 6),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress / 100.0,
+                      minHeight: 6,
+                      backgroundColor: PharmaColors.gray200,
+                      valueColor: AlwaysStoppedAnimation<Color>(PharmaColors.primary),
+                    ),
                   ),
+                ),
+              // Description
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 12, top: 8),
+                child: SizedBox(
+                  height: 40,
+                  width: double.infinity,
+                  child: Text(
+                    widget.course.description ?? 'No description available',
+                    style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              // CTA
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 8),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    if (isEnrolled)
+                      FilledButton(
+                        onPressed: widget.onTap,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: PharmaColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Continue', style: TextStyle(fontSize: 12)),
+                      )
+                    else
+                      OutlinedButton(
+                        onPressed: widget.onEnroll,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: PharmaColors.primary,
+                          side: BorderSide(color: PharmaColors.primary),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Enroll', style: TextStyle(fontSize: 12)),
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _courseCardImageFallback() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            PharmaColors.emerald100,
+            PharmaColors.emerald200,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          _getCourseIcon(widget.course.title),
+          size: 48,
+          color: PharmaColors.emerald600,
         ),
       ),
     );

@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../core/client.dart';
@@ -18,7 +19,9 @@ import '../../providers/user_provider.dart';
 import '../trainer_dashboard/new_course_dialog.dart';
 
 class CourseListScreen extends ConsumerStatefulWidget {
-  const CourseListScreen({super.key});
+  const CourseListScreen({super.key, this.initialSearch});
+
+  final String? initialSearch;
 
   @override
   ConsumerState<CourseListScreen> createState() => _CourseListScreenState();
@@ -30,19 +33,22 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
   String? _error;
   String _filter = 'all';
   String _searchQuery = '';
-  final _searchController = TextEditingController();
   Course? _selectedCourse;
 
   @override
   void initState() {
     super.initState();
+    _searchQuery = widget.initialSearch ?? '';
     _load();
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void didUpdateWidget(covariant CourseListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialSearch != oldWidget.initialSearch) {
+      _searchQuery = widget.initialSearch ?? '';
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -55,6 +61,7 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
       if (user == null) throw Exception('User not found');
       final courses = await client.course.listCourses(
         organizationId: user.organizationId,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
       );
       if (mounted) {
         setState(() {
@@ -96,15 +103,15 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
         filtered = filtered.where((c) => c.status == 'archived').toList();
         break;
     }
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      filtered = filtered
-          .where((c) =>
-              c.title.toLowerCase().contains(q) ||
-              (c.sopNumber?.toLowerCase().contains(q) ?? false))
-          .toList();
-    }
     return filtered;
+  }
+
+  static final _dateFmt = DateFormat.yMMMd();
+
+  String _publishedLabel(Course course) {
+    final p = course.publishedAt;
+    if (p != null) return _dateFmt.format(p);
+    return '—';
   }
 
   @override
@@ -114,19 +121,51 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
       children: [
         // ── HEADER ──
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Courses', style: PharmaTypography.headingLarge.copyWith(
-                    fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5,
-                  )),
-                  const SizedBox(height: 4),
                   Text(
-                    '${_courses.length} total courses',
-                    style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+                    'Courses',
+                    style: PharmaTypography.headingLarge.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  if (_searchQuery.isNotEmpty)
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          'Search results for "$_searchQuery" · ${_courses.length} found',
+                          style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() => _searchQuery = '');
+                            _load();
+                          },
+                          icon: const Icon(Icons.close, size: 14),
+                          label: const Text('Clear'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: PharmaColors.textSecondary,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      '${_courses.length} total courses',
+                      style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
+                    ),
                 ],
               ),
             ),
@@ -146,125 +185,106 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
 
         const SizedBox(height: PharmaSpacing.sectionGap),
 
-        // ── TABLE + SIDE PANEL ──
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(PharmaSpacing.lg),
-                decoration: BoxDecoration(
-                  color: PharmaColors.cardBg,
-                  borderRadius: PharmaRadius.cardRadius,
-                  border: Border.all(color: PharmaColors.borderLight),
-                  boxShadow: PharmaShadows.sm,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Filter tabs with search
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _FilterTab('All', 'all'),
-                          _FilterTab('My Courses', 'mine'),
-                          _FilterTab('Under Review', 'under_review'),
-                          _FilterTab('Published', 'published'),
-                          _FilterTab('Archived', 'archived'),
-                          const SizedBox(width: PharmaSpacing.lg),
-                          // Search
-                          SizedBox(
-                            width: 250,
-                            height: 36,
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (v) => setState(() => _searchQuery = v),
-                              decoration: InputDecoration(
-                                hintText: 'Search by title or SOP...',
-                                hintStyle: PharmaTypography.caption,
-                                prefixIcon: const Icon(Icons.search, size: 18),
-                                filled: true,
-                                fillColor: PharmaColors.pageBg,
-                                border: OutlineInputBorder(
-                                  borderRadius: PharmaRadius.inputRadius,
-                                  borderSide: BorderSide(color: PharmaColors.borderLight),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: PharmaRadius.inputRadius,
-                                  borderSide: BorderSide(color: PharmaColors.borderLight),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                              ),
-                              style: PharmaTypography.body.copyWith(fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
+        // ── TABLE + SIDE PANEL (table stretches to available width) ──
+        LayoutBuilder(
+          builder: (context, outerConstraints) {
+            final panelOpen = _selectedCourse != null;
+            final tableMaxWidth = panelOpen
+                ? (outerConstraints.maxWidth - 360 - 24).clamp(320.0, double.infinity)
+                : outerConstraints.maxWidth;
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(PharmaSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: PharmaColors.cardBg,
+                      borderRadius: PharmaRadius.cardRadius,
+                      border: Border.all(color: PharmaColors.borderLight),
+                      boxShadow: PharmaShadows.sm,
                     ),
-
-              const SizedBox(height: PharmaSpacing.lg),
-              Divider(height: 1, color: PharmaColors.borderLight),
-
-              // ── TABLE (full width) ──
-              if (_loading)
-                const SizedBox(
-                  width: double.infinity,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                )
-              else if (_error != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 48),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(_error!, style: TextStyle(color: PharmaColors.danger)),
-                        const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _FilterTab('All', 'all'),
+                              _FilterTab('My Courses', 'mine'),
+                              _FilterTab('Under Review', 'under_review'),
+                              _FilterTab('Published', 'published'),
+                              _FilterTab('Archived', 'archived'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: PharmaSpacing.lg),
+                        Divider(height: 1, color: PharmaColors.borderLight),
+                        if (_loading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 48),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_error!, style: TextStyle(color: PharmaColors.danger)),
+                                const SizedBox(height: 12),
+                                FilledButton(onPressed: _load, child: const Text('Retry')),
+                              ],
+                            ),
+                          )
+                        else if (_filteredCourses.isEmpty)
+                          PharmaEmptyState(
+                            icon: Icons.menu_book_outlined,
+                            title: 'No courses found',
+                            subtitle: 'Create your first course to get started.',
+                            action: FilledButton.icon(
+                              onPressed: _createNewCourse,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Create Course'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: PharmaColors.emerald600,
+                                foregroundColor: PharmaColors.cardBg,
+                              ),
+                            ),
+                          )
+                        else
+                          LayoutBuilder(
+                            builder: (context, c) {
+                              final w = c.maxWidth > 0 ? c.maxWidth : tableMaxWidth;
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(PharmaRadius.sm),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minWidth: w),
+                                    child: _buildCourseTable(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                       ],
                     ),
                   ),
-                )
-              else if (_filteredCourses.isEmpty)
-                PharmaEmptyState(
-                  icon: Icons.menu_book_outlined,
-                  title: 'No courses found',
-                  subtitle: 'Create your first course to get started.',
-                  action: FilledButton.icon(
-                    onPressed: _createNewCourse,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Create Course'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: PharmaColors.emerald600,
-                      foregroundColor: PharmaColors.cardBg,
-                    ),
-                  ),
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: _buildCourseTable(),
-                  ),
                 ),
-                  ],
-                ),
-              ),
-            ),
-            if (_selectedCourse != null) ...[
-              const SizedBox(width: 24),
-              SizedBox(
-                width: 360,
-                child: _buildCourseDetailPanel(_selectedCourse!),
-              ),
-            ],
-          ],
+                if (panelOpen) ...[
+                  const SizedBox(width: 24),
+                  SizedBox(
+                    width: 360,
+                    child: _buildCourseDetailPanel(_selectedCourse!),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
@@ -388,20 +408,25 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
     return DataTable(
       headingRowHeight: 44,
       dataRowMinHeight: 56,
-      dataRowMaxHeight: 64,
-      columnSpacing: 16,
-      horizontalMargin: 0,
+      dataRowMaxHeight: 72,
+      columnSpacing: 20,
+      horizontalMargin: 12,
+      dividerThickness: 1,
+      border: TableBorder(
+        horizontalInside: BorderSide(color: PharmaColors.borderLight.withValues(alpha: 0.6)),
+      ),
+      headingRowColor: WidgetStatePropertyAll(PharmaColors.gray50),
       headingTextStyle: PharmaTypography.labelMedium.copyWith(
         fontWeight: FontWeight.w600,
         color: PharmaColors.textTertiary,
         fontSize: 11,
-        letterSpacing: 0.5,
+        letterSpacing: 0.6,
       ),
       columns: const [
         DataColumn(label: Text('COURSE')),
         DataColumn(label: Text('SOP #')),
         DataColumn(label: Text('STATUS')),
-        DataColumn(label: Text('CREATED')),
+        DataColumn(label: Text('PUBLISHED')),
         DataColumn(label: Text('ACTIONS')),
       ],
       rows: _filteredCourses.map((course) {
@@ -440,11 +465,10 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
                 ),
               ],
             )),
-            // Created date
             DataCell(
               Text(
-                'Recently',
-                style: PharmaTypography.caption,
+                _publishedLabel(course),
+                style: PharmaTypography.caption.copyWith(fontSize: 12),
               ),
             ),
             // Actions

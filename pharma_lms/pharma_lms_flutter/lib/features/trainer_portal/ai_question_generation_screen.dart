@@ -163,17 +163,21 @@ class _AiQuestionGenerationScreenState
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 24),
-        _buildStepper(),
-        const SizedBox(height: 24),
-        if (_currentStep == 0) _buildSelectSourceStep(),
-        if (_currentStep == 1) _buildConfigureStep(),
-        if (_currentStep == 2) _buildReviewStep(),
-      ],
+    // Some builder/overlay contexts can lose Directionality; keep it explicit.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: ListView(
+        padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 24),
+          _buildStepper(),
+          const SizedBox(height: 24),
+          if (_currentStep == 0) _buildSelectSourceStep(),
+          if (_currentStep == 1) _buildConfigureStep(),
+          if (_currentStep == 2) _buildReviewStep(),
+        ],
+      ),
     );
   }
 
@@ -376,7 +380,7 @@ class _AiQuestionGenerationScreenState
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: _questionBanks!.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final bank = _questionBanks![index];
                     final isSelected = _selectedSourceBank?.id == bank.id;
@@ -485,7 +489,7 @@ class _AiQuestionGenerationScreenState
                       borderRadius: PharmaRadius.pillRadius,
                     ),
                     child: Text(
-                      'Source: ${_selectedSourceBank?.name ?? '—'}',
+                      'Source: ${_selectedSourceBank?.name ?? '-'}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -722,15 +726,19 @@ class _AiQuestionGenerationScreenState
               const SizedBox(width: 24),
               _diffStat('Hard', hardCount, PharmaColors.danger),
               const Spacer(),
-              SizedBox(
-                width: 220,
+              Flexible(
                 child: DropdownButtonFormField<int>(
+                  // Let the dropdown shrink on narrow layouts instead of overflowing.
+                  isExpanded: true,
                   initialValue: _selectedTargetBank?.id,
                   items: targetBanks
                       .map((b) => DropdownMenuItem(
                             value: b.id,
-                            child: Text(b.name,
-                                style: const TextStyle(fontSize: 13)),
+                            child: Text(
+                              b.name,
+                              style: const TextStyle(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ))
                       .toList(),
                   onChanged: (v) => setState(() {

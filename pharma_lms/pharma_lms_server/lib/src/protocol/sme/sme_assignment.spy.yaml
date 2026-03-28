@@ -1,0 +1,23 @@
+### SME invited to review a course (subject-matter expert collaboration).
+class: SmeAssignment
+
+table: sme_assignment
+
+fields:
+  ### Course under review.
+  course: Course?, relation
+  ### Optional: scoped to a specific version.
+  courseVersion: CourseVersion?, relation(optional)
+  ### SME (reviewer) user.
+  smeUser: PharmaUser?, relation
+  ### Trainer who sent the invite.
+  invitedBy: PharmaUser?, relation
+  ### invited, active, completed
+  status: String, default='invited'
+  ### When invited.
+  invitedAt: DateTime, default=now
+
+indexes:
+  sme_assignment_course_sme_unique_idx:
+    fields: courseId, smeUserId
+    unique: true

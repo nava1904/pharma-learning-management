@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Pharma LMS color palette - Odoo-inspired with warmer neutrals.
+/// Vyuh lms color palette - Odoo-inspired with warmer neutrals.
 class AppColors {
   AppColors._();
 

@@ -25,12 +25,12 @@ abstract class Certificate implements _i1.SerializableModel {
     this.user,
     required this.courseVersionId,
     this.courseVersion,
-    required this.trainingRecordId,
+    this.trainingRecordId,
     this.trainingRecord,
     DateTime? issuedAt,
     this.expiresAt,
     this.qrCode,
-    required this.esignatureId,
+    this.esignatureId,
     this.esignature,
     String? status,
   }) : issuedAt = issuedAt ?? DateTime.now(),
@@ -42,12 +42,12 @@ abstract class Certificate implements _i1.SerializableModel {
     _i2.PharmaUser? user,
     required int courseVersionId,
     _i3.CourseVersion? courseVersion,
-    required int trainingRecordId,
+    int? trainingRecordId,
     _i4.TrainingRecord? trainingRecord,
     DateTime? issuedAt,
     DateTime? expiresAt,
     String? qrCode,
-    required int esignatureId,
+    int? esignatureId,
     _i5.ElectronicSignature? esignature,
     String? status,
   }) = _CertificateImpl;
@@ -67,7 +67,7 @@ abstract class Certificate implements _i1.SerializableModel {
           : _i6.Protocol().deserialize<_i3.CourseVersion>(
               jsonSerialization['courseVersion'],
             ),
-      trainingRecordId: jsonSerialization['trainingRecordId'] as int,
+      trainingRecordId: jsonSerialization['trainingRecordId'] as int?,
       trainingRecord: jsonSerialization['trainingRecord'] == null
           ? null
           : _i6.Protocol().deserialize<_i4.TrainingRecord>(
@@ -80,7 +80,7 @@ abstract class Certificate implements _i1.SerializableModel {
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['expiresAt']),
       qrCode: jsonSerialization['qrCode'] as String?,
-      esignatureId: jsonSerialization['esignatureId'] as int,
+      esignatureId: jsonSerialization['esignatureId'] as int?,
       esignature: jsonSerialization['esignature'] == null
           ? null
           : _i6.Protocol().deserialize<_i5.ElectronicSignature>(
@@ -105,7 +105,7 @@ abstract class Certificate implements _i1.SerializableModel {
   /// The course version.
   _i3.CourseVersion? courseVersion;
 
-  int trainingRecordId;
+  int? trainingRecordId;
 
   /// The training record.
   _i4.TrainingRecord? trainingRecord;
@@ -119,7 +119,7 @@ abstract class Certificate implements _i1.SerializableModel {
   /// QR code for verification.
   String? qrCode;
 
-  int esignatureId;
+  int? esignatureId;
 
   /// Electronic signature.
   _i5.ElectronicSignature? esignature;
@@ -154,12 +154,12 @@ abstract class Certificate implements _i1.SerializableModel {
       if (user != null) 'user': user?.toJson(),
       'courseVersionId': courseVersionId,
       if (courseVersion != null) 'courseVersion': courseVersion?.toJson(),
-      'trainingRecordId': trainingRecordId,
+      if (trainingRecordId != null) 'trainingRecordId': trainingRecordId,
       if (trainingRecord != null) 'trainingRecord': trainingRecord?.toJson(),
       'issuedAt': issuedAt.toJson(),
       if (expiresAt != null) 'expiresAt': expiresAt?.toJson(),
       if (qrCode != null) 'qrCode': qrCode,
-      'esignatureId': esignatureId,
+      if (esignatureId != null) 'esignatureId': esignatureId,
       if (esignature != null) 'esignature': esignature?.toJson(),
       'status': status,
     };
@@ -180,12 +180,12 @@ class _CertificateImpl extends Certificate {
     _i2.PharmaUser? user,
     required int courseVersionId,
     _i3.CourseVersion? courseVersion,
-    required int trainingRecordId,
+    int? trainingRecordId,
     _i4.TrainingRecord? trainingRecord,
     DateTime? issuedAt,
     DateTime? expiresAt,
     String? qrCode,
-    required int esignatureId,
+    int? esignatureId,
     _i5.ElectronicSignature? esignature,
     String? status,
   }) : super._(
@@ -214,12 +214,12 @@ class _CertificateImpl extends Certificate {
     Object? user = _Undefined,
     int? courseVersionId,
     Object? courseVersion = _Undefined,
-    int? trainingRecordId,
+    Object? trainingRecordId = _Undefined,
     Object? trainingRecord = _Undefined,
     DateTime? issuedAt,
     Object? expiresAt = _Undefined,
     Object? qrCode = _Undefined,
-    int? esignatureId,
+    Object? esignatureId = _Undefined,
     Object? esignature = _Undefined,
     String? status,
   }) {
@@ -231,14 +231,16 @@ class _CertificateImpl extends Certificate {
       courseVersion: courseVersion is _i3.CourseVersion?
           ? courseVersion
           : this.courseVersion?.copyWith(),
-      trainingRecordId: trainingRecordId ?? this.trainingRecordId,
+      trainingRecordId: trainingRecordId is int?
+          ? trainingRecordId
+          : this.trainingRecordId,
       trainingRecord: trainingRecord is _i4.TrainingRecord?
           ? trainingRecord
           : this.trainingRecord?.copyWith(),
       issuedAt: issuedAt ?? this.issuedAt,
       expiresAt: expiresAt is DateTime? ? expiresAt : this.expiresAt,
       qrCode: qrCode is String? ? qrCode : this.qrCode,
-      esignatureId: esignatureId ?? this.esignatureId,
+      esignatureId: esignatureId is int? ? esignatureId : this.esignatureId,
       esignature: esignature is _i5.ElectronicSignature?
           ? esignature
           : this.esignature?.copyWith(),

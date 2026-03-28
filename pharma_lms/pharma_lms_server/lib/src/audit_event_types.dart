@@ -11,6 +11,7 @@
 /// - InspectionRecordCreated, InspectionPackageOfficial
 /// - ConfigChanged, MaterialProgressCompleted
 /// - TrainingCompleted, CapaStatusChanged
+/// - LessonCreated, LessonUpdated, LessonBlockCreated/Updated/Deleted
 class AuditEventType {
   AuditEventType._();
 
@@ -53,6 +54,11 @@ class AuditEventType {
   static const complianceDropAlert = 'ComplianceDropAlert';
   static const courseReleaseAssigned = 'CourseReleaseAssigned';
   static const departmentTransferCompleted = 'DepartmentTransferCompleted';
+  static const lessonCreated = 'LessonCreated';
+  static const lessonUpdated = 'LessonUpdated';
+  static const lessonBlockUpdated = 'LessonBlockUpdated';
+  static const lessonBlockCreated = 'LessonBlockCreated';
+  static const lessonBlockDeleted = 'LessonBlockDeleted';
 
   static const Set<String> known = {
     reportExport,
@@ -94,6 +100,11 @@ class AuditEventType {
     complianceDropAlert,
     courseReleaseAssigned,
     departmentTransferCompleted,
+    lessonCreated,
+    lessonUpdated,
+    lessonBlockUpdated,
+    lessonBlockCreated,
+    lessonBlockDeleted,
   };
 
   /// Returns true if [action] is in the known registry.

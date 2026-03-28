@@ -576,30 +576,47 @@ class _AdminAnalyticsDashboardScreenState extends ConsumerState<AdminAnalyticsDa
 // REPORT BUILDER SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminReportBuilderScreen extends StatelessWidget {
+class AdminReportBuilderScreen extends ConsumerWidget {
   const AdminReportBuilderScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const _ReportBuilderTemplate();
-}
 
-class _ReportBuilderTemplate extends StatelessWidget {
-  const _ReportBuilderTemplate();
   @override
-  Widget build(BuildContext context) => AdminPageFrame(
-        title: 'Report Builder',
-        subtitle: 'Build and save custom ad-hoc report definitions.',
-        children: [
-          AdminSectionCard(
-            title: 'Report Templates',
-            child: AdminPlaceholderTable(
-              columns: const ['Template', 'Type', 'Schedule', 'Last Run'],
-              rows: const [
-                ['Monthly Compliance Report', 'Compliance', 'Monthly', '2024-01-01'],
-                ['Training Effectiveness', 'Analytics', 'Quarterly', '2024-01-15'],
-                ['Overdue Training Alert', 'Alert', 'Weekly', '2024-01-20'],
-              ],
-            ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final defs = ref.watch(adminReportDefinitionsProvider);
+
+    return AdminPageFrame(
+      title: 'Report Builder',
+      subtitle: 'Report definitions from the analytics module (schedule via backend jobs).',
+      children: [
+        AdminSectionCard(
+          title: 'Definitions',
+          child: defs.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (list) {
+              if (list.isEmpty) {
+                return Text(
+                  'No definitions yet.',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                );
+              }
+              return AdminDataTable(
+                columns: const ['Name', 'Type', 'SQL / params'],
+                rows: list
+                    .map(
+                      (r) => [
+                        r.name,
+                        r.reportType,
+                        (r.querySql ?? r.paramsJson ?? '—').toString().length > 120
+                            ? '${(r.querySql ?? r.paramsJson ?? "").toString().substring(0, 120)}…'
+                            : (r.querySql ?? r.paramsJson ?? '—').toString(),
+                      ],
+                    )
+                    .toList(),
+              );
+            },
           ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 }

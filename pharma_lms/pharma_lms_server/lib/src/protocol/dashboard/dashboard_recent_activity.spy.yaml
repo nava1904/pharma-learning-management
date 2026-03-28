@@ -1,0 +1,6 @@
+class: DashboardRecentActivity
+fields:
+  timestamp: DateTime
+  action: String
+  entityType: String
+  detail: String?

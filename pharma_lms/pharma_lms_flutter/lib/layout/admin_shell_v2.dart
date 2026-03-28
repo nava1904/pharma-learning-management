@@ -29,7 +29,7 @@ class AdminShellV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isMobile = MediaQuery.of(context).size.width < PortalLayout.breakpointTablet;
 
     return Scaffold(
       backgroundColor: PharmaColors.pageBg,
@@ -37,7 +37,7 @@ class AdminShellV2 extends StatelessWidget {
       drawer: isMobile ? _buildMobileDrawer(context, currentPath) : null,
       body: isMobile
           ? Padding(
-              padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+              padding: const EdgeInsets.all(PortalLayout.contentPadding),
               child: child,
             )
           : Row(
@@ -48,10 +48,10 @@ class AdminShellV2 extends StatelessWidget {
                     children: [
                       _AdminTopbar(currentPath: currentPath),
                       Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
-                              child: child,
-                            ),
+                        child: ColoredBox(
+                          color: PharmaColors.pageBg,
+                          child: child,
+                        ),
                       ),
                     ],
                   ),
@@ -63,13 +63,19 @@ class AdminShellV2 extends StatelessWidget {
 
   PreferredSizeWidget _buildMobileAppBar(BuildContext context) {
     return AppBar(
-      title: const Text('Admin Portal'),
+      title: Text(
+        'Admin Portal',
+        style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+      ),
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       backgroundColor: PharmaColors.cardBg,
       foregroundColor: PharmaColors.textPrimary,
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
+          color: PharmaColors.textSecondary,
           onPressed: () {},
         ),
       ],
@@ -83,27 +89,33 @@ class AdminShellV2 extends StatelessWidget {
         child: ListView(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: PharmaColors.pageBg),
+              decoration: BoxDecoration(
+                color: PharmaColors.pageBg,
+                border: Border(bottom: BorderSide(color: PharmaColors.borderLight)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    'Pharma LMS',
-                    style: PharmaTypography.headingMedium,
+                    PharmaBrand.name,
+                    style: PharmaTypography.headingMedium.copyWith(fontWeight: FontWeight.w600, fontSize: 18),
                   ),
                   Text(
                     'Admin Portal',
-                    style: PharmaTypography.caption,
+                    style: PharmaTypography.caption.copyWith(
+                      color: PharmaColors.emerald600,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
             _buildDrawerItem(context, 'Dashboard', Icons.dashboard_outlined, '/admin', currentPath),
-            _buildDrawerItem(context, 'Users', Icons.people_outlined, '/admin/users', currentPath),
-            _buildDrawerItem(context, 'Courses', Icons.school_outlined, '/admin/courses', currentPath),
-            _buildDrawerItem(context, 'Enrollments', Icons.assignment_outlined, '/admin/enrollments', currentPath),
-            _buildDrawerItem(context, 'Compliance', Icons.check_circle_outline, '/admin/compliance', currentPath),
+            _buildDrawerItem(context, 'Users', Icons.people_outlined, '/admin/users/directory', currentPath),
+            _buildDrawerItem(context, 'Courses', Icons.school_outlined, '/admin/courses/catalogue', currentPath),
+            _buildDrawerItem(context, 'Enrollments', Icons.assignment_outlined, '/admin/enrollments/list', currentPath),
+            _buildDrawerItem(context, 'Compliance', Icons.check_circle_outline, '/admin/reports/compliance', currentPath),
           ],
         ),
       ),
@@ -119,12 +131,15 @@ class AdminShellV2 extends StatelessWidget {
   ) {
     final isActive = currentPath.startsWith(route);
     return ListTile(
-      leading: Icon(icon, color: isActive ? PharmaColors.emerald600 : PharmaColors.textSecondary),
+      shape: RoundedRectangleBorder(borderRadius: PharmaRadius.buttonRadius),
+      selected: isActive,
+      selectedTileColor: PharmaColors.emerald50,
+      leading: Icon(icon, color: isActive ? PharmaColors.emerald700 : PharmaColors.textSecondary, size: 22),
       title: Text(
         label,
         style: PharmaTypography.bodyMedium.copyWith(
-          color: isActive ? PharmaColors.emerald600 : PharmaColors.textPrimary,
-          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+          color: isActive ? PharmaColors.emerald700 : PharmaColors.textPrimary,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
       onTap: () {
@@ -141,9 +156,13 @@ class _AdminTopbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = currentPath.split('/').where((s) => s.isNotEmpty).join(' / ');
+    final segments = currentPath.split('/').where((s) => s.isNotEmpty).toList();
+    final title = segments.isEmpty ? 'Dashboard' : segments.map((s) {
+      final t = s.replaceAll('-', ' ');
+      return t.isEmpty ? t : '${t[0].toUpperCase()}${t.substring(1)}';
+    }).join(' · ');
     return Container(
-      height: 64,
+      height: PortalLayout.headerHeight,
       padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.cardPadding),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
@@ -151,12 +170,28 @@ class _AdminTopbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            title.isEmpty ? 'admin' : title,
-            style: PharmaTypography.bodyMedium.copyWith(color: PharmaColors.textSecondary),
+          Expanded(
+            flex: 2,
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: PharmaTypography.headingSmall.copyWith(
+                color: PharmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-          const Spacer(),
-          const SizedBox(width: 320, child: PharmaSearchBar(hint: 'Search users, courses, reports...')),
+          Expanded(
+            flex: 3,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: const PharmaSearchBar(hint: 'Search users, courses, reports…'),
+              ),
+            ),
+          ),
           const SizedBox(width: PharmaSpacing.md),
           const PharmaExportButton(),
         ],
@@ -216,7 +251,7 @@ class _AdminSidebar extends StatelessWidget {
       {
         'label': 'Compliance & Audit',
         'items': [
-          {'label': 'Compliance', 'icon': Icons.check_circle_outline, 'route': '/admin/compliance'},
+          {'label': 'Compliance', 'icon': Icons.check_circle_outline, 'route': '/admin/reports/compliance'},
           {'label': 'Audit Trail', 'icon': Icons.track_changes_outlined, 'route': '/admin/audit/trail'},
         ],
       },
@@ -247,33 +282,50 @@ class _AdminSidebar extends StatelessWidget {
     ];
 
     return Container(
-      width: 260,
+      width: PortalLayout.sidebarWidth,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         border: Border(right: BorderSide(color: PharmaColors.borderLight)),
       ),
       child: Column(
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: PharmaColors.borderLight)),
+            ),
             child: Row(
               children: [
-                const VyuhLogo(height: 28, width: 28, color: Colors.white),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(PharmaBrand.name, style: PharmaTypography.bodyMedium),
-                    Text('Admin Portal', style: PharmaTypography.caption),
-                  ],
+                const VyuhLogo(height: 32, width: 32, color: PharmaColors.emerald600),
+                const SizedBox(width: PharmaSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        PharmaBrand.name,
+                        style: PharmaTypography.headingMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Text(
+                        'Admin Portal',
+                        style: PharmaTypography.caption.copyWith(
+                          color: PharmaColors.emerald600,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+              padding: const EdgeInsets.symmetric(vertical: PharmaSpacing.sm, horizontal: PharmaSpacing.md),
               itemCount: sidebarSections.length,
               separatorBuilder: (context, idx) => const SizedBox(height: 8),
               itemBuilder: (context, sectionIdx) {
@@ -282,29 +334,37 @@ class _AdminSidebar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 4),
+                      padding: const EdgeInsets.only(left: PharmaSpacing.sm, bottom: PharmaSpacing.xs, top: PharmaSpacing.xs),
                       child: Text(
-                        section['label'] as String,
-                        style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary, fontWeight: FontWeight.w600),
+                        (section['label'] as String).toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: PharmaColors.textQuaternary,
+                          letterSpacing: 0.7,
+                        ),
                       ),
                     ),
                     ...((section['items'] as List).map((item) {
                       final itemMap = item as Map;
                       final selected = currentPath == itemMap['route'] || currentPath.startsWith(itemMap['route']);
                       return ListTile(
-                        leading: Icon(itemMap['icon'] as IconData, color: selected ? PharmaColors.emerald600 : PharmaColors.textSecondary, size: 20),
+                        leading: Icon(
+                          itemMap['icon'] as IconData,
+                          color: selected ? PharmaColors.emerald700 : PharmaColors.textSecondary,
+                          size: 20,
+                        ),
                         title: Text(
                           itemMap['label'] as String,
-                          style: PharmaTypography.body.copyWith(
-                            color: selected ? PharmaColors.emerald700 : PharmaColors.textPrimary,
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                          ),
+                          style: selected
+                              ? PharmaTypography.navItemActive.copyWith(color: PharmaColors.emerald700)
+                              : PharmaTypography.navItem,
                         ),
                         selected: selected,
                         selectedTileColor: PharmaColors.emerald50,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        shape: RoundedRectangleBorder(borderRadius: PharmaRadius.buttonRadius),
                         onTap: () => context.go(itemMap['route'] as String),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.sm, vertical: PharmaSpacing.xs),
                         dense: true,
                         minLeadingWidth: 28,
                       );

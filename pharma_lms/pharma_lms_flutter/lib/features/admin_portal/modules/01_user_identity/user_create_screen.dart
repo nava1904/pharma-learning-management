@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
-import 'package:pharma_lms_flutter/providers/admin_providers.dart';
+import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' show JobRole;
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
 
 /// User Create Screen
 /// 
@@ -39,43 +41,16 @@ class _UserCreateScreenState extends ConsumerState<UserCreateScreen> {
   late final TextEditingController employeeIdController;
   late final TextEditingController phoneController;
   
-  String? selectedDepartment;
-  String? selectedOrganization;
-  String? selectedRole;
+  int? selectedOrganizationId;
+  int? selectedDepartmentId;
+  int? selectedSiteId;
+  int? selectedJobRoleId;
   DateTime? selectedHireDate;
   bool isLoading = false;
+  bool _orgDefaultApplied = false;
 
   // Form validation
   final _formKey = GlobalKey<FormState>();
-
-  // Mock data for dropdowns
-  final departments = [
-    'Sales',
-    'Marketing',
-    'Operations',
-    'HR',
-    'Finance',
-    'IT',
-    'Training',
-    'R&D',
-    'Quality Assurance',
-    'Customer Support',
-  ];
-
-  final organizations = [
-    'HQ',
-    'Training Center',
-    'Regional Office - North',
-    'Regional Office - South',
-    'Regional Office - East',
-    'Regional Office - West',
-  ];
-
-  final roles = [
-    {'code': 'EMPLOYEE', 'name': 'Employee'},
-    {'code': 'TRAINER', 'name': 'Trainer'},
-    {'code': 'ADMIN', 'name': 'Administrator'},
-  ];
 
   @override
   void initState() {
@@ -119,8 +94,11 @@ class _UserCreateScreenState extends ConsumerState<UserCreateScreen> {
       return;
     }
 
-    if (selectedDepartment == null || selectedOrganization == null || 
-        selectedRole == null || selectedHireDate == null) {
+    if (selectedOrganizationId == null ||
+        selectedDepartmentId == null ||
+        selectedSiteId == null ||
+        selectedJobRoleId == null ||
+        selectedHireDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields')),
       );
@@ -130,27 +108,21 @@ class _UserCreateScreenState extends ConsumerState<UserCreateScreen> {
     setState(() => isLoading = true);
 
     try {
-      // TODO: Call backend endpoint
-      // final result = await ref.read(createUserProvider.notifier).createUser(
-      //   email: emailController.text,
-      //   firstName: firstNameController.text,
-      //   lastName: lastNameController.text,
-      //   employeeId: employeeIdController.text,
-      //   phone: phoneController.text,
-      //   department: selectedDepartment!,
-      //   organization: selectedOrganization!,
-      //   role: selectedRole!,
-      //   hireDate: selectedHireDate!,
-      // );
-
-      // TEMPORARY: Simulate success
-      await Future.delayed(const Duration(seconds: 1));
+      final params = {
+        'email': emailController.text.trim(),
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'employeeId': employeeIdController.text.trim(),
+        'organizationId': selectedOrganizationId,
+        'departmentId': selectedDepartmentId,
+        'jobRoleId': selectedJobRoleId,
+        'siteId': selectedSiteId,
+      };
+      await ref.read(adminCreateUserProvider(params).future);
 
       if (mounted) {
-        // Invalidate providers to refresh data
         ref.invalidate(adminUserCountProvider);
-        ref.invalidate(adminUsersListProvider);
-
+        ref.invalidate(adminUsersProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -159,9 +131,7 @@ class _UserCreateScreenState extends ConsumerState<UserCreateScreen> {
             backgroundColor: PharmaColors.success,
           ),
         );
-
-        // Navigate back to user management
-        context.pop();
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -181,6 +151,33 @@ class _UserCreateScreenState extends ConsumerState<UserCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final orgsAsync = ref.watch(adminOrganizationsListProvider);
+    final deptAsync = selectedOrganizationId != null
+        ? ref.watch(adminDepartmentOptionsForOrgProvider(selectedOrganizationId!))
+        : AsyncValue<List<AdminDepartmentOption>>.data(const []);
+    final rolesAsync = selectedDepartmentId != null
+        ? ref.watch(adminJobRolesForDepartmentProvider(selectedDepartmentId!))
+        : AsyncValue<List<JobRole>>.data(<JobRole>[]);
+
+    ref.listen(adminOrganizationsListProvider, (previous, next) {
+      next.whenData((orgs) {
+        if (_orgDefaultApplied || selectedOrganizationId != null) return;
+        final me = ref.read(currentUserProvider).valueOrNull;
+        final oid = me?.organizationId;
+        if (oid == null) return;
+        for (final o in orgs) {
+          final id = o.id;
+          if (id != null && id == oid) {
+            _orgDefaultApplied = true;
+            if (mounted) {
+              setState(() => selectedOrganizationId = id);
+            }
+            return;
+          }
+        }
+      });
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create New User'),
@@ -312,91 +309,111 @@ class _UserCreateScreenState extends ConsumerState<UserCreateScreen> {
               _buildSectionTitle('Organization & Department'),
               SizedBox(height: PharmaSpacing.md),
 
-              // Organization Dropdown
-              DropdownButtonFormField<String>(
-                initialValue: selectedOrganization,
-                decoration: InputDecoration(
-                  labelText: 'Organization *',
-                  prefixIcon: const Icon(Icons.business),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+              orgsAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Organizations: $e'),
+                data: (orgs) => DropdownButtonFormField<int>(
+                  initialValue: selectedOrganizationId,
+                  decoration: InputDecoration(
+                    labelText: 'Organization *',
+                    prefixIcon: const Icon(Icons.business),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+                    ),
                   ),
+                  items: orgs
+                      .where((o) => o.id != null)
+                      .map(
+                        (o) => DropdownMenuItem(
+                          value: o.id,
+                          child: Text(o.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedOrganizationId = value;
+                      selectedDepartmentId = null;
+                      selectedSiteId = null;
+                      selectedJobRoleId = null;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Organization is required' : null,
                 ),
-                items: organizations
-                    .map((org) => DropdownMenuItem(
-                          value: org,
-                          child: Text(org),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => selectedOrganization = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Organization is required';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: PharmaSpacing.md),
-
-              // Department Dropdown
-              DropdownButtonFormField<String>(
-                initialValue: selectedDepartment,
-                decoration: InputDecoration(
-                  labelText: 'Department *',
-                  prefixIcon: const Icon(Icons.domain),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PharmaSpacing.sm),
-                  ),
+              deptAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: LinearProgressIndicator(),
                 ),
-                items: departments
-                    .map((dept) => DropdownMenuItem(
-                          value: dept,
-                          child: Text(dept),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => selectedDepartment = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Department is required';
-                  }
-                  return null;
-                },
+                error: (e, _) => Text('Departments: $e'),
+                data: (opts) => DropdownButtonFormField<int>(
+                  initialValue: selectedDepartmentId,
+                  decoration: InputDecoration(
+                    labelText: 'Department *',
+                    prefixIcon: const Icon(Icons.domain),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+                    ),
+                  ),
+                  items: opts
+                      .map(
+                        (d) => DropdownMenuItem(
+                          value: d.departmentId,
+                          child: Text(d.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    AdminDepartmentOption? match;
+                    if (value != null) {
+                      for (final d in opts) {
+                        if (d.departmentId == value) match = d;
+                      }
+                    }
+                    setState(() {
+                      selectedDepartmentId = value;
+                      selectedJobRoleId = null;
+                      selectedSiteId = match?.siteId;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Department is required' : null,
+                ),
               ),
               SizedBox(height: PharmaSpacing.lg),
 
-              // Section 3: Role & Dates
-              _buildSectionTitle('Role & Employment'),
+              // Section 3: Job role & Dates
+              _buildSectionTitle('Job role & employment'),
               SizedBox(height: PharmaSpacing.md),
 
-              // Role Dropdown
-              DropdownButtonFormField<String>(
-                initialValue: selectedRole,
-                decoration: InputDecoration(
-                  labelText: 'Role *',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PharmaSpacing.sm),
-                  ),
+              rolesAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: LinearProgressIndicator(),
                 ),
-                items: roles
-                    .map((role) => DropdownMenuItem(
-                          value: role['code'],
-                          child: Text(role['name']!),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => selectedRole = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Role is required';
-                  }
-                  return null;
-                },
+                error: (e, _) => Text('Job roles: $e'),
+                data: (roles) => DropdownButtonFormField<int>(
+                  initialValue: selectedJobRoleId,
+                  decoration: InputDecoration(
+                    labelText: 'Job role *',
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+                    ),
+                  ),
+                  items: roles
+                      .where((r) => r.id != null)
+                      .map(
+                        (r) => DropdownMenuItem(
+                          value: r.id,
+                          child: Text(r.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => selectedJobRoleId = value),
+                  validator: (value) => value == null ? 'Job role is required' : null,
+                ),
               ),
               SizedBox(height: PharmaSpacing.md),
 

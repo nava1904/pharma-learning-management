@@ -26,7 +26,7 @@ class AppRadius {
   static const double xxl = 16;
 }
 
-/// Pharma LMS theme matching Figma reference.
+/// Vyuh lms theme matching Figma reference.
 class AppTheme {
   AppTheme._();
 

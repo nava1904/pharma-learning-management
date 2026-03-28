@@ -30,7 +30,7 @@ class _AnalyticsDashboardScreenState
   Map<String, dynamic>? _trainingDeviationCorrelation;
   Map<String, dynamic>? _slaSummary;
   Map<String, dynamic>? _complianceDeviationOverlay;
-  List<Map<String, dynamic>> _complianceTrend = [];
+  List<ComplianceTrendPoint> _complianceTrend = [];
   double _sopRetrainingVelocity = 0;
   bool _loading = true;
   String? _error;
@@ -86,7 +86,7 @@ class _AnalyticsDashboardScreenState
       final correlation = await client.analytics.getTrainingVsDeviationCorrelation();
       final slaSummary = await client.analytics.getSlaSummary();
       final overlay = await client.analytics.getComplianceDeviationOverlay();
-      List<Map<String, dynamic>> trend = [];
+      List<ComplianceTrendPoint> trend = [];
       var sopVelocity = 0.0;
       try {
         trend = await client.analytics.getComplianceTrend(months: 12);
@@ -407,7 +407,7 @@ class _AnalyticsDashboardScreenState
                                     .entries
                                     .map((e) => FlSpot(
                                           e.key.toDouble(),
-                                          ((e.value['complianceRate'] as num?) ?? 0) * 100,
+                                          e.value.complianceRatePercent,
                                         ))
                                     .toList(),
                                 isCurved: true,
@@ -438,7 +438,8 @@ class _AnalyticsDashboardScreenState
                                   getTitlesWidget: (v, meta) {
                                     final entries = _complianceTrend;
                                     if (v.toInt() >= 0 && v.toInt() < entries.length) {
-                                      final m = entries[v.toInt()]['month'] as String? ?? '';
+                                      final m =
+                                          entries[v.toInt()].monthLabel;
                                       return Padding(
                                         padding: const EdgeInsets.only(top: 8),
                                         child: Text(

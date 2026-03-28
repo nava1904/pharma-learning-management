@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' show PharmaUser;
+import 'package:pharma_lms_flutter/core/client.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
+import '../access_review/access_review_screen.dart';
+import '../modules/01_user_identity/user_bulk_import_screen.dart';
+import '../modules/01_user_identity/user_create_screen.dart';
 import '../widgets/admin_page_frame.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -89,7 +94,7 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
         Row(
           children: [
             OutlinedButton.icon(
-              onPressed: () => context.push('/admin/users/import'),
+              onPressed: () => context.push('/admin/users/directory/import'),
               icon: const Icon(Icons.upload_file_outlined, size: 18),
               label: const Text('Import'),
               style: OutlinedButton.styleFrom(
@@ -99,7 +104,7 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
             ),
             SizedBox(width: PharmaSpacing.md),
             ElevatedButton.icon(
-              onPressed: () => context.push('/admin/users/create'),
+              onPressed: () => context.push('/admin/users/directory/create'),
               icon: const Icon(Icons.person_add_outlined, size: 18),
               label: const Text('Create User'),
               style: ElevatedButton.styleFrom(
@@ -571,82 +576,92 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CREATE USER SCREEN
+// CREATE USER / IMPORT (canonical implementations under directory/)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class AdminUserCreateScreen extends StatelessWidget {
   const AdminUserCreateScreen({super.key});
   @override
-  Widget build(BuildContext context) => const _UsersTemplate(
-        title: 'Create User',
-        subtitle: 'Provision new employee identities and role access.',
-      );
+  Widget build(BuildContext context) => const UserCreateScreen();
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// BULK IMPORT SCREEN
-// ═══════════════════════════════════════════════════════════════════════════════
 
 class AdminUserImportScreen extends StatelessWidget {
   const AdminUserImportScreen({super.key});
   @override
-  Widget build(BuildContext context) => const _UsersTemplate(
-        title: 'Bulk Import',
-        subtitle: 'Upload CSV and validate user records at scale.',
-      );
+  Widget build(BuildContext context) => const UserBulkImportScreen();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORG HIERARCHY SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminOrgHierarchyScreen extends StatelessWidget {
+Future<List<List<String>>> _orgHierarchyRows(WidgetRef ref) async {
+  final user = await ref.read(currentUserProvider.future);
+  if (user == null) return [];
+  final sites = await client.organization.listSites(user.organizationId);
+  final out = <List<String>>[];
+  for (final s in sites) {
+    final sid = s.id;
+    if (sid == null) continue;
+    final depts = await client.organization.listDepartments(sid);
+    if (depts.isEmpty) {
+      out.add([s.name, '—', '—']);
+    } else {
+      for (final d in depts) {
+        out.add([s.name, d.name, '${d.id ?? ""}']);
+      }
+    }
+  }
+  return out;
+}
+
+class AdminOrgHierarchyScreen extends ConsumerWidget {
   const AdminOrgHierarchyScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _UsersTemplate(
-        title: 'Org Hierarchy',
-        subtitle: 'Site, department, and reporting tree management.',
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<List<List<String>>>(
+      future: _orgHierarchyRows(ref),
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const AdminPageFrame(
+            title: 'Org Hierarchy',
+            subtitle: 'Sites and departments',
+            children: [
+              SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
+            ],
+          );
+        }
+        final rows = snap.data ?? [];
+        return AdminPageFrame(
+          title: 'Org Hierarchy',
+          subtitle: 'Sites and departments from organization endpoints.',
+          children: [
+            AdminSectionCard(
+              title: 'Structure',
+              child: rows.isEmpty
+                  ? Text(
+                      'No sites or departments found.',
+                      style: PharmaTypography.body.copyWith(color: PharmaColors.textSecondary),
+                    )
+                  : AdminDataTable(
+                      columns: const ['Site', 'Department', 'Department ID'],
+                      rows: rows,
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ACCESS REVIEW SCREEN
+// ACCESS REVIEW (canonical screen)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class AdminAccessReviewScreen extends StatelessWidget {
   const AdminAccessReviewScreen({super.key});
   @override
-  Widget build(BuildContext context) => const _UsersTemplate(
-        title: 'Access Review',
-        subtitle: 'Role recertification and privileged access controls.',
-      );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE (for screens not yet implemented)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _UsersTemplate extends StatelessWidget {
-  const _UsersTemplate({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return AdminPageFrame(
-      title: title,
-      subtitle: subtitle,
-      children: const [
-        AdminSectionCard(
-          title: 'Coming Soon',
-          child: AdminPlaceholderTable(
-            columns: ['Feature', 'Status', 'ETA'],
-            rows: [
-              ['Full implementation', 'In Progress', 'Q2 2026'],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => const AccessReviewScreen();
 }

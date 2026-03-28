@@ -65,14 +65,25 @@ final trainerBatchDetailProvider = FutureProvider.family<TrainingBatch?, int>((r
 });
 
 // ─── BATCH PARTICIPANTS PROVIDER ──────────────────────────────────────────────
-/// Fetches participants enrolled in a batch.
-/// Note: This requires a batch enrollment table/endpoint to be implemented.
-/// For now returns mock data structure.
-final batchParticipantsProvider = FutureProvider.family<List<BatchParticipant>, int>((ref, batchId) async {
-  // In production, this would call an endpoint like:
-  // client.trainingBatch.getBatchParticipants(batchId)
-  // For now, return empty list - will be implemented when enrollment linking is ready
-  return [];
+/// Fetches participants enrolled in a batch from backend roster.
+final batchParticipantsProvider = FutureProvider.family<List<BatchParticipantInfo>, int>((ref, batchId) async {
+  try {
+    return await client.trainingBatch.listBatchParticipantsForEmployee(batchId);
+  } catch (e) {
+    print('Error fetching batch participants: $e');
+    return [];
+  }
+});
+
+// ─── BATCH COHORT PROGRESS PROVIDER ──────────────────────────────────────────
+/// Fetches cohort progress data for a batch.
+final batchCohortProgressProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, batchId) async {
+  try {
+    return await client.trainingBatch.getBatchCohortProgress(batchId);
+  } catch (e) {
+    print('Error fetching cohort progress: $e');
+    return {};
+  }
 });
 
 // ─── STATS MODEL ──────────────────────────────────────────────────────────────

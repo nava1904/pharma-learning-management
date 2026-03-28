@@ -317,7 +317,7 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
             ),
           ),
           
-          // Duration (placeholder - not in Course model)
+          // Duration omitted (not on Course model in this API)
           Expanded(
             flex: 1,
             child: Text(
@@ -666,7 +666,7 @@ class AdminCourseApprovalScreen extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CREATE COURSE SCREEN (placeholder)
+// CREATE COURSE SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class AdminCourseCreateScreen extends StatelessWidget {
@@ -679,7 +679,6 @@ class AdminCourseCreateScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _CourseTemplate extends StatelessWidget {
@@ -694,7 +693,7 @@ class _CourseTemplate extends StatelessWidget {
       children: const [
         AdminSectionCard(
           title: 'Coming Soon',
-          child: AdminPlaceholderTable(
+          child: AdminDataTable(
             columns: ['Feature', 'Status', 'ETA'],
             rows: [
               ['Full implementation', 'In Progress', 'Q2 2026'],

@@ -27,7 +27,17 @@ abstract class Course implements _i1.SerializableModel {
     this.createdBy,
     required this.organizationId,
     this.organization,
-  }) : status = status ?? 'draft';
+    this.customMetadataJson,
+    this.previewVideoUrl,
+    this.imageUrl,
+    this.tags,
+    this.publishedAt,
+    bool? disableSelfEnrollment,
+    this.category,
+    bool? featured,
+  }) : status = status ?? 'draft',
+       disableSelfEnrollment = disableSelfEnrollment ?? false,
+       featured = featured ?? false;
 
   factory Course({
     int? id,
@@ -39,6 +49,14 @@ abstract class Course implements _i1.SerializableModel {
     _i2.PharmaUser? createdBy,
     required int organizationId,
     _i3.Organization? organization,
+    String? customMetadataJson,
+    String? previewVideoUrl,
+    String? imageUrl,
+    String? tags,
+    DateTime? publishedAt,
+    bool? disableSelfEnrollment,
+    String? category,
+    bool? featured,
   }) = _CourseImpl;
 
   factory Course.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -60,6 +78,24 @@ abstract class Course implements _i1.SerializableModel {
           : _i4.Protocol().deserialize<_i3.Organization>(
               jsonSerialization['organization'],
             ),
+      customMetadataJson: jsonSerialization['customMetadataJson'] as String?,
+      previewVideoUrl: jsonSerialization['previewVideoUrl'] as String?,
+      imageUrl: jsonSerialization['imageUrl'] as String?,
+      tags: jsonSerialization['tags'] as String?,
+      publishedAt: jsonSerialization['publishedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['publishedAt'],
+            ),
+      disableSelfEnrollment: jsonSerialization['disableSelfEnrollment'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['disableSelfEnrollment'],
+            ),
+      category: jsonSerialization['category'] as String?,
+      featured: jsonSerialization['featured'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['featured']),
     );
   }
 
@@ -90,6 +126,30 @@ abstract class Course implements _i1.SerializableModel {
   /// Organization for multi-tenant.
   _i3.Organization? organization;
 
+  /// Site-specific JSON attributes (curricula tags, therapeutic area, etc.).
+  String? customMetadataJson;
+
+  /// Preview/teaser video URL (YouTube, Vimeo, etc.).
+  String? previewVideoUrl;
+
+  /// Cover image URL for the course.
+  String? imageUrl;
+
+  /// Comma-separated tags (difficulty, therapeutic area, etc.).
+  String? tags;
+
+  /// Date the course was published.
+  DateTime? publishedAt;
+
+  /// Whether self-enrollment is disabled (admin/manager assignment only).
+  bool disableSelfEnrollment;
+
+  /// Course category (e.g., GMP, Quality, Safety).
+  String? category;
+
+  /// Whether this course is featured/promoted.
+  bool featured;
+
   /// Returns a shallow copy of this [Course]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -103,6 +163,14 @@ abstract class Course implements _i1.SerializableModel {
     _i2.PharmaUser? createdBy,
     int? organizationId,
     _i3.Organization? organization,
+    String? customMetadataJson,
+    String? previewVideoUrl,
+    String? imageUrl,
+    String? tags,
+    DateTime? publishedAt,
+    bool? disableSelfEnrollment,
+    String? category,
+    bool? featured,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -117,6 +185,14 @@ abstract class Course implements _i1.SerializableModel {
       if (createdBy != null) 'createdBy': createdBy?.toJson(),
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
+      if (customMetadataJson != null) 'customMetadataJson': customMetadataJson,
+      if (previewVideoUrl != null) 'previewVideoUrl': previewVideoUrl,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (tags != null) 'tags': tags,
+      if (publishedAt != null) 'publishedAt': publishedAt?.toJson(),
+      'disableSelfEnrollment': disableSelfEnrollment,
+      if (category != null) 'category': category,
+      'featured': featured,
     };
   }
 
@@ -139,6 +215,14 @@ class _CourseImpl extends Course {
     _i2.PharmaUser? createdBy,
     required int organizationId,
     _i3.Organization? organization,
+    String? customMetadataJson,
+    String? previewVideoUrl,
+    String? imageUrl,
+    String? tags,
+    DateTime? publishedAt,
+    bool? disableSelfEnrollment,
+    String? category,
+    bool? featured,
   }) : super._(
          id: id,
          title: title,
@@ -149,6 +233,14 @@ class _CourseImpl extends Course {
          createdBy: createdBy,
          organizationId: organizationId,
          organization: organization,
+         customMetadataJson: customMetadataJson,
+         previewVideoUrl: previewVideoUrl,
+         imageUrl: imageUrl,
+         tags: tags,
+         publishedAt: publishedAt,
+         disableSelfEnrollment: disableSelfEnrollment,
+         category: category,
+         featured: featured,
        );
 
   /// Returns a shallow copy of this [Course]
@@ -165,6 +257,14 @@ class _CourseImpl extends Course {
     Object? createdBy = _Undefined,
     int? organizationId,
     Object? organization = _Undefined,
+    Object? customMetadataJson = _Undefined,
+    Object? previewVideoUrl = _Undefined,
+    Object? imageUrl = _Undefined,
+    Object? tags = _Undefined,
+    Object? publishedAt = _Undefined,
+    bool? disableSelfEnrollment,
+    Object? category = _Undefined,
+    bool? featured,
   }) {
     return Course(
       id: id is int? ? id : this.id,
@@ -180,6 +280,19 @@ class _CourseImpl extends Course {
       organization: organization is _i3.Organization?
           ? organization
           : this.organization?.copyWith(),
+      customMetadataJson: customMetadataJson is String?
+          ? customMetadataJson
+          : this.customMetadataJson,
+      previewVideoUrl: previewVideoUrl is String?
+          ? previewVideoUrl
+          : this.previewVideoUrl,
+      imageUrl: imageUrl is String? ? imageUrl : this.imageUrl,
+      tags: tags is String? ? tags : this.tags,
+      publishedAt: publishedAt is DateTime? ? publishedAt : this.publishedAt,
+      disableSelfEnrollment:
+          disableSelfEnrollment ?? this.disableSelfEnrollment,
+      category: category is String? ? category : this.category,
+      featured: featured ?? this.featured,
     );
   }
 }

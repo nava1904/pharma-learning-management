@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — PROFILE & SETTINGS (Screen 8) — REDESIGNED
+// Vyuh lms — profile & settings (screen 8) — redesigned
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Route: /employee/profile (renders inside EmployeeShellV2)
@@ -179,7 +179,9 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                 ),
               ),
               const SizedBox(height: PharmaSpacing.lg),
-              Center(child: Text('Pharma LMS v1.0.0', style: PharmaTypography.caption)),
+              Center(
+                  child: Text('${PharmaBrand.name} v1.0.0',
+                      style: PharmaTypography.caption)),
               const SizedBox(height: PharmaSpacing.xxxl),
             ],
           ),
@@ -349,7 +351,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Email: support@pharmalms.com', style: PharmaTypography.body),
+            Text('Email: support@vyuhlms.com', style: PharmaTypography.body),
             const SizedBox(height: PharmaSpacing.sm),
             Text('Phone: 1-800-PHARMA-LMS', style: PharmaTypography.body),
           ],

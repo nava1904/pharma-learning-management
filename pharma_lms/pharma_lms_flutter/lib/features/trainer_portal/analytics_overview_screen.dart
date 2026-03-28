@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
@@ -23,14 +24,16 @@ class _AnalyticsOverviewScreenState
   AuditReadinessScore? _auditReadiness;
   int _certExpiryRisk = 0;
   double _sopRetrainingVelocity = 0.0;
-  List<DepartmentComplianceSnapshot> _deptSnapshots = [];
-  List<Map<String, dynamic>> _complianceTrend = [];
+  List<DepartmentComplianceSummary> _deptSummaries = [];
+  List<ComplianceTrendPoint> _complianceTrend = [];
 
   int _totalEnrollments = 0;
   int _completedEnrollments = 0;
   int _inProgressEnrollments = 0;
   int _overdueEnrollments = 0;
   int _totalCourses = 0;
+  List<Course> _orgCourses = [];
+  int? _selectedCourseIdForAnalytics;
 
   @override
   void initState() {
@@ -62,8 +65,8 @@ class _AnalyticsOverviewScreenState
       final auditReadiness = results[1] as AuditReadinessScore;
       final certRisk = results[2] as int;
       final sopVelocity = results[3] as double;
-      final deptSnapshots = results[4] as List<DepartmentComplianceSnapshot>;
-      final complianceTrend = results[5] as List<Map<String, dynamic>>;
+      final deptSummaries = results[4] as List<DepartmentComplianceSummary>;
+      final complianceTrend = results[5] as List<ComplianceTrendPoint>;
       final courses = results[6] as List<Course>;
 
       int totalE = 0, completedE = 0, inProgressE = 0, overdueE = 0;
@@ -97,13 +100,22 @@ class _AnalyticsOverviewScreenState
         _auditReadiness = auditReadiness;
         _certExpiryRisk = certRisk;
         _sopRetrainingVelocity = sopVelocity;
-        _deptSnapshots = deptSnapshots;
+        _deptSummaries = deptSummaries;
         _complianceTrend = complianceTrend;
         _totalCourses = courses.length;
         _totalEnrollments = totalE;
         _completedEnrollments = completedE;
         _inProgressEnrollments = inProgressE;
         _overdueEnrollments = overdueE;
+        _orgCourses = courses;
+        if (_selectedCourseIdForAnalytics == null) {
+          for (final c in courses) {
+            if (c.id != null) {
+              _selectedCourseIdForAnalytics = c.id;
+              break;
+            }
+          }
+        }
         _loading = false;
       });
     } catch (e) {
@@ -142,6 +154,8 @@ class _AnalyticsOverviewScreenState
                       const EdgeInsets.all(PharmaSpacing.pagePadding),
                   children: [
                     _buildHeader(),
+                    const SizedBox(height: PharmaSpacing.sectionGap),
+                    _buildAnalyticsScopesSection(context),
                     const SizedBox(height: PharmaSpacing.sectionGap),
                     _buildKpiCards(),
                     const SizedBox(height: 24),
@@ -194,7 +208,7 @@ class _AnalyticsOverviewScreenState
                 ),
               ),
               Text(
-                'Training metrics, completion rates, and performance insights',
+                'Organization-wide metrics below. Use the cards to open course, batch, or learner-level analytics.',
                 style: PharmaTypography.body
                     .copyWith(color: PharmaColors.textTertiary),
               ),
@@ -205,6 +219,200 @@ class _AnalyticsOverviewScreenState
           onPressed: _loadData,
           icon: const Icon(Icons.refresh, size: 20),
           tooltip: 'Refresh',
+        ),
+      ],
+    );
+  }
+
+  /// Links to course-, batch-, and individual-level analytics (trainer portal).
+  Widget _buildAnalyticsScopesSection(BuildContext context) {
+    final withId = _orgCourses.where((c) => c.id != null).toList();
+
+    Widget scopeCard({
+      required IconData icon,
+      required Color iconColor,
+      required String title,
+      required String subtitle,
+      required Widget child,
+    }) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: PharmaColors.cardBg,
+          borderRadius: PharmaRadius.cardRadius,
+          border: Border.all(color: PharmaColors.borderLight),
+          boxShadow: PharmaShadows.sm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: iconColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: PharmaTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: PharmaTypography.caption.copyWith(
+                color: PharmaColors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Analytics by scope',
+          style: PharmaTypography.headingSmall.copyWith(fontSize: 15),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'This page shows organization-wide KPIs. Drill down using the options below.',
+          style: PharmaTypography.caption.copyWith(
+            color: PharmaColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        LayoutBuilder(
+          builder: (context, c) {
+            final narrow = c.maxWidth < 900;
+            final cards = [
+              scopeCard(
+                icon: Icons.school_outlined,
+                iconColor: PharmaColors.emerald600,
+                title: 'Course analytics',
+                subtitle: 'Pass rates, enrollments, and trends for one course.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (withId.isEmpty)
+                      Text(
+                        'No courses in organization.',
+                        style: PharmaTypography.caption,
+                      )
+                    else
+                      InputDecorator(
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: PharmaColors.pageBg,
+                          border: OutlineInputBorder(
+                            borderRadius: PharmaRadius.inputRadius,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                        ),
+                        child: DropdownButton<int>(
+                          isExpanded: true,
+                          underline: const SizedBox.shrink(),
+                          value: () {
+                            final id = _selectedCourseIdForAnalytics;
+                            if (id != null &&
+                                withId.any((x) => x.id == id)) {
+                              return id;
+                            }
+                            return withId.first.id;
+                          }(),
+                          items: withId
+                              .map(
+                                (co) => DropdownMenuItem(
+                                  value: co.id,
+                                  child: Text(
+                                    co.title,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _selectedCourseIdForAnalytics = v),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: _selectedCourseIdForAnalytics == null
+                          ? null
+                          : () => context.push(
+                                '/trainer/courses/${_selectedCourseIdForAnalytics!}/analytics',
+                              ),
+                      icon: const Icon(Icons.analytics_outlined, size: 18),
+                      label: const Text('Open course analytics'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: PharmaColors.emerald600,
+                        foregroundColor: PharmaColors.cardBg,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              scopeCard(
+                icon: Icons.groups_outlined,
+                iconColor: PharmaColors.info,
+                title: 'Batch analytics',
+                subtitle: 'ILT cohorts, attendance, and batch-level training.',
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/trainer/batches'),
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('Open batches'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: PharmaColors.info,
+                    side: const BorderSide(color: PharmaColors.info),
+                  ),
+                ),
+              ),
+              scopeCard(
+                icon: Icons.person_search_outlined,
+                iconColor: PharmaColors.warningText,
+                title: 'Individual analytics',
+                subtitle: 'Per-learner enrollments, progress, and certificates.',
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/trainer/reports/learner-progress'),
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('Learner progress report'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: PharmaColors.warningText,
+                    side: BorderSide(color: PharmaColors.warningText.withValues(alpha: 0.5)),
+                  ),
+                ),
+              ),
+            ];
+            if (narrow) {
+              return Column(
+                children: [
+                  for (var i = 0; i < cards.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    cards[i],
+                  ],
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < cards.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 12),
+                  Expanded(child: cards[i]),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
@@ -392,11 +600,11 @@ class _AnalyticsOverviewScreenState
     }
 
     final maxRate = _complianceTrend.fold<double>(
-        1.0,
-        (prev, item) =>
-            prev > ((item['complianceRate'] as num?)?.toDouble() ?? 0.0)
-                ? prev
-                : (item['complianceRate'] as num?)?.toDouble() ?? 0.0);
+      1.0,
+      (prev, item) => prev > item.complianceRatePercent
+          ? prev
+          : item.complianceRatePercent,
+    );
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -411,7 +619,8 @@ class _AnalyticsOverviewScreenState
           Text('Compliance Trend (6 Months)',
               style: PharmaTypography.headingSmall.copyWith(fontSize: 15)),
           const SizedBox(height: 4),
-          Text('Organization-wide compliance rate over time',
+          Text(
+              'From compliance snapshots when available; otherwise current department average.',
               style: PharmaTypography.caption
                   .copyWith(color: PharmaColors.textTertiary)),
           const SizedBox(height: 20),
@@ -420,10 +629,9 @@ class _AnalyticsOverviewScreenState
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: _complianceTrend.map((item) {
-                final rate =
-                    (item['complianceRate'] as num?)?.toDouble() ?? 0.0;
+                final rate = item.complianceRatePercent;
                 final frac = maxRate > 0 ? rate / maxRate : 0.0;
-                final month = (item['month'] as String?) ?? '';
+                final month = item.monthLabel;
                 final parts = month.split('-');
                 const monthNames = [
                   '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -592,7 +800,7 @@ class _AnalyticsOverviewScreenState
                     ? PharmaColors.warningText
                     : PharmaColors.success,
           ),
-          if (_deptSnapshots.isNotEmpty) ...[
+          if (_deptSummaries.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text('Lowest Dept Compliance',
                 style: PharmaTypography.caption
@@ -606,7 +814,7 @@ class _AnalyticsOverviewScreenState
   }
 
   List<Widget> _buildLowestDepts() {
-    final sorted = List<DepartmentComplianceSnapshot>.from(_deptSnapshots)
+    final sorted = List<DepartmentComplianceSummary>.from(_deptSummaries)
       ..sort((a, b) => a.complianceRate.compareTo(b.complianceRate));
     final lowest = sorted.take(3);
     return lowest.map((d) {
@@ -630,7 +838,7 @@ class _AnalyticsOverviewScreenState
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                d.department?.name ?? 'Dept #${d.departmentId}',
+                d.departmentName ?? 'Dept #${d.departmentId}',
                 style: PharmaTypography.caption,
                 overflow: TextOverflow.ellipsis,
               ),

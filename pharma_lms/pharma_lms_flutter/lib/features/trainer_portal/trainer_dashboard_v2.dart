@@ -17,6 +17,7 @@ import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../design_system/pharma_components.dart';
 import '../../providers/user_provider.dart';
+import '../shared/communication_sheets.dart';
 
 // ─── PROVIDERS ───────────────────────────────────────────────────────────────
 
@@ -144,41 +145,22 @@ class _DashboardContent extends ConsumerWidget {
         padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
         children: [
           // ── PAGE HEADER ──
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back, ${user?.firstName ?? 'Trainer'}',
-                      style: PharmaTypography.headingLarge.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Manage your courses, assessments, and training content',
-                      style: PharmaTypography.body.copyWith(
-                        color: PharmaColors.textTertiary,
-                      ),
-                    ),
-                  ],
+              Text(
+                'Welcome back, ${user?.firstName ?? 'Trainer'}',
+                style: PharmaTypography.headingLarge.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
               ),
-              FilledButton.icon(
-                onPressed: () => context.go('/trainer/courses'),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Create New Course'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: PharmaColors.emerald600,
-                  foregroundColor: PharmaColors.cardBg,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: PharmaRadius.buttonRadius,
-                  ),
+              const SizedBox(height: 4),
+              Text(
+                'Manage your courses, assessments, and training content. Create new courses from the Courses page.',
+                style: PharmaTypography.body.copyWith(
+                  color: PharmaColors.textTertiary,
                 ),
               ),
             ],
@@ -349,9 +331,9 @@ class _DashboardContent extends ConsumerWidget {
       child: Column(
         children: [
           _QuickActionTile(
-            icon: Icons.add_circle_outline,
-            label: 'Create New Course',
-            subtitle: 'Build structured training content',
+            icon: Icons.menu_book_outlined,
+            label: 'Courses',
+            subtitle: 'View list, create new courses, and open the builder',
             color: PharmaColors.emerald600,
             onTap: () => context.go('/trainer/courses'),
           ),
@@ -473,6 +455,16 @@ class _RecentActivitySection extends ConsumerWidget {
                   'No recent activity',
                   style: PharmaTypography.body.copyWith(
                     color: PharmaColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This feed lists audit events for your user (course edits, QA submissions, etc.). '
+                  'The demo trainer account gets sample rows after running comprehensive seed. '
+                  'New trainers will see entries as they work in the course builder.',
+                  textAlign: TextAlign.center,
+                  style: PharmaTypography.caption.copyWith(
+                    color: PharmaColors.textQuaternary,
                   ),
                 ),
               ]),
@@ -770,70 +762,86 @@ class _ActionCourseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.go('/trainer/courses/${course.id}/builder'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: PharmaSpacing.lg,
-          vertical: PharmaSpacing.md,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _statusBg,
-                borderRadius: BorderRadius.circular(PharmaRadius.lg),
-              ),
-              child: Icon(Icons.menu_book_rounded, size: 18, color: _statusColor),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: PharmaSpacing.lg,
+        vertical: PharmaSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => context.go('/trainer/courses/${course.id}/builder'),
+              child: Row(
                 children: [
-                  Text(
-                    course.title,
-                    style: PharmaTypography.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _statusBg,
+                      borderRadius: BorderRadius.circular(PharmaRadius.lg),
+                    ),
+                    child: Icon(Icons.menu_book_rounded, size: 18, color: _statusColor),
                   ),
-                  const SizedBox(height: 4),
-                  PharmaWorkflowStepper(
-                    currentStatus: course.status,
-                    steps: const ['draft', 'pending_approval', 'effective'],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _actionLabel,
-                    style: PharmaTypography.caption.copyWith(
-                      color: _statusColor,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          course.title,
+                          style: PharmaTypography.bodyMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        PharmaWorkflowStepper(
+                          currentStatus: course.status,
+                          steps: const ['draft', 'pending_approval', 'effective'],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _actionLabel,
+                          style: PharmaTypography.caption.copyWith(
+                            color: _statusColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _statusBg,
+                      borderRadius: PharmaRadius.pillRadius,
+                    ),
+                    child: Text(
+                      _statusLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: _statusColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right, size: 18, color: PharmaColors.textQuaternary),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _statusBg,
-                borderRadius: PharmaRadius.pillRadius,
-              ),
-              child: Text(
-                _statusLabel,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: _statusColor,
-                  letterSpacing: 0.5,
-                ),
+          ),
+          if (course.id != null)
+            IconButton(
+              tooltip: 'QA thread',
+              icon: const Icon(Icons.forum_outlined),
+              onPressed: () => openCourseQaThreadForCourse(
+                context,
+                courseId: course.id!,
+                courseTitle: course.title,
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right, size: 18, color: PharmaColors.textQuaternary),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -515,7 +515,6 @@ class AdminAttemptReviewScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _AssessmentTemplate extends StatelessWidget {
@@ -529,7 +528,7 @@ class _AssessmentTemplate extends StatelessWidget {
         children: const [
           AdminSectionCard(
             title: 'Coming Soon',
-            child: AdminPlaceholderTable(
+            child: AdminDataTable(
               columns: ['Feature', 'Status', 'ETA'],
               rows: [
                 ['Full implementation', 'In Progress', 'Q2 2026'],

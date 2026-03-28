@@ -1,4 +1,4 @@
-// VYUH LMS - Employee Portal Design Tokens
+// Vyuh lms — employee portal design tokens
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // FLAW AUDIT APPLIED - All 24 Issues Addressed

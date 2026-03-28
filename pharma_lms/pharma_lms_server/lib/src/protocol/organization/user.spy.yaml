@@ -44,3 +44,7 @@ fields:
   compliancePercent: double?, default=0.0
   ### List of roles assigned to the user.
   roles: List<String>?
+  ### Site-specific JSON attributes (Vault-style extension without codegen churn).
+  customMetadataJson: String?
+  ### Opaque WebAuthn / biometric credential id for step-up auth (roadmap).
+  biometricCredentialId: String?

@@ -14,3 +14,11 @@ fields:
   correct: bool
   ### Points earned.
   points: int?
+  ### Whether this result requires manual instructor grading (open_ended, unscored short_answer).
+  needsManualGrading: bool, default=false
+  ### Instructor-assigned score override (null until graded).
+  manualScore: int?
+  ### Instructor who graded this result.
+  gradedById: int?
+  ### Timestamp of instructor grading.
+  gradedAt: DateTime?

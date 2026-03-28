@@ -1,0 +1,16 @@
+### Certificate template with HTML layout and merge fields.
+class: CertificateTemplate
+
+table: certificate_template
+
+fields:
+  ### Organization this template belongs to.
+  organization: Organization?, relation
+  ### Template name.
+  name: String
+  ### HTML template with merge fields like {{learnerName}}, {{courseName}}, etc.
+  htmlTemplate: String
+  ### Whether this is the default template for the organization.
+  isDefault: bool, default=false
+  ### Created timestamp.
+  createdAt: DateTime, default=now

@@ -661,6 +661,112 @@ Pharma LMS Admin
     }
   }
 
+  /// List all TrainingMatrix entries for a site (or org-wide if siteId is null).
+  Future<List<TrainingMatrix>> listTrainingMatrixEntries(
+    Session session, {
+    int? siteId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
+    if (siteId != null) {
+      return await TrainingMatrix.db.find(
+        session,
+        where: (t) => t.siteId.equals(siteId) | t.siteId.equals(null),
+        include: TrainingMatrix.include(
+          jobRole: JobRole.include(),
+          course: Course.include(),
+          createdBy: PharmaUser.include(),
+          approvedBy: PharmaUser.include(),
+        ),
+      );
+    }
+    return await TrainingMatrix.db.find(
+      session,
+      include: TrainingMatrix.include(
+        jobRole: JobRole.include(),
+        course: Course.include(),
+        createdBy: PharmaUser.include(),
+        approvedBy: PharmaUser.include(),
+      ),
+    );
+  }
+
+  /// Upsert a TrainingMatrix entry (create or update).
+  Future<TrainingMatrix> upsertTrainingMatrixEntry(
+    Session session, {
+    required int jobRoleId,
+    required int courseId,
+    required bool isMandatory,
+    int? dueDaysFromHire,
+    int? retrainingIntervalDays,
+    int? siteId,
+    int? createdById,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
+    final existing = await TrainingMatrix.db.findFirstRow(
+      session,
+      where: (t) => t.jobRoleId.equals(jobRoleId) & t.courseId.equals(courseId),
+    );
+    if (existing != null) {
+      final updated = existing.copyWith(
+        isMandatory: isMandatory,
+        dueDaysFromHire: dueDaysFromHire ?? existing.dueDaysFromHire,
+        retrainingIntervalDays: retrainingIntervalDays,
+        effectiveDate: DateTime.now(),
+      );
+      final result = await TrainingMatrix.db.updateRow(session, updated);
+      await AuditService.log(
+        session,
+        entityType: 'training_matrix',
+        entityId: result.id.toString(),
+        action: AuditEventType.configChanged,
+        newValueJson: '{"jobRoleId":$jobRoleId,"courseId":$courseId,"isMandatory":$isMandatory}',
+      );
+      return result;
+    }
+    final entry = TrainingMatrix(
+      jobRoleId: jobRoleId,
+      courseId: courseId,
+      isMandatory: isMandatory,
+      dueDaysFromHire: dueDaysFromHire ?? 60,
+      retrainingIntervalDays: retrainingIntervalDays,
+      siteId: siteId,
+      createdById: createdById,
+      effectiveDate: DateTime.now(),
+    );
+    final result = await TrainingMatrix.db.insertRow(session, entry);
+    await AuditService.log(
+      session,
+      entityType: 'training_matrix',
+      entityId: result.id.toString(),
+      action: AuditEventType.configChanged,
+      newValueJson: '{"jobRoleId":$jobRoleId,"courseId":$courseId,"isMandatory":$isMandatory,"new":true}',
+    );
+    return result;
+  }
+
+  /// Delete a TrainingMatrix entry.
+  Future<bool> deleteTrainingMatrixEntry(
+    Session session, {
+    required int jobRoleId,
+    required int courseId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
+    final deleted = await TrainingMatrix.db.deleteWhere(
+      session,
+      where: (t) => t.jobRoleId.equals(jobRoleId) & t.courseId.equals(courseId),
+    );
+    if (deleted.isNotEmpty) {
+      await AuditService.log(
+        session,
+        entityType: 'training_matrix',
+        entityId: '${deleted.first.id}',
+        action: AuditEventType.configChanged,
+        newValueJson: '{"jobRoleId":$jobRoleId,"courseId":$courseId,"deleted":true}',
+      );
+    }
+    return deleted.isNotEmpty;
+  }
+
   /// Assign role-based training (curriculum from JobRole) to a user.
   Future<List<TrainingAssignment>> assignRoleBasedTraining(
     Session session, {

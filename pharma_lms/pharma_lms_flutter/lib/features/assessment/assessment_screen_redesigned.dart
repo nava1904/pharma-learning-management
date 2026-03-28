@@ -188,6 +188,7 @@ class _AssessmentScreenRedesignedState extends ConsumerState<AssessmentScreenRed
         userId: userId,
         assessmentId: assessment.id!,
         enrollmentId: widget.enrollmentId,
+        skipInterAttemptCooldown: false,
       );
       _currentAttempt = attempt;
 

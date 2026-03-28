@@ -45,10 +45,6 @@ import '../providers/user_provider.dart';
 
 // ─── LAYOUT CONSTANTS ────────────────────────────────────────────────────────
 
-const double _kSidebarWidth = 256.0;
-const double _kHeaderHeight = 64.0;
-const double _kBreakpointDesktop = 1024.0;
-const double _kBreakpointTablet = 768.0;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRAINER SHELL — MAIN WIDGET
@@ -140,8 +136,8 @@ class _TrainerShellV2State extends ConsumerState<TrainerShellV2> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final isDesktop = width >= _kBreakpointDesktop;
-    final isMobile = width < _kBreakpointTablet;
+    final isDesktop = width >= PortalLayout.breakpointDesktop;
+    final isMobile = width < PortalLayout.breakpointTablet;
 
     return Listener(
       onPointerDown: (_) => _onUserActivity(),
@@ -291,7 +287,7 @@ class _TrainerSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: _kSidebarWidth,
+      width: PortalLayout.sidebarWidth,
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         border: Border(
@@ -311,7 +307,7 @@ class _TrainerSidebar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                VyuhLogo(height: 32, width: 32, color: Colors.white),
+                VyuhLogo(height: 32, width: 32, color: PharmaColors.emerald600),
                 const SizedBox(width: PharmaSpacing.md),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +316,7 @@ class _TrainerSidebar extends StatelessWidget {
                       PharmaBrand.name,
                       style: PharmaTypography.headingMedium.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                        fontSize: 18,
                       ),
                     ),
                     Text(
@@ -429,17 +425,24 @@ class _TrainerSidebar extends StatelessWidget {
                   // ── MANAGEMENT ──
                   _SidebarSection(label: 'MANAGEMENT'),
                   _TrainerNavItem(
-                    icon: Icons.groups_outlined,
-                    activeIcon: Icons.groups_rounded,
-                    label: 'My Batches',
-                    route: '/trainer/batches',
-                    currentPath: currentPath,
-                  ),
-                  _TrainerNavItem(
                     icon: Icons.assignment_ind_outlined,
                     activeIcon: Icons.assignment_ind_rounded,
                     label: 'Assignments',
                     route: '/trainer/assignments',
+                    currentPath: currentPath,
+                  ),
+                  _TrainerNavItem(
+                    icon: Icons.auto_awesome_motion_outlined,
+                    activeIcon: Icons.auto_awesome_motion_rounded,
+                    label: 'Assignment campaigns',
+                    route: '/trainer/assignment-campaigns/new',
+                    currentPath: currentPath,
+                  ),
+                  _TrainerNavItem(
+                    icon: Icons.groups_outlined,
+                    activeIcon: Icons.groups_rounded,
+                    label: 'My Batches',
+                    route: '/trainer/batches',
                     currentPath: currentPath,
                   ),
                   _TrainerNavItem(
@@ -466,7 +469,7 @@ class _TrainerSidebar extends StatelessWidget {
                   _TrainerNavItem(
                     icon: Icons.rate_review_outlined,
                     activeIcon: Icons.rate_review_rounded,
-                    label: 'QA Review',
+                    label: 'Course QA status',
                     route: '/trainer/qa-dashboard',
                     currentPath: currentPath,
                   ),
@@ -655,7 +658,7 @@ class _TrainerHeaderState extends ConsumerState<_TrainerHeader> {
     final userAsync = ref.watch(currentUserProvider);
 
     return Container(
-      height: _kHeaderHeight,
+      height: PortalLayout.headerHeight,
       padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.cardPadding),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
@@ -678,44 +681,36 @@ class _TrainerHeaderState extends ConsumerState<_TrainerHeader> {
 
           // SEARCH BAR
           Expanded(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: PharmaColors.pageBg,
-                  borderRadius: PharmaRadius.inputRadius,
-                  border: Border.all(color: PharmaColors.borderLight),
+            child: Container(
+              height: 40,
+              constraints: const BoxConstraints(maxWidth: 520),
+              decoration: BoxDecoration(
+                color: PharmaColors.pageBg,
+                borderRadius: PharmaRadius.inputRadius,
+                border: Border.all(color: PharmaColors.borderLight),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onSubmitted: _onSearchSubmitted,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search courses, SOPs...',
+                  hintStyle: PharmaTypography.body.copyWith(
+                    color: PharmaColors.textQuaternary,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: Icon(Icons.search, size: 18, color: PharmaColors.textQuaternary),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 40),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
                 ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: PharmaSpacing.md),
-                    Icon(Icons.search, size: 18, color: PharmaColors.textQuaternary),
-                    const SizedBox(width: PharmaSpacing.sm),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onSubmitted: _onSearchSubmitted,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: 'Search courses, questions, SOPs...',
-                          hintStyle: PharmaTypography.body.copyWith(
-                            color: PharmaColors.textQuaternary,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        style: PharmaTypography.body,
-                      ),
-                    ),
-                  ],
-                ),
+                style: PharmaTypography.body.copyWith(fontSize: 13),
               ),
             ),
           ),
 
-          const Spacer(),
+          const SizedBox(width: PharmaSpacing.lg),
 
           // Workflow state badge
           Container(

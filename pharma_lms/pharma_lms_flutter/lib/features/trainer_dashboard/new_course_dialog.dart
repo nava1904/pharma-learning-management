@@ -97,7 +97,7 @@ class _NewCourseDialogState extends State<NewCourseDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 500,
-        constraints: const BoxConstraints(maxHeight: 600),
+        constraints: const BoxConstraints(maxHeight: 520),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

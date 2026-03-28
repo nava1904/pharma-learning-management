@@ -14,6 +14,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import '../../../design_system/pharma_design_system.dart';
 import '../../../providers/employee_batch_providers.dart';
+import '../../shared/communication_sheets.dart';
 
 class EmployeeBatchDetailScreen extends ConsumerWidget {
   const EmployeeBatchDetailScreen({super.key, required this.batchId});
@@ -54,9 +55,9 @@ class EmployeeBatchDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: PharmaSpacing.lg),
           OutlinedButton.icon(
-            onPressed: () => context.go('/employee/sessions'),
+            onPressed: () => context.go('/employee/my-batches'),
             icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text('Back to Sessions'),
+            label: const Text('Back to My Batches'),
           ),
         ],
       ),
@@ -114,9 +115,9 @@ class _SessionDetailContent extends StatelessWidget {
         Row(
           children: [
             IconButton(
-              onPressed: () => context.go('/employee/sessions'),
+              onPressed: () => context.go('/employee/my-batches'),
               icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: 'Back to Sessions',
+              tooltip: 'Back to My Batches',
             ),
             const SizedBox(width: PharmaSpacing.sm),
             Expanded(
@@ -185,6 +186,20 @@ class _SessionDetailContent extends StatelessWidget {
 
         // ── WHAT TO BRING / PREPARE ──
         _buildPreparationCard(),
+
+        if (batch.id != null) ...[
+          const SizedBox(height: PharmaSpacing.sectionGap),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: PharmaColors.cardBg,
+              border: Border.all(color: PharmaColors.borderLight),
+              borderRadius: BorderRadius.circular(PharmaRadius.md),
+            ),
+            child: EmployeeBatchFeedSection(batchId: batch.id!),
+          ),
+        ],
       ],
     );
   }

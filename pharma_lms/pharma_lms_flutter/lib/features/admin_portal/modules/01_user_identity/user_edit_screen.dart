@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
-import 'package:pharma_lms_flutter/providers/admin_providers.dart';
+import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 
 /// User Edit Screen
 /// 
@@ -44,36 +44,14 @@ class _UserEditScreenState extends ConsumerState<UserEditScreen> {
   late final TextEditingController employeeIdController;
   late final TextEditingController phoneController;
   
-  String? selectedDepartment;
-  String? selectedOrganization;
+  int? selectedOrganizationId;
+  int? selectedDepartmentId;
+  int? selectedSiteId;
   bool isLoading = true;
   String? errorMessage;
 
   // Form validation
   final _formKey = GlobalKey<FormState>();
-
-  // Mock data for dropdowns
-  final departments = [
-    'Sales',
-    'Marketing',
-    'Operations',
-    'HR',
-    'Finance',
-    'IT',
-    'Training',
-    'R&D',
-    'Quality Assurance',
-    'Customer Support',
-  ];
-
-  final organizations = [
-    'HQ',
-    'Training Center',
-    'Regional Office - North',
-    'Regional Office - South',
-    'Regional Office - East',
-    'Regional Office - West',
-  ];
 
   @override
   void initState() {
@@ -102,24 +80,33 @@ class _UserEditScreenState extends ConsumerState<UserEditScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      // TODO: Fetch user data from backend
-      // final user = await ref.read(adminUserDetailProvider(widget.userId).future);
-      
-      // TEMPORARY: Mock user data
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      if (mounted) {
+      final user = await ref.read(adminUserDetailProvider(widget.userId).future);
+      if (!mounted) return;
+      if (user == null) {
         setState(() {
-          firstNameController.text = 'John';
-          lastNameController.text = 'Trainer';
-          emailController.text = 'john.trainer@pharmatest.com';
-          employeeIdController.text = 'EMP002';
-          phoneController.text = '+1 (555) 234-5678';
-          selectedDepartment = 'Training';
-          selectedOrganization = 'Training Center';
+          errorMessage = 'User not found';
           isLoading = false;
         });
+        return;
       }
+      final opts = await ref.read(
+        adminDepartmentOptionsForOrgProvider(user.organizationId).future,
+      );
+      AdminDepartmentOption? match;
+      for (final d in opts) {
+        if (d.departmentId == user.departmentId) match = d;
+      }
+      setState(() {
+        firstNameController.text = user.firstName;
+        lastNameController.text = user.lastName;
+        emailController.text = user.email;
+        employeeIdController.text = user.employeeId ?? '';
+        phoneController.clear();
+        selectedOrganizationId = user.organizationId;
+        selectedDepartmentId = user.departmentId;
+        selectedSiteId = match?.siteId;
+        isLoading = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -138,7 +125,7 @@ class _UserEditScreenState extends ConsumerState<UserEditScreen> {
       return;
     }
 
-    if (selectedDepartment == null || selectedOrganization == null) {
+    if (selectedOrganizationId == null || selectedDepartmentId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields')),
       );
@@ -148,22 +135,19 @@ class _UserEditScreenState extends ConsumerState<UserEditScreen> {
     setState(() => isLoading = true);
 
     try {
-      // TODO: Call backend endpoint
-      // final result = await ref.read(updateUserProvider.notifier).updateUser(
-      //   widget.userId,
-      //   firstName: firstNameController.text,
-      //   lastName: lastNameController.text,
-      //   phone: phoneController.text,
-      //   department: selectedDepartment!,
-      // );
+      final updated = await ref.read(adminUpdateUserProvider({
+        'userId': widget.userId,
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'organizationId': selectedOrganizationId,
+        'departmentId': selectedDepartmentId,
+      }).future);
 
-      // TEMPORARY: Simulate success
-      await Future.delayed(const Duration(seconds: 1));
+      if (updated == null) throw Exception('Update rejected');
 
       if (mounted) {
-        // Invalidate providers to refresh data
         ref.invalidate(adminUserDetailProvider(widget.userId));
-        ref.invalidate(adminUsersListProvider);
+        ref.invalidate(adminUsersProvider);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -220,6 +204,11 @@ class _UserEditScreenState extends ConsumerState<UserEditScreen> {
         ),
       );
     }
+
+    final orgsAsync = ref.watch(adminOrganizationsListProvider);
+    final deptAsync = selectedOrganizationId != null
+        ? ref.watch(adminDepartmentOptionsForOrgProvider(selectedOrganizationId!))
+        : AsyncValue<List<AdminDepartmentOption>>.data(const []);
 
     return Scaffold(
       appBar: AppBar(
@@ -359,49 +348,76 @@ class _UserEditScreenState extends ConsumerState<UserEditScreen> {
               _buildSectionTitle('Organization & Department'),
               SizedBox(height: PharmaSpacing.md),
 
-              // Organization Dropdown (Read-only)
-              InputDecorator(
-                decoration: InputDecoration(
-                  labelText: 'Organization (Read-only)',
-                  prefixIcon: const Icon(Icons.business),
-                  filled: true,
-                  fillColor: PharmaColors.gray100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+              orgsAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Organizations: $e'),
+                data: (orgs) => DropdownButtonFormField<int>(
+                  initialValue: selectedOrganizationId,
+                  decoration: InputDecoration(
+                    labelText: 'Organization *',
+                    prefixIcon: const Icon(Icons.business),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+                    ),
                   ),
-                ),
-                child: Text(
-                  selectedOrganization ?? 'N/A',
-                  style: PharmaTypography.bodyMedium,
+                  items: orgs
+                      .where((o) => o.id != null)
+                      .map(
+                        (o) => DropdownMenuItem(
+                          value: o.id,
+                          child: Text(o.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedOrganizationId = value;
+                      selectedDepartmentId = null;
+                      selectedSiteId = null;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Organization is required' : null,
                 ),
               ),
               SizedBox(height: PharmaSpacing.md),
 
-              // Department Dropdown
-              DropdownButtonFormField<String>(
-                initialValue: selectedDepartment,
-                decoration: InputDecoration(
-                  labelText: 'Department *',
-                  prefixIcon: const Icon(Icons.domain),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PharmaSpacing.sm),
-                  ),
+              deptAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: LinearProgressIndicator(),
                 ),
-                items: departments
-                    .map((dept) => DropdownMenuItem(
-                          value: dept,
-                          child: Text(dept),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => selectedDepartment = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Department is required';
-                  }
-                  return null;
-                },
+                error: (e, _) => Text('Departments: $e'),
+                data: (opts) => DropdownButtonFormField<int>(
+                  initialValue: selectedDepartmentId,
+                  decoration: InputDecoration(
+                    labelText: 'Department *',
+                    prefixIcon: const Icon(Icons.domain),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+                    ),
+                  ),
+                  items: opts
+                      .map(
+                        (d) => DropdownMenuItem(
+                          value: d.departmentId,
+                          child: Text(d.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    AdminDepartmentOption? match;
+                    if (value != null) {
+                      for (final d in opts) {
+                        if (d.departmentId == value) match = d;
+                      }
+                    }
+                    setState(() {
+                      selectedDepartmentId = value;
+                      selectedSiteId = match?.siteId;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Department is required' : null,
+                ),
               ),
               SizedBox(height: PharmaSpacing.lg),
 

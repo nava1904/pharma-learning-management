@@ -591,7 +591,7 @@ class _ReportBuilderTemplate extends StatelessWidget {
         children: [
           AdminSectionCard(
             title: 'Report Templates',
-            child: AdminPlaceholderTable(
+            child: AdminDataTable(
               columns: const ['Template', 'Type', 'Schedule', 'Last Run'],
               rows: const [
                 ['Monthly Compliance Report', 'Compliance', 'Monthly', '2024-01-01'],

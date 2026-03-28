@@ -39,6 +39,7 @@ class MaterialEndpoint extends Endpoint {
     required String title,
     required String materialType,
     required int organizationId,
+    String? contentUrl,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'material', action: 'write');
     return await Material.db.insertRow(
@@ -47,8 +48,47 @@ class MaterialEndpoint extends Endpoint {
         title: title,
         materialType: materialType,
         organizationId: organizationId,
+        contentUrl: contentUrl,
       ),
     );
+  }
+
+  /// Get the viewable URL for a material, handling both file-backed and URL-based types.
+  Future<String?> getMaterialContentUrl(
+    Session session,
+    int materialId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return null;
+    await RbacHelper.requirePermission(session, resource: 'material', action: 'read');
+
+    final material = await Material.db.findById(session, materialId);
+    if (material == null) return null;
+
+    final embedTypes = ['google_doc', 'google_sheet', 'google_slide'];
+    if (embedTypes.contains(material.materialType) && material.contentUrl != null) {
+      return _toEmbedUrl(material.materialType, material.contentUrl!);
+    }
+
+    if (material.storageKey != null) {
+      return await getMaterialViewUrl(session, material.storageKey!);
+    }
+    return null;
+  }
+
+  String _toEmbedUrl(String materialType, String rawUrl) {
+    switch (materialType) {
+      case 'google_doc':
+        if (rawUrl.contains('/pub')) return rawUrl;
+        return rawUrl.replaceFirst('/edit', '/pub?embedded=true');
+      case 'google_sheet':
+        if (rawUrl.contains('/pubhtml')) return rawUrl;
+        return rawUrl.replaceFirst('/edit', '/pubhtml?widget=true');
+      case 'google_slide':
+        if (rawUrl.contains('/embed')) return rawUrl;
+        return rawUrl.replaceFirst('/edit', '/embed?start=false&loop=false&delayms=3000');
+      default:
+        return rawUrl;
+    }
   }
 
   /// Get upload description for direct client upload. Path like materials/{materialId}/v1.pdf
@@ -445,8 +485,10 @@ class MaterialEndpoint extends Endpoint {
     }
 
     final material = await Material.db.findById(session, materialId);
-    final durationMinutes = lesson.durationMinutes ?? 1;
-    final requiredSeconds = durationMinutes * 60;
+    // Trainer-defined minimum for compliance; fall back to duration estimate.
+    final requiredMinutes =
+        lesson.minEngagementMinutes ?? lesson.durationMinutes ?? 1;
+    final requiredSeconds = requiredMinutes * 60;
 
     var existing = await MaterialProgress.db.findFirstRow(
       session,

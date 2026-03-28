@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' show AuditTrail;
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
+import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
+import 'package:pharma_lms_flutter/core/file_download.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 /// User Audit Trail Screen
 /// 
@@ -42,66 +48,31 @@ class _UserAuditTrailScreenState extends ConsumerState<UserAuditTrailScreen> {
   DateTime? startDate;
   DateTime? endDate;
   String searchQuery = '';
+  bool _exporting = false;
 
-  final actionTypes = [
-    'LOGIN',
-    'LOGOUT',
-    'CREATE',
-    'UPDATE',
-    'DELETE',
-    'ROLE_ASSIGN',
-    'ROLE_REVOKE',
-    'PASSWORD_RESET',
-    'DEACTIVATE',
-    'ACTIVATE',
-  ];
-
-  // Mock audit data
-  final auditTrail = [
-    {
-      'id': 100,
-      'timestamp': '2024-03-20 14:22:00',
-      'action': 'LOGIN',
-      'performed_by': 'System',
-      'ip_address': '192.168.1.100',
-      'device': 'Chrome on Mac',
-      'details': 'Successful login',
-      'status': 'SUCCESS',
-    },
-    {
-      'id': 99,
-      'timestamp': '2024-03-15 10:15:00',
-      'action': 'UPDATE',
-      'performed_by': 'Admin User',
-      'ip_address': '192.168.1.50',
-      'device': 'Firefox on Windows',
-      'details': 'Updated department from IT to Training',
-      'status': 'SUCCESS',
-    },
-    {
-      'id': 98,
-      'timestamp': '2024-03-10 09:30:00',
-      'action': 'ROLE_ASSIGN',
-      'performed_by': 'Admin User',
-      'ip_address': '192.168.1.50',
-      'device': 'Firefox on Windows',
-      'details': 'Assigned TRAINER role',
-      'status': 'SUCCESS',
-    },
-    {
-      'id': 97,
-      'timestamp': '2024-01-15 10:30:00',
-      'action': 'CREATE',
-      'performed_by': 'Admin User',
-      'ip_address': '192.168.1.50',
-      'device': 'Safari on Mac',
-      'details': 'User account created',
-      'status': 'SUCCESS',
-    },
+  // Helper list for the dropdown; actual events are always loaded from backend.
+  final List<String> _actionTypeOptions = const [
+    'USER_CREATE',
+    'USER_UPDATE',
+    'USER_DEACTIVATE',
+    'ACCESS_RECERTIFIED',
+    'ACCESS_REVOKED',
+    'USERS_LIST',
   ];
 
   @override
   Widget build(BuildContext context) {
+    final auditsAsync = ref.watch(
+      adminAuditTrailProvider(
+        AuditTrailParams(
+          userId: widget.userId,
+          from: startDate,
+          to: endDate,
+          limit: 500,
+        ),
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Audit Trail'),
@@ -168,7 +139,7 @@ class _UserAuditTrailScreenState extends ConsumerState<UserAuditTrailScreen> {
                   value: null,
                   child: Text('All Actions'),
                 ),
-                ...actionTypes
+                ..._actionTypeOptions
                     .map((type) => DropdownMenuItem(
                           value: type,
                           child: Text(type),
@@ -181,49 +152,172 @@ class _UserAuditTrailScreenState extends ConsumerState<UserAuditTrailScreen> {
             ),
             SizedBox(height: PharmaSpacing.md),
 
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Search (reason, entity, json)',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(PharmaSpacing.sm),
+                ),
+              ),
+              onChanged: (v) => setState(() => searchQuery = v),
+            ),
+            SizedBox(height: PharmaSpacing.md),
+
+            Wrap(
+              spacing: PharmaSpacing.md,
+              runSpacing: PharmaSpacing.md,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime.now(),
+                      initialDate: startDate ?? DateTime.now().subtract(const Duration(days: 30)),
+                    );
+                    if (picked == null) return;
+                    setState(() => startDate = DateTime(picked.year, picked.month, picked.day));
+                  },
+                  icon: const Icon(Icons.date_range),
+                  label: Text(startDate == null ? 'From date' : 'From: ${startDate!.toIso8601String().split('T').first}'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime.now().add(const Duration(days: 1)),
+                      initialDate: endDate ?? DateTime.now(),
+                    );
+                    if (picked == null) return;
+                    setState(() => endDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59));
+                  },
+                  icon: const Icon(Icons.date_range),
+                  label: Text(endDate == null ? 'To date' : 'To: ${endDate!.toIso8601String().split('T').first}'),
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    selectedActionType = null;
+                    startDate = null;
+                    endDate = null;
+                    searchQuery = '';
+                  }),
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+            SizedBox(height: PharmaSpacing.md),
+
             // Export Button
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.download),
-                label: const Text('Export to CSV'),
+                label: Text(_exporting ? 'Exporting...' : 'Export to CSV'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PharmaColors.primary,
                   foregroundColor: Colors.white,
                 ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Audit trail exported successfully'),
-                    ),
-                  );
-                },
+                onPressed: _exporting
+                    ? null
+                    : () async {
+                        setState(() => _exporting = true);
+                        try {
+                          final csv = await client.audit.exportAuditCsv(
+                            userId: widget.userId,
+                            entityType: null,
+                            from: startDate,
+                            to: endDate,
+                            limit: 5000,
+                          );
+                          final bytes = Uint8List.fromList(utf8.encode(csv));
+                          await saveBytesToFile(bytes, 'user_${widget.userId}_audit.csv');
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Audit CSV saved')),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Export failed: $e'),
+                              backgroundColor: PharmaColors.danger,
+                            ),
+                          );
+                        } finally {
+                          if (mounted) setState(() => _exporting = false);
+                        }
+                      },
               ),
             ),
             SizedBox(height: PharmaSpacing.lg),
 
             // Audit Trail List
-            Text(
-              '${auditTrail.length} Events',
-              style: PharmaTypography.headingMedium.copyWith(
-                color: PharmaColors.primary,
-              ),
-            ),
-            SizedBox(height: PharmaSpacing.md),
+            auditsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Error loading audit trail: $e'),
+              data: (events) {
+                final filtered = _filterEvents(events);
+                final actionTypes = filtered.map((e) => e.action).toSet().toList()..sort();
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // Keep dropdown options fresh without throwing setState during build.
+                });
 
-            // Timeline
-            ...auditTrail.map((event) => _buildAuditEvent(event)),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${filtered.length} Events',
+                      style: PharmaTypography.headingMedium.copyWith(
+                        color: PharmaColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: PharmaSpacing.md),
+                    // Timeline
+                    ...filtered.map((event) => _buildAuditEvent(event)),
+                    if (filtered.isEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(top: PharmaSpacing.md),
+                        child: Text(
+                          'No audit events found for the selected filters.',
+                          style: PharmaTypography.caption.copyWith(
+                            color: PharmaColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAuditEvent(Map<String, dynamic> event) {
-    final actionColor = _getActionColor(event['action']);
-    final statusColor = event['status'] == 'SUCCESS'
-        ? PharmaColors.success
-        : PharmaColors.danger;
+  List<AuditTrail> _filterEvents(List<AuditTrail> events) {
+    return events.where((e) {
+      if (selectedActionType != null && e.action != selectedActionType) return false;
+      if (searchQuery.trim().isNotEmpty) {
+        final q = searchQuery.trim().toLowerCase();
+        final hay = <String?>[
+          e.entityType,
+          e.entityId,
+          e.action,
+          e.reason,
+          e.oldValueJson,
+          e.newValueJson,
+          e.ipAddress,
+        ].whereType<String>().join(' ').toLowerCase();
+        if (!hay.contains(q)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  Widget _buildAuditEvent(AuditTrail event) {
+    final actionColor = _getActionColor(event.action);
 
     return Card(
       margin: EdgeInsets.only(bottom: PharmaSpacing.md),
@@ -248,7 +342,7 @@ class _UserAuditTrailScreenState extends ConsumerState<UserAuditTrailScreen> {
                 ),
                 child: Center(
                   child: Icon(
-                    _getActionIcon(event['action']),
+                    _getActionIcon(event.action),
                     color: actionColor,
                     size: 20,
                   ),
@@ -263,34 +357,16 @@ class _UserAuditTrailScreenState extends ConsumerState<UserAuditTrailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          event['action'],
+                          event.action,
                           style: PharmaTypography.bodyMedium.copyWith(
                             fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: PharmaSpacing.sm,
-                            vertical: PharmaSpacing.xs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
-                            borderRadius:
-                                BorderRadius.circular(PharmaSpacing.xs),
-                          ),
-                          child: Text(
-                            event['status'],
-                            style: PharmaTypography.caption.copyWith(
-                              color: statusColor,
-                              fontWeight: FontWeight.w600,
-                            ),
                           ),
                         ),
                       ],
                     ),
                     SizedBox(height: PharmaSpacing.xs),
                     Text(
-                      event['timestamp'],
+                      event.timestamp.toLocal().toString(),
                       style: PharmaTypography.caption.copyWith(
                         color: PharmaColors.textTertiary,
                       ),
@@ -307,11 +383,14 @@ class _UserAuditTrailScreenState extends ConsumerState<UserAuditTrailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailRow('Details', event['details']),
-                  _buildDetailRow('Performed By', event['performed_by']),
-                  _buildDetailRow('IP Address', event['ip_address']),
-                  _buildDetailRow('Device', event['device']),
-                  _buildDetailRow('Event ID', '#${event['id']}'),
+                  _buildDetailRow('Entity', '${event.entityType}:${event.entityId}'),
+                  _buildDetailRow('Reason', event.reason ?? '-'),
+                  _buildDetailRow('IP Address', event.ipAddress ?? '-'),
+                  if ((event.oldValueJson ?? '').isNotEmpty)
+                    _buildDetailRow('Old Value', event.oldValueJson!),
+                  if ((event.newValueJson ?? '').isNotEmpty)
+                    _buildDetailRow('New Value', event.newValueJson!),
+                  if (event.id != null) _buildDetailRow('Event ID', '#${event.id}'),
                 ],
               ),
             ),

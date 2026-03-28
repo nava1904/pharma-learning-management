@@ -26,7 +26,11 @@ abstract class AssessmentResult implements _i1.SerializableModel {
     required this.answer,
     required this.correct,
     this.points,
-  });
+    bool? needsManualGrading,
+    this.manualScore,
+    this.gradedById,
+    this.gradedAt,
+  }) : needsManualGrading = needsManualGrading ?? false;
 
   factory AssessmentResult({
     int? id,
@@ -37,6 +41,10 @@ abstract class AssessmentResult implements _i1.SerializableModel {
     required String answer,
     required bool correct,
     int? points,
+    bool? needsManualGrading,
+    int? manualScore,
+    int? gradedById,
+    DateTime? gradedAt,
   }) = _AssessmentResultImpl;
 
   factory AssessmentResult.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -57,6 +65,16 @@ abstract class AssessmentResult implements _i1.SerializableModel {
       answer: jsonSerialization['answer'] as String,
       correct: _i1.BoolJsonExtension.fromJson(jsonSerialization['correct']),
       points: jsonSerialization['points'] as int?,
+      needsManualGrading: jsonSerialization['needsManualGrading'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['needsManualGrading'],
+            ),
+      manualScore: jsonSerialization['manualScore'] as int?,
+      gradedById: jsonSerialization['gradedById'] as int?,
+      gradedAt: jsonSerialization['gradedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['gradedAt']),
     );
   }
 
@@ -84,6 +102,18 @@ abstract class AssessmentResult implements _i1.SerializableModel {
   /// Points earned.
   int? points;
 
+  /// Whether this result requires manual instructor grading (open_ended, unscored short_answer).
+  bool needsManualGrading;
+
+  /// Instructor-assigned score override (null until graded).
+  int? manualScore;
+
+  /// Instructor who graded this result.
+  int? gradedById;
+
+  /// Timestamp of instructor grading.
+  DateTime? gradedAt;
+
   /// Returns a shallow copy of this [AssessmentResult]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -96,6 +126,10 @@ abstract class AssessmentResult implements _i1.SerializableModel {
     String? answer,
     bool? correct,
     int? points,
+    bool? needsManualGrading,
+    int? manualScore,
+    int? gradedById,
+    DateTime? gradedAt,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -109,6 +143,10 @@ abstract class AssessmentResult implements _i1.SerializableModel {
       'answer': answer,
       'correct': correct,
       if (points != null) 'points': points,
+      'needsManualGrading': needsManualGrading,
+      if (manualScore != null) 'manualScore': manualScore,
+      if (gradedById != null) 'gradedById': gradedById,
+      if (gradedAt != null) 'gradedAt': gradedAt?.toJson(),
     };
   }
 
@@ -130,6 +168,10 @@ class _AssessmentResultImpl extends AssessmentResult {
     required String answer,
     required bool correct,
     int? points,
+    bool? needsManualGrading,
+    int? manualScore,
+    int? gradedById,
+    DateTime? gradedAt,
   }) : super._(
          id: id,
          attemptId: attemptId,
@@ -139,6 +181,10 @@ class _AssessmentResultImpl extends AssessmentResult {
          answer: answer,
          correct: correct,
          points: points,
+         needsManualGrading: needsManualGrading,
+         manualScore: manualScore,
+         gradedById: gradedById,
+         gradedAt: gradedAt,
        );
 
   /// Returns a shallow copy of this [AssessmentResult]
@@ -154,6 +200,10 @@ class _AssessmentResultImpl extends AssessmentResult {
     String? answer,
     bool? correct,
     Object? points = _Undefined,
+    bool? needsManualGrading,
+    Object? manualScore = _Undefined,
+    Object? gradedById = _Undefined,
+    Object? gradedAt = _Undefined,
   }) {
     return AssessmentResult(
       id: id is int? ? id : this.id,
@@ -168,6 +218,10 @@ class _AssessmentResultImpl extends AssessmentResult {
       answer: answer ?? this.answer,
       correct: correct ?? this.correct,
       points: points is int? ? points : this.points,
+      needsManualGrading: needsManualGrading ?? this.needsManualGrading,
+      manualScore: manualScore is int? ? manualScore : this.manualScore,
+      gradedById: gradedById is int? ? gradedById : this.gradedById,
+      gradedAt: gradedAt is DateTime? ? gradedAt : this.gradedAt,
     );
   }
 }

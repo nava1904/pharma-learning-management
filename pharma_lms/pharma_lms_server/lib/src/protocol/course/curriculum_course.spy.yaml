@@ -1,0 +1,9 @@
+### Membership of a course in a curriculum.
+class: CurriculumCourse
+
+table: curriculum_course
+
+fields:
+  curriculum: Curriculum?, relation
+  course: Course?, relation
+  sortOrder: int, default=0

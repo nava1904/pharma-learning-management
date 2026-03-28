@@ -1,0 +1,16 @@
+### Ordered content block within a lesson (text, video, quiz, assignment, upload, etc.).
+class: LessonBlock
+
+table: lesson_block
+
+fields:
+  ### The lesson this block belongs to.
+  lesson: Lesson?, relation
+  ### Display order within the lesson.
+  orderIndex: int, default=0
+  ### Block type: text, heading, video, upload, quiz, assignment, google_doc, google_sheet, google_slide, code_sandbox, audio.
+  blockType: String
+  ### JSON payload (schema varies by block type).
+  contentJson: String
+  ### Created timestamp.
+  createdAt: DateTime, default=now

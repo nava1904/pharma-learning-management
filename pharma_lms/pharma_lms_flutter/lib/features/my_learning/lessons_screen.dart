@@ -72,7 +72,9 @@ class LessonsScreen extends ConsumerWidget {
         final lessons = <_LessonItem>[];
         for (int i = 0; i < enrollments.length; i++) {
           final e = enrollments[i];
-          final courseName = e.courseVersion?.course?.title ?? 'Course #${e.courseVersionId}';
+          final course = e.courseVersion?.course;
+          final courseName = course?.title ?? 'Assigned course';
+          final courseId = course?.id?.toString() ?? e.courseVersionId.toString();
           final resumeLabel = resumeLabels[e.id] ?? '';
           final isCompleted = e.status == 'completed';
           final progress = _estimateProgress(e);
@@ -87,6 +89,7 @@ class LessonsScreen extends ConsumerWidget {
             enrollmentId: e.id,
             courseVersionId: e.courseVersionId,
             userId: e.userId,
+            courseId: courseId,
           ));
         }
 
@@ -252,8 +255,8 @@ class _LessonRow extends StatelessWidget {
         child: InkWell(
           onTap: () {
             if (item.enrollmentId != null) {
-              context.push(
-                '/employee/course/${item.courseVersionId}',
+              context.go(
+                '/course/${item.courseId}',
                 extra: {
                   'courseVersionId': item.courseVersionId,
                   'enrollmentId': item.enrollmentId,
@@ -362,8 +365,8 @@ class _LessonRow extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     if (item.enrollmentId != null) {
-                      context.push(
-                        '/employee/course/${item.courseVersionId}',
+                      context.go(
+                        '/course/${item.courseId}',
                         extra: {
                           'courseVersionId': item.courseVersionId,
                           'enrollmentId': item.enrollmentId,
@@ -409,6 +412,7 @@ class _LessonItem {
   final int? enrollmentId;
   final int courseVersionId;
   final int userId;
+  final String courseId;
 
   _LessonItem({
     required this.index,
@@ -420,5 +424,6 @@ class _LessonItem {
     this.enrollmentId,
     required this.courseVersionId,
     required this.userId,
+    required this.courseId,
   });
 }

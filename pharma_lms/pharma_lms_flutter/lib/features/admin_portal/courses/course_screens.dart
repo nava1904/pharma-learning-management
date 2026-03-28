@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' show Course;
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_flutter/providers/user_provider.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
 import '../widgets/admin_page_frame.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -239,7 +241,6 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
             child: Row(
               children: [
                 _buildHeaderCell('Course Title', flex: 3),
-                _buildHeaderCell('Duration', flex: 1),
                 _buildHeaderCell('Status', flex: 1),
                 _buildHeaderCell('SOP #', flex: 1),
                 _buildHeaderCell('Actions', flex: 1),
@@ -314,15 +315,6 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
                   ),
                 ),
               ],
-            ),
-          ),
-          
-          // Duration (placeholder - not in Course model)
-          Expanded(
-            flex: 1,
-            child: Text(
-              '-',
-              style: PharmaTypography.body,
             ),
           ),
           
@@ -635,24 +627,82 @@ class AdminCourseApprovalScreen extends ConsumerWidget {
   }
 
   void _showApprovalDialog(BuildContext context, WidgetRef ref, Course course) {
+    final passwordController = TextEditingController();
+    final meaningController = TextEditingController(
+      text: 'I approve this course version as accurate and compliant',
+    );
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Approve Course'),
-        content: Text('Are you sure you want to approve "${course.title}"?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Approve "${course.title}"? This will publish the latest pending version.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password (e-signature)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: meaningController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Signature meaning',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Call approval endpoint
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Course "${course.title}" approved')),
-              );
-              ref.invalidate(adminPendingApprovalCoursesProvider);
+            onPressed: () async {
+              try {
+                final me = await ref.read(currentUserProvider.future);
+                if (me?.id == null) throw Exception('Not authenticated');
+                final courseId = course.id;
+                if (courseId == null) throw Exception('Missing course id');
+
+                final versions = await client.course.getCourseVersions(courseId);
+                final pending = versions.where((v) => v.status == 'pending_approval').toList();
+                if (pending.isEmpty) {
+                  throw Exception('No pending_approval course version found for this course');
+                }
+                pending.sort((a, b) => (b.id ?? 0).compareTo(a.id ?? 0));
+                final versionId = pending.first.id;
+                if (versionId == null) throw Exception('Missing course version id');
+
+                await client.qa.approveCourseVersion(
+                  courseVersionId: versionId,
+                  passwordPlaintext: passwordController.text,
+                  signatureMeaning: meaningController.text,
+                  approverId: me!.id!,
+                );
+
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Course "${course.title}" approved')),
+                );
+                ref.invalidate(adminPendingApprovalCoursesProvider);
+                ref.invalidate(adminCoursesProvider);
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Approve failed: $e')),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: PharmaColors.success,
@@ -666,38 +716,95 @@ class AdminCourseApprovalScreen extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CREATE COURSE SCREEN (placeholder)
+// CREATE COURSE SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class AdminCourseCreateScreen extends StatelessWidget {
+class AdminCourseCreateScreen extends ConsumerStatefulWidget {
   const AdminCourseCreateScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const _CourseTemplate(
-        title: 'Create Course',
-        subtitle: 'Create new training content and lifecycle workflow.',
-      );
+  ConsumerState<AdminCourseCreateScreen> createState() => _AdminCourseCreateScreenState();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLACEHOLDER TEMPLATE
-// ═══════════════════════════════════════════════════════════════════════════════
+class _AdminCourseCreateScreenState extends ConsumerState<AdminCourseCreateScreen> {
+  final _title = TextEditingController();
+  final _sop = TextEditingController();
+  final _desc = TextEditingController();
+  bool _saving = false;
 
-class _CourseTemplate extends StatelessWidget {
-  const _CourseTemplate({required this.title, required this.subtitle});
-  final String title;
-  final String subtitle;
+  Future<void> _create() async {
+    setState(() => _saving = true);
+    try {
+      final me = await ref.read(currentUserProvider.future);
+      if (me?.id == null) throw Exception('Not authenticated');
+
+      final created = await client.course.createCourseWithVersion(
+        title: _title.text.trim(),
+        sopNumber: _sop.text.trim().isEmpty ? null : _sop.text.trim(),
+        description: _desc.text.trim().isEmpty ? null : _desc.text.trim(),
+        organizationId: me!.organizationId,
+        createdById: me.id!,
+      );
+
+      final course = created['course'] as Course?;
+      if (!mounted) return;
+      ref.invalidate(adminCoursesProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Created course "${course?.title ?? _title.text.trim()}"')),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Create failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AdminPageFrame(
-      title: title,
-      subtitle: subtitle,
-      children: const [
+      title: 'Create Course',
+      subtitle: 'Create new training content (Course + initial version).',
+      children: [
         AdminSectionCard(
-          title: 'Coming Soon',
-          child: AdminPlaceholderTable(
-            columns: ['Feature', 'Status', 'ETA'],
-            rows: [
-              ['Full implementation', 'In Progress', 'Q2 2026'],
+          title: 'Course Details',
+          child: Column(
+            children: [
+              TextField(
+                controller: _title,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: PharmaSpacing.md),
+              TextField(
+                controller: _sop,
+                decoration: const InputDecoration(
+                  labelText: 'SOP Number (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: PharmaSpacing.md),
+              TextField(
+                controller: _desc,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: PharmaSpacing.md),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _create,
+                  child: Text(_saving ? 'Creating...' : 'Create'),
+                ),
+              ),
             ],
           ),
         ),

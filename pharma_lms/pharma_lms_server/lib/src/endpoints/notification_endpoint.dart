@@ -111,11 +111,19 @@ class NotificationEndpoint extends Endpoint {
     );
     
     for (final n in persistedNotifications) {
+      final msg = (n.body != null && n.body!.isNotEmpty)
+          ? n.body!
+          : switch (n.type) {
+              'sme_invite' => 'SME review: you were invited to review a course.',
+              'sme_comment' => 'New SME comment on your course.',
+              'sme_resolved' => 'An SME comment was resolved by the trainer.',
+              _ => 'You have a ${n.type} notification',
+            };
       notifications.add(InAppNotification(
         type: n.type,
         courseTitle: 'Notification',
         dueDate: n.createdAt.toIso8601String(),
-        message: 'You have a ${n.type} notification',
+        message: msg,
       ));
     }
     
@@ -197,5 +205,40 @@ class NotificationEndpoint extends Endpoint {
       orderDescending: true,
       limit: limit ?? 100,
     );
+  }
+
+  /// Create one in-app notification per user in the organization (admin broadcast).
+  Future<int> broadcastInAppToOrganization(
+    Session session, {
+    required int organizationId,
+    required String message,
+    String type = 'admin_broadcast',
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'users', action: 'update');
+    final body = message.trim();
+    if (body.isEmpty) throw Exception('Message is required');
+
+    final users = await PharmaUser.db.find(
+      session,
+      where: (t) => t.organizationId.equals(organizationId),
+    );
+
+    var count = 0;
+    for (final u in users) {
+      final id = u.id;
+      if (id == null) continue;
+      await Notification.db.insertRow(
+        session,
+        Notification(
+          userId: id,
+          type: type,
+          body: body,
+          deliveryStatus: 'queued',
+          channel: 'in_app',
+        ),
+      );
+      count++;
+    }
+    return count;
   }
 }

@@ -20,7 +20,18 @@ abstract class CourseAnalytics implements _i1.SerializableModel {
     required this.totalAttempts,
     required this.passedCount,
     this.scoreDistributionJson,
-  });
+    int? totalTimeSpentSeconds,
+    double? averageMaterialProgressPct,
+    int? activeTrainingAssignmentCount,
+    int? courseworkSubmissionCount,
+    int? assessmentAttemptCount,
+    int? passedAssessmentAttemptCount,
+  }) : totalTimeSpentSeconds = totalTimeSpentSeconds ?? 0,
+       averageMaterialProgressPct = averageMaterialProgressPct ?? 0.0,
+       activeTrainingAssignmentCount = activeTrainingAssignmentCount ?? 0,
+       courseworkSubmissionCount = courseworkSubmissionCount ?? 0,
+       assessmentAttemptCount = assessmentAttemptCount ?? 0,
+       passedAssessmentAttemptCount = passedAssessmentAttemptCount ?? 0;
 
   factory CourseAnalytics({
     required int courseVersionId,
@@ -28,6 +39,12 @@ abstract class CourseAnalytics implements _i1.SerializableModel {
     required int totalAttempts,
     required int passedCount,
     String? scoreDistributionJson,
+    int? totalTimeSpentSeconds,
+    double? averageMaterialProgressPct,
+    int? activeTrainingAssignmentCount,
+    int? courseworkSubmissionCount,
+    int? assessmentAttemptCount,
+    int? passedAssessmentAttemptCount,
   }) = _CourseAnalyticsImpl;
 
   factory CourseAnalytics.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -38,6 +55,17 @@ abstract class CourseAnalytics implements _i1.SerializableModel {
       passedCount: jsonSerialization['passedCount'] as int,
       scoreDistributionJson:
           jsonSerialization['scoreDistributionJson'] as String?,
+      totalTimeSpentSeconds: jsonSerialization['totalTimeSpentSeconds'] as int?,
+      averageMaterialProgressPct:
+          (jsonSerialization['averageMaterialProgressPct'] as num?)?.toDouble(),
+      activeTrainingAssignmentCount:
+          jsonSerialization['activeTrainingAssignmentCount'] as int?,
+      courseworkSubmissionCount:
+          jsonSerialization['courseworkSubmissionCount'] as int?,
+      assessmentAttemptCount:
+          jsonSerialization['assessmentAttemptCount'] as int?,
+      passedAssessmentAttemptCount:
+          jsonSerialization['passedAssessmentAttemptCount'] as int?,
     );
   }
 
@@ -56,6 +84,24 @@ abstract class CourseAnalytics implements _i1.SerializableModel {
   /// Histogram: bucket label -> count. E.g. "0-20": 2, "21-40": 1, "41-60": 3, "61-80": 5, "81-100": 10.
   String? scoreDistributionJson;
 
+  /// Sum of material engagement time for enrollments in this version.
+  int totalTimeSpentSeconds;
+
+  /// Mean material progress % (0–100) across progress rows for those enrollments.
+  double averageMaterialProgressPct;
+
+  /// Active training assignments tied to this course version.
+  int activeTrainingAssignmentCount;
+
+  /// Coursework assignment submissions (lessons in this version) by enrolled learners.
+  int courseworkSubmissionCount;
+
+  /// Completed assessment attempts by enrolled learners.
+  int assessmentAttemptCount;
+
+  /// Attempts that met passing score.
+  int passedAssessmentAttemptCount;
+
   /// Returns a shallow copy of this [CourseAnalytics]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -65,6 +111,12 @@ abstract class CourseAnalytics implements _i1.SerializableModel {
     int? totalAttempts,
     int? passedCount,
     String? scoreDistributionJson,
+    int? totalTimeSpentSeconds,
+    double? averageMaterialProgressPct,
+    int? activeTrainingAssignmentCount,
+    int? courseworkSubmissionCount,
+    int? assessmentAttemptCount,
+    int? passedAssessmentAttemptCount,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -76,6 +128,12 @@ abstract class CourseAnalytics implements _i1.SerializableModel {
       'passedCount': passedCount,
       if (scoreDistributionJson != null)
         'scoreDistributionJson': scoreDistributionJson,
+      'totalTimeSpentSeconds': totalTimeSpentSeconds,
+      'averageMaterialProgressPct': averageMaterialProgressPct,
+      'activeTrainingAssignmentCount': activeTrainingAssignmentCount,
+      'courseworkSubmissionCount': courseworkSubmissionCount,
+      'assessmentAttemptCount': assessmentAttemptCount,
+      'passedAssessmentAttemptCount': passedAssessmentAttemptCount,
     };
   }
 
@@ -94,12 +152,24 @@ class _CourseAnalyticsImpl extends CourseAnalytics {
     required int totalAttempts,
     required int passedCount,
     String? scoreDistributionJson,
+    int? totalTimeSpentSeconds,
+    double? averageMaterialProgressPct,
+    int? activeTrainingAssignmentCount,
+    int? courseworkSubmissionCount,
+    int? assessmentAttemptCount,
+    int? passedAssessmentAttemptCount,
   }) : super._(
          courseVersionId: courseVersionId,
          passRate: passRate,
          totalAttempts: totalAttempts,
          passedCount: passedCount,
          scoreDistributionJson: scoreDistributionJson,
+         totalTimeSpentSeconds: totalTimeSpentSeconds,
+         averageMaterialProgressPct: averageMaterialProgressPct,
+         activeTrainingAssignmentCount: activeTrainingAssignmentCount,
+         courseworkSubmissionCount: courseworkSubmissionCount,
+         assessmentAttemptCount: assessmentAttemptCount,
+         passedAssessmentAttemptCount: passedAssessmentAttemptCount,
        );
 
   /// Returns a shallow copy of this [CourseAnalytics]
@@ -112,6 +182,12 @@ class _CourseAnalyticsImpl extends CourseAnalytics {
     int? totalAttempts,
     int? passedCount,
     Object? scoreDistributionJson = _Undefined,
+    int? totalTimeSpentSeconds,
+    double? averageMaterialProgressPct,
+    int? activeTrainingAssignmentCount,
+    int? courseworkSubmissionCount,
+    int? assessmentAttemptCount,
+    int? passedAssessmentAttemptCount,
   }) {
     return CourseAnalytics(
       courseVersionId: courseVersionId ?? this.courseVersionId,
@@ -121,6 +197,18 @@ class _CourseAnalyticsImpl extends CourseAnalytics {
       scoreDistributionJson: scoreDistributionJson is String?
           ? scoreDistributionJson
           : this.scoreDistributionJson,
+      totalTimeSpentSeconds:
+          totalTimeSpentSeconds ?? this.totalTimeSpentSeconds,
+      averageMaterialProgressPct:
+          averageMaterialProgressPct ?? this.averageMaterialProgressPct,
+      activeTrainingAssignmentCount:
+          activeTrainingAssignmentCount ?? this.activeTrainingAssignmentCount,
+      courseworkSubmissionCount:
+          courseworkSubmissionCount ?? this.courseworkSubmissionCount,
+      assessmentAttemptCount:
+          assessmentAttemptCount ?? this.assessmentAttemptCount,
+      passedAssessmentAttemptCount:
+          passedAssessmentAttemptCount ?? this.passedAssessmentAttemptCount,
     );
   }
 }

@@ -7,7 +7,9 @@ import '../services/rbac_helper.dart';
 
 /// QA & Course Approval domain endpoint.
 class QaEndpoint extends Endpoint {
-  /// List course versions pending QA approval.
+  static const _pendingReviewStatuses = {'pending_approval', 'under_review'};
+
+  /// List course versions awaiting QA review (submitted or in review).
   Future<List<CourseVersion>> listPendingCourseVersions(
     Session session,
   ) async {
@@ -15,7 +17,7 @@ class QaEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'read');
     return await CourseVersion.db.find(
       session,
-      where: (t) => t.status.equals('pending_approval'),
+      where: (t) => t.status.inSet(_pendingReviewStatuses),
       include: CourseVersion.include(course: Course.include()),
       orderBy: (t) => t.id,
     );
@@ -40,9 +42,12 @@ class QaEndpoint extends Endpoint {
       include: CourseVersion.include(course: Course.include()),
     );
     if (version == null) throw Exception('Course version not found');
-    if (version.status != 'pending_approval') {
-      throw Exception('Only pending_approval versions can be approved');
+    if (!_pendingReviewStatuses.contains(version.status)) {
+      throw Exception(
+        'Only versions in QA review (${_pendingReviewStatuses.join(", ")}) can be approved',
+      );
     }
+    final oldStatus = version.status;
 
     final previousEffective = await CourseVersion.db.find(
       session,
@@ -85,6 +90,31 @@ class QaEndpoint extends Endpoint {
     // Temporarily commented out to resolve syntax errors during code generation
     // version.esignatureId = signature.id;
     await CourseVersion.db.updateRow(session, version);
+
+    // Keep parent Course in sync so trainer portal lists/dashboard show approved, not draft.
+    final parentCourse = await Course.db.findById(session, version.courseId);
+    if (parentCourse != null && parentCourse.id != null) {
+      final now = DateTime.now();
+      final oldCourseStatus = parentCourse.status;
+      await Course.db.updateRow(
+        session,
+        parentCourse.copyWith(
+          status: 'approved',
+          publishedAt: parentCourse.publishedAt ?? now,
+        ),
+      );
+      await AuditService.log(
+        session,
+        entityType: 'course',
+        entityId: parentCourse.id!.toString(),
+        action: 'CourseStatusChanged',
+        oldValueJson: '{"status":"$oldCourseStatus"}',
+        newValueJson:
+            '{"status":"approved","publishedAt":"${(parentCourse.publishedAt ?? now).toIso8601String()}"}',
+        userId: approverId,
+      );
+    }
+
     if (approverId != null) {
       await CourseReview.db.insertRow(
         session,
@@ -101,7 +131,7 @@ class QaEndpoint extends Endpoint {
       entityType: 'course_version',
       entityId: courseVersionId.toString(),
       action: 'CourseStatusChanged',
-      oldValueJson: '{"status":"pending_approval"}',
+      oldValueJson: '{"status":"$oldStatus"}',
       newValueJson: '{"status":"effective"}',
       userId: approverId,
     );
@@ -127,8 +157,8 @@ class QaEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final version = await CourseVersion.db.findById(session, courseVersionId);
     if (version == null) throw Exception('Course version not found');
-    if (version.status != 'pending_approval') {
-      throw Exception('Only pending_approval versions can be rejected');
+    if (!QaEndpoint._pendingReviewStatuses.contains(version.status)) {
+      throw Exception('Only versions in QA review can be rejected');
     }
     final status = returnForChanges ? 'needs_revision' : 'draft';
     final updated = version.copyWith(status: status);
@@ -139,7 +169,7 @@ class QaEndpoint extends Endpoint {
       entityType: 'course_version',
       entityId: courseVersionId.toString(),
       action: returnForChanges ? 'CourseReturnedForChanges' : 'CourseRejected',
-      oldValueJson: '{"status":"pending_approval"}',
+      oldValueJson: '{"status":"${version.status}"}',
       newValueJson: '{"status":"$status","reason":"${reason ?? ''}"}',
     );
     
@@ -168,8 +198,8 @@ class QaEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
     final version = await CourseVersion.db.findById(session, courseVersionId);
     if (version == null) throw Exception('Course version not found');
-    if (version.status != 'pending_approval') {
-      throw Exception('Only pending_approval versions can be returned for changes');
+    if (!QaEndpoint._pendingReviewStatuses.contains(version.status)) {
+      throw Exception('Only versions in QA review can be returned for changes');
     }
     
     final updated = version.copyWith(status: 'needs_revision');
@@ -192,7 +222,7 @@ class QaEndpoint extends Endpoint {
       entityType: 'course_version',
       entityId: courseVersionId.toString(),
       action: 'CourseReturnedForChanges',
-      oldValueJson: '{"status":"pending_approval"}',
+      oldValueJson: '{"status":"${version.status}"}',
       newValueJson: '{"status":"needs_revision","comments":"$comments"}',
       userId: reviewerId,
     );

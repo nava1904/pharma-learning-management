@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
-import 'package:pharma_lms_flutter/providers/admin_providers.dart';
+import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
+import 'package:pharma_lms_flutter/core/client.dart';
 
 /// User Management Screen
 /// 
@@ -44,7 +45,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           perPage: itemsPerPage,
           role: selectedRole,
           status: selectedStatus,
-          search: searchQuery,
+          search: searchQuery.isEmpty ? null : searchQuery,
         ),
       ),
     );
@@ -257,19 +258,19 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   /// Build user rows for table from real database objects
   List<DataRow> _buildUserRows(BuildContext context, List<dynamic> users) {
-    return users.map((user) {
-      // user should be a PharmaUser object from the backend
-      final userId = user['id'] ?? 0;
-      final employeeId = user['employee_id'] ?? '-';
-      final name = user['name'] ?? '-';
-      final email = user['email'] ?? '-';
-      final role = user['role'] ?? 'EMPLOYEE';
-      final status = user['status'] ?? 'active';
-      final hireDate = user['hire_date'] != null
-          ? DateTime.parse(user['hire_date']).toLocal()
-          : DateTime.now();
-      final hireDateFormatted =
-          '${hireDate.year}-${hireDate.month.toString().padLeft(2, '0')}-${hireDate.day.toString().padLeft(2, '0')}';
+    return users.map((u) {
+      // Provider returns PharmaUser; tolerate dynamic list for now.
+      final user = u;
+      final userId = (user.id as int?) ?? 0;
+      final employeeId = user.employeeId ?? '-';
+      final name = '${user.firstName} ${user.lastName}'.trim();
+      final email = user.email;
+      final role = user.jobRole?.name ?? '-';
+      final status = user.status;
+      final hireDate = (user.hireDate as DateTime?)?.toLocal();
+      final hireDateFormatted = hireDate == null
+          ? '-'
+          : '${hireDate.year}-${hireDate.month.toString().padLeft(2, '0')}-${hireDate.day.toString().padLeft(2, '0')}';
 
       return DataRow(
         cells: [
@@ -287,20 +288,20 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   tooltip: 'View',
                   onPressed: () =>
-                      context.push('/admin/users/$userId/view'),
+                      context.push('/admin/users/directory/view/$userId'),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   tooltip: 'Edit',
                   onPressed: () =>
-                      context.push('/admin/users/$userId/edit'),
+                      context.push('/admin/users/directory/view/$userId/edit'),
                 ),
                 PopupMenuButton(
                   itemBuilder: (BuildContext context) => [
                     PopupMenuItem(
                       child: const Text('Reset Password'),
                       onTap: () => _showResetPasswordDialog(
-                          context, userId, name),
+                          context, userId, name, email),
                     ),
                     PopupMenuItem(
                       child: const Text('Deactivate'),
@@ -310,7 +311,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     PopupMenuItem(
                       child: const Text('View Audit Log'),
                       onTap: () => context.push(
-                          '/admin/users/$userId/audit-log'),
+                          '/admin/users/directory/view/$userId/audit-trail',
+                          extra: name,
+                        ),
                     ),
                   ],
                 ),
@@ -479,13 +482,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   }
 
   /// Show reset password confirmation dialog
-  void _showResetPasswordDialog(BuildContext context, int userId, String userName) {
+  void _showResetPasswordDialog(BuildContext context, int userId, String userName, String email) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Reset Password'),
         content: Text(
-          'Send password reset email to $userName?',
+          'Send password reset email to $email?',
         ),
         actions: [
           TextButton(
@@ -493,15 +496,26 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Call backend to reset password
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Password reset email sent to $userName'),
-                  backgroundColor: PharmaColors.success,
-                ),
-              );
+              try {
+                await client.emailIdp.startPasswordReset(email: email);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Password reset requested for $email'),
+                    backgroundColor: PharmaColors.success,
+                  ),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Reset password failed: $e'),
+                    backgroundColor: PharmaColors.danger,
+                  ),
+                );
+              }
             },
             child: const Text('Send Reset Email'),
           ),
@@ -526,19 +540,37 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Call backend to deactivate user
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              // Schedule refresh for after snackbar is shown
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ref.invalidate(adminUsersListProvider);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$userName has been deactivated'),
-                  backgroundColor: PharmaColors.warning,
-                ),
-              );
+              try {
+                final ok = await client.adminUserManagement.deactivateUser(userId: userId);
+                if (!context.mounted) return;
+                if (ok) {
+                  ref.invalidate(adminUsersListProvider);
+                  ref.invalidate(adminUserCountProvider);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$userName has been deactivated'),
+                      backgroundColor: PharmaColors.warning,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Deactivate failed for $userName'),
+                      backgroundColor: PharmaColors.danger,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Deactivate failed: $e'),
+                    backgroundColor: PharmaColors.danger,
+                  ),
+                );
+              }
             },
             child: const Text('Deactivate'),
           ),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
@@ -33,11 +35,14 @@ class AssessmentEndpoint extends Endpoint {
 
   static const int _cooldownMinutes = 1440; // 24 hours
 
+  /// When [skipInterAttemptCooldown] is true, the 24h gap between completed
+  /// attempts is not enforced (explicit learner retake from review / practice).
   Future<AssessmentAttempt> startAttempt(
     Session session, {
     required int userId,
     required int assessmentId,
     int? enrollmentId,
+    bool skipInterAttemptCooldown = false,
   }) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) {
       throw Exception('Authentication required');
@@ -55,6 +60,25 @@ class AssessmentEndpoint extends Endpoint {
       }
     }
 
+    final assessment = await Assessment.db.findById(session, assessmentId);
+    if (assessment == null) throw Exception('Assessment not found');
+
+    // Enforce maxAttempts
+    if (assessment.maxAttempts != null && assessment.maxAttempts! > 0) {
+      final completedAttempts = await AssessmentAttempt.db.find(
+        session,
+        where: (t) =>
+            t.userId.equals(userId) &
+            t.assessmentId.equals(assessmentId) &
+            t.completedAt.notEquals(null),
+      );
+      if (completedAttempts.length >= assessment.maxAttempts!) {
+        throw Exception(
+          'Maximum attempts reached (${assessment.maxAttempts}). No more retakes allowed.',
+        );
+      }
+    }
+
     final lastAttempt = await AssessmentAttempt.db.findFirstRow(
       session,
       where: (t) =>
@@ -64,7 +88,7 @@ class AssessmentEndpoint extends Endpoint {
       orderBy: (t) => t.startedAt,
       orderDescending: true,
     );
-    if (lastAttempt?.completedAt != null) {
+    if (!skipInterAttemptCooldown && lastAttempt?.completedAt != null) {
       final elapsed = DateTime.now().difference(lastAttempt!.completedAt!);
       if (elapsed.inMinutes < _cooldownMinutes) {
         final remaining = _cooldownMinutes - elapsed.inMinutes;
@@ -89,6 +113,29 @@ class AssessmentEndpoint extends Endpoint {
       );
     }
     return inserted;
+  }
+
+  /// Completed attempts for trainer-visible learner transcript (same org).
+  Future<List<AssessmentAttempt>> listCompletedAttemptsForUser(
+    Session session, {
+    required int userId,
+  }) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me == null) return [];
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
+    final target = await PharmaUser.db.findById(session, userId);
+    if (target == null || target.organizationId != me.organizationId) return [];
+    return AssessmentAttempt.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.completedAt.notEquals(null),
+      include: AssessmentAttempt.include(
+        assessment: Assessment.include(
+          courseVersion: CourseVersion.include(course: Course.include()),
+        ),
+      ),
+      orderBy: (t) => t.completedAt,
+      orderDescending: true,
+    );
   }
 
   /// Get attempt count for user+assessment+enrollment (for "Attempt X of Y" display).
@@ -125,6 +172,21 @@ class AssessmentEndpoint extends Endpoint {
       throw Exception('Attempt already submitted');
     }
 
+    final assessment = await Assessment.db.findById(
+      session,
+      attempt.assessmentId ?? 0,
+    );
+
+    // Enforce timeLimitMinutes — auto-submit still counts but flag overtime
+    bool overtimeSubmission = false;
+    if (assessment?.timeLimitMinutes != null &&
+        assessment!.timeLimitMinutes! > 0) {
+      final elapsed = DateTime.now().difference(attempt.startedAt);
+      if (elapsed.inMinutes > assessment.timeLimitMinutes!) {
+        overtimeSubmission = true;
+      }
+    }
+
     final results = await AssessmentResult.db.find(
       session,
       where: (t) => t.attemptId.equals(attemptId),
@@ -133,12 +195,9 @@ class AssessmentEndpoint extends Endpoint {
     final correct = results.where((r) => r.correct).length;
     final score = total > 0 ? (correct * 100 / total).round() : 0;
 
-    final assessment = await Assessment.db.findById(
-      session,
-      attempt.assessmentId ?? 0,
-    );
     final passMark = assessment?.passingScore ?? 80;
-    final passed = score >= passMark;
+    // Overtime submissions automatically fail
+    final passed = overtimeSubmission ? false : score >= passMark;
 
     final updated = attempt.copyWith(
       completedAt: DateTime.now(),
@@ -169,13 +228,41 @@ class AssessmentEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
     final question = await Question.db.findById(session, questionId);
     if (question == null) throw Exception('Question not found');
-    final correct = answer == question.correctAnswer;
+
+    bool correct;
+    bool needsManualGrading = false;
+
+    switch (question.questionType) {
+      case 'short_answer':
+        if (question.correctAnswer == null || question.correctAnswer!.isEmpty) {
+          correct = false;
+          needsManualGrading = true;
+        } else {
+          try {
+            final acceptedAnswers = (jsonDecode(question.correctAnswer!) as List)
+                .map((e) => e.toString().trim().toLowerCase())
+                .toList();
+            correct = acceptedAnswers.contains(answer.trim().toLowerCase());
+          } catch (_) {
+            correct = answer.trim().toLowerCase() ==
+                (question.correctAnswer ?? '').trim().toLowerCase();
+          }
+        }
+        break;
+      case 'open_ended':
+        correct = false;
+        needsManualGrading = true;
+        break;
+      default:
+        correct = answer == question.correctAnswer;
+    }
 
     final result = AssessmentResult(
       attemptId: attemptId,
       questionId: questionId,
       answer: answer,
       correct: correct,
+      needsManualGrading: needsManualGrading,
     );
     return await AssessmentResult.db.insertRow(session, result);
   }
@@ -267,5 +354,101 @@ class AssessmentEndpoint extends Endpoint {
       imported.add(question);
     }
     return imported;
+  }
+
+  /// List assessment results that need manual grading for a given assessment.
+  Future<List<AssessmentResult>> listUngradedResults(
+    Session session, {
+    required int assessmentId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
+    final attempts = await AssessmentAttempt.db.find(
+      session,
+      where: (t) =>
+          t.assessmentId.equals(assessmentId) &
+          t.completedAt.notEquals(null),
+    );
+    if (attempts.isEmpty) return [];
+
+    final attemptIds = attempts.map((a) => a.id!).toList();
+    final allResults = <AssessmentResult>[];
+    for (final attemptId in attemptIds) {
+      final results = await AssessmentResult.db.find(
+        session,
+        where: (t) =>
+            t.attemptId.equals(attemptId) &
+            t.needsManualGrading.equals(true) &
+            t.gradedAt.equals(null),
+        include: AssessmentResult.include(
+          question: Question.include(),
+          attempt: AssessmentAttempt.include(),
+        ),
+      );
+      allResults.addAll(results);
+    }
+    return allResults;
+  }
+
+  /// Grade an individual assessment result (open_ended / short_answer).
+  /// Recalculates the attempt score after grading.
+  Future<AssessmentResult> gradeResult(
+    Session session, {
+    required int resultId,
+    required bool correct,
+    int? manualScore,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me == null) throw Exception('Authentication required');
+
+    final result = await AssessmentResult.db.findById(session, resultId);
+    if (result == null) throw Exception('Result not found');
+
+    final graded = result.copyWith(
+      correct: correct,
+      manualScore: manualScore,
+      gradedById: me.id,
+      gradedAt: DateTime.now(),
+    );
+    final saved = await AssessmentResult.db.updateRow(session, graded);
+
+    // Recalculate attempt score
+    await _recalculateAttemptScore(session, result.attemptId);
+
+    return saved;
+  }
+
+  /// Recalculate the total score for an attempt after manual grading.
+  Future<void> _recalculateAttemptScore(Session session, int attemptId) async {
+    final results = await AssessmentResult.db.find(
+      session,
+      where: (t) => t.attemptId.equals(attemptId),
+    );
+    if (results.isEmpty) return;
+
+    final total = results.length;
+    final correct = results.where((r) => r.correct).length;
+    final score = total > 0 ? (correct * 100 / total).round() : 0;
+
+    final attempt = await AssessmentAttempt.db.findById(session, attemptId);
+    if (attempt == null) return;
+
+    final updated = attempt.copyWith(score: score);
+    await AssessmentAttempt.db.updateRow(session, updated);
+  }
+
+  /// List all results for a specific attempt (for instructor review).
+  Future<List<AssessmentResult>> listResultsForAttempt(
+    Session session, {
+    required int attemptId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'assessment', action: 'read');
+    return AssessmentResult.db.find(
+      session,
+      where: (t) => t.attemptId.equals(attemptId),
+      include: AssessmentResult.include(
+        question: Question.include(),
+      ),
+    );
   }
 }

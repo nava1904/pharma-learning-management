@@ -750,7 +750,7 @@ class _QuestionBankLibraryScreenState extends ConsumerState<QuestionBankLibraryS
               const SizedBox(height: 16),
               _dialogRow('Type', _formatQuestionType(q.questionType)),
               _dialogRow('Difficulty', q.difficulty ?? 'Not set'),
-              _dialogRow('Correct Answer', q.correctAnswer),
+              _dialogRow('Correct Answer', q.correctAnswer ?? 'N/A'),
               if (q.regulatoryTag != null)
                 _dialogRow('Regulatory Tag', q.regulatoryTag!),
               _dialogRow('Bank ID', '${q.questionBankId}'),

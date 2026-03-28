@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../core/webview_safe.dart';
 import '../design_system/colors.dart';
 import '../design_system/spacing.dart';
 
@@ -34,8 +35,7 @@ class _SOPViewerState extends State<SOPViewer> {
   void didUpdateWidget(covariant SOPViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.pdfUrl != oldWidget.pdfUrl && widget.pdfUrl != null) {
-      _controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      _controller = webViewControllerWithDefaults()
         ..loadRequest(Uri.parse(widget.pdfUrl!));
     }
   }
@@ -44,8 +44,7 @@ class _SOPViewerState extends State<SOPViewer> {
   void initState() {
     super.initState();
     if (widget.pdfUrl != null && widget.pdfUrl!.isNotEmpty) {
-      _controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      _controller = webViewControllerWithDefaults()
         ..loadRequest(Uri.parse(widget.pdfUrl!));
     }
   }

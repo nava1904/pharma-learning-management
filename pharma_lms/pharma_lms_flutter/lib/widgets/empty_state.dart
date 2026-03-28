@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_colors.dart';
+import '../design_system/pharma_design_system.dart';
 
-/// Empty state - Odoo-inspired with headline, subtext, optional CTA.
+/// Empty state — headline, subtext, optional CTA.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -22,53 +22,53 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(PharmaSpacing.xxxl),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.slate100,
+              padding: const EdgeInsets.all(PharmaSpacing.xxl),
+              decoration: const BoxDecoration(
+                color: PharmaColors.gray100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 64,
-                color: AppColors.slate400,
+                color: PharmaColors.textQuaternary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: PharmaSpacing.xxl),
             Text(
               headline ?? message,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.slate800,
-                  ),
+              style: PharmaTypography.headingSmall.copyWith(
+                fontWeight: FontWeight.w600,
+                color: PharmaColors.textPrimary,
+              ),
               textAlign: TextAlign.center,
             ),
             if (subtext != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: PharmaSpacing.sm),
               Text(
                 subtext!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.slate600,
-                    ),
+                style: PharmaTypography.body.copyWith(
+                  color: PharmaColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ] else if (headline != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: PharmaSpacing.sm),
               Text(
                 message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.slate600,
-                    ),
+                style: PharmaTypography.body.copyWith(
+                  color: PharmaColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
             if (action != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: PharmaSpacing.xxl),
               action!,
             ],
           ],

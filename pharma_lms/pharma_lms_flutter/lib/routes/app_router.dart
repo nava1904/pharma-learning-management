@@ -11,7 +11,9 @@ import '../features/admin_portal/modules/01_user_identity/user_view_screen.dart'
 import '../features/admin_portal/modules/01_user_identity/user_role_assignment_screen.dart';
 import '../features/admin_portal/modules/01_user_identity/user_bulk_import_screen.dart';
 import '../features/admin_portal/modules/01_user_identity/user_audit_trail_screen.dart';
+import '../features/admin_portal/modules/01_user_identity/user_access_logs_screen.dart';
 import '../features/admin_portal/courses/course_screens.dart';
+import '../features/admin_portal/access_review/access_review_screen.dart';
 import '../features/admin_portal/enrollments/enrollment_screens.dart';
 import '../features/admin_portal/batches/batch_screens.dart';
 import '../features/admin_portal/job_specs/job_spec_screens.dart';
@@ -76,7 +78,10 @@ import '../features/trainer_portal/course_builder_v2_screen.dart';
 import '../features/trainer_portal/course_versions_screen.dart';
 import '../features/trainer_portal/material_upload_v2_screen.dart';
 import '../features/trainer_portal/assessment_builder_v2_screen.dart';
+import '../features/trainer_portal/trainer_assessments_hub_screen.dart';
+import '../features/trainer_portal/grading_screen.dart';
 import '../features/trainer_portal/qa_review_screen.dart';
+import '../layout/qa_shell_v2.dart';
 import '../features/trainer_portal/sop_linkage_screen.dart';
 import '../features/trainer_portal/ai_question_generation_screen.dart';
 import '../features/trainer_portal/exam_generator_screen.dart';
@@ -85,6 +90,7 @@ import '../features/trainer_portal/sop_document_library_screen.dart';
 import '../features/trainer_portal/question_bank_library_screen.dart';
 import '../features/trainer_portal/training_matrix_screen.dart' as trainer_matrix;
 import '../features/trainer_portal/training_assignments_screen.dart';
+import '../features/trainer_portal/standalone_assignment_wizard_screen.dart';
 import '../features/trainer_portal/learner_progress_screen.dart';
 import '../features/trainer_portal/audit_log_viewer_screen.dart';
 import '../features/trainer_portal/trainer_profile_screen.dart';
@@ -93,12 +99,16 @@ import '../features/trainer_portal/qa_dashboard_screen.dart' as trainer_qa;
 import '../features/trainer_portal/compliance_screen.dart';
 import '../features/trainer_portal/notification_centre_screen.dart';
 import '../features/trainer_portal/trainer_reports_screen.dart';
-import '../features/my_learning/my_learning_screen.dart';
+import '../features/trainer_portal/completion_matrix_screen.dart';
+import '../features/trainer_portal/sme_collaboration_screen.dart';
 import '../features/training_timeline/training_timeline_screen.dart';
 import '../features/not_found/not_found_screen.dart';
 // Employee Batch Screens
-import '../features/employee_dashboard/batches/employee_batch_list_screen.dart';
 import '../features/employee_dashboard/batches/employee_batch_detail_screen.dart';
+import '../features/employee_dashboard/batches/employee_my_batches_dashboard_screen.dart';
+import '../features/employee_dashboard/batches/employee_assigned_training_screen.dart';
+import '../features/employee_dashboard/standalone_assignments_screen.dart';
+import '../features/employee_dashboard/operator_qualification_screen.dart';
 // Trainer Batch Screens
 import '../features/trainer_portal/batches/trainer_batch_list_screen.dart';
 import '../features/trainer_portal/batches/trainer_batch_detail_screen.dart';
@@ -106,6 +116,19 @@ import '../layout/app_layout.dart';
 import '../layout/admin_shell_v2.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auditor_watermark_wrapper.dart';
+
+/// [GoRouterState.extra] is not always `Map<String, dynamic>`; normalize for safe lookups.
+Map<String, dynamic> _routeExtraMap(Object? extra) {
+  if (extra is Map<String, dynamic>) return extra;
+  if (extra is Map) return Map<String, dynamic>.from(extra);
+  return const {};
+}
+
+int? _extraInt(Map<String, dynamic> m, String key) {
+  final v = m[key];
+  if (v is int) return v;
+  return int.tryParse(v?.toString() ?? '');
+}
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -124,6 +147,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
       if (currentRole == null) {
+        if (path.startsWith('/verify/')) {
+          return null;
+        }
         final token = state.uri.queryParameters['token'];
         if (token != null &&
             (path == '/auditor' ||
@@ -163,14 +189,14 @@ List<RouteBase> get _buildRoutes => [
       path: '/assessment-v2/:courseVersionId',
       builder: (context, state) {
         final courseVersionId = int.tryParse(state.pathParameters['courseVersionId'] ?? '0') ?? 0;
-        final extra = state.extra;
-        int? enrollmentId;
-        if (extra is Map<String, dynamic>) {
-          enrollmentId = extra['enrollmentId'] as int?;
-        }
+        final m = _routeExtraMap(state.extra);
+        final enrollmentId = _extraInt(m, 'enrollmentId');
+        final forceRetake = m['forceRetake'] == true;
         return AssessmentScreenV2(
+          key: ValueKey('assessment-v2-$courseVersionId-$enrollmentId-$forceRetake'),
           courseVersionId: courseVersionId,
           enrollmentId: enrollmentId,
+          forceRetake: forceRetake,
         );
       },
     ),
@@ -212,7 +238,7 @@ List<RouteBase> get _buildRoutes => [
         ),
         GoRoute(
           path: '/learning',
-          builder: (context, state) => const MyLearningScreen(),
+          builder: (context, state) => const MyTrainingScreen(),
         ),
         GoRoute(
           path: '/training-timeline',
@@ -274,16 +300,17 @@ List<RouteBase> get _buildRoutes => [
             GoRoute(
               path: 'assessment/:courseId',
               builder: (context, state) {
-                final extra = state.extra;
-                int? courseVersionId;
-                int? enrollmentId;
-                if (extra is Map<String, dynamic>) {
-                  courseVersionId = extra['courseVersionId'] as int?;
-                  enrollmentId = extra['enrollmentId'] as int?;
-                }
+                final m = _routeExtraMap(state.extra);
+                final courseVersionId = _extraInt(m, 'courseVersionId');
+                final enrollmentId = _extraInt(m, 'enrollmentId');
+                final forceRetake = m['forceRetake'] == true;
                 return AssessmentScreenV2(
+                  key: ValueKey(
+                    'employee-assessment-${courseVersionId ?? 0}-$enrollmentId-$forceRetake',
+                  ),
                   courseVersionId: courseVersionId ?? 0,
                   enrollmentId: enrollmentId,
+                  forceRetake: forceRetake,
                 );
               },
             ),
@@ -292,19 +319,12 @@ List<RouteBase> get _buildRoutes => [
               path: 'course/:courseId',
               builder: (context, state) {
                 final courseId = state.pathParameters['courseId'] ?? '';
-                final extra = state.extra;
-                int? courseVersionId;
-                int? enrollmentId;
-                int? userId;
-                String? courseTitle;
-                String? enrollmentStatus;
-                if (extra is Map<String, dynamic>) {
-                  courseVersionId = int.tryParse(extra['courseVersionId']?.toString() ?? '');
-                  enrollmentId = int.tryParse(extra['enrollmentId']?.toString() ?? '');
-                  userId = int.tryParse(extra['userId']?.toString() ?? '');
-                  courseTitle = extra['courseTitle']?.toString();
-                  enrollmentStatus = extra['enrollmentStatus']?.toString();
-                }
+                final m = _routeExtraMap(state.extra);
+                final courseVersionId = _extraInt(m, 'courseVersionId');
+                final enrollmentId = _extraInt(m, 'enrollmentId');
+                final userId = _extraInt(m, 'userId');
+                final courseTitle = m['courseTitle']?.toString();
+                final enrollmentStatus = m['enrollmentStatus']?.toString();
                 return CourseViewerScreenV2(
                   courseId: courseId,
                   courseVersionId: courseVersionId,
@@ -358,10 +378,32 @@ List<RouteBase> get _buildRoutes => [
               path: 'downloads',
               builder: (context, state) => const DownloadsScreen(),
             ),
-            // Employee Training Sessions (Batches)
+            // ILT: legacy list route redirects to cohort dashboard
             GoRoute(
               path: 'sessions',
-              builder: (context, state) => const EmployeeBatchListScreen(),
+              redirect: (context, state) => '/employee/my-batches',
+            ),
+            GoRoute(
+              path: 'my-batches',
+              builder: (context, state) => const EmployeeMyBatchesDashboardScreen(),
+            ),
+            GoRoute(
+              path: 'assigned-training',
+              builder: (context, state) => const EmployeeAssignedTrainingScreen(),
+            ),
+            GoRoute(
+              path: 'standalone-assignments',
+              builder: (context, state) => const EmployeeStandaloneAssignmentsScreen(),
+              routes: [
+                GoRoute(
+                  path: ':recipientId',
+                  builder: (context, state) {
+                    final id =
+                        int.tryParse(state.pathParameters['recipientId'] ?? '0') ?? 0;
+                    return EmployeeStandaloneAssignmentDetailScreen(recipientId: id);
+                  },
+                ),
+              ],
             ),
             GoRoute(
               path: 'sessions/:batchId',
@@ -369,6 +411,10 @@ List<RouteBase> get _buildRoutes => [
                 final batchId = int.tryParse(state.pathParameters['batchId'] ?? '0') ?? 0;
                 return EmployeeBatchDetailScreen(batchId: batchId);
               },
+            ),
+            GoRoute(
+              path: 'operator',
+              builder: (context, state) => const OperatorQualificationScreen(),
             ),
           ],
         ),
@@ -383,6 +429,27 @@ List<RouteBase> get _buildRoutes => [
         GoRoute(
           path: '/admin',
           builder: (context, state) => const AdminDashboardScreenV2(),
+        ),
+        // Canonical redirects (sidebar / legacy links)
+        GoRoute(
+          path: '/admin/users',
+          redirect: (context, state) => '/admin/users/directory',
+        ),
+        GoRoute(
+          path: '/admin/compliance',
+          redirect: (context, state) => '/admin/reports/compliance',
+        ),
+        GoRoute(
+          path: '/admin/courses',
+          redirect: (context, state) => '/admin/courses/catalogue',
+        ),
+        GoRoute(
+          path: '/admin/enrollments',
+          redirect: (context, state) => '/admin/enrollments/list',
+        ),
+        GoRoute(
+          path: '/admin/profile',
+          builder: (context, state) => const ProfileSettingsScreen(),
         ),
         // Module 1: User & Identity Management
         GoRoute(
@@ -429,6 +496,17 @@ List<RouteBase> get _buildRoutes => [
                     );
                   },
                 ),
+                GoRoute(
+                  path: 'access-logs',
+                  builder: (context, state) {
+                    final userId = int.tryParse(state.pathParameters['userId'] ?? '0') ?? 0;
+                    final userName = state.extra as String? ?? 'User';
+                    return UserAccessLogsScreen(
+                      userId: userId,
+                      userName: userName,
+                    );
+                  },
+                ),
               ],
             ),
             GoRoute(
@@ -437,24 +515,13 @@ List<RouteBase> get _buildRoutes => [
             ),
           ],
         ),
-        // Legacy placeholder routes (for reference, can be removed later)
-        /*
-        GoRoute(
-          path: '/admin/users/create',
-          builder: (context, state) => const AdminUserCreateScreen(),
-        ),
-        GoRoute(
-          path: '/admin/users/import',
-          builder: (context, state) => const AdminUserImportScreen(),
-        ),
-        */
         GoRoute(
           path: '/admin/users/org-tree',
           builder: (context, state) => const AdminOrgHierarchyScreen(),
         ),
         GoRoute(
           path: '/admin/users/access-review',
-          builder: (context, state) => const AdminAccessReviewScreen(),
+          builder: (context, state) => const AccessReviewScreen(),
         ),
         GoRoute(
           path: '/admin/courses/catalogue',
@@ -605,6 +672,10 @@ List<RouteBase> get _buildRoutes => [
           builder: (context, state) => const AdminReportBuilderScreen(),
         ),
         GoRoute(
+          path: '/admin/sla-policies',
+          redirect: (context, state) => '/admin/analytics/dashboard',
+        ),
+        GoRoute(
           path: '/admin/system/settings',
           builder: (context, state) => const AdminSystemSettingsScreen(),
         ),
@@ -638,9 +709,39 @@ List<RouteBase> get _buildRoutes => [
       path: '/training-matrix',
       builder: (context, state) => const TrainingMatrixScreen(),
     ),
-    GoRoute(
-      path: '/qa',
-      builder: (context, state) => const QACommandCenterScreen(),
+    ShellRoute(
+      builder: (context, state, child) => QAShellV2(
+        currentPath: state.uri.path,
+        child: child,
+      ),
+      routes: [
+        GoRoute(
+          path: '/qa',
+          redirect: (context, state) {
+            if (state.uri.path == '/qa') {
+              return '/qa/dashboard';
+            }
+            return null;
+          },
+          routes: [
+            GoRoute(
+              path: 'dashboard',
+              builder: (context, state) => const QACommandCenterScreen(),
+            ),
+            GoRoute(
+              path: 'course/:courseId/review',
+              builder: (context, state) {
+                final courseId =
+                    int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+                return QAReviewScreen(
+                  courseId: courseId,
+                  mode: CourseQaReviewMode.qa,
+                );
+              },
+            ),
+          ],
+        ),
+      ],
     ),
     // ═══════════════════════════════════════════════════════════════════════════
     // TRAINER / SME PORTAL ROUTES — Uses TrainerShellV2
@@ -659,7 +760,9 @@ List<RouteBase> get _buildRoutes => [
             // TRN-10: Course List
             GoRoute(
               path: 'courses',
-              builder: (context, state) => const CourseListScreen(),
+              builder: (context, state) => CourseListScreen(
+                initialSearch: state.uri.queryParameters['search'],
+              ),
             ),
             // TRN-01: Course Builder V2
             GoRoute(
@@ -698,7 +801,10 @@ List<RouteBase> get _buildRoutes => [
               path: 'courses/:courseId/qa-review',
               builder: (context, state) {
                 final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
-                return QAReviewScreen(courseId: courseId);
+                return QAReviewScreen(
+                  courseId: courseId,
+                  mode: CourseQaReviewMode.trainer,
+                );
               },
             ),
             // TRN-06: SOP Linkage
@@ -709,6 +815,13 @@ List<RouteBase> get _buildRoutes => [
                 return SopLinkageScreen(courseId: courseId);
               },
             ),
+            GoRoute(
+              path: 'courses/:courseId/sme',
+              builder: (context, state) {
+                final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+                return SmeCollaborationScreen(courseId: courseId);
+              },
+            ),
             // TRN-08: Course Analytics V2
             GoRoute(
               path: 'courses/:courseId/analytics',
@@ -717,15 +830,23 @@ List<RouteBase> get _buildRoutes => [
                 return CourseAnalyticsV2Screen(courseId: courseId);
               },
             ),
-            // TRN-03 alternate: Assessment builder at /assessments
+            // TRN-03: Pick a course, then open Assessment Builder for that course
             GoRoute(
               path: 'assessments',
-              builder: (context, state) => const AssessmentBuilderV2Screen(courseId: 0),
+              builder: (context, state) => const TrainerAssessmentsHubScreen(),
             ),
             // TRN-07: AI Question Generation
             GoRoute(
               path: 'assessments/ai-generate',
               builder: (context, state) => const AiQuestionGenerationScreen(),
+            ),
+            GoRoute(
+              path: 'assessments/grading/:assessmentId',
+              builder: (context, state) {
+                final assessmentId =
+                    int.tryParse(state.pathParameters['assessmentId'] ?? '') ?? 0;
+                return GradingScreen(assessmentId: assessmentId);
+              },
             ),
             GoRoute(
               path: 'exam-generator',
@@ -756,6 +877,10 @@ List<RouteBase> get _buildRoutes => [
               path: 'assignments',
               builder: (context, state) => const TrainingAssignmentsScreen(),
             ),
+            GoRoute(
+              path: 'assignment-campaigns/new',
+              builder: (context, state) => const StandaloneAssignmentWizardScreen(),
+            ),
             // Reports hub + Learner Progress
             GoRoute(
               path: 'reports',
@@ -764,6 +889,10 @@ List<RouteBase> get _buildRoutes => [
                 GoRoute(
                   path: 'learner-progress',
                   builder: (context, state) => const LearnerProgressScreen(),
+                ),
+                GoRoute(
+                  path: 'completion-matrix',
+                  builder: (context, state) => const CompletionMatrixScreen(),
                 ),
               ],
             ),
@@ -962,11 +1091,13 @@ List<RouteBase> get _buildRoutes => [
         int? courseVersionId;
         int? enrollmentId;
         int? userId;
+        String? courseTitle;
         String? enrollmentStatus;
         if (extra is Map<String, dynamic>) {
-          courseVersionId = extra['courseVersionId'] as int?;
-          enrollmentId = extra['enrollmentId'] as int?;
-          userId = extra['userId'] as int?;
+          courseVersionId = int.tryParse(extra['courseVersionId']?.toString() ?? '');
+          enrollmentId = int.tryParse(extra['enrollmentId']?.toString() ?? '');
+          userId = int.tryParse(extra['userId']?.toString() ?? '');
+          courseTitle = extra['courseTitle']?.toString();
           enrollmentStatus = extra['enrollmentStatus']?.toString();
         }
         return CourseViewerScreenV2(
@@ -974,6 +1105,7 @@ List<RouteBase> get _buildRoutes => [
           courseVersionId: courseVersionId,
           enrollmentId: enrollmentId,
           userId: userId,
+          courseTitle: courseTitle,
           enrollmentStatus: enrollmentStatus,
         );
       },

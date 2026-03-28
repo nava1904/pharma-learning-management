@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Pharma LMS design system typography.
+/// Vyuh lms design system typography.
 class DesignTypography {
   DesignTypography._();
 
@@ -29,7 +29,7 @@ class DesignTypography {
       Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
 
   static TextStyle titleSmall(BuildContext context) =>
-      Theme.of(context).textTheme.titleSmall ?? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
+      Theme.of(context).textTheme.titleSmall ?? const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
 
   static TextStyle bodyLarge(BuildContext context) =>
       Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
@@ -38,14 +38,14 @@ class DesignTypography {
       Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
 
   static TextStyle bodySmall(BuildContext context) =>
-      Theme.of(context).textTheme.bodySmall ?? const TextStyle(fontSize: 12);
+      Theme.of(context).textTheme.bodySmall ?? const TextStyle(fontSize: 14);
 
   static TextStyle labelLarge(BuildContext context) =>
       Theme.of(context).textTheme.labelLarge ?? const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
 
   static TextStyle labelMedium(BuildContext context) =>
-      Theme.of(context).textTheme.labelMedium ?? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
+      Theme.of(context).textTheme.labelMedium ?? const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
 
   static TextStyle labelSmall(BuildContext context) =>
-      Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 10, fontWeight: FontWeight.w500);
+      Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
 }

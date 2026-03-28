@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Pharma LMS design system colors.
+/// Vyuh lms design system colors.
 class DesignColors {
   DesignColors._();
 

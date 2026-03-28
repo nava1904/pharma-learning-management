@@ -6,6 +6,12 @@
 // Assign courses to employees/groups with due dates and priority.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Material;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
@@ -14,6 +20,7 @@ import 'package:intl/intl.dart';
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import '../shared/employee_multi_select_dialog.dart';
 
 // ─── PROVIDERS ───────────────────────────────────────────────────────────────
 
@@ -26,16 +33,20 @@ final _assignmentsProvider =
   );
 });
 
-final _orgCoursesProvider =
+/// Courses you created that are published (or have an approved/effective version).
+final _trainerPublishedCoursesProvider =
     FutureProvider.autoDispose<List<Course>>((ref) async {
   final user = await ref.watch(currentUserProvider.future);
   if (user == null) return [];
-  return client.course.listCourses(organizationId: user.organizationId);
+  return client.course.listTrainerPublishedCoursesForAssignment();
 });
 
-final _orgUsersProvider =
+/// Learners with at least one enrollment on any version of those courses.
+final _trainerPublishedCourseLearnersProvider =
     FutureProvider.autoDispose<List<PharmaUser>>((ref) async {
-  return client.organization.listUsers();
+  final user = await ref.watch(currentUserProvider.future);
+  if (user == null) return [];
+  return client.training.listLearnersEnrolledInTrainerPublishedCourses();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -112,8 +123,6 @@ class _TrainingAssignmentsScreenState
     }).length;
     final completed =
         assignments.where((a) => a.status == 'completed').length;
-    final cancelled =
-        assignments.where((a) => a.status == 'cancelled' || a.status == 'superseded').length;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(_assignmentsProvider),
@@ -255,6 +264,18 @@ class _TrainingAssignmentsScreenState
             ],
           ),
         ),
+        OutlinedButton.icon(
+          onPressed: _showCsvBulkImportDialog,
+          icon: const Icon(Icons.upload_file, size: 16),
+          label: const Text('Import CSV'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: PharmaColors.emerald600,
+            side: BorderSide(color: PharmaColors.emerald600.withValues(alpha: 0.5)),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+        const SizedBox(width: 10),
         FilledButton.icon(
           onPressed: _showNewAssignmentDialog,
           icon: const Icon(Icons.add, size: 16),
@@ -267,6 +288,21 @@ class _TrainingAssignmentsScreenState
           ),
         ),
       ],
+    );
+  }
+
+  void _showCsvBulkImportDialog() {
+    ref.invalidate(_trainerPublishedCoursesProvider);
+    ref.invalidate(_trainerPublishedCourseLearnersProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) => _CsvBulkAssignmentDialog(
+        onDone: () {
+          ref.invalidate(_assignmentsProvider);
+          ref.invalidate(_trainerPublishedCourseLearnersProvider);
+        },
+        currentUserFuture: ref.read(currentUserProvider.future),
+      ),
     );
   }
 
@@ -707,12 +743,15 @@ class _TrainingAssignmentsScreenState
   // ─── NEW ASSIGNMENT DIALOG ───────────────────────────────────────────────
 
   void _showNewAssignmentDialog() {
+    ref.invalidate(_trainerPublishedCoursesProvider);
+    ref.invalidate(_trainerPublishedCourseLearnersProvider);
     showDialog(
       context: context,
       builder: (ctx) => _NewAssignmentDialog(
-        onCreated: () => ref.invalidate(_assignmentsProvider),
-        coursesAsync: ref.read(_orgCoursesProvider),
-        usersAsync: ref.read(_orgUsersProvider),
+        onCreated: () {
+          ref.invalidate(_assignmentsProvider);
+          ref.invalidate(_trainerPublishedCourseLearnersProvider);
+        },
         currentUserFuture: ref.read(currentUserProvider.future),
       ),
     );
@@ -723,33 +762,802 @@ class _TrainingAssignmentsScreenState
 // NEW ASSIGNMENT DIALOG
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _NewAssignmentDialog extends StatefulWidget {
+class _NewAssignmentDialog extends ConsumerStatefulWidget {
   const _NewAssignmentDialog({
     required this.onCreated,
-    required this.coursesAsync,
-    required this.usersAsync,
     required this.currentUserFuture,
   });
 
   final VoidCallback onCreated;
-  final AsyncValue<List<Course>> coursesAsync;
-  final AsyncValue<List<PharmaUser>> usersAsync;
   final Future<PharmaUser?> currentUserFuture;
 
   @override
-  State<_NewAssignmentDialog> createState() => _NewAssignmentDialogState();
+  ConsumerState<_NewAssignmentDialog> createState() =>
+      _NewAssignmentDialogState();
 }
 
-class _NewAssignmentDialogState extends State<_NewAssignmentDialog> {
+class _NewAssignmentDialogState extends ConsumerState<_NewAssignmentDialog> {
   Course? _selectedCourse;
   CourseVersion? _selectedVersion;
-  PharmaUser? _selectedUser;
   String _priority = 'medium';
   DateTime? _dueDate;
+  late final TextEditingController _dueDateController;
   String _reason = '';
   bool _submitting = false;
   List<CourseVersion> _versions = [];
   bool _loadingVersions = false;
+
+  String _assignTarget = 'individual';
+  final List<PharmaUser> _selectedUsers = [];
+  Department? _selectedDepartment;
+  TrainingBatch? _selectedBatch;
+
+  List<Department> _departments = [];
+  List<TrainingBatch> _batches = [];
+  bool _loadingDepts = false;
+  bool _loadingBatches = false;
+  int _assignedCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _dueDateController = TextEditingController();
+    _loadDepartmentsAndBatches();
+  }
+
+  @override
+  void dispose() {
+    _dueDateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadDepartmentsAndBatches() async {
+    final currentUser = await widget.currentUserFuture;
+    if (currentUser == null) return;
+    setState(() { _loadingDepts = true; _loadingBatches = true; });
+    try {
+      final depts = await client.organization.listDepartments(currentUser.siteId);
+      if (mounted) setState(() { _departments = depts; _loadingDepts = false; });
+    } catch (_) { if (mounted) setState(() => _loadingDepts = false); }
+    try {
+      final batches = await client.trainingBatch.listBatches(organizationId: currentUser.organizationId);
+      if (mounted) setState(() { _batches = batches; _loadingBatches = false; });
+    } catch (_) { if (mounted) setState(() => _loadingBatches = false); }
+  }
+
+  Future<void> _loadVersions(int courseId) async {
+    setState(() { _loadingVersions = true; _selectedVersion = null; });
+    try {
+      final versions = await client.course.getCourseVersions(courseId);
+      if (mounted) {
+        setState(() {
+          _versions = versions;
+          _selectedVersion = versions.isNotEmpty ? versions.first : null;
+          _loadingVersions = false;
+        });
+      }
+    } catch (_) { if (mounted) setState(() => _loadingVersions = false); }
+  }
+
+  // ── Search & pick helpers ─────────────────────────────────────────────────
+
+  Future<void> _pickCourse() async {
+    if (!mounted) return;
+    final picked = await showDialog<Course>(
+      context: context,
+      builder: (ctx) => _CourseDbSearchDialog(
+        load: (query) => client.course.listTrainerPublishedCoursesForAssignment(
+          search: query.trim().isEmpty ? null : query.trim(),
+        ),
+      ),
+    );
+    if (picked == null) return;
+    setState(() {
+      _selectedCourse = picked;
+      _selectedVersion = null;
+      _versions = [];
+    });
+    if (picked.id != null) _loadVersions(picked.id!);
+  }
+
+  Future<void> _pickUsersMulti() async {
+    if (!mounted) return;
+    final picked = await showDialog<List<PharmaUser>>(
+      context: context,
+      builder: (ctx) => EmployeeMultiSelectDbSearchDialog(
+        initialSelection: List<PharmaUser>.from(_selectedUsers),
+        load: (query) =>
+            client.training.listLearnersEnrolledInTrainerPublishedCourses(
+              search: query.trim().isEmpty ? null : query.trim(),
+              limit: 150,
+            ),
+      ),
+    );
+    if (picked == null) return;
+    setState(() {
+      _selectedUsers
+        ..clear()
+        ..addAll(picked);
+    });
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+
+  Future<void> _submit() async {
+    if (_selectedCourse == null) {
+      _snack('Please select a course'); return;
+    }
+    if (_selectedVersion == null) {
+      _snack('Please select a course version'); return;
+    }
+    if (_dueDate == null) {
+      _snack('Please select a due date'); return;
+    }
+    if (_assignTarget == 'individual' && _selectedUsers.isEmpty) {
+      _snack('Please select at least one employee');
+      return;
+    }
+    if (_assignTarget == 'department' && _selectedDepartment == null) {
+      _snack('Please select a department'); return;
+    }
+    if (_assignTarget == 'batch' && _selectedBatch == null) {
+      _snack('Please select a batch'); return;
+    }
+
+    setState(() { _submitting = true; _assignedCount = 0; });
+    try {
+      final currentUser = await widget.currentUserFuture;
+      final assignedById = currentUser!.id!;
+      final courseVersionId = _selectedVersion!.id!;
+      final reason = _reason.isNotEmpty ? _reason : null;
+
+      if (_assignTarget == 'individual') {
+        for (final u in _selectedUsers) {
+          if (u.id == null) continue;
+          try {
+            await client.training.assignTraining(
+              userId: u.id!,
+              courseVersionId: courseVersionId,
+              assignedById: assignedById,
+              dueDate: _dueDate!,
+              priority: _priority,
+              reason: reason,
+              source: 'manual',
+              forceReassign: false,
+            );
+            _assignedCount++;
+          } catch (_) {}
+        }
+      } else if (_assignTarget == 'department') {
+        final orgId = currentUser.organizationId;
+        final deptId = _selectedDepartment!.id;
+        final users = await client.organization.listUsers(
+          organizationId: orgId,
+          departmentId: deptId,
+        );
+        final active = users.where((u) => u.status == 'active' && u.id != null).toList();
+        for (final u in active) {
+          try {
+            await client.training.assignTraining(
+              userId: u.id!, courseVersionId: courseVersionId,
+              assignedById: assignedById, dueDate: _dueDate!,
+              priority: _priority, reason: reason, source: 'department_assignment', forceReassign: false,
+            );
+            _assignedCount++;
+          } catch (_) {}
+        }
+      } else if (_assignTarget == 'batch') {
+        final participants = await client.trainingBatch.listBatchParticipantsForEmployee(_selectedBatch!.id!);
+        for (final p in participants) {
+          try {
+            await client.training.assignTraining(
+              userId: p.userId, courseVersionId: courseVersionId,
+              assignedById: assignedById, dueDate: _dueDate!,
+              priority: _priority, reason: reason, source: 'batch_assignment', forceReassign: false,
+            );
+            _assignedCount++;
+          } catch (_) {}
+        }
+      }
+
+      if (_assignedCount == 0) {
+        if (mounted) {
+          setState(() => _submitting = false);
+          _snack(
+            'No assignments were created. Users may already be assigned to this version.',
+          );
+        }
+        return;
+      }
+
+      widget.onCreated();
+      if (mounted) {
+        setState(() => _submitting = false);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully assigned to $_assignedCount user(s)'),
+            backgroundColor: PharmaColors.emerald600,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        _snack('Error: $e');
+      }
+    }
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
+      title: const Text('New Training Assignment'),
+      content: SizedBox(
+        width: 560,
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(
+              'Course and employee pickers search the server (database). Individual assignments: choose one or more employees who are already enrolled on at least one of your published courses.',
+              style: PharmaTypography.caption
+                  .copyWith(color: PharmaColors.textTertiary),
+            ),
+            const SizedBox(height: 8),
+
+            // ── Course ────────────────────────────────────────────────────
+            _buildPickerField(
+              label: 'Course *',
+              value: _selectedCourse?.title,
+              hint: 'Tap to search courses (server)',
+              icon: Icons.menu_book,
+              onTap: _pickCourse,
+              onClear: () => setState(() { _selectedCourse = null; _selectedVersion = null; _versions = []; }),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Version ───────────────────────────────────────────────────
+            if (_loadingVersions)
+              const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
+            else if (_selectedCourse != null && _versions.isNotEmpty)
+              _buildVersionSelector(),
+            const SizedBox(height: 16),
+
+            // ── Assign target ─────────────────────────────────────────────
+            Align(alignment: Alignment.centerLeft, child: Text('Assign To *', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600))),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'individual', icon: Icon(Icons.person, size: 16), label: Text('Individual')),
+                ButtonSegment(value: 'department', icon: Icon(Icons.business, size: 16), label: Text('Department')),
+                ButtonSegment(value: 'batch', icon: Icon(Icons.groups, size: 16), label: Text('Batch')),
+              ],
+              selected: {_assignTarget},
+              onSelectionChanged: (val) => setState(() {
+                _assignTarget = val.first;
+                _selectedUsers.clear();
+                _selectedDepartment = null;
+                _selectedBatch = null;
+              }),
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Target selector ───────────────────────────────────────────
+            if (_assignTarget == 'individual') ...[
+              _buildPickerField(
+                label: 'Employees *',
+                value: _selectedUsers.isEmpty
+                    ? null
+                    : '${_selectedUsers.length} selected — tap to add or change',
+                hint: 'Tap to search the directory (DB); select one or more',
+                icon: Icons.person_search,
+                onTap: _pickUsersMulti,
+                onClear: () => setState(() => _selectedUsers.clear()),
+              ),
+              if (_selectedUsers.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _selectedUsers.map((u) {
+                      return Chip(
+                        label: Text(
+                          '${u.firstName} ${u.lastName}',
+                          style: PharmaTypography.caption,
+                        ),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                        onDeleted: () => setState(() {
+                          _selectedUsers.removeWhere(
+                            (x) => x.id != null && x.id == u.id,
+                          );
+                        }),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ]
+            else if (_assignTarget == 'department')
+              _loadingDepts
+                  ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
+                  : _buildDepartmentSelector()
+            else if (_assignTarget == 'batch')
+              _loadingBatches
+                  ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
+                  : _buildBatchSelector(),
+            const SizedBox(height: 12),
+
+            // ── Priority + Due Date ───────────────────────────────────────
+            Row(children: [
+              Expanded(child: _buildPrioritySelector()),
+              const SizedBox(width: 12),
+              Expanded(child: _buildDueDateField()),
+            ]),
+            const SizedBox(height: 12),
+
+            // ── Reason ────────────────────────────────────────────────────
+            TextField(
+              onChanged: (v) => _reason = v,
+              maxLines: 2,
+              decoration: InputDecoration(labelText: 'Reason (optional)', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
+            ),
+          ]),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          style: FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600),
+          child: _submitting
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: PharmaColors.cardBg))
+              : const Text('Create Assignment'),
+        ),
+      ],
+    );
+  }
+
+  // ── Reusable picker field ─────────────────────────────────────────────────
+
+  Widget _buildPickerField({required String label, String? value, required String hint, required IconData icon, required VoidCallback onTap, VoidCallback? onClear}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: PharmaRadius.inputRadius,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 18),
+          suffixIcon: value != null && onClear != null
+              ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: onClear)
+              : const Icon(Icons.arrow_drop_down),
+          filled: true, fillColor: PharmaColors.pageBg,
+          border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+        ),
+        child: Text(
+          value ?? hint,
+          style: TextStyle(color: value != null ? PharmaColors.textPrimary : PharmaColors.textTertiary),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  // ── Version selector (uses int ID to avoid object equality issues) ────────
+
+  Widget _buildVersionSelector() {
+    final versionIds = _versions.map((v) => v.id!).toList();
+    final selectedId = _selectedVersion?.id;
+    final initial = versionIds.contains(selectedId)
+        ? selectedId
+        : (versionIds.isNotEmpty ? versionIds.first : null);
+    return DropdownButtonFormField<int>(
+      key: ValueKey('ver_${_selectedCourse?.id}_${_versions.length}_$initial'),
+      initialValue: initial,
+      items: _versions.map((v) => DropdownMenuItem(value: v.id!, child: Text('v${v.version} (${v.status})'))).toList(),
+      onChanged: (id) {
+        if (id == null) return;
+        setState(() => _selectedVersion = _versions.firstWhere((v) => v.id == id));
+      },
+      decoration: InputDecoration(labelText: 'Select Version *', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
+      isExpanded: true,
+    );
+  }
+
+  Widget _buildDepartmentSelector() {
+    final deptItems = _departments.where((d) => d.id != null).toList();
+    final selectedId = _selectedDepartment?.id;
+    final value = selectedId != null && deptItems.any((d) => d.id == selectedId)
+        ? selectedId
+        : null;
+    return DropdownButtonFormField<int>(
+      key: ValueKey('dept_${deptItems.length}_$value'),
+      initialValue: value,
+      items: deptItems
+          .map((d) => DropdownMenuItem(
+                value: d.id!,
+                child: Text(d.name, overflow: TextOverflow.ellipsis),
+              ))
+          .toList(),
+      onChanged: (id) {
+        if (id == null) return;
+        setState(() => _selectedDepartment = _departments.firstWhere((d) => d.id == id));
+      },
+      decoration: InputDecoration(labelText: 'Select Department *', helperText: 'All active employees in this department will be assigned', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
+      isExpanded: true,
+    );
+  }
+
+  Widget _buildBatchSelector() {
+    final batchItems = _batches.where((b) => b.id != null).toList();
+    final selectedId = _selectedBatch?.id;
+    final value = selectedId != null && batchItems.any((b) => b.id == selectedId)
+        ? selectedId
+        : null;
+    return DropdownButtonFormField<int>(
+      key: ValueKey('batch_${batchItems.length}_$value'),
+      initialValue: value,
+      items: batchItems
+          .map((b) => DropdownMenuItem(
+                value: b.id!,
+                child: Text('${b.name} (${b.enrolledCount} enrolled)',
+                    overflow: TextOverflow.ellipsis),
+              ))
+          .toList(),
+      onChanged: (id) {
+        if (id == null) return;
+        setState(() => _selectedBatch = _batches.firstWhere((b) => b.id == id));
+      },
+      decoration: InputDecoration(labelText: 'Select Batch *', helperText: 'All participants in this batch will be assigned', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
+      isExpanded: true,
+    );
+  }
+
+  Widget _buildPrioritySelector() {
+    return DropdownButtonFormField<String>(
+      initialValue: _priority,
+      items: ['critical', 'high', 'medium', 'low'].map((p) => DropdownMenuItem(value: p, child: Text(p[0].toUpperCase() + p.substring(1)))).toList(),
+      onChanged: (v) { if (v != null) setState(() => _priority = v); },
+      decoration: InputDecoration(labelText: 'Priority', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
+    );
+  }
+
+  Widget _buildDueDateField() {
+    return TextField(
+      readOnly: true,
+      controller: _dueDateController,
+      decoration: InputDecoration(
+        labelText: 'Due Date *',
+        hintText: 'Select date',
+        suffixIcon: const Icon(Icons.calendar_today, size: 16),
+        filled: true, fillColor: PharmaColors.pageBg,
+        border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
+      ),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 14)),
+          firstDate: DateTime.now(),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+        );
+        if (picked != null) {
+          setState(() {
+            _dueDate = picked;
+            _dueDateController.text = DateFormat('MMM d, yyyy').format(picked);
+          });
+        }
+      },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEARCH PICKER DIALOG (reusable, works reliably inside dialogs)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _SearchPickerDialog<T> extends StatefulWidget {
+  const _SearchPickerDialog({
+    required this.title,
+    required this.items,
+    required this.labelBuilder,
+    this.subtitleBuilder,
+    this.iconBuilder,
+  });
+
+  final String title;
+  final List<T> items;
+  final String Function(T) labelBuilder;
+  final String? Function(T)? subtitleBuilder;
+  final IconData Function(T)? iconBuilder;
+
+  @override
+  State<_SearchPickerDialog<T>> createState() => _SearchPickerDialogState<T>();
+}
+
+class _SearchPickerDialogState<T> extends State<_SearchPickerDialog<T>> {
+  String _query = '';
+
+  List<T> get _filtered {
+    if (_query.isEmpty) return widget.items;
+    final q = _query.toLowerCase();
+    return widget.items.where((item) {
+      final label = widget.labelBuilder(item).toLowerCase();
+      final sub = widget.subtitleBuilder?.call(item)?.toLowerCase() ?? '';
+      return label.contains(q) || sub.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _filtered;
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
+      title: Text(widget.title),
+      content: SizedBox(
+        width: 480,
+        height: 400,
+        child: Column(children: [
+          TextField(
+            autofocus: true,
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: 'Type to search…',
+              prefixIcon: const Icon(Icons.search, size: 18),
+              filled: true, fillColor: PharmaColors.pageBg,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius, borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(child: Text('No results for "$_query"', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)))
+                : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, i) {
+                      final item = filtered[i];
+                      final sub = widget.subtitleBuilder?.call(item);
+                      return ListTile(
+                        leading: widget.iconBuilder != null ? Icon(widget.iconBuilder!(item), size: 20, color: PharmaColors.emerald600) : null,
+                        title: Text(widget.labelBuilder(item), overflow: TextOverflow.ellipsis),
+                        subtitle: sub != null ? Text(sub, style: PharmaTypography.caption) : null,
+                        dense: true,
+                        onTap: () => Navigator.pop(ctx, item),
+                        shape: RoundedRectangleBorder(borderRadius: PharmaRadius.cardRadius),
+                      );
+                    },
+                  ),
+          ),
+        ]),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))],
+    );
+  }
+}
+
+// ── Debounced server search: single course ───────────────────────────────────
+
+class _CourseDbSearchDialog extends StatefulWidget {
+  const _CourseDbSearchDialog({required this.load});
+
+  final Future<List<Course>> Function(String query) load;
+
+  @override
+  State<_CourseDbSearchDialog> createState() => _CourseDbSearchDialogState();
+}
+
+class _CourseDbSearchDialogState extends State<_CourseDbSearchDialog> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _debounce;
+  List<Course> _items = [];
+  bool _loading = true;
+  String? _emptyMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _runSearch('');
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _runSearch(String q) async {
+    setState(() {
+      _loading = true;
+      _emptyMessage = null;
+    });
+    try {
+      final list = await widget.load(q);
+      if (!mounted) return;
+      setState(() {
+        _items = list;
+        _loading = false;
+        if (list.isEmpty) {
+          _emptyMessage = q.trim().isEmpty
+              ? 'No assignable courses. Publish a course or add an approved/effective version.'
+              : 'No courses match your search.';
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _items = [];
+          _emptyMessage = 'Could not load courses: $e';
+        });
+      }
+    }
+  }
+
+  void _scheduleSearch(String v) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () => _runSearch(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(PharmaRadius.xl),
+      ),
+      title: const Text('Select Course'),
+      content: SizedBox(
+        width: 480,
+        height: 420,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _searchCtrl,
+              autofocus: true,
+              onChanged: _scheduleSearch,
+              decoration: InputDecoration(
+                hintText: 'Search title, SOP, description…',
+                prefixIcon: const Icon(Icons.search, size: 18),
+                filled: true,
+                fillColor: PharmaColors.pageBg,
+                border: OutlineInputBorder(
+                  borderRadius: PharmaRadius.inputRadius,
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_loading)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else if (_emptyMessage != null)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    _emptyMessage!,
+                    textAlign: TextAlign.center,
+                    style: PharmaTypography.body.copyWith(
+                      color: PharmaColors.textTertiary,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _items.length,
+                  itemBuilder: (ctx, i) {
+                    final c = _items[i];
+                    return ListTile(
+                      leading: Icon(Icons.menu_book,
+                          size: 20, color: PharmaColors.emerald600),
+                      title: Text(c.title, overflow: TextOverflow.ellipsis),
+                      subtitle: c.sopNumber != null
+                          ? Text('SOP: ${c.sopNumber}',
+                              style: PharmaTypography.caption)
+                          : null,
+                      dense: true,
+                      onTap: () => Navigator.pop(ctx, c),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: PharmaRadius.cardRadius,
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CSV BULK ASSIGNMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _CsvBulkAssignmentDialog extends ConsumerStatefulWidget {
+  const _CsvBulkAssignmentDialog({
+    required this.onDone,
+    required this.currentUserFuture,
+  });
+
+  final VoidCallback onDone;
+  final Future<PharmaUser?> currentUserFuture;
+
+  @override
+  ConsumerState<_CsvBulkAssignmentDialog> createState() =>
+      _CsvBulkAssignmentDialogState();
+}
+
+class _CsvBulkAssignmentDialogState
+    extends ConsumerState<_CsvBulkAssignmentDialog> {
+  Course? _selectedCourse;
+  CourseVersion? _selectedVersion;
+  List<CourseVersion> _versions = [];
+  bool _loadingVersions = false;
+  String _priority = 'medium';
+  DateTime? _dueDate;
+  late final TextEditingController _csvDueDateController;
+  String _reason = '';
+  bool _submitting = false;
+
+  Uint8List? _csvBytes;
+  String? _csvName;
+
+  @override
+  void initState() {
+    super.initState();
+    _csvDueDateController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _csvDueDateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickCsv() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['csv'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final f = result.files.single;
+    final bytes = f.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read CSV (empty or unsupported on this platform)')),
+        );
+      }
+      return;
+    }
+    setState(() {
+      _csvBytes = bytes;
+      _csvName = f.name;
+    });
+  }
 
   Future<void> _loadVersions(int courseId) async {
     setState(() => _loadingVersions = true);
@@ -767,225 +1575,392 @@ class _NewAssignmentDialogState extends State<_NewAssignmentDialog> {
     }
   }
 
-  Future<void> _submit() async {
-    if (_selectedVersion == null ||
-        _selectedUser == null ||
-        _dueDate == null) {
+  int? _headerIndex(List<dynamic> header, Set<String> names) {
+    for (var i = 0; i < header.length; i++) {
+      final k = header[i].toString().trim().toLowerCase().replaceAll(' ', '_');
+      if (names.contains(k)) return i;
+    }
+    return null;
+  }
+
+  Future<void> _runImport() async {
+    if (_selectedVersion == null || _dueDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select course, version, and due date')),
+      );
+      return;
+    }
+    if (_csvBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose a CSV file')),
+      );
+      return;
+    }
+
+    List<PharmaUser> users;
+    try {
+      users = await ref.read(_trainerPublishedCourseLearnersProvider.future);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load learners: $e')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    final byEmail = <String, PharmaUser>{};
+    final byId = <int, PharmaUser>{};
+    final byEmployeeId = <String, PharmaUser>{};
+    for (final u in users) {
+      if (u.id == null) continue;
+      byEmail[u.email.toLowerCase()] = u;
+      byId[u.id!] = u;
+      final eid = u.employeeId;
+      if (eid != null && eid.isNotEmpty) {
+        byEmployeeId[eid.toLowerCase()] = u;
+      }
+    }
+
+    final text = utf8.decode(_csvBytes!);
+    final rows = const CsvToListConverter().convert(text);
+    if (rows.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('CSV has no rows')),
+      );
+      return;
+    }
+
+    final header = rows.first;
+    var idxEmail = _headerIndex(header, {'email', 'email_address', 'e_mail'});
+    var idxUserId = _headerIndex(header, {'user_id', 'userid', 'id'});
+    var idxEmployeeId =
+        _headerIndex(header, {'employee_id', 'employeeid', 'emp_id', 'hr_id'});
+    if (idxEmail == null && idxUserId == null && idxEmployeeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please fill in all required fields')),
+          content: Text(
+            'CSV header must include one of: email, user_id, employee_id',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final targetOrder = <int>[];
+    final targetsById = <int, PharmaUser>{};
+    final errors = <String>[];
+    for (var r = 1; r < rows.length; r++) {
+      final row = rows[r];
+      if (row.isEmpty || row.every((c) => c.toString().trim().isEmpty)) {
+        continue;
+      }
+      PharmaUser? u;
+      if (idxEmail != null && idxEmail < row.length) {
+        final e = row[idxEmail].toString().trim().toLowerCase();
+        if (e.isNotEmpty) u = byEmail[e];
+      }
+      if (u == null && idxUserId != null && idxUserId < row.length) {
+        final raw = row[idxUserId].toString().trim();
+        final id = int.tryParse(raw);
+        if (id != null) u = byId[id];
+      }
+      if (u == null && idxEmployeeId != null && idxEmployeeId < row.length) {
+        final eid = row[idxEmployeeId].toString().trim().toLowerCase();
+        if (eid.isNotEmpty) u = byEmployeeId[eid];
+      }
+      if (u == null) {
+        errors.add('Row ${r + 1}: no matching active user');
+        continue;
+      }
+      if (u.status != 'active') {
+        errors.add('Row ${r + 1}: user ${u.email} is not active');
+        continue;
+      }
+      final uid = u.id!;
+      if (!targetsById.containsKey(uid)) {
+        targetsById[uid] = u;
+        targetOrder.add(uid);
+      }
+    }
+
+    if (targetOrder.isEmpty) {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Import failed'),
+          content: SingleChildScrollView(
+            child: Text(
+              errors.isEmpty
+                  ? 'No assignable rows.'
+                  : errors.take(50).join('\n'),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ],
+        ),
       );
       return;
     }
 
     setState(() => _submitting = true);
-    try {
-      final currentUser = await widget.currentUserFuture;
-      await client.training.assignTraining(
-        userId: _selectedUser!.id!,
-        courseVersionId: _selectedVersion!.id!,
-        assignedById: currentUser!.id!,
-        dueDate: _dueDate!,
-        priority: _priority,
-        reason: _reason.isNotEmpty ? _reason : null,
-        source: 'manual',
-        forceReassign: false,
-      );
-      widget.onCreated();
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _submitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+    final currentUser = await widget.currentUserFuture;
+    final assignedById = currentUser?.id;
+    if (assignedById == null) {
+      if (mounted) setState(() => _submitting = false);
+      return;
+    }
+    final courseVersionId = _selectedVersion!.id!;
+    final reason = _reason.isNotEmpty ? _reason : null;
+    var ok = 0;
+    for (final uid in targetOrder) {
+      final u = targetsById[uid]!;
+      try {
+        await client.training.assignTraining(
+          userId: u.id!,
+          courseVersionId: courseVersionId,
+          assignedById: assignedById,
+          dueDate: _dueDate!,
+          priority: _priority,
+          reason: reason,
+          source: 'csv_import',
+          forceReassign: false,
         );
+        ok++;
+      } catch (e) {
+        errors.add('${u.email}: $e');
       }
     }
+
+    if (mounted) setState(() => _submitting = false);
+    widget.onDone();
+    if (!mounted) return;
+    Navigator.pop(context);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('CSV import: $ok assigned'),
+        content: SizedBox(
+          width: 420,
+          height: 280,
+          child: errors.isEmpty
+              ? const Text('All rows processed successfully.')
+              : SingleChildScrollView(
+                  child: Text(
+                    'Row-level issues:\n\n${errors.take(80).join('\n')}',
+                    style: PharmaTypography.caption,
+                  ),
+                ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final courses = widget.coursesAsync.valueOrNull ?? [];
-    final users = widget.usersAsync.valueOrNull ?? [];
+    final coursesAsync = ref.watch(_trainerPublishedCoursesProvider);
+    final courses = coursesAsync.valueOrNull ?? [];
 
     return AlertDialog(
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(PharmaRadius.xl)),
-      title: const Text('New Training Assignment'),
+        borderRadius: BorderRadius.circular(PharmaRadius.xl),
+      ),
+      title: const Text('Bulk assign from CSV'),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            // Course selection
-            DropdownButtonFormField<Course>(
-              initialValue: _selectedCourse,
-              items: courses
-                  .map((c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c.title,
-                          overflow: TextOverflow.ellipsis)))
-                  .toList(),
-              onChanged: (c) {
-                setState(() {
-                  _selectedCourse = c;
-                  _selectedVersion = null;
-                  _versions = [];
-                });
-                if (c?.id != null) _loadVersions(c!.id!);
-              },
-              decoration: InputDecoration(
-                labelText: 'Select Course *',
-                filled: true,
-                fillColor: PharmaColors.pageBg,
-                border: OutlineInputBorder(
-                    borderRadius: PharmaRadius.inputRadius),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CSV rows must match learners already enrolled in your published courses (email, user_id, or employee_id). Courses listed are only those you created and published.',
+                style: PharmaTypography.caption
+                    .copyWith(color: PharmaColors.textTertiary),
               ),
-              isExpanded: true,
-            ),
-            const SizedBox(height: 12),
-
-            // Version selection
-            if (_loadingVersions)
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (_selectedCourse != null)
-              DropdownButtonFormField<CourseVersion>(
-                initialValue: _selectedVersion,
-                items: _versions
-                    .map((v) => DropdownMenuItem(
-                        value: v,
-                        child: Text(
-                            'v${v.version} (${v.status})')))
+              if (coursesAsync.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 10, bottom: 4),
+                  child: LinearProgressIndicator(minHeight: 2),
+                ),
+              if (coursesAsync.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Could not load your published courses.',
+                    style: PharmaTypography.caption
+                        .copyWith(color: PharmaColors.danger),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Course>(
+                key: ValueKey('csv_course_${courses.length}_${_selectedCourse?.id}'),
+                initialValue: _selectedCourse != null &&
+                        courses.any((c) => c.id == _selectedCourse!.id)
+                    ? courses.firstWhere((c) => c.id == _selectedCourse!.id)
+                    : null,
+                items: courses
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c.title, overflow: TextOverflow.ellipsis),
+                      ),
+                    )
                     .toList(),
-                onChanged: (v) => setState(() => _selectedVersion = v),
+                onChanged: (c) {
+                  setState(() {
+                    _selectedCourse = c;
+                    _selectedVersion = null;
+                    _versions = [];
+                  });
+                  if (c?.id != null) _loadVersions(c!.id!);
+                },
                 decoration: InputDecoration(
-                  labelText: 'Select Version *',
+                  labelText: 'Course *',
                   filled: true,
                   fillColor: PharmaColors.pageBg,
-                  border: OutlineInputBorder(
-                      borderRadius: PharmaRadius.inputRadius),
+                  border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
                 ),
                 isExpanded: true,
               ),
-            const SizedBox(height: 12),
-
-            // User selection
-            DropdownButtonFormField<PharmaUser>(
-              initialValue: _selectedUser,
-              items: users
-                  .where((u) => u.status == 'active')
-                  .map((u) => DropdownMenuItem(
-                      value: u,
-                      child: Text(
-                          '${u.firstName} ${u.lastName} (${u.email})',
-                          overflow: TextOverflow.ellipsis)))
-                  .toList(),
-              onChanged: (u) => setState(() => _selectedUser = u),
-              decoration: InputDecoration(
-                labelText: 'Assign To *',
-                filled: true,
-                fillColor: PharmaColors.pageBg,
-                border: OutlineInputBorder(
-                    borderRadius: PharmaRadius.inputRadius),
-              ),
-              isExpanded: true,
-            ),
-            const SizedBox(height: 12),
-
-            // Priority + Due Date
-            Row(children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _priority,
-                  items: ['critical', 'high', 'medium', 'low']
-                      .map((p) => DropdownMenuItem(
-                          value: p,
-                          child: Text(
-                              p[0].toUpperCase() + p.substring(1))))
+              const SizedBox(height: 12),
+              if (_loadingVersions)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ))
+              else if (_selectedCourse != null)
+                DropdownButtonFormField<CourseVersion>(
+                  key: ValueKey(
+                      'csv_ver_${_selectedCourse?.id}_${_versions.length}_${_selectedVersion?.id}'),
+                  initialValue: _selectedVersion != null &&
+                          _versions.any((v) => v.id == _selectedVersion!.id)
+                      ? _versions.firstWhere((v) => v.id == _selectedVersion!.id)
+                      : null,
+                  items: _versions
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text('v${v.version} (${v.status})'),
+                        ),
+                      )
                       .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => _priority = v);
-                  },
+                  onChanged: (v) => setState(() => _selectedVersion = v),
                   decoration: InputDecoration(
-                    labelText: 'Priority',
+                    labelText: 'Version *',
                     filled: true,
                     fillColor: PharmaColors.pageBg,
-                    border: OutlineInputBorder(
-                        borderRadius: PharmaRadius.inputRadius),
+                    border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
                   ),
+                  isExpanded: true,
+                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _priority,
+                      items: ['critical', 'high', 'medium', 'low']
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p,
+                              child:
+                                  Text(p[0].toUpperCase() + p.substring(1)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => _priority = v);
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Priority',
+                        filled: true,
+                        fillColor: PharmaColors.pageBg,
+                        border: OutlineInputBorder(
+                          borderRadius: PharmaRadius.inputRadius,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Due date *',
+                        suffixIcon: const Icon(Icons.calendar_today, size: 16),
+                        filled: true,
+                        fillColor: PharmaColors.pageBg,
+                        border: OutlineInputBorder(
+                          borderRadius: PharmaRadius.inputRadius,
+                        ),
+                      ),
+                      readOnly: true,
+                      controller: _csvDueDateController,
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _dueDate ??
+                              DateTime.now().add(const Duration(days: 14)),
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _dueDate = picked;
+                            _csvDueDateController.text =
+                                DateFormat('MMM d, yyyy').format(picked);
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                onChanged: (v) => _reason = v,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Reason (optional)',
+                  filled: true,
+                  fillColor: PharmaColors.pageBg,
+                  border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Due Date *',
-                    hintText: _dueDate != null
-                        ? DateFormat('MMM d, yyyy').format(_dueDate!)
-                        : 'Select date',
-                    suffixIcon:
-                        const Icon(Icons.calendar_today, size: 16),
-                    filled: true,
-                    fillColor: PharmaColors.pageBg,
-                    border: OutlineInputBorder(
-                        borderRadius: PharmaRadius.inputRadius),
-                  ),
-                  readOnly: true,
-                  controller: TextEditingController(
-                    text: _dueDate != null
-                        ? DateFormat('MMM d, yyyy').format(_dueDate!)
-                        : '',
-                  ),
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          DateTime.now().add(const Duration(days: 14)),
-                      firstDate: DateTime.now(),
-                      lastDate:
-                          DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      setState(() => _dueDate = picked);
-                    }
-                  },
-                ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _pickCsv,
+                icon: const Icon(Icons.attach_file, size: 18),
+                label: Text(_csvName == null ? 'Choose CSV file' : _csvName!),
               ),
-            ]),
-            const SizedBox(height: 12),
-
-            // Reason
-            TextField(
-              onChanged: (v) => _reason = v,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Reason (optional)',
-                filled: true,
-                fillColor: PharmaColors.pageBg,
-                border: OutlineInputBorder(
-                    borderRadius: PharmaRadius.inputRadius),
-              ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
-          onPressed: _submitting ? null : _submit,
-          style:
-              FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600),
+          onPressed: _submitting ? null : _runImport,
+          style: FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600),
           child: _submitting
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child:
-                      CircularProgressIndicator(strokeWidth: 2, color: PharmaColors.cardBg))
-              : const Text('Create Assignment'),
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: PharmaColors.cardBg,
+                  ),
+                )
+              : const Text('Run import'),
         ),
       ],
     );

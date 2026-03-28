@@ -10,7 +10,7 @@ import '../../providers/auth_provider.dart';
 import 'oidc_sign_in_widget.dart';
 
 /// ═══════════════════════════════════════════════════════════════════════════════════
-/// VYUH LMS — LOGIN SCREEN
+/// Vyuh lms — login screen
 /// ═══════════════════════════════════════════════════════════════════════════════════
 ///
 /// DESIGN PHILOSOPHY (Inspired by world-class design principles)
@@ -74,7 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   late Animation<Offset> _slideUp;
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // DESIGN SYSTEM — Vyuh LMS Brand
+  // DESIGN SYSTEM — Vyuh lms brand
   // ═══════════════════════════════════════════════════════════════════════════════
   // 
   // SPATIAL SYSTEM (4pt base, 8pt comfortable)
@@ -759,7 +759,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Column(
       children: [
         const SizedBox(height: s2),
-        VyuhLogo(height: 48),
+        VyuhLogo(height: 48, color: Colors.white),
         const SizedBox(height: s2),
         Text(
           'Enterprise Edition',
@@ -854,7 +854,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             // Logo
             Row(
               children: [
-                VyuhLogo(height: 28),
+                VyuhLogo(height: 28, color: Colors.white),
                 const SizedBox(width: s2),
                 Text(
                   'Enterprise Edition',
@@ -1036,7 +1036,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       ),
       child: const Row(
         children: [
-          _StatItem(value: '500', suffix: '+', label: 'Pharma Clients'),
+          _StatItem(value: '500', suffix: '+', label: 'Enterprise clients'),
           SizedBox(width: s4),
           _StatItem(value: '2M', suffix: '+', label: 'Trained Employees'),
           SizedBox(width: s4),

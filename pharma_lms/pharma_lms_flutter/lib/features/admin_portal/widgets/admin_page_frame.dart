@@ -18,13 +18,17 @@ class AdminPageFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 980;
     return ListView(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PortalLayout.contentPadding),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Wrap(
+          spacing: PharmaSpacing.md,
+          runSpacing: PharmaSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.start,
           children: [
-            Expanded(
+            SizedBox(
+              width: compact ? MediaQuery.of(context).size.width : MediaQuery.of(context).size.width - 320,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -39,7 +43,7 @@ class AdminPageFrame extends StatelessWidget {
                 ],
               ),
             ),
-            if (actions.isNotEmpty) ...actions,
+            if (actions.isNotEmpty) Wrap(spacing: PharmaSpacing.sm, runSpacing: PharmaSpacing.sm, children: actions),
           ],
         ),
         const SizedBox(height: PharmaSpacing.lg),
@@ -139,8 +143,9 @@ class AdminKpiRow extends StatelessWidget {
   }
 }
 
-class AdminPlaceholderTable extends StatelessWidget {
-  const AdminPlaceholderTable({
+/// Simple read-only data table for admin lists (CSV-style rows).
+class AdminDataTable extends StatelessWidget {
+  const AdminDataTable({
     super.key,
     required this.columns,
     required this.rows,
@@ -151,20 +156,25 @@ class AdminPlaceholderTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingTextStyle: PharmaTypography.bodyMedium.copyWith(
-          color: PharmaColors.textSecondary,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: DataTable(
+            headingTextStyle: PharmaTypography.bodyMedium.copyWith(
+              color: PharmaColors.textSecondary,
+            ),
+            columns: columns.map((c) => DataColumn(label: Text(c))).toList(),
+            rows: rows
+                .map(
+                  (r) => DataRow(
+                    cells: r.map((v) => DataCell(Text(v))).toList(),
+                  ),
+                )
+                .toList(),
+          ),
         ),
-        columns: columns.map((c) => DataColumn(label: Text(c))).toList(),
-        rows: rows
-            .map(
-              (r) => DataRow(
-                cells: r.map((v) => DataCell(Text(v))).toList(),
-              ),
-            )
-            .toList(),
       ),
     );
   }

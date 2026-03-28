@@ -6,11 +6,25 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import '../shared/communication_sheets.dart';
+
+/// Where this screen is shown: trainer workflow vs QA sign-off in the QA Portal shell.
+enum CourseQaReviewMode {
+  /// Trainer Portal: submit for QA, validation — no approve/reject checklist.
+  trainer,
+  /// QA Portal shell: full checklist and approval actions.
+  qa,
+}
 
 class QAReviewScreen extends ConsumerStatefulWidget {
-  const QAReviewScreen({super.key, required this.courseId});
+  const QAReviewScreen({
+    super.key,
+    required this.courseId,
+    this.mode = CourseQaReviewMode.trainer,
+  });
 
   final int courseId;
+  final CourseQaReviewMode mode;
 
   @override
   ConsumerState<QAReviewScreen> createState() => _QAReviewScreenState();
@@ -145,7 +159,9 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
       _currentStatus == 'draft' || _currentStatus == 'needs_revision';
 
   bool get _isUnderReview =>
-      _currentStatus == 'under_review' || _currentStatus == 'pending_qa';
+      _currentStatus == 'under_review' ||
+      _currentStatus == 'pending_qa' ||
+      _currentStatus == 'pending_approval';
 
   bool get _allChecked =>
       _materialsAccurate && _mediaWorks && _assessmentsValid;
@@ -259,7 +275,7 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
           const SizedBox(height: PharmaSpacing.sectionGap),
           _buildStepper(),
           const SizedBox(height: PharmaSpacing.sectionGap),
-          if (_canSubmit) ...[
+          if (_canSubmit && widget.mode == CourseQaReviewMode.trainer) ...[
             _buildStatusBanner(),
             const SizedBox(height: PharmaSpacing.sectionGap),
           ],
@@ -269,13 +285,16 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
           const SizedBox(height: PharmaSpacing.sectionGap),
           LayoutBuilder(
             builder: (context, constraints) {
+              final rightPanel = widget.mode == CourseQaReviewMode.qa
+                  ? _buildQAReviewPanel()
+                  : _buildTrainerQaPortalNotice();
               if (constraints.maxWidth > 800) {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(flex: 3, child: _buildVersionHistoryPanel()),
                     const SizedBox(width: PharmaSpacing.gridGap),
-                    Expanded(flex: 2, child: _buildQAReviewPanel()),
+                    Expanded(flex: 2, child: rightPanel),
                   ],
                 );
               }
@@ -283,14 +302,62 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
                 children: [
                   _buildVersionHistoryPanel(),
                   const SizedBox(height: PharmaSpacing.sectionGap),
-                  _buildQAReviewPanel(),
+                  rightPanel,
                 ],
               );
             },
           ),
           const SizedBox(height: PharmaSpacing.sectionGap),
-          if (_canSubmit) _buildSubmitButton(),
+          if (_canSubmit && widget.mode == CourseQaReviewMode.trainer) _buildSubmitButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTrainerQaPortalNotice() {
+    return Container(
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(PharmaSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, size: 20, color: PharmaColors.info),
+                const SizedBox(width: 8),
+                Text(
+                  'QA approval',
+                  style: PharmaTypography.headingSmall.copyWith(fontSize: 15),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Formal QA sign-off (review checklist, request changes, approve, or reject) '
+              'is performed in the QA Portal by authorized reviewers.',
+              style: PharmaTypography.body.copyWith(
+                color: PharmaColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/qa/dashboard'),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('Open QA Command Center'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.info,
+                side: BorderSide(color: PharmaColors.info.withValues(alpha: 0.5)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -299,8 +366,13 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
     return Row(
       children: [
         IconButton(
-          onPressed: () =>
-              context.go('/trainer/courses/${widget.courseId}/builder'),
+          onPressed: () {
+            if (widget.mode == CourseQaReviewMode.qa) {
+              context.go('/qa/dashboard');
+            } else {
+              context.go('/trainer/courses/${widget.courseId}/builder');
+            }
+          },
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
         const SizedBox(width: 8),
@@ -334,10 +406,39 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
           ),
         ),
         _StatusChip(status: _currentStatus),
+        if (_latestVersion?.id != null) ...[
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'QA discussion thread',
+            onPressed: () => openCourseQaThreadForVersion(
+              context,
+              courseVersionId: _latestVersion!.id!,
+              courseTitle: _course!.title,
+            ),
+            icon: const Icon(Icons.forum_outlined),
+          ),
+        ],
         const SizedBox(width: 12),
         OutlinedButton.icon(
-          onPressed: () =>
-              context.go('/trainer/courses/${widget.courseId}/preview'),
+          onPressed: () {
+            // "Preview as Employee" should show the employee portal course viewer UI.
+            // QA review is done per latest course version, so we navigate with that version id.
+            final versionId = _latestVersion?.id;
+            if (versionId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Unable to resolve latest course version for preview'),
+                  backgroundColor: PharmaColors.danger,
+                ),
+              );
+              return;
+            }
+
+            context.go(
+              '/employee/course/${widget.courseId}',
+              extra: <String, dynamic>{'courseVersionId': versionId},
+            );
+          },
           icon: const Icon(Icons.visibility, size: 16),
           label: const Text('Preview as Employee'),
           style: OutlinedButton.styleFrom(
@@ -351,7 +452,9 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
 
   Widget _buildStepper() {
     final status = _currentStatus;
-    final isUnderReview = status == 'under_review' || status == 'pending_qa';
+    final isUnderReview = status == 'under_review' ||
+        status == 'pending_qa' ||
+        status == 'pending_approval';
     final isApproved = status == 'approved' || status == 'effective';
     final isRejected = status == 'rejected';
     final isNeedsRevision = status == 'needs_revision';
@@ -1410,6 +1513,7 @@ class _StatusChip extends StatelessWidget {
     switch (status) {
       case 'under_review':
       case 'pending_qa':
+      case 'pending_approval':
         bg = PharmaColors.warningBg;
         fg = PharmaColors.warningText;
         label = 'UNDER REVIEW';

@@ -12,3 +12,15 @@ fields:
   passedCount: int
   ### Histogram: bucket label -> count. E.g. "0-20": 2, "21-40": 1, "41-60": 3, "61-80": 5, "81-100": 10.
   scoreDistributionJson: String?
+  ### Sum of material engagement time for enrollments in this version.
+  totalTimeSpentSeconds: int, default=0
+  ### Mean material progress % (0–100) across progress rows for those enrollments.
+  averageMaterialProgressPct: double, default=0.0
+  ### Active training assignments tied to this course version.
+  activeTrainingAssignmentCount: int, default=0
+  ### Coursework assignment submissions (lessons in this version) by enrolled learners.
+  courseworkSubmissionCount: int, default=0
+  ### Completed assessment attempts by enrolled learners.
+  assessmentAttemptCount: int, default=0
+  ### Attempts that met passing score.
+  passedAssessmentAttemptCount: int, default=0

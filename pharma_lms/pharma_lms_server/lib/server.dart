@@ -12,14 +12,17 @@ import 'src/services/password_policy_service.dart';
 import 'src/web/routes/api_proxy_route.dart';
 import 'src/web/routes/app_config_route.dart';
 import 'src/web/routes/metrics_route.dart';
+import 'src/web/routes/realtime_websocket_route.dart';
 import 'src/web/routes/root.dart';
 
 const _apiEndpointPaths = [
   'emailIdp', 'jwtRefresh', 'oidcIdp', 'admin', 'analytics', 'assessmentBuilder',
-  'assessment', 'audit', 'compliance', 'courseBuilder', 'course',
-  'document', 'event', 'material', 'mfa', 'notification', 'organization',
-  'qa', 'qualityEvent', 'seed', 'training', 'user', 'greeting',
-  'validation',
+  'assessment', 'assignment', 'audit', 'auditFeed', 'auditTrail', 'batchAnnouncement',
+  'certificate', 'certificateTemplate', 'compliance', 'courseBuilder', 'course',
+  'document', 'event', 'inspection', 'learnerSupport', 'lessonBlock', 'liveClass',
+  'material', 'mfa', 'notification', 'notificationTemplate', 'organization',
+  'qa', 'qualityEvent', 'realtime', 'seed', 'sme', 'sopLinkage',   'trainingBatch',
+  'training', 'standaloneAssignment', 'user', 'greeting', 'validation',
 ];
 
 /// The starting point of the Serverpod server.
@@ -61,6 +64,9 @@ void run(List<String> args) async {
 
   // Prometheus /metrics for request_count and request_latency_seconds
   pod.webServer.addRoute(MetricsRoute(), '/metrics');
+
+  // Realtime push (WebSocket) — same host as Flutter web when using port 8082.
+  pod.webServer.addRoute(RealtimeWebSocketRoute(pod), '/ws');
 
   // Serve all files in the web/static relative directory under /.
   // These are used by the default web page.

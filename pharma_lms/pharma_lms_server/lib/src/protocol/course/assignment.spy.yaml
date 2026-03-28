@@ -1,0 +1,16 @@
+### Assignment within a lesson for student submissions.
+class: Assignment
+
+table: assignment
+
+fields:
+  ### The lesson this assignment belongs to.
+  lesson: Lesson?, relation
+  ### Assignment title.
+  title: String
+  ### Instructions for the assignment.
+  instructions: String?
+  ### Allowed file types as JSON array (e.g. ["pdf","doc","png"]).
+  allowedFileTypes: String?
+  ### Created timestamp.
+  createdAt: DateTime, default=now

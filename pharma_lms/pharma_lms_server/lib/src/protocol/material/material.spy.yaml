@@ -10,5 +10,7 @@ fields:
   materialType: String
   ### S3/MinIO storage key.
   storageKey: String?
+  ### URL for embedded content (Google Docs/Sheets/Slides, external video links).
+  contentUrl: String?
   ### Organization for multi-tenant.
   organization: Organization?, relation

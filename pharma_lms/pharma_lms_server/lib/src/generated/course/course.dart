@@ -28,7 +28,17 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     this.createdBy,
     required this.organizationId,
     this.organization,
-  }) : status = status ?? 'draft';
+    this.customMetadataJson,
+    this.previewVideoUrl,
+    this.imageUrl,
+    this.tags,
+    this.publishedAt,
+    bool? disableSelfEnrollment,
+    this.category,
+    bool? featured,
+  }) : status = status ?? 'draft',
+       disableSelfEnrollment = disableSelfEnrollment ?? false,
+       featured = featured ?? false;
 
   factory Course({
     int? id,
@@ -40,6 +50,14 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     _i2.PharmaUser? createdBy,
     required int organizationId,
     _i3.Organization? organization,
+    String? customMetadataJson,
+    String? previewVideoUrl,
+    String? imageUrl,
+    String? tags,
+    DateTime? publishedAt,
+    bool? disableSelfEnrollment,
+    String? category,
+    bool? featured,
   }) = _CourseImpl;
 
   factory Course.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -61,6 +79,24 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
           : _i4.Protocol().deserialize<_i3.Organization>(
               jsonSerialization['organization'],
             ),
+      customMetadataJson: jsonSerialization['customMetadataJson'] as String?,
+      previewVideoUrl: jsonSerialization['previewVideoUrl'] as String?,
+      imageUrl: jsonSerialization['imageUrl'] as String?,
+      tags: jsonSerialization['tags'] as String?,
+      publishedAt: jsonSerialization['publishedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(
+              jsonSerialization['publishedAt'],
+            ),
+      disableSelfEnrollment: jsonSerialization['disableSelfEnrollment'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['disableSelfEnrollment'],
+            ),
+      category: jsonSerialization['category'] as String?,
+      featured: jsonSerialization['featured'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(jsonSerialization['featured']),
     );
   }
 
@@ -93,6 +129,30 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
   /// Organization for multi-tenant.
   _i3.Organization? organization;
 
+  /// Site-specific JSON attributes (curricula tags, therapeutic area, etc.).
+  String? customMetadataJson;
+
+  /// Preview/teaser video URL (YouTube, Vimeo, etc.).
+  String? previewVideoUrl;
+
+  /// Cover image URL for the course.
+  String? imageUrl;
+
+  /// Comma-separated tags (difficulty, therapeutic area, etc.).
+  String? tags;
+
+  /// Date the course was published.
+  DateTime? publishedAt;
+
+  /// Whether self-enrollment is disabled (admin/manager assignment only).
+  bool disableSelfEnrollment;
+
+  /// Course category (e.g., GMP, Quality, Safety).
+  String? category;
+
+  /// Whether this course is featured/promoted.
+  bool featured;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -109,6 +169,14 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
     _i2.PharmaUser? createdBy,
     int? organizationId,
     _i3.Organization? organization,
+    String? customMetadataJson,
+    String? previewVideoUrl,
+    String? imageUrl,
+    String? tags,
+    DateTime? publishedAt,
+    bool? disableSelfEnrollment,
+    String? category,
+    bool? featured,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -123,6 +191,14 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       if (createdBy != null) 'createdBy': createdBy?.toJson(),
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
+      if (customMetadataJson != null) 'customMetadataJson': customMetadataJson,
+      if (previewVideoUrl != null) 'previewVideoUrl': previewVideoUrl,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (tags != null) 'tags': tags,
+      if (publishedAt != null) 'publishedAt': publishedAt?.toJson(),
+      'disableSelfEnrollment': disableSelfEnrollment,
+      if (category != null) 'category': category,
+      'featured': featured,
     };
   }
 
@@ -140,6 +216,14 @@ abstract class Course implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
       'organizationId': organizationId,
       if (organization != null)
         'organization': organization?.toJsonForProtocol(),
+      if (customMetadataJson != null) 'customMetadataJson': customMetadataJson,
+      if (previewVideoUrl != null) 'previewVideoUrl': previewVideoUrl,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (tags != null) 'tags': tags,
+      if (publishedAt != null) 'publishedAt': publishedAt?.toJson(),
+      'disableSelfEnrollment': disableSelfEnrollment,
+      if (category != null) 'category': category,
+      'featured': featured,
     };
   }
 
@@ -192,6 +276,14 @@ class _CourseImpl extends Course {
     _i2.PharmaUser? createdBy,
     required int organizationId,
     _i3.Organization? organization,
+    String? customMetadataJson,
+    String? previewVideoUrl,
+    String? imageUrl,
+    String? tags,
+    DateTime? publishedAt,
+    bool? disableSelfEnrollment,
+    String? category,
+    bool? featured,
   }) : super._(
          id: id,
          title: title,
@@ -202,6 +294,14 @@ class _CourseImpl extends Course {
          createdBy: createdBy,
          organizationId: organizationId,
          organization: organization,
+         customMetadataJson: customMetadataJson,
+         previewVideoUrl: previewVideoUrl,
+         imageUrl: imageUrl,
+         tags: tags,
+         publishedAt: publishedAt,
+         disableSelfEnrollment: disableSelfEnrollment,
+         category: category,
+         featured: featured,
        );
 
   /// Returns a shallow copy of this [Course]
@@ -218,6 +318,14 @@ class _CourseImpl extends Course {
     Object? createdBy = _Undefined,
     int? organizationId,
     Object? organization = _Undefined,
+    Object? customMetadataJson = _Undefined,
+    Object? previewVideoUrl = _Undefined,
+    Object? imageUrl = _Undefined,
+    Object? tags = _Undefined,
+    Object? publishedAt = _Undefined,
+    bool? disableSelfEnrollment,
+    Object? category = _Undefined,
+    bool? featured,
   }) {
     return Course(
       id: id is int? ? id : this.id,
@@ -233,6 +341,19 @@ class _CourseImpl extends Course {
       organization: organization is _i3.Organization?
           ? organization
           : this.organization?.copyWith(),
+      customMetadataJson: customMetadataJson is String?
+          ? customMetadataJson
+          : this.customMetadataJson,
+      previewVideoUrl: previewVideoUrl is String?
+          ? previewVideoUrl
+          : this.previewVideoUrl,
+      imageUrl: imageUrl is String? ? imageUrl : this.imageUrl,
+      tags: tags is String? ? tags : this.tags,
+      publishedAt: publishedAt is DateTime? ? publishedAt : this.publishedAt,
+      disableSelfEnrollment:
+          disableSelfEnrollment ?? this.disableSelfEnrollment,
+      category: category is String? ? category : this.category,
+      featured: featured ?? this.featured,
     );
   }
 }
@@ -269,6 +390,50 @@ class CourseUpdateTable extends _i1.UpdateTable<CourseTable> {
     table.organizationId,
     value,
   );
+
+  _i1.ColumnValue<String, String> customMetadataJson(String? value) =>
+      _i1.ColumnValue(
+        table.customMetadataJson,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> previewVideoUrl(String? value) =>
+      _i1.ColumnValue(
+        table.previewVideoUrl,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> imageUrl(String? value) => _i1.ColumnValue(
+    table.imageUrl,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> tags(String? value) => _i1.ColumnValue(
+    table.tags,
+    value,
+  );
+
+  _i1.ColumnValue<DateTime, DateTime> publishedAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.publishedAt,
+        value,
+      );
+
+  _i1.ColumnValue<bool, bool> disableSelfEnrollment(bool value) =>
+      _i1.ColumnValue(
+        table.disableSelfEnrollment,
+        value,
+      );
+
+  _i1.ColumnValue<String, String> category(String? value) => _i1.ColumnValue(
+    table.category,
+    value,
+  );
+
+  _i1.ColumnValue<bool, bool> featured(bool value) => _i1.ColumnValue(
+    table.featured,
+    value,
+  );
 }
 
 class CourseTable extends _i1.Table<int?> {
@@ -299,6 +464,40 @@ class CourseTable extends _i1.Table<int?> {
       'organizationId',
       this,
     );
+    customMetadataJson = _i1.ColumnString(
+      'customMetadataJson',
+      this,
+    );
+    previewVideoUrl = _i1.ColumnString(
+      'previewVideoUrl',
+      this,
+    );
+    imageUrl = _i1.ColumnString(
+      'imageUrl',
+      this,
+    );
+    tags = _i1.ColumnString(
+      'tags',
+      this,
+    );
+    publishedAt = _i1.ColumnDateTime(
+      'publishedAt',
+      this,
+    );
+    disableSelfEnrollment = _i1.ColumnBool(
+      'disableSelfEnrollment',
+      this,
+      hasDefault: true,
+    );
+    category = _i1.ColumnString(
+      'category',
+      this,
+    );
+    featured = _i1.ColumnBool(
+      'featured',
+      this,
+      hasDefault: true,
+    );
   }
 
   late final CourseUpdateTable updateTable;
@@ -324,6 +523,30 @@ class CourseTable extends _i1.Table<int?> {
 
   /// Organization for multi-tenant.
   _i3.OrganizationTable? _organization;
+
+  /// Site-specific JSON attributes (curricula tags, therapeutic area, etc.).
+  late final _i1.ColumnString customMetadataJson;
+
+  /// Preview/teaser video URL (YouTube, Vimeo, etc.).
+  late final _i1.ColumnString previewVideoUrl;
+
+  /// Cover image URL for the course.
+  late final _i1.ColumnString imageUrl;
+
+  /// Comma-separated tags (difficulty, therapeutic area, etc.).
+  late final _i1.ColumnString tags;
+
+  /// Date the course was published.
+  late final _i1.ColumnDateTime publishedAt;
+
+  /// Whether self-enrollment is disabled (admin/manager assignment only).
+  late final _i1.ColumnBool disableSelfEnrollment;
+
+  /// Course category (e.g., GMP, Quality, Safety).
+  late final _i1.ColumnString category;
+
+  /// Whether this course is featured/promoted.
+  late final _i1.ColumnBool featured;
 
   _i2.PharmaUserTable get createdBy {
     if (_createdBy != null) return _createdBy!;
@@ -360,6 +583,14 @@ class CourseTable extends _i1.Table<int?> {
     status,
     createdById,
     organizationId,
+    customMetadataJson,
+    previewVideoUrl,
+    imageUrl,
+    tags,
+    publishedAt,
+    disableSelfEnrollment,
+    category,
+    featured,
   ];
 
   @override

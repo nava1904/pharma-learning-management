@@ -1,0 +1,20 @@
+### One row per learner assigned a [StandaloneAssignment].
+class: StandaloneAssignmentRecipient
+
+table: standalone_assignment_recipient
+
+fields:
+  assignment: StandaloneAssignment?, relation
+  user: PharmaUser?, relation
+  ### pending | submitted
+  status: String, default='pending'
+  submittedAt: DateTime?
+  ### JSON: answers or open-ended text
+  responseJson: String?
+  createdAt: DateTime, default=now
+
+indexes:
+  standalone_assignment_recipient_user_idx:
+    fields: userId, assignmentId
+  standalone_assignment_recipient_assignment_idx:
+    fields: assignmentId
