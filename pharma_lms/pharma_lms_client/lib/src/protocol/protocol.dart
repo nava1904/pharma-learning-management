@@ -400,6 +400,11 @@ class Protocol extends _i1.SerializationManager {
   ]) {
     t ??= T;
 
+    // Handle dynamic / Object – just return the raw data as-is.
+    if (t == dynamic || t == Object) {
+      return data as T;
+    }
+
     final dataClassName = getClassNameFromObjectJson(data);
     if (dataClassName != null && dataClassName != getClassNameForType(t)) {
       try {
