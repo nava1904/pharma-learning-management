@@ -248,4 +248,32 @@ class QaEndpoint extends Endpoint {
       orderDescending: true,
     );
   }
+
+  /// Get course reviews visible to the course trainer (no quality_event permission required).
+  /// Trainers need to see QA comments / rejection reasons for their own courses.
+  Future<List<CourseReview>> getCourseReviewsForTrainer(
+    Session session, {
+    required int courseVersionId,
+  }) async {
+    final currentUser = await RbacHelper.getCurrentPharmaUser(session);
+    if (currentUser == null) return [];
+    // Verify the user is the course creator (owns this course)
+    final version = await CourseVersion.db.findById(
+      session,
+      courseVersionId,
+      include: CourseVersion.include(course: Course.include()),
+    );
+    if (version == null) return [];
+    final course = version.course;
+    if (course == null || course.createdById != currentUser.id) return [];
+    return await CourseReview.db.find(
+      session,
+      where: (t) => t.courseVersionId.equals(courseVersionId),
+      include: CourseReview.include(
+        reviewer: PharmaUser.include(),
+      ),
+      orderBy: (t) => t.reviewedAt,
+      orderDescending: true,
+    );
+  }
 }

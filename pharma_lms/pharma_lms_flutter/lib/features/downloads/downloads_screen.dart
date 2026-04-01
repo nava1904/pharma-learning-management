@@ -157,6 +157,7 @@ class DownloadsScreen extends ConsumerWidget {
 
                 if (downloads.isEmpty)
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(48),
                     decoration: BoxDecoration(
                       color: PharmaColors.cardBg,
@@ -167,9 +168,9 @@ class DownloadsScreen extends ConsumerWidget {
                       child: Column(
                         children: [
                           Icon(Icons.download_outlined, size: 48, color: PharmaColors.textQuaternary),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: PharmaSpacing.lg),
                           Text('No certificates to download', style: PharmaTypography.headingMedium),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: PharmaSpacing.sm),
                           Text(
                             'Complete courses to earn certificates, then download them here.',
                             style: PharmaTypography.body,
@@ -181,23 +182,25 @@ class DownloadsScreen extends ConsumerWidget {
                   )
                 else
                   Container(
+                    width: double.infinity,
                     decoration: BoxDecoration(
                       color: PharmaColors.cardBg,
                       borderRadius: PharmaRadius.cardRadius,
                       border: Border.all(color: PharmaColors.borderLight),
                     ),
-                    child: Column(
-                      children: [
-                        for (int i = 0; i < downloads.length; i++) ...[
-                          _DownloadRow(
-                            item: downloads[i],
-                            certificate: certList[i],
-                            onDownload: () => _downloadCertificate(context, certList[i]),
-                          ),
-                          if (i < downloads.length - 1)
-                            Divider(height: 1, color: PharmaColors.borderLight),
-                        ],
-                      ],
+                    clipBehavior: Clip.antiAlias,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 520),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: downloads.length,
+                        separatorBuilder: (_, __) => Divider(height: 1, color: PharmaColors.borderLight),
+                        itemBuilder: (_, i) => _DownloadRow(
+                          item: downloads[i],
+                          certificate: certList[i],
+                          onDownload: () => _downloadCertificate(context, certList[i]),
+                        ),
+                      ),
                     ),
                   ),
               ],

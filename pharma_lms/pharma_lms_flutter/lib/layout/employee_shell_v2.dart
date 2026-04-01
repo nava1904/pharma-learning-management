@@ -58,6 +58,7 @@ class EmployeeShellV2 extends ConsumerStatefulWidget {
 }
 
 class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   Timer? _idleTimer;
   bool _sessionWarningShown = false;
   double _sessionProgress = 1.0; // 1.0 = full, 0.0 = expired
@@ -193,6 +194,7 @@ class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
       onPointerDown: (_) => _resetIdleTimer(),
       onPointerMove: (_) => _resetIdleTimer(),
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: PharmaColors.pageBg,
         drawer: isMobile ? _MobileDrawerV2(currentPath: widget.currentPath ?? '') : null,
         body: Row(
@@ -227,7 +229,7 @@ class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
                   // Header
                   _HeaderV2(
                     showMenuButton: !isDesktop,
-                    onMenuPressed: () => Scaffold.of(context).openDrawer(),
+                    onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                   
                   // Page Content
@@ -385,6 +387,13 @@ class _SidebarV2 extends StatelessWidget {
                     currentPath: currentPath,
                   ),
                   _NavItemV2(
+                    icon: Icons.route_outlined,
+                    activeIcon: Icons.route_rounded,
+                    label: 'Training Plan',
+                    route: '/employee/training-plan',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
                     icon: Icons.qr_code_scanner_outlined,
                     activeIcon: Icons.qr_code_scanner,
                     label: 'Operator check',
@@ -411,6 +420,20 @@ class _SidebarV2 extends StatelessWidget {
                     currentPath: currentPath,
                   ),
                   _NavItemV2(
+                    icon: Icons.verified_user_outlined,
+                    activeIcon: Icons.verified_user_rounded,
+                    label: 'Compliance',
+                    route: '/employee/compliance',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
+                    icon: Icons.article_outlined,
+                    activeIcon: Icons.article_rounded,
+                    label: 'Documents & SOPs',
+                    route: '/employee/documents',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
                     icon: Icons.download_outlined,
                     activeIcon: Icons.download_rounded,
                     label: 'Downloads',
@@ -422,6 +445,27 @@ class _SidebarV2 extends StatelessWidget {
 
                   // ── ACCOUNT SECTION ──
                   _SidebarSectionLabel(label: 'ACCOUNT'),
+                  _NavItemV2(
+                    icon: Icons.notifications_outlined,
+                    activeIcon: Icons.notifications_rounded,
+                    label: 'Notifications',
+                    route: '/employee/notifications',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
+                    icon: Icons.calendar_month_outlined,
+                    activeIcon: Icons.calendar_month_rounded,
+                    label: 'Calendar',
+                    route: '/employee/calendar',
+                    currentPath: currentPath,
+                  ),
+                  _NavItemV2(
+                    icon: Icons.chat_bubble_outline,
+                    activeIcon: Icons.chat_bubble,
+                    label: 'Messages',
+                    route: '/employee/messages',
+                    currentPath: currentPath,
+                  ),
                   _NavItemV2(
                     icon: Icons.person_outline_rounded,
                     activeIcon: Icons.person_rounded,

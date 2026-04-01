@@ -1,0 +1,20 @@
+### Batch attendance record for ILT sessions.
+class: BatchAttendanceRecord
+
+table: batch_attendance_record
+
+fields:
+  ### The training batch.
+  batch: TrainingBatch?, relation
+  ### The live class session (if applicable).
+  liveClass: LiveClass?, relation(optional)
+  ### The user who attended.
+  user: PharmaUser?, relation
+  ### Attendance status: present, absent, excused, late.
+  status: String, default='present'
+  ### When attendance was marked.
+  markedAt: DateTime, default=now
+  ### Who marked attendance (instructor/admin).
+  markedBy: PharmaUser?, relation
+  ### Notes (reason for absence, etc.).
+  notes: String?

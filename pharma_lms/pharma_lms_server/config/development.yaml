@@ -30,13 +30,15 @@ webServer:
 # This is the database setup for your server.
 database:
   host: localhost
-  port: 8090
+  port: 5432
   name: pharma_lms
   user: postgres
   #requireSsl: true # defaults to false
   #isUnixSocket: true # defaults to false
-  # Avoid "Failed to acquire pool lock" when login and other requests compete for connections.
-  maxConnectionCount: 30
+  # Scaled for 1000 concurrent users: each heartbeat/API call uses a DB connection.
+  # PostgreSQL default max_connections=100. For dev, 50 handles realistic load testing.
+  # Production: scale via PgBouncer or managed DB with higher limits.
+  maxConnectionCount: 50
 
 # This is the setup for Redis.
 redis:

@@ -467,18 +467,25 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
           Expanded(
             flex: 1,
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   onPressed: () => context.push('/admin/users/${user.id}'),
                   tooltip: 'View Details',
                   color: PharmaColors.info,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   onPressed: () => context.push('/admin/users/${user.id}/edit'),
                   tooltip: 'Edit User',
                   color: PharmaColors.textTertiary,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
                 ),
               ],
             ),

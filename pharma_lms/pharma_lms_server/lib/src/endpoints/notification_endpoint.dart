@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/rbac_helper.dart';
+import '../services/realtime_hub.dart';
 
 /// Notification domain endpoint (in-app; no email/push in stub).
 class NotificationEndpoint extends Endpoint {
@@ -237,6 +238,13 @@ class NotificationEndpoint extends Endpoint {
           channel: 'in_app',
         ),
       );
+      // Push realtime notification so user sees it instantly
+      RealtimeHub.instance.broadcast('notifications:user:$id', {
+        'event': 'notification',
+        'type': type,
+        'message': body,
+        'ts': DateTime.now().toUtc().toIso8601String(),
+      });
       count++;
     }
     return count;

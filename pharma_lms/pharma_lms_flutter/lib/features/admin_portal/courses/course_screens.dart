@@ -746,7 +746,13 @@ class _AdminCourseCreateScreenState extends ConsumerState<AdminCourseCreateScree
         createdById: me.id!,
       );
 
-      final course = created['course'] as Course?;
+      final courseData = created['course'];
+      Course? course;
+      if (courseData is Course) {
+        course = courseData;
+      } else if (courseData is Map<String, dynamic>) {
+        course = Course.fromJson(courseData);
+      }
       if (!mounted) return;
       ref.invalidate(adminCoursesProvider);
       ScaffoldMessenger.of(context).showSnackBar(

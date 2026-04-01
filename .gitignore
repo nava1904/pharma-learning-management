@@ -1,4 +1,8 @@
-# Environment and secrets
+# ═══════════════════════════════════════════════════════════════════
+# Pharma LMS — .gitignore
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Environment & Secrets ──
 .env
 .env.*
 !.env.example
@@ -9,42 +13,72 @@ config/firebase_service_account_key.json
 *.pem
 *.key
 
-# Local config overrides (keep config.json tracked for defaults)
-# Don't commit local development config
+# ── Local Config ──
 pharma_lms/pharma_lms_flutter/assets/config.local.json
 
-# Python
+# ── IDE & OS ──
+.DS_Store
+**/.DS_Store
+.idea/
+**/.idea/
+*.iml
+.vscode/
+**/.vscode/
+*.swp
+*.swo
+.cursor/
+.cursorignore
+
+# ── Dart / Flutter ──
+.dart_tool/
+**/.dart_tool/
+.packages
+**/.packages
+.pub-cache/
+**/.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+.metadata
+**/.metadata
+**/build/
+
+# ── Android ──
+**/.gradle/
+**/local.properties
+**/key.properties
+**/*.jks
+
+# ── iOS / macOS ──
+**/Pods/
+**/*.xcworkspace/xcuserdata/
+**/*.xcodeproj/xcuserdata/
+**/DerivedData/
+
+# ── Python (QA tools) ──
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-pharma_lms_qa/venv/
-pharma_lms_qa/.venv/
+venv/
+.venv/
 *.egg-info/
 .eggs/
 dist/
 *.egg
 
-# IDE and OS
-.DS_Store
-.idea/
-*.iml
-.vscode/
-*.swp
-*.swo
-
-# Dart/Flutter
-.dart_tool/
-.packages
-.pub-cache/
-
-# Build outputs (subprojects have their own)
+# ── Logs ──
 *.log
 
-# Vercel
+# ── Deployment ──
 .vercel
-
-# ngrok
 ngrok.log
 /tmp/ngrok*
+
+# ── Never commit: design reference artifacts ──
+stitch/
+stitch*/
+ref/
+people*/

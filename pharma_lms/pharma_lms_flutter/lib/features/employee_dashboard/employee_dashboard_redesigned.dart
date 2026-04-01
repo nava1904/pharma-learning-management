@@ -39,6 +39,8 @@ import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 import '../../design_system/tokens.dart';
 import '../../design_system/components.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../providers/notification_provider.dart';
+import '../../providers/realtime_progress_provider.dart';
 import '../../providers/user_provider.dart';
 
 /// Employee Dashboard with compliance-focused design - SERVERPOD WIRED
@@ -73,13 +75,16 @@ class _EmployeeDashboardRedesignedState
     ref.invalidate(userComplianceProvider);
     ref.invalidate(enrollmentsProvider);
     ref.invalidate(enrollmentResumeLabelsProvider);
+    ref.invalidate(enrollmentProgressProvider);
     ref.invalidate(assignmentsProvider);
     ref.invalidate(certificatesProvider);
+    ref.invalidate(notificationsProvider);
     await Future.wait([
       ref.refresh(currentUserProvider.future),
       ref.refresh(userComplianceProvider.future),
       ref.refresh(enrollmentsProvider.future),
       ref.refresh(enrollmentResumeLabelsProvider.future),
+      ref.refresh(enrollmentProgressProvider.future),
       ref.refresh(assignmentsProvider.future),
       ref.refresh(certificatesProvider.future),
     ]);
@@ -95,6 +100,9 @@ class _EmployeeDashboardRedesignedState
     final assignmentsAsync = ref.watch(assignmentsProvider);
     final certificatesAsync = ref.watch(certificatesProvider);
     final lastUpdated = ref.watch(employeeDashboardLastUpdatedProvider);
+    // Activate realtime subscriptions for live progress + notification updates
+    final progressMap = ref.watch(mergedEnrollmentProgressProvider);
+    ref.watch(notificationRealtimeProvider);
 
     return RefreshIndicator(
       onRefresh: _refreshData,
@@ -115,6 +123,7 @@ class _EmployeeDashboardRedesignedState
             certificatesAsync: certificatesAsync,
             tabController: _tabController,
             lastUpdated: lastUpdated,
+            progressMap: progressMap,
           );
         },
         loading: () => _buildLoadingState(),
@@ -229,6 +238,7 @@ class _DashboardContent extends StatelessWidget {
     required this.certificatesAsync,
     required this.tabController,
     this.lastUpdated,
+    this.progressMap = const {},
   });
 
   final PharmaUser user;
@@ -240,6 +250,8 @@ class _DashboardContent extends StatelessWidget {
   final AsyncValue<List<Certificate>> certificatesAsync;
   final TabController tabController;
   final DateTime? lastUpdated;
+  /// Live-updating progress map: enrollmentId → 0–100%.
+  final Map<int, double> progressMap;
 
   /// Get compliance metrics with fallback
   UserComplianceMetrics get _compliance =>
@@ -523,8 +535,12 @@ class _DashboardContent extends StatelessWidget {
     final isOverdue = status == TrainingStatus.overdue || status == TrainingStatus.sopUpdate;
     final dueDate = _getDueDate(enrollment);
 
-    // Calculate progress (simplified - would come from material progress)
-    final progress = enrollment.status == 'in_progress' ? 0.35 : 0.0;
+    // Calculate progress from real enrollment progress data (realtime + server merged)
+    final progress = enrollment.status == 'completed'
+        ? 1.0
+        : enrollment.status == 'in_progress'
+            ? (progressMap[enrollment.id] ?? 0.0) / 100.0
+            : 0.0;
 
     // Get course metadata
     final title = course?.title ?? 'Training Course';
@@ -808,11 +824,11 @@ class _DashboardContent extends StatelessWidget {
             final dueDate = _getDueDate(enrollment);
             final resumeLabel = _resumeLabels[enrollment.id];
 
-            // Calculate progress
+            // Calculate progress from real data
             final progress = enrollment.status == 'completed'
                 ? 1.0
                 : enrollment.status == 'in_progress'
-                    ? 0.35 // Would come from material progress
+                    ? (progressMap[enrollment.id] ?? 0.0) / 100.0
                     : 0.0;
 
             return CourseCard(

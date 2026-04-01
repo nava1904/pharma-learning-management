@@ -159,31 +159,48 @@ class _AnalyticsOverviewScreenState
                     const SizedBox(height: PharmaSpacing.sectionGap),
                     _buildKpiCards(),
                     const SizedBox(height: 24),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Column(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 800) {
+                          return Column(
                             children: [
                               _buildDeptCompletionChart(),
                               const SizedBox(height: 20),
                               _buildComplianceTrendChart(),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        SizedBox(
-                          width: 320,
-                          child: Column(
-                            children: [
+                              const SizedBox(height: 20),
                               _buildAuditReadinessCard(),
                               const SizedBox(height: 20),
                               _buildRiskIndicators(),
                             ],
-                          ),
-                        ),
-                      ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                children: [
+                                  _buildDeptCompletionChart(),
+                                  const SizedBox(height: 20),
+                                  _buildComplianceTrendChart(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            SizedBox(
+                              width: 320,
+                              child: Column(
+                                children: [
+                                  _buildAuditReadinessCard(),
+                                  const SizedBox(height: 20),
+                                  _buildRiskIndicators(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -625,7 +642,7 @@ class _AnalyticsOverviewScreenState
                   .copyWith(color: PharmaColors.textTertiary)),
           const SizedBox(height: 20),
           SizedBox(
-            height: 160,
+            height: 180,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: _complianceTrend.map((item) {
@@ -646,6 +663,7 @@ class _AnalyticsOverviewScreenState
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           '${rate.toStringAsFixed(0)}%',
@@ -653,16 +671,18 @@ class _AnalyticsOverviewScreenState
                               fontSize: 10, color: PharmaColors.textTertiary),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          height: 120 * frac,
-                          decoration: BoxDecoration(
-                            color: PharmaColors.emerald600,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(3),
+                        Flexible(
+                          child: Container(
+                            height: 120 * frac,
+                            decoration: BoxDecoration(
+                              color: PharmaColors.emerald600,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(3),
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(label,
                             style: const TextStyle(
                                 fontSize: 10,

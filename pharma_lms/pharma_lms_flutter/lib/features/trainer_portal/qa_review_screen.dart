@@ -50,6 +50,7 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
   Assessment? _assessment;
   int _questionCount = 0;
   QaValidationResult? _validationResult;
+  List<CourseReview> _qaReviews = [];
 
   @override
   void initState() {
@@ -130,6 +131,24 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
         }
       }
 
+      // Load QA reviews/comments for this version (visible to trainers)
+      List<CourseReview> qaReviews = [];
+      if (latest?.id != null) {
+        try {
+          if (widget.mode == CourseQaReviewMode.trainer) {
+            qaReviews = await client.qa.getCourseReviewsForTrainer(
+              courseVersionId: latest!.id!,
+            );
+          } else {
+            qaReviews = await client.qa.getCourseReviews(
+              courseVersionId: latest!.id!,
+            );
+          }
+        } catch (_) {
+          // Reviews may not be available yet
+        }
+      }
+
       if (!mounted) return;
 
       setState(() {
@@ -142,6 +161,7 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
         _assessment = assessment;
         _questionCount = questionCount;
         _validationResult = validationResult;
+        _qaReviews = qaReviews;
         _isLoading = false;
       });
     } catch (e) {
@@ -322,42 +342,235 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
         border: Border.all(color: PharmaColors.borderLight),
         boxShadow: PharmaShadows.sm,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(PharmaSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // QA Review History header
+          Padding(
+            padding: const EdgeInsets.all(PharmaSpacing.lg),
+            child: Row(
               children: [
-                Icon(Icons.info_outline, size: 20, color: PharmaColors.info),
+                Icon(Icons.rate_review_outlined, size: 20, color: PharmaColors.info),
                 const SizedBox(width: 8),
-                Text(
-                  'QA approval',
-                  style: PharmaTypography.headingSmall.copyWith(fontSize: 15),
+                Expanded(
+                  child: Text(
+                    'QA Review History',
+                    style: PharmaTypography.headingSmall.copyWith(fontSize: 15),
+                  ),
+                ),
+                if (_qaReviews.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: PharmaColors.infoBg,
+                      borderRadius: PharmaRadius.pillRadius,
+                    ),
+                    child: Text(
+                      '${_qaReviews.length} review${_qaReviews.length == 1 ? '' : 's'}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: PharmaColors.infoText,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: PharmaColors.borderLight),
+
+          // QA Comments / Reviews
+          if (_qaReviews.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(PharmaSpacing.lg),
+              child: Column(
+                children: [
+                  Icon(Icons.forum_outlined, size: 36, color: PharmaColors.gray300),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No QA reviews yet',
+                    style: PharmaTypography.bodyMedium.copyWith(
+                      color: PharmaColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'QA comments will appear here once a reviewer has assessed this version.',
+                    textAlign: TextAlign.center,
+                    style: PharmaTypography.caption.copyWith(
+                      color: PharmaColors.textQuaternary,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(PharmaSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _qaReviews.map((review) {
+                  final isRejected = review.decision == 'rejected';
+                  final isReturned = review.decision == 'returned_for_changes';
+                  final isApproved = review.decision == 'approved';
+
+                  Color decisionColor;
+                  Color decisionBg;
+                  IconData decisionIcon;
+                  String decisionLabel;
+
+                  if (isApproved) {
+                    decisionColor = PharmaColors.successText;
+                    decisionBg = PharmaColors.successBg;
+                    decisionIcon = Icons.check_circle;
+                    decisionLabel = 'APPROVED';
+                  } else if (isRejected) {
+                    decisionColor = PharmaColors.dangerText;
+                    decisionBg = PharmaColors.dangerBg;
+                    decisionIcon = Icons.cancel;
+                    decisionLabel = 'REJECTED';
+                  } else if (isReturned) {
+                    decisionColor = PharmaColors.warningText;
+                    decisionBg = PharmaColors.warningBg;
+                    decisionIcon = Icons.edit_note;
+                    decisionLabel = 'CHANGES REQUESTED';
+                  } else {
+                    decisionColor = PharmaColors.gray600;
+                    decisionBg = PharmaColors.gray100;
+                    decisionIcon = Icons.info_outline;
+                    decisionLabel = review.decision.toUpperCase();
+                  }
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: decisionBg,
+                      borderRadius: PharmaRadius.cardRadius,
+                      border: Border.all(color: decisionColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(decisionIcon, size: 16, color: decisionColor),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: decisionColor.withValues(alpha: 0.15),
+                                borderRadius: PharmaRadius.pillRadius,
+                              ),
+                              child: Text(
+                                decisionLabel,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: decisionColor,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _formatDate(review.reviewedAt),
+                              style: PharmaTypography.caption,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (review.reviewer != null)
+                          Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: PharmaColors.emerald100,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${review.reviewer!.firstName[0]}${review.reviewer!.lastName[0]}',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                      color: PharmaColors.emerald700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${review.reviewer!.firstName} ${review.reviewer!.lastName}',
+                                style: PharmaTypography.bodyMedium.copyWith(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        if (review.comments != null && review.comments!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: PharmaColors.cardBg,
+                              borderRadius: PharmaRadius.cardRadius,
+                              border: Border.all(color: PharmaColors.borderLight),
+                            ),
+                            child: Text(
+                              review.comments!,
+                              style: PharmaTypography.body.copyWith(
+                                height: 1.4,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+          Divider(height: 1, color: PharmaColors.borderLight),
+
+          // QA Portal link
+          Padding(
+            padding: const EdgeInsets.all(PharmaSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: PharmaColors.textQuaternary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Formal QA sign-off is performed in the QA Portal by authorized reviewers.',
+                        style: PharmaTypography.caption.copyWith(
+                          color: PharmaColors.textTertiary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/qa/dashboard'),
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Open QA Command Center'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: PharmaColors.info,
+                    side: BorderSide(color: PharmaColors.info.withValues(alpha: 0.5)),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              'Formal QA sign-off (review checklist, request changes, approve, or reject) '
-              'is performed in the QA Portal by authorized reviewers.',
-              style: PharmaTypography.body.copyWith(
-                color: PharmaColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => context.go('/qa/dashboard'),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('Open QA Command Center'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: PharmaColors.info,
-                side: BorderSide(color: PharmaColors.info.withValues(alpha: 0.5)),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -434,8 +647,8 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
               return;
             }
 
-            context.go(
-              '/employee/course/${widget.courseId}',
+            context.push(
+              '/trainer/preview-course/${widget.courseId}',
               extra: <String, dynamic>{'courseVersionId': versionId},
             );
           },

@@ -90,8 +90,10 @@ class SmeEndpoint extends Endpoint {
 
   Future<List<SmeReviewComment>> listCommentsForCourseVersion(
     Session session,
-    int courseVersionId,
-  ) async {
+    int courseVersionId, {
+    int? limit,
+    int? offset,
+  }) async {
     final me = await RbacHelper.getCurrentPharmaUser(session);
     if (me == null) return [];
     await RbacHelper.requirePermission(session, resource: 'course', action: 'read');
@@ -109,6 +111,8 @@ class SmeEndpoint extends Endpoint {
       ),
       orderBy: (t) => t.createdAt,
       orderDescending: true,
+      limit: limit,
+      offset: offset,
     );
   }
 
@@ -254,5 +258,35 @@ class SmeEndpoint extends Endpoint {
     );
 
     return saved;
+  }
+
+  /// Mark all SME comments in a course version thread as read for the current user.
+  /// Only marks comments authored by OTHER users (not your own).
+  Future<int> markCommentsRead(Session session, int courseVersionId) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return 0;
+    final uid = me!.id!;
+
+    final cv = await CourseVersion.db.findById(session, courseVersionId);
+    if (cv == null) return 0;
+    final course = await Course.db.findById(session, cv.courseId);
+    if (course == null || course.organizationId != me.organizationId) return 0;
+
+    final unread = await SmeReviewComment.db.find(
+      session,
+      where: (t) =>
+          t.courseVersionId.equals(courseVersionId) &
+          t.readAt.equals(null) &
+          t.authorId.notEquals(uid),
+    );
+
+    final now = DateTime.now();
+    var count = 0;
+    for (final c in unread) {
+      c.readAt = now;
+      await SmeReviewComment.db.updateRow(session, c);
+      count++;
+    }
+    return count;
   }
 }

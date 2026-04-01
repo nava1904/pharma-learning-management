@@ -57,6 +57,7 @@ import '../features/profile/profile_settings_screen.dart';
 // Redesigned Employee Portal screens
 import '../layout/employee_shell_v2.dart';
 import '../features/employee_dashboard/employee_dashboard_v2.dart';
+import '../features/shared/messaging_inbox_screen.dart';
 import '../features/my_learning/my_training_screen.dart';
 import '../features/course_catalog/course_catalog_screen_redesigned.dart';
 import '../features/course_catalog/course_catalog_v2.dart';
@@ -84,7 +85,6 @@ import '../features/trainer_portal/qa_review_screen.dart';
 import '../layout/qa_shell_v2.dart';
 import '../features/trainer_portal/sop_linkage_screen.dart';
 import '../features/trainer_portal/ai_question_generation_screen.dart';
-import '../features/trainer_portal/exam_generator_screen.dart';
 import '../features/trainer_portal/course_analytics_v2_screen.dart';
 import '../features/trainer_portal/sop_document_library_screen.dart';
 import '../features/trainer_portal/question_bank_library_screen.dart';
@@ -109,6 +109,12 @@ import '../features/employee_dashboard/batches/employee_my_batches_dashboard_scr
 import '../features/employee_dashboard/batches/employee_assigned_training_screen.dart';
 import '../features/employee_dashboard/standalone_assignments_screen.dart';
 import '../features/employee_dashboard/operator_qualification_screen.dart';
+// Employee Portal — new gap-closing screens
+import '../features/employee_dashboard/notifications/employee_notification_screen.dart';
+import '../features/employee_dashboard/compliance/employee_compliance_detail_screen.dart';
+import '../features/employee_dashboard/calendar/employee_training_calendar_screen.dart';
+import '../features/employee_dashboard/documents/employee_document_screen.dart';
+import '../features/employee_dashboard/training_plan/employee_training_plan_screen.dart';
 // Trainer Batch Screens
 import '../features/trainer_portal/batches/trainer_batch_list_screen.dart';
 import '../features/trainer_portal/batches/trainer_batch_detail_screen.dart';
@@ -368,6 +374,10 @@ List<RouteBase> get _buildRoutes => [
               builder: (context, state) => const LessonsScreen(),
             ),
             GoRoute(
+              path: 'messages',
+              builder: (context, state) => const MessagingInboxScreen(),
+            ),
+            GoRoute(
               path: 'waiver/:id',
               builder: (context, state) {
                 final id = state.pathParameters['id'] ?? '';
@@ -415,6 +425,27 @@ List<RouteBase> get _buildRoutes => [
             GoRoute(
               path: 'operator',
               builder: (context, state) => const OperatorQualificationScreen(),
+            ),
+            // ── New gap-closing screens ──
+            GoRoute(
+              path: 'notifications',
+              builder: (context, state) => const EmployeeNotificationScreen(),
+            ),
+            GoRoute(
+              path: 'compliance',
+              builder: (context, state) => const EmployeeComplianceDetailScreen(),
+            ),
+            GoRoute(
+              path: 'calendar',
+              builder: (context, state) => const EmployeeTrainingCalendarScreen(),
+            ),
+            GoRoute(
+              path: 'documents',
+              builder: (context, state) => const EmployeeDocumentScreen(),
+            ),
+            GoRoute(
+              path: 'training-plan',
+              builder: (context, state) => const EmployeeTrainingPlanScreen(),
             ),
           ],
         ),
@@ -739,9 +770,88 @@ List<RouteBase> get _buildRoutes => [
                 );
               },
             ),
+            GoRoute(
+              path: 'messages',
+              builder: (context, state) => const MessagingInboxScreen(),
+            ),
           ],
         ),
       ],
+    ),
+    // ═══════════════════════════════════════════════════════════════════════════
+    // COURSE BUILDER — Full-screen (no sidebar)
+    // Each screen is wrapped in a Scaffold so Material/Overlay ancestors exist.
+    // ═══════════════════════════════════════════════════════════════════════════
+    GoRoute(
+      path: '/trainer/courses/:courseId/builder',
+      builder: (context, state) {
+        final courseId =
+            int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+        return Scaffold(
+          body: CourseBuilderV2Screen(courseId: courseId),
+        );
+      },
+    ),
+    // TRN-05: Course Versions — full-screen
+    GoRoute(
+      path: '/trainer/courses/:courseId/versions',
+      builder: (context, state) {
+        final courseId =
+            int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+        return Scaffold(
+          body: CourseVersionsScreen(courseId: courseId),
+        );
+      },
+    ),
+    // TRN-02: Material Upload V2 — full-screen
+    GoRoute(
+      path: '/trainer/courses/:courseId/material',
+      builder: (context, state) {
+        final courseId =
+            int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+        return Scaffold(
+          body: MaterialUploadV2Screen(courseId: courseId),
+        );
+      },
+    ),
+    // TRN-03: Assessment Builder V2 — full-screen
+    GoRoute(
+      path: '/trainer/courses/:courseId/assessment',
+      builder: (context, state) {
+        final courseId =
+            int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+        return Scaffold(
+          body: AssessmentBuilderV2Screen(courseId: courseId),
+        );
+      },
+    ),
+    // TRN-04: QA Review / Submit — full-screen
+    GoRoute(
+      path: '/trainer/courses/:courseId/qa-review',
+      builder: (context, state) {
+        final courseId =
+            int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
+        return Scaffold(
+          body: QAReviewScreen(
+            courseId: courseId,
+            mode: CourseQaReviewMode.trainer,
+          ),
+        );
+      },
+    ),
+    // PREVIEW AS EMPLOYEE — Full-screen course viewer with preview banner
+    GoRoute(
+      path: '/trainer/preview-course/:courseId',
+      builder: (context, state) {
+        final courseId = state.pathParameters['courseId'] ?? '';
+        final m = _routeExtraMap(state.extra);
+        final courseVersionId = _extraInt(m, 'courseVersionId');
+        return CourseViewerScreenV2(
+          courseId: courseId,
+          courseVersionId: courseVersionId,
+          previewMode: true,
+        );
+      },
     ),
     // ═══════════════════════════════════════════════════════════════════════════
     // TRAINER / SME PORTAL ROUTES — Uses TrainerShellV2
@@ -763,49 +873,6 @@ List<RouteBase> get _buildRoutes => [
               builder: (context, state) => CourseListScreen(
                 initialSearch: state.uri.queryParameters['search'],
               ),
-            ),
-            // TRN-01: Course Builder V2
-            GoRoute(
-              path: 'courses/:courseId/builder',
-              builder: (context, state) {
-                final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
-                return CourseBuilderV2Screen(courseId: courseId);
-              },
-            ),
-            // TRN-05: Course Versions
-            GoRoute(
-              path: 'courses/:courseId/versions',
-              builder: (context, state) {
-                final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
-                return CourseVersionsScreen(courseId: courseId);
-              },
-            ),
-            // TRN-02: Material Upload V2
-            GoRoute(
-              path: 'courses/:courseId/material',
-              builder: (context, state) {
-                final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
-                return MaterialUploadV2Screen(courseId: courseId);
-              },
-            ),
-            // TRN-03: Assessment Builder V2
-            GoRoute(
-              path: 'courses/:courseId/assessment',
-              builder: (context, state) {
-                final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
-                return AssessmentBuilderV2Screen(courseId: courseId);
-              },
-            ),
-            // TRN-04: QA Review / Submit
-            GoRoute(
-              path: 'courses/:courseId/qa-review',
-              builder: (context, state) {
-                final courseId = int.tryParse(state.pathParameters['courseId'] ?? '') ?? 0;
-                return QAReviewScreen(
-                  courseId: courseId,
-                  mode: CourseQaReviewMode.trainer,
-                );
-              },
             ),
             // TRN-06: SOP Linkage
             GoRoute(
@@ -847,10 +914,6 @@ List<RouteBase> get _buildRoutes => [
                     int.tryParse(state.pathParameters['assessmentId'] ?? '') ?? 0;
                 return GradingScreen(assessmentId: assessmentId);
               },
-            ),
-            GoRoute(
-              path: 'exam-generator',
-              builder: (context, state) => const ExamGeneratorScreen(),
             ),
             // Legacy: materials route (fallback)
             GoRoute(
@@ -925,6 +988,11 @@ List<RouteBase> get _buildRoutes => [
             GoRoute(
               path: 'profile',
               builder: (context, state) => const TrainerProfileScreen(),
+            ),
+            // TRN-MSG: Unified Messaging Inbox
+            GoRoute(
+              path: 'messages',
+              builder: (context, state) => const MessagingInboxScreen(),
             ),
             // TRN-BATCH: Trainer Batches (Instructor-led Training)
             GoRoute(

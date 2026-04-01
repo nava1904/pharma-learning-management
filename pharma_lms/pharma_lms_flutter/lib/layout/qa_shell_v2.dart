@@ -131,6 +131,17 @@ class _QaSidebar extends StatelessWidget {
                     currentPath: currentPath,
                     matchExact: true,
                   ),
+
+                  const SizedBox(height: PharmaSpacing.md),
+
+                  _QaSectionLabel(label: 'COMMUNICATION'),
+                  _QaNavItem(
+                    icon: Icons.chat_bubble_outline,
+                    activeIcon: Icons.chat_bubble,
+                    label: 'Messages',
+                    route: '/qa/messages',
+                    currentPath: currentPath,
+                  ),
                 ],
               ),
             ),

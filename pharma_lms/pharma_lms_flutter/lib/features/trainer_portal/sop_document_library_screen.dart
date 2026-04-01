@@ -69,26 +69,40 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
         final docTypes = _getDocumentTypes(allDocs);
 
         return ListView(
-          padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+          padding: const EdgeInsets.all(PharmaSpacing.lg),
           children: [
             _buildHeader(allDocs),
-            const SizedBox(height: 20),
+            const SizedBox(height: PharmaSpacing.lg),
             _buildStatsRow(allDocs),
-            const SizedBox(height: 16),
+            const SizedBox(height: PharmaSpacing.lg),
             _buildFilters(docTypes),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildTable(filtered)),
-                if (_selectedDocument != null) ...[
-                  const SizedBox(width: 24),
-                  SizedBox(
-                    width: 360,
-                    child: _buildDocumentDetailPanel(_selectedDocument!),
-                  ),
-                ],
-              ],
+            const SizedBox(height: PharmaSpacing.lg),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 860 || _selectedDocument == null) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTable(filtered),
+                      if (_selectedDocument != null) ...[
+                        const SizedBox(height: PharmaSpacing.lg),
+                        _buildDocumentDetailPanel(_selectedDocument!),
+                      ],
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildTable(filtered)),
+                    const SizedBox(width: PharmaSpacing.lg),
+                    SizedBox(
+                      width: 360,
+                      child: _buildDocumentDetailPanel(_selectedDocument!),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         );
@@ -97,26 +111,46 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
   }
 
   Widget _buildHeader(List<Document> allDocs) {
-    return Row(children: [
-      Icon(Icons.policy_outlined, color: PharmaColors.emerald600, size: 24),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('SOP Document Library',
-                style: PharmaTypography.headingLarge.copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
-            Text('${allDocs.length} documents managed by your organization',
-                style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: PharmaColors.emerald50,
+            borderRadius: BorderRadius.circular(PharmaRadius.md),
+          ),
+          child: Icon(Icons.policy_outlined, color: PharmaColors.emerald600, size: 22),
         ),
-      ),
-      IconButton(
-        onPressed: () => ref.invalidate(_documentsProvider),
-        icon: const Icon(Icons.refresh, size: 20),
-        tooltip: 'Refresh',
-      ),
-    ]);
+        const SizedBox(width: PharmaSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('SOP Document Library',
+                  style: PharmaTypography.headingLarge.copyWith(fontSize: 20, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text('${allDocs.length} documents managed by your organization',
+                  style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () => ref.invalidate(_documentsProvider),
+          icon: const Icon(Icons.refresh, size: 20),
+          tooltip: 'Refresh',
+          style: IconButton.styleFrom(
+            backgroundColor: PharmaColors.pageBg,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.md)),
+          ),
+        ),
+      ]),
+    );
   }
 
   Widget _buildStatsRow(List<Document> docs) {
@@ -132,13 +166,13 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
         _miniStat('Policies', '$policyCount', Icons.policy_outlined, PharmaColors.warningText),
         _miniStat('Guidelines', '$guidelineCount', Icons.menu_book_outlined, PharmaColors.textTertiary),
         _miniStat('Training Req.', '$trainingReqCount', Icons.school_outlined, PharmaColors.danger),
-      ].map((w) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: w))).toList(),
+      ].map((w) => Expanded(child: Padding(padding: const EdgeInsets.only(right: PharmaSpacing.md), child: w))).toList(),
     );
   }
 
   Widget _miniStat(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -146,7 +180,7 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
       ),
       child: Row(children: [
         Icon(icon, size: 18, color: color),
-        const SizedBox(width: 8),
+        const SizedBox(width: PharmaSpacing.sm),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(value, style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
           Text(label, style: TextStyle(fontSize: 10, color: PharmaColors.textTertiary)),
@@ -157,7 +191,7 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
 
   Widget _buildFilters(List<String> docTypes) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -177,9 +211,9 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: PharmaSpacing.md),
         _dropdown('Type', _filterType, ['All', ...docTypes], (v) => setState(() => _filterType = v)),
-        const SizedBox(width: 8),
+        const SizedBox(width: PharmaSpacing.sm),
         _dropdown('QA Status', _filterQaStatus,
             ['All', 'Training Required', 'No Training', 'Unclassified'],
             (v) => setState(() => _filterQaStatus = v)),
@@ -201,8 +235,11 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.policy_outlined, size: 48, color: PharmaColors.gray300),
-            const SizedBox(height: 8),
+            const SizedBox(height: PharmaSpacing.sm),
             Text('No documents match your filters', style: PharmaTypography.bodyMedium),
+            const SizedBox(height: PharmaSpacing.xs),
+            Text('Try adjusting your search or filter criteria',
+                style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
           ],
         ),
       );
@@ -215,70 +252,94 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
         borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-        headingRowHeight: 44,
-        dataRowMinHeight: 52,
-        dataRowMaxHeight: 60,
-        columnSpacing: 20,
-        headingTextStyle: PharmaTypography.labelMedium.copyWith(
-          fontWeight: FontWeight.w600,
-          color: PharmaColors.textTertiary,
-          fontSize: 11,
-          letterSpacing: 0.5,
-        ),
-        columns: const [
-          DataColumn(label: Text('DOCUMENT #')),
-          DataColumn(label: Text('TITLE')),
-          DataColumn(label: Text('TYPE')),
-          DataColumn(label: Text('QA STATUS')),
-          DataColumn(label: Text('LINKED COURSES')),
-          DataColumn(label: Text('ACTIONS')),
-        ],
-        rows: filtered.map((doc) => DataRow(cells: [
-          DataCell(
-            Text(doc.documentNumber,
-                style: PharmaTypography.bodyMedium.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
-            onTap: () => setState(() => _selectedDocument = doc),
-          ),
-          DataCell(
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: Text(doc.title, style: PharmaTypography.body, maxLines: 1, overflow: TextOverflow.ellipsis),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: DataTable(
+              headingRowHeight: 44,
+              dataRowMinHeight: 52,
+              dataRowMaxHeight: 60,
+              columnSpacing: PharmaSpacing.lg,
+              horizontalMargin: PharmaSpacing.lg,
+              headingRowColor: WidgetStateProperty.all(PharmaColors.pageBg),
+              headingTextStyle: PharmaTypography.labelMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: PharmaColors.textTertiary,
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+              columns: const [
+                DataColumn(label: Text('DOCUMENT #')),
+                DataColumn(label: Text('TITLE')),
+                DataColumn(label: Text('TYPE')),
+                DataColumn(label: Text('QA STATUS')),
+                DataColumn(label: Text('LINKED COURSES')),
+                DataColumn(label: Text('ACTIONS')),
+              ],
+              rows: filtered.map((doc) => DataRow(cells: [
+                DataCell(
+                  Text(doc.documentNumber,
+                      style: PharmaTypography.bodyMedium.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+                  onTap: () => setState(() => _selectedDocument = doc),
+                ),
+                DataCell(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    child: Text(doc.title, style: PharmaTypography.body, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+                DataCell(Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: PharmaColors.gray100, borderRadius: PharmaRadius.pillRadius),
+                  child: Text(doc.documentType.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
+                )),
+                DataCell(_QaStatusChip(qaStatus: doc.trainingRequiredByQa)),
+                DataCell(
+                  _LinkedCoursesChips(
+                    documentId: doc.id!,
+                    cache: _linkedCoursesCache,
+                  ),
+                ),
+                DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(
+                    onPressed: () => _linkToCourse(context, doc.id!),
+                    icon: Icon(Icons.link, size: 18, color: PharmaColors.emerald600),
+                    tooltip: 'Link to Course',
+                    style: IconButton.styleFrom(
+                      backgroundColor: PharmaColors.emerald50,
+                      padding: const EdgeInsets.all(6),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                  const SizedBox(width: PharmaSpacing.xs),
+                  IconButton(
+                    onPressed: () => _showDocumentVersions(doc),
+                    icon: Icon(Icons.history, size: 18, color: PharmaColors.textSecondary),
+                    tooltip: 'View Versions',
+                    style: IconButton.styleFrom(
+                      backgroundColor: PharmaColors.gray100,
+                      padding: const EdgeInsets.all(6),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                  const SizedBox(width: PharmaSpacing.xs),
+                  IconButton(
+                    onPressed: () => _showDocumentDetail(doc),
+                    icon: Icon(Icons.visibility_outlined, size: 18, color: PharmaColors.info),
+                    tooltip: 'View Details',
+                    style: IconButton.styleFrom(
+                      backgroundColor: PharmaColors.infoBg,
+                      padding: const EdgeInsets.all(6),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ])),
+              ])).toList(),
             ),
-          ),
-          DataCell(Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: PharmaColors.gray100, borderRadius: PharmaRadius.pillRadius),
-            child: Text(doc.documentType.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
-          )),
-          DataCell(_QaStatusChip(qaStatus: doc.trainingRequiredByQa)),
-          DataCell(
-            _LinkedCoursesChips(
-              documentId: doc.id!,
-              cache: _linkedCoursesCache,
-            ),
-          ),
-          DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-            IconButton(
-              onPressed: () => _linkToCourse(context, doc.id!),
-              icon: Icon(Icons.link, size: 18, color: PharmaColors.emerald600),
-              tooltip: 'Link to Course',
-            ),
-            IconButton(
-              onPressed: () => _showDocumentVersions(doc),
-              icon: const Icon(Icons.history, size: 18),
-              tooltip: 'View Versions',
-            ),
-            IconButton(
-              onPressed: () => _showDocumentDetail(doc),
-              icon: const Icon(Icons.visibility_outlined, size: 18),
-              tooltip: 'View Details',
-            ),
-          ])),
-        ])).toList(),
-        ),
+          );
+        },
       ),
     );
   }
@@ -313,13 +374,13 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PharmaSpacing.md),
           Text(doc.documentNumber,
               style: PharmaTypography.bodyMedium.copyWith(
                   fontFamily: 'monospace', fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
+          const SizedBox(height: PharmaSpacing.xs),
           Text(doc.title, style: PharmaTypography.body),
-          const SizedBox(height: 8),
+          const SizedBox(height: PharmaSpacing.sm),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -329,9 +390,9 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
             child: Text(doc.documentType.toUpperCase(),
                 style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PharmaSpacing.sm),
           _QaStatusChip(qaStatus: doc.trainingRequiredByQa),
-          const SizedBox(height: 20),
+          const SizedBox(height: PharmaSpacing.lg),
           OutlinedButton.icon(
             onPressed: () => _showDocumentVersions(doc),
             icon: const Icon(Icons.history, size: 18),
@@ -341,7 +402,7 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
               side: const BorderSide(color: PharmaColors.emerald200),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PharmaSpacing.sm),
           OutlinedButton.icon(
             onPressed: () => _linkToCourse(context, doc.id!),
             icon: Icon(Icons.link, size: 18, color: PharmaColors.emerald600),
@@ -377,7 +438,7 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.lg)),
         title: Text(doc.documentNumber),
         content: SizedBox(
           width: 420,
@@ -386,7 +447,7 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(doc.title, style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
+              const SizedBox(height: PharmaSpacing.lg),
               _dialogRow('Document #', doc.documentNumber),
               _dialogRow('Type', doc.documentType),
               _dialogRow('QA Training', doc.trainingRequiredByQa ?? 'Unclassified'),
@@ -424,10 +485,10 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.lg)),
         title: Row(children: [
           const Icon(Icons.history, size: 20),
-          const SizedBox(width: 8),
+          const SizedBox(width: PharmaSpacing.sm),
           Text('Versions — ${doc.documentNumber}'),
         ]),
         content: SizedBox(

@@ -1,0 +1,7 @@
+### Unread message/comment counts across all messaging channels.
+class: MessagingUnreadCounts
+
+fields:
+  learnerTrainer: int
+  qaReview: int
+  total: int

@@ -7,8 +7,11 @@ import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 import '../../core/client.dart';
 import '../../design_system/tokens.dart';
 import '../../design_system/components.dart';
+import '../../design_system/pharma_design_system.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../providers/realtime_progress_provider.dart';
 import '../../providers/user_provider.dart';
+import '../shared/communication_sheets.dart';
 import 'course_catalog_metadata.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -31,14 +34,26 @@ class _CourseCatalogScreenRedesignedState extends ConsumerState<CourseCatalogScr
   bool _sortAscending = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh progress data every time the catalog screen is visited
+    // so it reflects the latest course completion from the viewer.
+    Future.microtask(() {
+      ref.invalidate(enrollmentProgressProvider);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final coursesAsync = ref.watch(coursesProvider);
     final enrollmentsAsync = ref.watch(enrollmentsProvider);
+    final progressMap = ref.watch(mergedEnrollmentProgressProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(coursesProvider);
         ref.invalidate(enrollmentsProvider);
+        ref.invalidate(enrollmentProgressProvider);
         await Future.wait([
           ref.refresh(coursesProvider.future),
           ref.refresh(enrollmentsProvider.future),
@@ -50,6 +65,7 @@ class _CourseCatalogScreenRedesignedState extends ConsumerState<CourseCatalogScr
           return _CatalogContent(
             courses: courses,
             enrollments: enrollments,
+            progressMap: progressMap,
             searchQuery: _searchQuery,
             selectedCategory: _selectedCategory,
             selectedStatus: _selectedStatus,
@@ -210,7 +226,7 @@ class _CourseCatalogScreenRedesignedState extends ConsumerState<CourseCatalogScr
     context.go('/course/${course.id}', extra: {
       'courseVersionId': courseVersionId.toString(),
       if (enrollmentId != null) 'enrollmentId': enrollmentId.toString(),
-      if (enrollmentStatus != null) 'enrollmentStatus': enrollmentStatus,
+      'enrollmentStatus': ?enrollmentStatus,
       if (user?.id != null) 'userId': user!.id!.toString(),
     });
   }
@@ -220,6 +236,7 @@ class _CatalogContent extends StatelessWidget {
   const _CatalogContent({
     required this.courses,
     required this.enrollments,
+    required this.progressMap,
     required this.searchQuery,
     required this.selectedCategory,
     required this.selectedStatus,
@@ -237,6 +254,7 @@ class _CatalogContent extends StatelessWidget {
 
   final List<Course> courses;
   final List<Enrollment> enrollments;
+  final Map<int, double> progressMap;
   final String searchQuery;
   final String selectedCategory;
   final String selectedStatus;
@@ -253,9 +271,75 @@ class _CatalogContent extends StatelessWidget {
 
   Set<int> get _enrolledCourseIds => enrollments.map((e) => e.courseVersion?.course?.id).whereType<int>().toSet();
 
+  /// Build dropdown items dynamically from the actual course data.
+  Map<String, String> get _categoryItems {
+    final cats = courses
+        .map((c) => c.category?.trim() ?? '')
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return {
+      'All': 'Category: All',
+      for (final c in cats) c: 'Category: $c',
+      if (cats.isEmpty) ...{
+        'GMP': 'Category: GMP',
+        'SOP': 'Category: SOP',
+        'Compliance': 'Category: Compliance',
+        'Safety': 'Category: Safety',
+      },
+    };
+  }
+
+  Map<String, String> get _statusItems {
+    final statuses = courses.map((c) => c.status.trim()).toSet().toList()..sort();
+    return {
+      'All': 'Status: All',
+      for (final s in statuses) s: 'Status: ${_statusLabel(s)}',
+    };
+  }
+
+  Map<String, String> get _regulatoryItems {
+    final regTags = <String>{};
+    for (final c in courses) {
+      final tags = (c.tags ?? '').split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
+      for (final t in tags) {
+        if (t == 'GMP' || t == '21 CFR' || t == 'ICH' || t == 'FDA' || t == 'EMA' || t == 'WHO' || t == 'Mandatory' || t == 'Optional') {
+          regTags.add(t);
+        }
+      }
+    }
+    final sorted = regTags.toList()..sort();
+    return {
+      'All': 'Regulatory: All',
+      for (final r in sorted) r: 'Regulatory: $r',
+      if (sorted.isEmpty) ...{
+        'GMP': 'Regulatory: GMP',
+        '21 CFR': 'Regulatory: 21 CFR',
+        'Mandatory': 'Regulatory: Mandatory',
+      },
+    };
+  }
+
+  static String _statusLabel(String status) {
+    switch (status) {
+      case 'draft': return 'Draft';
+      case 'approved': return 'Approved';
+      case 'effective': return 'Effective';
+      case 'published': return 'Published';
+      case 'under_review': return 'Under Review';
+      case 'pending_qa': return 'Pending QA';
+      case 'rejected': return 'Rejected';
+      case 'archived': return 'Archived';
+      case 'obsolete': return 'Obsolete';
+      default: return status[0].toUpperCase() + status.substring(1);
+    }
+  }
+
   List<Course> get _filteredCourses {
     var filtered = courses.toList();
 
+    // Search filter
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase();
       filtered = filtered.where((c) {
@@ -265,6 +349,26 @@ class _CatalogContent extends StatelessWidget {
       }).toList();
     }
 
+    // Category filter
+    if (selectedCategory != 'All') {
+      filtered = filtered.where((c) =>
+          (c.category?.trim() ?? '') == selectedCategory).toList();
+    }
+
+    // Status filter
+    if (selectedStatus != 'All') {
+      filtered = filtered.where((c) => c.status.trim() == selectedStatus).toList();
+    }
+
+    // Regulatory / tag filter
+    if (selectedRegulatory != 'All') {
+      filtered = filtered.where((c) {
+        final tags = (c.tags ?? '').split(',').map((t) => t.trim()).toSet();
+        return tags.contains(selectedRegulatory);
+      }).toList();
+    }
+
+    // Sort
     switch (sortBy) {
       case 'title':
         filtered.sort((a, b) => sortAscending ? a.title.compareTo(b.title) : b.title.compareTo(a.title));
@@ -318,15 +422,15 @@ class _CatalogContent extends StatelessWidget {
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(PharmaRadius.xxl),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(PharmaRadius.xxl),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(PharmaRadius.xxl),
                       borderSide: const BorderSide(color: AppColors.blue, width: 2),
                     ),
                   ),
@@ -341,9 +445,9 @@ class _CatalogContent extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _FilterDropdown(value: selectedCategory, items: const {'All': 'Category: All'}, onChanged: onCategoryChanged),
-              _FilterDropdown(value: selectedStatus, items: const {'All': 'Status: All'}, onChanged: onStatusChanged),
-              _FilterDropdown(value: selectedRegulatory, items: const {'All': 'Regulatory: All'}, onChanged: onRegulatoryChanged),
+              _FilterDropdown(value: selectedCategory, items: _categoryItems, onChanged: onCategoryChanged),
+              _FilterDropdown(value: selectedStatus, items: _statusItems, onChanged: onStatusChanged),
+              _FilterDropdown(value: selectedRegulatory, items: _regulatoryItems, onChanged: onRegulatoryChanged),
               _FilterDropdown(value: sortBy, items: const {'title': 'Sort: Title A-Z', 'status': 'Sort: Status'}, onChanged: (v) => onSortChanged(v, true)),
             ],
           ),
@@ -395,6 +499,9 @@ class _CatalogContent extends StatelessWidget {
                   course: course,
                   enrollment: courseEnrollment,
                   isEnrolled: isEnrolled,
+                  progressPct: courseEnrollment?.id != null
+                      ? (progressMap[courseEnrollment!.id!] ?? 0.0)
+                      : 0.0,
                   onEnroll: () => onEnroll(course),
                   onView: () => onView(course),
                 );
@@ -444,6 +551,7 @@ class _CourseCard extends StatelessWidget {
     required this.course,
     this.enrollment,
     required this.isEnrolled,
+    required this.progressPct,
     required this.onEnroll,
     required this.onView,
   });
@@ -451,6 +559,7 @@ class _CourseCard extends StatelessWidget {
   final Course course;
   final Enrollment? enrollment;
   final bool isEnrolled;
+  final double progressPct;
   final VoidCallback onEnroll;
   final VoidCallback onView;
 
@@ -466,8 +575,9 @@ class _CourseCard extends StatelessWidget {
     final List<String> regulatoryTags = tags.where((t) => t == 'GMP' || t == '21 CFR').toList();
     
     final status = enrollment?.status ?? 'not_started';
-    final progress = _calculateProgress(status, enrollment);
     final isCompleted = status.toLowerCase() == 'completed';
+    // Use real progress from server+realtime merged provider
+    final progress = isCompleted ? 100.0 : progressPct;
     final isEnrolledLocally = isEnrolled || status != 'not_started'; 
     final hasSop = course.sopNumber?.isNotEmpty == true;
 
@@ -507,7 +617,7 @@ class _CourseCard extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(PharmaRadius.lg),
                 ),
                 clipBehavior: Clip.hardEdge, 
                 child: coverage.isNotEmpty
@@ -628,40 +738,81 @@ class _CourseCard extends StatelessWidget {
               ),
               SizedBox(
                 height: 34,
-                width: 96,
                 child: isCompleted
-                    ? ElevatedButton(
-                        onPressed: null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade200,
-                          foregroundColor: Colors.grey.shade600,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: EdgeInsets.zero,
+                    ? SizedBox(
+                        width: 96,
+                        child: ElevatedButton(
+                          onPressed: null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade200,
+                            foregroundColor: Colors.grey.shade600,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: EdgeInsets.zero,
+                          ),
+                          child: const Text('Completed', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         ),
-                        child: const Text('Completed', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       )
                     : isEnrolledLocally
-                        ? ElevatedButton(
-                            onPressed: onView,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.blue,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: const Text('Continue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Chat with trainer button
+                              if ((enrollment?.courseVersionId ?? course.id) != null)
+                                SizedBox(
+                                  width: 34,
+                                  height: 34,
+                                  child: IconButton(
+                                    tooltip: 'Message trainer',
+                                    onPressed: () {
+                                      final cvId = enrollment?.courseVersionId ?? course.id!;
+                                      openLearnerInstructorChat(
+                                        context,
+                                        courseVersionId: cvId,
+                                        courseTitle: course.title,
+                                      );
+                                    },
+                                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                                    color: AppColors.blue,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                                    style: IconButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(color: AppColors.blue.withOpacity(0.3)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 96,
+                                child: ElevatedButton(
+                                  onPressed: onView,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.blue,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: const Text('Continue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            ],
                           )
-                        : OutlinedButton(
-                            onPressed: onEnroll,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.blue,
-                              side: const BorderSide(color: AppColors.blue, width: 1.5),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              padding: EdgeInsets.zero,
+                        : SizedBox(
+                            width: 96,
+                            child: OutlinedButton(
+                              onPressed: onEnroll,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.blue,
+                                side: const BorderSide(color: AppColors.blue, width: 1.5),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: const Text('Enroll', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                             ),
-                            child: const Text('Enroll', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
               ),
             ],
@@ -671,12 +822,6 @@ class _CourseCard extends StatelessWidget {
     );
   }
 
-  double _calculateProgress(String status, Enrollment? enrollment) {
-    if (enrollment?.completedAt != null || status.toLowerCase() == 'completed') return 100.0;
-    if (status.toLowerCase() == 'in_progress') return 30.0;
-    if (status.toLowerCase() == 'overdue') return 75.0;
-    return 0.0;
-  }
 }
 
 class _StatusBadge extends StatelessWidget {

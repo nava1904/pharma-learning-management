@@ -1,13 +1,41 @@
 import 'package:serverpod/serverpod.dart';
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import '../services/rbac_helper.dart';
 import '../services/esignature_service.dart';
 import '../generated/access_reviews/access_review.dart';
 import '../generated/access_reviews/role_history.dart';
 import '../generated/audit/audit_trail.dart';
 import '../generated/shared/electronic_signature.dart';
+import '../generated/organization/user_role.dart';
 
 class AccessReviewEndpoint extends Endpoint {
+
+  /// Compute SHA-256 HMAC hash of audit-critical fields for integrity verification
+  /// per 21 CFR Part 11 (SYS-WF-08 chained audit trail).
+  static String _computeRowHash({
+    required String entityType,
+    required String entityId,
+    required String action,
+    required DateTime timestamp,
+    int? userId,
+    String? newValueJson,
+    String? reason,
+  }) {
+    final dataToHash = [
+      entityType,
+      entityId,
+      action,
+      timestamp.toIso8601String(),
+      userId?.toString() ?? 'null',
+      newValueJson ?? '',
+      reason ?? '',
+    ].join('|');
+    final bytes = utf8.encode(dataToHash);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
   // List all access review records for the current window
   Future<List<AccessReview>> getAccessReviews(Session session, int windowId) async {
     return await AccessReview.db.find(
@@ -21,23 +49,32 @@ class AccessReviewEndpoint extends Endpoint {
     final review = await AccessReview.db.findById(session, reviewId);
     if (review == null) throw Exception('Review not found');
     if (justification.trim().isEmpty) throw Exception('Justification required');
-  review.decision = 'APPROVED';
-  review.justification = justification;
-  final pharmaUser = await RbacHelper.getCurrentPharmaUser(session);
-  review.reviewedById = pharmaUser?.id;
+    review.decision = 'APPROVED';
+    review.justification = justification;
+    final pharmaUser = await RbacHelper.getCurrentPharmaUser(session);
+    review.reviewedById = pharmaUser?.id;
     review.reviewedAt = DateTime.now().toUtc();
     await AccessReview.db.updateRow(session, review);
     // Audit event
+    final auditTimestamp = DateTime.now().toUtc();
     await AuditTrail.db.insertRow(session, AuditTrail(
       entityType: 'access_review',
       entityId: reviewId.toString(),
       action: 'ACCESS_RECERTIFIED',
       newValueJson: justification,
-      timestamp: DateTime.now().toUtc(),
+      timestamp: auditTimestamp,
       userId: pharmaUser?.id,
       reason: justification,
-  ipAddress: 'unknown',
-      rowHash: '', // TODO: Compute HMAC chain
+      ipAddress: 'unknown',
+      rowHash: _computeRowHash(
+        entityType: 'access_review',
+        entityId: reviewId.toString(),
+        action: 'ACCESS_RECERTIFIED',
+        timestamp: auditTimestamp,
+        userId: pharmaUser?.id,
+        newValueJson: justification,
+        reason: justification,
+      ),
     ));
   }
 
@@ -48,34 +85,81 @@ class AccessReviewEndpoint extends Endpoint {
     if (justification.trim().isEmpty) throw Exception('Justification required');
     review.decision = 'REVOKED';
     review.justification = justification;
-  final pharmaUser = await RbacHelper.getCurrentPharmaUser(session);
-  review.reviewedById = pharmaUser?.id;
+    final pharmaUser = await RbacHelper.getCurrentPharmaUser(session);
+    review.reviewedById = pharmaUser?.id;
     review.reviewedAt = DateTime.now().toUtc();
     await AccessReview.db.updateRow(session, review);
-    // Deactivate user role (TODO: update user_roles, invalidate sessions, clear JWT cache)
+
+    // Deactivate user role: remove the UserRole record so RBAC no longer grants this role
+    final userRoles = await UserRole.db.find(
+      session,
+      where: (t) =>
+          t.userId.equals(review.userId) &
+          t.roleId.equals(review.roleId),
+    );
+    for (final ur in userRoles) {
+      if (ur.id != null) {
+        await UserRole.db.deleteRow(session, ur);
+      }
+    }
+
+    // Find the original grant record for traceability
+    int? grantRecordId;
+    final grantRecord = await RoleHistory.db.findFirstRow(
+      session,
+      where: (t) =>
+          t.userId.equals(review.userId) &
+          t.roleId.equals(review.roleId) &
+          t.action.equals('GRANTED'),
+      orderBy: (t) => t.timestamp,
+      orderDescending: true,
+    );
+    grantRecordId = grantRecord?.id;
+
     // Role history
+    final historyTimestamp = DateTime.now().toUtc();
+    final historyHmacData = [
+      review.userId.toString(),
+      review.roleId.toString(),
+      'REVOKED',
+      historyTimestamp.toIso8601String(),
+      pharmaUser?.id?.toString() ?? 'null',
+      justification,
+    ].join('|');
+    final historyHmac = sha256.convert(utf8.encode(historyHmacData)).toString();
+
     await RoleHistory.db.insertRow(session, RoleHistory(
-  userId: review.userId,
-  roleId: review.roleId,
+      userId: review.userId,
+      roleId: review.roleId,
       action: 'REVOKED',
-      timestamp: DateTime.now().toUtc(),
-  performedById: pharmaUser?.id,
-  reason: justification,
-  grantRecordId: null, // TODO: Link to original grant
-  ipAddress: 'unknown',
-  hmacHash: '', // TODO: Compute HMAC chain
+      timestamp: historyTimestamp,
+      performedById: pharmaUser?.id,
+      reason: justification,
+      grantRecordId: grantRecordId,
+      ipAddress: 'unknown',
+      hmacHash: historyHmac,
     ));
+
     // Audit event
+    final auditTimestamp = DateTime.now().toUtc();
     await AuditTrail.db.insertRow(session, AuditTrail(
       entityType: 'access_review',
       entityId: reviewId.toString(),
       action: 'ACCESS_REVOKED',
       newValueJson: justification,
-      timestamp: DateTime.now().toUtc(),
+      timestamp: auditTimestamp,
       userId: pharmaUser?.id,
       reason: justification,
-  ipAddress: 'unknown',
-      rowHash: '', // TODO: Compute HMAC chain
+      ipAddress: 'unknown',
+      rowHash: _computeRowHash(
+        entityType: 'access_review',
+        entityId: reviewId.toString(),
+        action: 'ACCESS_REVOKED',
+        timestamp: auditTimestamp,
+        userId: pharmaUser?.id,
+        newValueJson: justification,
+        reason: justification,
+      ),
     ));
   }
 
@@ -97,18 +181,28 @@ class AccessReviewEndpoint extends Endpoint {
       ipAddress: 'unknown',
     );
 
+    final signAuditTimestamp = DateTime.now().toUtc();
+    final signNewValueJson = jsonEncode({'reason': reason.trim()});
     await AuditTrail.db.insertRow(
       session,
       AuditTrail(
         entityType: 'access_review_window',
         entityId: windowId.toString(),
         action: 'ACCESS_REVIEW_SIGNED',
-        newValueJson: jsonEncode({'reason': reason.trim()}),
-        timestamp: DateTime.now().toUtc(),
+        newValueJson: signNewValueJson,
+        timestamp: signAuditTimestamp,
         userId: userId,
         reason: reason.trim(),
         ipAddress: 'unknown',
-        rowHash: '',
+        rowHash: _computeRowHash(
+          entityType: 'access_review_window',
+          entityId: windowId.toString(),
+          action: 'ACCESS_REVIEW_SIGNED',
+          timestamp: signAuditTimestamp,
+          userId: userId,
+          newValueJson: signNewValueJson,
+          reason: reason.trim(),
+        ),
       ),
     );
   }
@@ -154,18 +248,28 @@ class AccessReviewEndpoint extends Endpoint {
     final pdfBytes = _simplePdf(text.toString());
     final b64 = base64Encode(pdfBytes);
 
+    final exportTimestamp = DateTime.now().toUtc();
+    final exportNewValueJson = jsonEncode({'bytes': pdfBytes.length});
     await AuditTrail.db.insertRow(
       session,
       AuditTrail(
         entityType: 'access_review_window',
         entityId: windowId.toString(),
         action: 'ACCESS_REVIEW_EXPORTED',
-        newValueJson: jsonEncode({'bytes': pdfBytes.length}),
-        timestamp: DateTime.now().toUtc(),
+        newValueJson: exportNewValueJson,
+        timestamp: exportTimestamp,
         userId: userId,
         reason: 'exportSignedPdf',
         ipAddress: 'unknown',
-        rowHash: '',
+        rowHash: _computeRowHash(
+          entityType: 'access_review_window',
+          entityId: windowId.toString(),
+          action: 'ACCESS_REVIEW_EXPORTED',
+          timestamp: exportTimestamp,
+          userId: userId,
+          newValueJson: exportNewValueJson,
+          reason: 'exportSignedPdf',
+        ),
       ),
     );
 

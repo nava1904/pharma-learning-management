@@ -1,6 +1,8 @@
 // Route: /trainer/assignment-campaigns/new
 // Multi-step wizard for standalone (non–course-lesson) assignments.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart' hide Material;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +44,9 @@ class _StandaloneAssignmentWizardScreenState
   List<QuestionBank> _questionBanks = [];
   List<Department> _departments = [];
   List<TrainingBatch> _batches = [];
+
+  /// Inline questions built in the "Builder Tools" step.
+  final List<_InlineQuestion> _questions = [];
 
   bool _loadingMeta = true;
   bool _loadingVersions = false;
@@ -188,11 +193,19 @@ class _StandaloneAssignmentWizardScreenState
 
     setState(() => _submitting = true);
     try {
+      // Build instructions: plain text + embedded questions JSON
+      String? instructions = _instructionsCtrl.text.trim().isEmpty
+          ? null
+          : _instructionsCtrl.text.trim();
+      if (_questions.isNotEmpty) {
+        final questionsJson = jsonEncode(_questions.map((q) => q.toJson()).toList());
+        instructions = '${instructions ?? ''}\n\n<!-- QUESTIONS_JSON -->\n$questionsJson\n<!-- /QUESTIONS_JSON -->';
+      }
+
       final created = await client.standaloneAssignment.createStandaloneAssignment(
         organizationId: user!.organizationId,
         title: _titleCtrl.text.trim(),
-        instructions:
-            _instructionsCtrl.text.trim().isEmpty ? null : _instructionsCtrl.text.trim(),
+        instructions: instructions,
         dueAt: _dueDate!,
         contentKind: _contentKind,
         questionBankId: _questionBankId,
@@ -312,8 +325,10 @@ class _StandaloneAssignmentWizardScreenState
                       ),
                       items: const [
                         DropdownMenuItem(value: 'open_ended', child: Text('Open-ended')),
-                        DropdownMenuItem(value: 'mcq', child: Text('MCQ (question bank)')),
-                        DropdownMenuItem(value: 'mixed', child: Text('Mixed')),
+                        DropdownMenuItem(value: 'multiple_choice', child: Text('Multiple Choice')),
+                        DropdownMenuItem(value: 'true_false', child: Text('True / False')),
+                        DropdownMenuItem(value: 'short_answer', child: Text('Short Answer')),
+                        DropdownMenuItem(value: 'mixed', child: Text('Mixed (all types)')),
                       ],
                       onChanged: (v) => setState(() => _contentKind = v ?? 'open_ended'),
                     ),
@@ -502,26 +517,103 @@ class _StandaloneAssignmentWizardScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Build or refine MCQ content in the Question Bank or Exam Generator, then return here to publish.',
+                  'Add questions for this assignment. Learners will answer these when they open the assignment.',
                   style: PharmaTypography.body,
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => context.push('/trainer/question-bank'),
-                      icon: const Icon(Icons.quiz_outlined),
-                      label: const Text('Question Bank'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.push('/trainer/exam-generator'),
-                      icon: const Icon(Icons.edit_note_outlined),
-                      label: const Text('Exam generator'),
-                    ),
-                  ],
+
+                // ── Existing questions ───────────────────────────
+                if (_questions.isNotEmpty) ...[
+                  ..._questions.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final q = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: PharmaColors.pageBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: PharmaColors.borderLight),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: PharmaColors.emerald50,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${i + 1}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: PharmaColors.emerald700,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  q.text,
+                                  style: PharmaTypography.bodyMedium
+                                      .copyWith(fontWeight: FontWeight.w600),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _questionTypeLabel(q.type),
+                                  style: PharmaTypography.caption.copyWith(
+                                    color: PharmaColors.textTertiary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.edit, size: 16, color: PharmaColors.info),
+                            tooltip: 'Edit',
+                            onPressed: () => _showAddEditQuestionDialog(existing: q, index: i),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, size: 16, color: PharmaColors.danger),
+                            tooltip: 'Remove',
+                            onPressed: () => setState(() => _questions.removeAt(i)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                ],
+
+                // ── Add question button ─────────────────────────
+                FilledButton.icon(
+                  onPressed: () => _showAddEditQuestionDialog(),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add Question'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PharmaColors.emerald600,
+                    foregroundColor: PharmaColors.cardBg,
+                  ),
                 ),
+
+                if (_questions.isEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'No questions added yet. You can skip this step for open-ended assignments or add questions for structured content.',
+                    style: PharmaTypography.caption
+                        .copyWith(color: PharmaColors.textTertiary),
+                  ),
+                ],
               ],
             ),
           ),
@@ -537,12 +629,16 @@ class _StandaloneAssignmentWizardScreenState
                   Text('Title: ${_titleCtrl.text.trim()}',
                       style: PharmaTypography.bodyMedium),
                   const SizedBox(height: 8),
+                  Text('Content type: $_contentKind', style: PharmaTypography.body),
                   Text('Audience: $_targetType', style: PharmaTypography.body),
                   if (_dueDate != null)
                     Text('Due: ${DateFormat.yMMMd().format(_dueDate!)}',
                         style: PharmaTypography.body),
-                  if (_questionBankId != null)
-                    Text('Question bank id: $_questionBankId',
+                  if (_questions.isNotEmpty)
+                    Text('Questions: ${_questions.length}',
+                        style: PharmaTypography.body),
+                  if (_selectedCourse != null)
+                    Text('Course: ${_selectedCourse!.title}',
                         style: PharmaTypography.caption),
                   const SizedBox(height: 16),
                   if (_submitting) const LinearProgressIndicator(),
@@ -554,6 +650,326 @@ class _StandaloneAssignmentWizardScreenState
       ),
     );
   }
+
+  // ── Helper: question type labels ──────────────────────────────────────────
+
+  String _questionTypeLabel(String type) {
+    switch (type) {
+      case 'multiple_choice':
+        return 'Multiple Choice';
+      case 'true_false':
+        return 'True / False';
+      case 'short_answer':
+        return 'Short Answer';
+      case 'open_ended':
+        return 'Open Ended';
+      default:
+        return type;
+    }
+  }
+
+  // ── Inline question add / edit dialog ─────────────────────────────────────
+
+  void _showAddEditQuestionDialog({_InlineQuestion? existing, int? index}) {
+    final textCtrl = TextEditingController(text: existing?.text ?? '');
+    String type = existing?.type ?? _contentKind;
+    // Default to a concrete type if the content kind is 'mixed'
+    if (type == 'mixed') type = 'multiple_choice';
+
+    List<String> options =
+        existing?.options != null ? List<String>.from(existing!.options!) : ['', '', '', ''];
+    int correctIndex = existing?.correctIndex ?? 0;
+    final shortAnswerCtrl =
+        TextEditingController(text: existing?.correctAnswer ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Widget buildOptionsEditor() {
+            switch (type) {
+              case 'multiple_choice':
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Options (select the correct answer)',
+                        style: PharmaTypography.caption
+                            .copyWith(color: PharmaColors.textSecondary)),
+                    const SizedBox(height: 8),
+                    ...List.generate(options.length, (i) {
+                      final ctl = TextEditingController(text: options[i]);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            Radio<int>(
+                              value: i,
+                              groupValue: correctIndex,
+                              activeColor: PharmaColors.emerald600,
+                              onChanged: (v) =>
+                                  setDialogState(() => correctIndex = v ?? 0),
+                            ),
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: PharmaColors.emerald50,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  String.fromCharCode(65 + i),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: PharmaColors.emerald700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: ctl,
+                                onChanged: (v) => options[i] = v,
+                                decoration: InputDecoration(
+                                  hintText: 'Option ${String.fromCharCode(65 + i)}',
+                                  isDense: true,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            if (options.length > 2)
+                              IconButton(
+                                icon: Icon(Icons.close,
+                                    size: 16,
+                                    color: PharmaColors.textTertiary),
+                                onPressed: () => setDialogState(() {
+                                  options.removeAt(i);
+                                  if (correctIndex >= options.length) {
+                                    correctIndex = 0;
+                                  }
+                                }),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                    if (options.length < 6)
+                      TextButton.icon(
+                        onPressed: () =>
+                            setDialogState(() => options.add('')),
+                        icon: const Icon(Icons.add, size: 14),
+                        label: const Text('Add option'),
+                        style: TextButton.styleFrom(
+                            foregroundColor: PharmaColors.emerald600),
+                      ),
+                  ],
+                );
+
+              case 'true_false':
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Correct answer',
+                        style: PharmaTypography.caption
+                            .copyWith(color: PharmaColors.textSecondary)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _tfOption(ctx, 'True', 0, correctIndex,
+                            (v) => setDialogState(() => correctIndex = v)),
+                        const SizedBox(width: 12),
+                        _tfOption(ctx, 'False', 1, correctIndex,
+                            (v) => setDialogState(() => correctIndex = v)),
+                      ],
+                    ),
+                  ],
+                );
+
+              case 'short_answer':
+                return TextField(
+                  controller: shortAnswerCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Expected answer',
+                    border: OutlineInputBorder(),
+                  ),
+                );
+
+              case 'open_ended':
+                return Text(
+                  'Learners will provide a free-text response. You can review and score it after submission.',
+                  style: PharmaTypography.caption
+                      .copyWith(color: PharmaColors.textTertiary),
+                );
+
+              default:
+                return const SizedBox.shrink();
+            }
+          }
+
+          return AlertDialog(
+            title: Text(existing != null ? 'Edit Question' : 'Add Question'),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: textCtrl,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Question text',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: type,
+                      decoration: const InputDecoration(
+                        labelText: 'Question type',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'multiple_choice',
+                            child: Text('Multiple Choice')),
+                        DropdownMenuItem(
+                            value: 'true_false',
+                            child: Text('True / False')),
+                        DropdownMenuItem(
+                            value: 'short_answer',
+                            child: Text('Short Answer')),
+                        DropdownMenuItem(
+                            value: 'open_ended',
+                            child: Text('Open Ended')),
+                      ],
+                      onChanged: (v) =>
+                          setDialogState(() => type = v ?? 'multiple_choice'),
+                    ),
+                    const SizedBox(height: 16),
+                    buildOptionsEditor(),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final text = textCtrl.text.trim();
+                  if (text.isEmpty) return;
+
+                  String? correctAnswer;
+                  List<String>? opts;
+
+                  if (type == 'multiple_choice') {
+                    opts = List<String>.from(options);
+                    correctAnswer = '$correctIndex';
+                  } else if (type == 'true_false') {
+                    opts = ['True', 'False'];
+                    correctAnswer = '$correctIndex';
+                  } else if (type == 'short_answer') {
+                    correctAnswer = shortAnswerCtrl.text.trim();
+                  }
+
+                  final q = _InlineQuestion(
+                    text: text,
+                    type: type,
+                    options: opts,
+                    correctIndex: correctIndex,
+                    correctAnswer: correctAnswer,
+                  );
+
+                  Navigator.pop(ctx);
+                  setState(() {
+                    if (index != null) {
+                      _questions[index] = q;
+                    } else {
+                      _questions.add(q);
+                    }
+                  });
+                },
+                style: FilledButton.styleFrom(
+                    backgroundColor: PharmaColors.emerald600),
+                child: Text(existing != null ? 'Save' : 'Add'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _tfOption(BuildContext ctx, String label, int value, int groupValue,
+      ValueChanged<int> onChanged) {
+    final selected = value == groupValue;
+    return GestureDetector(
+      onTap: () => onChanged(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? PharmaColors.emerald50 : PharmaColors.pageBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? PharmaColors.emerald600 : PharmaColors.borderLight,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              selected ? Icons.check_circle : Icons.circle_outlined,
+              size: 18,
+              color: selected
+                  ? PharmaColors.emerald600
+                  : PharmaColors.textTertiary,
+            ),
+            const SizedBox(width: 6),
+            Text(label,
+                style: PharmaTypography.bodyMedium.copyWith(
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w400)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INLINE QUESTION MODEL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _InlineQuestion {
+  final String text;
+  final String type; // multiple_choice, true_false, short_answer, open_ended
+  final List<String>? options;
+  final int correctIndex;
+  final String? correctAnswer;
+
+  const _InlineQuestion({
+    required this.text,
+    required this.type,
+    this.options,
+    this.correctIndex = 0,
+    this.correctAnswer,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'type': type,
+        if (options != null) 'options': options,
+        'correctIndex': correctIndex,
+        if (correctAnswer != null) 'correctAnswer': correctAnswer,
+      };
 }
 
 class _CoursePickDialog extends StatefulWidget {

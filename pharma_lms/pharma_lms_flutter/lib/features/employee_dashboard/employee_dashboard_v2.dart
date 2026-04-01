@@ -99,7 +99,7 @@ class _DashboardContent extends ConsumerWidget {
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -139,7 +139,7 @@ class _DashboardContent extends ConsumerWidget {
                 );
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // 3. SECOND ROW — Recent activity | Learning progress
             LayoutBuilder(
@@ -168,7 +168,7 @@ class _DashboardContent extends ConsumerWidget {
 
             // 4. COMPLIANCE ALERTS — PHARMA REGULATORY CRITICAL
             if (summary.complianceAlerts.isNotEmpty || summary.compliance.overdueCount > 0) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _ComplianceAlertsSection(
                 alerts: summary.complianceAlerts,
                 overdueCount: summary.compliance.overdueCount,
@@ -176,7 +176,7 @@ class _DashboardContent extends ConsumerWidget {
             ],
 
             // 6. LAST UPDATED TIMESTAMP (FR-07-01 AC-08)
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Center(
               child: Text(
                 lastUpdated != null
@@ -187,7 +187,7 @@ class _DashboardContent extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -258,7 +258,7 @@ class _ComplianceOverviewCard extends StatelessWidget {
     final sum = c + ip + od;
 
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -484,7 +484,7 @@ class _OverdueTrainingsBreakdownCard extends StatelessWidget {
     final overdue = List<Map<String, dynamic>>.from(summary.overdueItems);
 
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -632,104 +632,114 @@ class _EsignatureReadinessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = summary.esignatureSummary;
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('E-signature readiness', style: PharmaTypography.headingMedium),
           const SizedBox(height: PharmaSpacing.md),
           if (rows.isEmpty)
-            Text(
-              'No pending signatures or recent e-signatures. Items appear when training requires acknowledgement or when you complete signed training records.',
-              style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                'No pending signatures. Items appear when training requires acknowledgement.',
+                style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary, fontSize: 11),
+              ),
             )
           else
-            ...rows.take(6).map((row) {
-              final kind = row['kind'] as String? ?? '';
-              final title = row['courseTitle'] as String? ?? 'Training';
-              if (kind == 'signed') {
-                final at = row['signedAt'] as String?;
-                final hash = row['integrityHash'] as String?;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(title, style: PharmaTypography.bodyMedium),
-                            if (at != null)
-                              Text(
-                                'Signed: ${_fmtShort(at)}',
-                                style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
-                              ),
-                            if (hash != null && hash.isNotEmpty)
-                              Text(
-                                hash.length > 24 ? '${hash.substring(0, 24)}…' : hash,
-                                style: PharmaTypography.caption.copyWith(
-                                  fontFamily: 'monospace',
-                                  fontSize: 10,
-                                  color: PharmaColors.textTertiary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: PharmaColors.emerald50,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'E-signed',
-                          style: PharmaTypography.caption.copyWith(
-                            color: PharmaColors.emerald700,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return Padding(
-                padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 160),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: rows.length > 5 ? 5 : rows.length,
+                separatorBuilder: (_, __) => Divider(height: 1, color: PharmaColors.borderLight),
+                itemBuilder: (context, i) {
+                  final row = rows[i];
+                  final kind = row['kind'] as String? ?? '';
+                  final title = row['courseTitle'] as String? ?? 'Training';
+                  if (kind == 'signed') {
+                    final at = row['signedAt'] as String?;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
                         children: [
-                          Text(title, style: PharmaTypography.bodyMedium),
-                          Text(
-                            kind == 'pending_ack'
-                                ? 'Retraining acknowledgement required'
-                                : 'Signature required to finalize training',
-                            style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(title, style: PharmaTypography.bodyMedium.copyWith(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                if (at != null)
+                                  Text(
+                                    'Signed: ${_fmtShort(at)}',
+                                    style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary, fontSize: 10),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: PharmaColors.emerald50,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'E-signed',
+                              style: PharmaTypography.caption.copyWith(
+                                color: PharmaColors.emerald700,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
                           ),
                         ],
                       ),
+                    );
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title, style: PharmaTypography.bodyMedium.copyWith(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(
+                                kind == 'pending_ack'
+                                    ? 'Acknowledgement required'
+                                    : 'Signature required',
+                                style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary, fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          height: 26,
+                          child: FilledButton(
+                            onPressed: () => context.go('/employee/lessons'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: PharmaColors.danger,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                              textStyle: const TextStyle(fontSize: 11),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Sign now'),
+                          ),
+                        ),
+                      ],
                     ),
-                    FilledButton(
-                      onPressed: () => context.go('/employee/lessons'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: PharmaColors.danger,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      child: const Text('Sign now', style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-              );
-            }),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -759,7 +769,7 @@ class _LearningProgressCarousel extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -791,7 +801,10 @@ class _LearningProgressCarousel extends StatelessWidget {
                     due ??= _dueRowForEnrollment(e, summary);
                     final isOverdue = due?['isOverdue'] == true;
                     final priority = due?['priority'] as String?;
-                    final progress = _progressFromStatus(e.status);
+                    // Use real progress from server MaterialProgress data
+                    final progress = e.status == 'completed'
+                        ? 100.0
+                        : (summary.enrollmentProgressMap[e.id] ?? _progressFromStatus(e.status));
                     return SizedBox(
                       width: 200,
                       child: Material(
@@ -844,16 +857,39 @@ class _LearningProgressCarousel extends StatelessWidget {
                                   ],
                                 ),
                                 const Spacer(),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${progress.round()}% complete',
+                                      style: PharmaTypography.caption.copyWith(
+                                        color: PharmaColors.textSecondary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (e.status == 'not_started' || e.status == 'assigned')
+                                      Text(
+                                        'Not started',
+                                        style: PharmaTypography.caption.copyWith(
+                                          color: PharmaColors.textTertiary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(4),
                                   child: LinearProgressIndicator(
                                     value: progress / 100,
                                     minHeight: 6,
                                     backgroundColor: PharmaColors.gray200,
-                                    color: PharmaColors.emerald500,
+                                    color: isOverdue
+                                        ? PharmaColors.danger
+                                        : PharmaColors.emerald500,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                                 if (due != null)
                                   Text(
                                     'Due: ${_dueLabel(due)}',
@@ -882,14 +918,17 @@ class _LearningProgressCarousel extends StatelessWidget {
     );
   }
 
+  /// Fallback when real server progress is unavailable.
   double _progressFromStatus(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
         return 100;
       case 'in_progress':
-        return 45;
-      default:
-        return 8;
+        return 25; // conservative estimate — real value preferred
+      case 'overdue':
+        return 10;
+      default: // not_started, assigned
+        return 0;
     }
   }
 
@@ -919,7 +958,7 @@ class _WelcomeCard extends StatelessWidget {
     final complianceRate = summary.compliance.complianceRate.toInt();
 
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -1171,7 +1210,7 @@ class _ContinueLearningSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -1181,7 +1220,7 @@ class _ContinueLearningSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Continue Learning', style: PharmaTypography.headingMedium),
-          const SizedBox(height: PharmaSpacing.lg),
+          const SizedBox(height: PharmaSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 600;
@@ -1371,7 +1410,7 @@ class _UpcomingDeadlinesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -1540,7 +1579,7 @@ class _RecentActivityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -1550,7 +1589,7 @@ class _RecentActivityCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Recent activity', style: PharmaTypography.headingMedium),
-          const SizedBox(height: PharmaSpacing.lg),
+          const SizedBox(height: PharmaSpacing.md),
           if (activities.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: PharmaSpacing.lg),
@@ -1816,7 +1855,7 @@ class _ComplianceAlertsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (alerts.isNotEmpty) {
       return Container(
-        padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+        padding: const EdgeInsets.all(PharmaSpacing.lg),
         decoration: BoxDecoration(
           color: PharmaColors.cardBg,
           borderRadius: PharmaRadius.cardRadius,
@@ -1842,7 +1881,7 @@ class _ComplianceAlertsSection extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: PharmaSpacing.lg),
+            const SizedBox(height: PharmaSpacing.md),
             ...alerts.take(5).map((alert) => Padding(
               padding: const EdgeInsets.only(bottom: PharmaSpacing.sm),
               child: _AlertCard(alert: alert),

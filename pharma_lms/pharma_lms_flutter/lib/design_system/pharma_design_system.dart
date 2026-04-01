@@ -131,6 +131,67 @@ abstract class PharmaColors {
   static const Color surface = cardBg;
   static const Color border = borderLight;
   static const Color primary = emerald600;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STITCH "CLINICAL ARCHIVE" DESIGN SYSTEM — Admin Portal Palette
+  // ─────────────────────────────────────────────────────────────────────────────
+  // From stitch_compliance_focused_dashboard DESIGN.md
+  // Tonal Architecture: No borders — depth through color shifts
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // PRIMARY — Deep Navy (authority, actions, navigation headers)
+  static const Color clinicalPrimary = Color(0xFF545F73);
+  static const Color clinicalPrimaryDim = Color(0xFF485367);
+  static const Color clinicalPrimaryContainer = Color(0xFFD8E3FB);
+  static const Color clinicalPrimaryFixed = Color(0xFFD8E3FB);
+  static const Color clinicalOnPrimary = Color(0xFFF6F7FF);
+  static const Color clinicalOnPrimaryContainer = Color(0xFF475266);
+  static const Color clinicalOnPrimaryFixed = Color(0xFF354053);
+
+  // SECONDARY — Signature Green (e-signatures, validated, audit-passed)
+  static const Color clinicalSecondary = Color(0xFF006D4B);
+  static const Color clinicalSecondaryDim = Color(0xFF005F41);
+  static const Color clinicalSecondaryContainer = Color(0xFF85F8C4);
+  static const Color clinicalOnSecondary = Color(0xFFE6FFEF);
+  static const Color clinicalOnSecondaryContainer = Color(0xFF005E40);
+
+  // TERTIARY — Audit Red (non-compliance, overdue, critical)
+  static const Color clinicalTertiary = Color(0xFFC00815);
+  static const Color clinicalTertiaryDim = Color(0xFFAB000F);
+  static const Color clinicalTertiaryContainer = Color(0xFFFA3D38);
+  static const Color clinicalOnTertiary = Color(0xFFFFF7F6);
+
+  // ERROR — Clinical
+  static const Color clinicalError = Color(0xFF9F403D);
+  static const Color clinicalErrorContainer = Color(0xFFFE8983);
+
+  // SURFACE HIERARCHY — Tonal Architecture (no borders)
+  static const Color clinicalBackground = Color(0xFFF9F9FF);
+  static const Color clinicalSurface = Color(0xFFF9F9FF);
+  static const Color clinicalSurfaceBright = Color(0xFFF9F9FF);
+  static const Color clinicalSurfaceContainerLowest = Color(0xFFFFFFFF); // Cards, high-priority
+  static const Color clinicalSurfaceContainerLow = Color(0xFFF0F3FF); // Main workspace
+  static const Color clinicalSurfaceContainer = Color(0xFFE7EEFF); // Structural zones
+  static const Color clinicalSurfaceContainerHigh = Color(0xFFDEE8FF);
+  static const Color clinicalSurfaceContainerHighest = Color(0xFFD5E3FF);
+  static const Color clinicalSurfaceDim = Color(0xFFC8DBFF);
+  static const Color clinicalSurfaceVariant = Color(0xFFD5E3FF);
+
+  // ON-SURFACE — Text on clinical surfaces
+  static const Color clinicalOnSurface = Color(0xFF003265);
+  static const Color clinicalOnSurfaceVariant = Color(0xFF3B6095);
+  static const Color clinicalOnBackground = Color(0xFF003265);
+
+  // OUTLINE — Ghost Border (felt, not seen)
+  static const Color clinicalOutline = Color(0xFF587CB3);
+  static const Color clinicalOutlineVariant = Color(0xFF90B3EE);
+
+  // INVERSE
+  static const Color clinicalInverseSurface = Color(0xFF040E1F);
+  static const Color clinicalInverseOnSurface = Color(0xFF929DB4);
+
+  // CRITICAL BANNER — DC2626 red for overdue alerts
+  static const Color clinicalCriticalBanner = Color(0xFFDC2626);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -206,6 +267,17 @@ abstract class PharmaRadius {
   static BorderRadius get pillRadius => BorderRadius.circular(full);
   static BorderRadius get avatarRadius => BorderRadius.circular(full);
   static BorderRadius get badgeRadius => BorderRadius.circular(full);
+
+  // ─── STITCH: Clinical Archive Radii (strict, professional) ───
+  // DEFAULT: 0.125rem (2px), lg: 0.25rem (4px), xl: 0.5rem (8px)
+  static const double clinicalDefault = 2.0;   // 0.125rem
+  static const double clinicalLg = 4.0;        // 0.25rem
+  static const double clinicalXl = 8.0;        // 0.5rem
+  static const double clinicalFull = 12.0;     // 0.75rem
+
+  static BorderRadius get clinicalCardRadius => BorderRadius.circular(clinicalDefault);
+  static BorderRadius get clinicalButtonRadius => BorderRadius.circular(clinicalDefault);
+  static BorderRadius get clinicalChipRadius => BorderRadius.circular(clinicalLg);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -262,6 +334,36 @@ abstract class PharmaShadows {
   
   // Alias for lg shadow
   static List<BoxShadow> get lg => elevated;
+
+  // ─── STITCH: Atmospheric Shadow (derived from on_surface, not black) ───
+  static List<BoxShadow> get atmospheric => [
+    BoxShadow(
+      color: const Color(0xFF003265).withValues(alpha: 0.08),
+      blurRadius: 30,
+      spreadRadius: -5,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  // Subtle atmospheric for filter cards
+  static List<BoxShadow> get atmosphericLight => [
+    BoxShadow(
+      color: const Color(0xFF003265).withValues(alpha: 0.05),
+      blurRadius: 30,
+      spreadRadius: -5,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  // E-signature prompt shadow
+  static List<BoxShadow> get eSignature => [
+    BoxShadow(
+      color: const Color(0xFF003265).withValues(alpha: 0.15),
+      blurRadius: 50,
+      spreadRadius: -12,
+      offset: const Offset(0, 15),
+    ),
+  ];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -382,6 +484,106 @@ abstract class PharmaTypography {
     fontWeight: FontWeight.w500,
     color: PharmaColors.textTertiary,
     height: 1.4,
+  );
+
+  // ─── STITCH: Clinical Archive Typography ─────────────────────────────────
+  // Inter font, sentence case, tight tracking, compliance labels
+
+  /// Stitch section title (headline-sm, tight tracking)
+  static TextStyle get clinicalHeadline => const TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 24,
+    fontWeight: FontWeight.w800,
+    color: PharmaColors.clinicalOnSurface,
+    height: 1.2,
+    letterSpacing: -0.5,
+  );
+
+  /// Stitch card/section title
+  static TextStyle get clinicalTitle => const TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: FontWeight.w900,
+    color: PharmaColors.clinicalOnSurface,
+    height: 1.3,
+    letterSpacing: -0.01,
+  );
+
+  /// Stitch compliance label (10px bold uppercase tracking-widest)
+  static TextStyle get clinicalLabel => TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    color: PharmaColors.clinicalOnSurfaceVariant,
+    height: 1.4,
+    letterSpacing: 1.5,
+  );
+
+  /// Stitch table header (10px bold uppercase tracking-widest)
+  static TextStyle get clinicalTableHeader => TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    color: PharmaColors.clinicalOnSurfaceVariant,
+    height: 1.4,
+    letterSpacing: 1.5,
+  );
+
+  /// Stitch body text on clinical surfaces
+  static TextStyle get clinicalBody => const TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: PharmaColors.clinicalOnSurfaceVariant,
+    height: 1.5,
+  );
+
+  /// Stitch KPI large number (4xl extrabold)
+  static TextStyle get clinicalKpiValue => const TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 36,
+    fontWeight: FontWeight.w800,
+    color: PharmaColors.clinicalOnSurface,
+    height: 1.1,
+    letterSpacing: -1.5,
+  );
+
+  /// Stitch mono/HMAC text
+  static TextStyle get clinicalMono => TextStyle(
+    fontFamily: 'monospace',
+    fontSize: 9,
+    fontWeight: FontWeight.w700,
+    color: PharmaColors.clinicalOnSurfaceVariant.withValues(alpha: 0.7),
+    height: 1.4,
+    letterSpacing: 0.5,
+  );
+
+  /// Stitch table cell text
+  static TextStyle get clinicalTableCell => const TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: PharmaColors.clinicalOnSurface,
+    height: 1.5,
+  );
+
+  /// Stitch table cell bold
+  static TextStyle get clinicalTableCellBold => const TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: PharmaColors.clinicalOnSurface,
+    height: 1.5,
+  );
+
+  /// Stitch nav label (xs uppercase tracking-widest)
+  static TextStyle get clinicalNavLabel => TextStyle(
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    color: PharmaColors.clinicalOnSurfaceVariant,
+    height: 1.4,
+    letterSpacing: 1.5,
   );
 }
 

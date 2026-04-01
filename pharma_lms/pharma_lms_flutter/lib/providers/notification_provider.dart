@@ -1,13 +1,15 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/client.dart';
+import '../core/lms_realtime.dart';
 import 'user_provider.dart';
 import 'dashboard_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — REAL-TIME NOTIFICATION PROVIDER
+// PHARMA LMS — REAL-TIME NOTIFICATION PROVIDER (WebSocket + Polling Fallback)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Fetches in-app notifications from Serverpod backend:
@@ -17,7 +19,8 @@ import 'dashboard_providers.dart';
 //   - Training assigned notifications
 //   - Assessment completion events
 //
-// Auto-refreshes every 60 seconds for real-time tracking.
+// PRIMARY: WebSocket push via LmsRealtime (sub-second latency).
+// FALLBACK: Polls every 30 seconds if WebSocket is unavailable.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Combined notification item for the UI (assignments + certificates + events).
@@ -173,9 +176,61 @@ final unreadNotificationCountProvider = Provider<int>((ref) {
   return notifs.where((n) => !n.isRead).length;
 });
 
-/// Auto-refresh timer — invalidates notifications every 60 seconds.
+/// Connects to the WebSocket and subscribes to `notifications:user:<id>`.
+/// On each push event, invalidates [notificationsProvider] for instant refresh.
+/// Falls back to 30-second polling if WebSocket fails to connect.
+final notificationRealtimeProvider = Provider.autoDispose<void>((ref) {
+  final user = ref.watch(currentUserProvider).valueOrNull;
+  if (user?.id == null) return;
+
+  final userId = user!.id!;
+  StreamSubscription<Map<String, dynamic>>? wsSub;
+  Timer? pollTimer;
+  bool wsConnected = false;
+
+  // Try WebSocket first
+  () async {
+    try {
+      await LmsRealtime.ensureConnected();
+      LmsRealtime.subscribeRooms(['notifications:user:$userId']);
+      wsConnected = true;
+
+      wsSub = LmsRealtime.events.listen((event) {
+        final eventType = event['event'] as String?;
+        if (eventType == 'notification') {
+          // Instant refresh on push notification
+          ref.invalidate(notificationsProvider);
+          debugPrint('[Notifications] WebSocket push → refresh');
+        }
+      });
+    } catch (e) {
+      debugPrint('[Notifications] WebSocket unavailable ($e), using polling fallback');
+    }
+
+    // Polling fallback: 30s if WebSocket connected (light keep-alive), or primary if not
+    final interval = wsConnected
+        ? const Duration(seconds: 60)  // WS connected: light polling as backup
+        : const Duration(seconds: 30); // WS failed: aggressive polling
+    pollTimer = Timer.periodic(interval, (_) {
+      ref.invalidate(notificationsProvider);
+    });
+  }();
+
+  ref.onDispose(() {
+    wsSub?.cancel();
+    pollTimer?.cancel();
+    if (wsConnected) {
+      LmsRealtime.unsubscribeRooms(['notifications:user:$userId']);
+    }
+  });
+});
+
+/// Auto-refresh timer — invalidates notifications every 30 seconds (fallback).
+/// DEPRECATED in favor of [notificationRealtimeProvider] — kept for backward compat.
 final notificationRefreshTimerProvider = Provider.autoDispose<Timer>((ref) {
-  final timer = Timer.periodic(const Duration(seconds: 60), (_) {
+  // Ensure realtime provider is active
+  ref.watch(notificationRealtimeProvider);
+  final timer = Timer.periodic(const Duration(seconds: 30), (_) {
     ref.invalidate(notificationsProvider);
   });
   ref.onDispose(() => timer.cancel());

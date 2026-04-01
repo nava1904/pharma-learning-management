@@ -5,20 +5,21 @@ import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 import 'package:intl/intl.dart';
 
+import '../../design_system/pharma_design_system.dart';
 import '../../providers/dashboard_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN TOKENS (Matching Screen 1 exactly)
+// DESIGN TOKENS — mapped to PharmaDesignSystem
 // ═══════════════════════════════════════════════════════════════════════════════
-const Color _bgColor = Color(0xFFF8F9FA); // Very light gray app background
-const Color _cardColor = Color(0xFFFFFFFF);
-const Color _tealAccent = Color(0xFF48CFCB); // Teal chart/bars
-const Color _coralAccent = Color(0xFFF89B80); // Coral/Orange chart/bars
-const Color _textDark = Color(0xFF1F2937); // Main bold text
-const Color _textMuted = Color(0xFF9CA3AF); // Subtitles
-const Color _iconDark = Color(0xFF111827); // The black icon boxes
+const Color _bgColor = PharmaColors.pageBg;
+const Color _cardColor = PharmaColors.cardBg;
+const Color _tealAccent = Color(0xFF48CFCB); // Teal chart/bars (accent)
+const Color _coralAccent = Color(0xFFF89B80); // Coral/Orange chart/bars (accent)
+const Color _textDark = PharmaColors.textPrimary;
+const Color _textMuted = PharmaColors.textTertiary;
+const Color _iconDark = PharmaColors.gray900;
 
-final BorderRadius _cardRadius = BorderRadius.circular(24);
+final BorderRadius _cardRadius = PharmaRadius.cardRadius;
 final BoxShadow _softShadow = BoxShadow(
   color: Colors.black.withValues(alpha: 0.03),
   blurRadius: 20,
@@ -62,7 +63,7 @@ class EmployeeDashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Let\'s learn something new today!',
+                        'Your compliance training overview',
                         style: TextStyle(fontSize: 16, color: _textMuted),
                       ),
                       const SizedBox(height: 32),
@@ -101,10 +102,10 @@ class EmployeeDashboardScreen extends ConsumerWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Matches: "Hours Spent" Bar Chart
+                          // Matches: "Compliance Training Hours" Bar Chart
                           Expanded(
                             flex: 3,
-                            child: _HoursSpentChart(completedCourses: summary.completed),
+                            child: _ComplianceTrainingHoursChart(completedCourses: summary.completed),
                           ),
                           const SizedBox(width: 24),
                           // Matches: "Performance" Gauge Chart
@@ -267,7 +268,7 @@ class _StatCard extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: _iconDark,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(PharmaRadius.lg),
                 ),
                 child: Icon(icon, color: Colors.white, size: 18),
               ),
@@ -280,23 +281,35 @@ class _StatCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WIDGET: HOURS SPENT CHART
-// Dynamically calculates hours from actual completed courses
+// WIDGET: COMPLIANCE TRAINING HOURS CHART
+// Derives hours from actual completed courses (completed count per month)
 // ═══════════════════════════════════════════════════════════════════════════════
-class _HoursSpentChart extends StatelessWidget {
+class _ComplianceTrainingHoursChart extends StatelessWidget {
   final List<Enrollment> completedCourses;
 
-  const _HoursSpentChart({required this.completedCourses});
+  const _ComplianceTrainingHoursChart({required this.completedCourses});
 
   @override
   Widget build(BuildContext context) {
-    // Generate dynamic mock data based on actual completions so the chart works without new endpoints
-    final List<double> hoursData = [12, 18, 45, 60, 50]; // Mock structure
+    // Derive real monthly completion counts from completed enrollments
+    final now = DateTime.now();
+    final months = List.generate(5, (i) => DateTime(now.year, now.month - 4 + i));
+    final monthLabels = months.map((d) => DateFormat('MMM').format(d)).toList();
+    final List<double> hoursData = months.map((month) {
+      final count = completedCourses.where((e) {
+        final completedAt = e.completedAt;
+        if (completedAt == null) return false;
+        return completedAt.year == month.year && completedAt.month == month.month;
+      }).length;
+      // Approximate 1.5 hours per completed course
+      return count * 1.5;
+    }).toList();
+    final maxY = (hoursData.reduce((a, b) => a > b ? a : b) * 1.3).clamp(10.0, 200.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Hours Spent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark)),
+        const Text('Compliance Training Hours', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark)),
         const SizedBox(height: 16),
         Container(
           height: 250,
@@ -305,7 +318,7 @@ class _HoursSpentChart extends StatelessWidget {
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: 80,
+              maxY: maxY,
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
@@ -319,11 +332,10 @@ class _HoursSpentChart extends StatelessWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
-                      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-                      if (value.toInt() < 0 || value.toInt() >= months.length) return const SizedBox();
+                      if (value.toInt() < 0 || value.toInt() >= monthLabels.length) return const SizedBox();
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(months[value.toInt()], style: const TextStyle(color: _textMuted, fontSize: 12)),
+                        child: Text(monthLabels[value.toInt()], style: const TextStyle(color: _textMuted, fontSize: 12)),
                       );
                     },
                   ),
@@ -413,7 +425,17 @@ class _PerformanceGauge extends StatelessWidget {
                       children: [
                         const SizedBox(height: 20),
                         const Text('Your Score:', style: TextStyle(color: _textMuted, fontSize: 14)),
-                        Text('${complianceRate.toInt()}%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _textDark)),
+                        Text('${complianceRate.toInt()}%', style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: complianceRate >= 80 ? _tealAccent : _coralAccent,
+                        )),
+                        if (complianceRate < 80)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: Text('Below 80% threshold',
+                              style: TextStyle(color: _coralAccent, fontSize: 11, fontWeight: FontWeight.w600)),
+                          ),
                       ],
                     )
                   ],
@@ -500,7 +522,7 @@ class _PriorityTrainingList extends StatelessWidget {
                   ),
                   const Expanded(
                     flex: 1,
-                    child: Text('45 mins', style: TextStyle(color: _textMuted, fontSize: 13)),
+                    child: Text('—', style: TextStyle(color: _textMuted, fontSize: 13)),
                   ),
                   SizedBox(
                     width: 100,

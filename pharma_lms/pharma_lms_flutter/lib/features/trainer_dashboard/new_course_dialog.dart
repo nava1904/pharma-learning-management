@@ -76,7 +76,15 @@ class _NewCourseDialogState extends State<NewCourseDialog> {
         createdById: widget.createdById,
       );
 
-      final course = result['course'] as Course;
+      final courseData = result['course'];
+      final Course course;
+      if (courseData is Course) {
+        course = courseData;
+      } else if (courseData is Map<String, dynamic>) {
+        course = Course.fromJson(courseData);
+      } else {
+        throw Exception('Unexpected course data type: ${courseData.runtimeType}');
+      }
 
       if (mounted) {
         Navigator.of(context).pop(course);

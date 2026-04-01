@@ -37,28 +37,30 @@ import '../endpoints/learner_support_endpoint.dart' as _i24;
 import '../endpoints/lesson_block_endpoint.dart' as _i25;
 import '../endpoints/live_class_endpoint.dart' as _i26;
 import '../endpoints/material_endpoint.dart' as _i27;
-import '../endpoints/mfa_endpoint.dart' as _i28;
-import '../endpoints/notification_endpoint.dart' as _i29;
-import '../endpoints/notification_template_endpoint.dart' as _i30;
-import '../endpoints/organization_endpoint.dart' as _i31;
-import '../endpoints/qa_endpoint.dart' as _i32;
-import '../endpoints/quality_event_endpoint.dart' as _i33;
-import '../endpoints/realtime_endpoint.dart' as _i34;
-import '../endpoints/seed_endpoint.dart' as _i35;
-import '../endpoints/sme_endpoint.dart' as _i36;
-import '../endpoints/sop_linkage_endpoint.dart' as _i37;
-import '../endpoints/standalone_assignment_endpoint.dart' as _i38;
-import '../endpoints/training_batch_endpoint.dart' as _i39;
-import '../endpoints/training_endpoint.dart' as _i40;
-import '../endpoints/user_endpoint.dart' as _i41;
-import '../endpoints/validation_endpoint.dart' as _i42;
-import '../greetings/greeting_endpoint.dart' as _i43;
+import '../endpoints/messaging_endpoint.dart' as _i28;
+import '../endpoints/mfa_endpoint.dart' as _i29;
+import '../endpoints/notification_endpoint.dart' as _i30;
+import '../endpoints/notification_template_endpoint.dart' as _i31;
+import '../endpoints/oq_endpoint.dart' as _i32;
+import '../endpoints/organization_endpoint.dart' as _i33;
+import '../endpoints/qa_endpoint.dart' as _i34;
+import '../endpoints/quality_event_endpoint.dart' as _i35;
+import '../endpoints/realtime_endpoint.dart' as _i36;
+import '../endpoints/seed_endpoint.dart' as _i37;
+import '../endpoints/sme_endpoint.dart' as _i38;
+import '../endpoints/sop_linkage_endpoint.dart' as _i39;
+import '../endpoints/standalone_assignment_endpoint.dart' as _i40;
+import '../endpoints/training_batch_endpoint.dart' as _i41;
+import '../endpoints/training_endpoint.dart' as _i42;
+import '../endpoints/user_endpoint.dart' as _i43;
+import '../endpoints/validation_endpoint.dart' as _i44;
+import '../greetings/greeting_endpoint.dart' as _i45;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
-    as _i44;
+    as _i46;
 import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
-    as _i45;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i46;
-import 'package:pharma_lms_server/src/generated/future_calls.dart' as _i47;
+    as _i47;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i48;
+import 'package:pharma_lms_server/src/generated/future_calls.dart' as _i49;
 export 'future_calls.dart' show ServerpodFutureCallsGetter;
 
 class Endpoints extends _i1.EndpointDispatch {
@@ -221,97 +223,109 @@ class Endpoints extends _i1.EndpointDispatch {
           'material',
           null,
         ),
-      'mfa': _i28.MfaEndpoint()
+      'messaging': _i28.MessagingEndpoint()
+        ..initialize(
+          server,
+          'messaging',
+          null,
+        ),
+      'mfa': _i29.MfaEndpoint()
         ..initialize(
           server,
           'mfa',
           null,
         ),
-      'notification': _i29.NotificationEndpoint()
+      'notification': _i30.NotificationEndpoint()
         ..initialize(
           server,
           'notification',
           null,
         ),
-      'notificationTemplate': _i30.NotificationTemplateEndpoint()
+      'notificationTemplate': _i31.NotificationTemplateEndpoint()
         ..initialize(
           server,
           'notificationTemplate',
           null,
         ),
-      'organization': _i31.OrganizationEndpoint()
+      'oq': _i32.OqEndpoint()
+        ..initialize(
+          server,
+          'oq',
+          null,
+        ),
+      'organization': _i33.OrganizationEndpoint()
         ..initialize(
           server,
           'organization',
           null,
         ),
-      'qa': _i32.QaEndpoint()
+      'qa': _i34.QaEndpoint()
         ..initialize(
           server,
           'qa',
           null,
         ),
-      'qualityEvent': _i33.QualityEventEndpoint()
+      'qualityEvent': _i35.QualityEventEndpoint()
         ..initialize(
           server,
           'qualityEvent',
           null,
         ),
-      'realtime': _i34.RealtimeEndpoint()
+      'realtime': _i36.RealtimeEndpoint()
         ..initialize(
           server,
           'realtime',
           null,
         ),
-      'seed': _i35.SeedEndpoint()
+      'seed': _i37.SeedEndpoint()
         ..initialize(
           server,
           'seed',
           null,
         ),
-      'sme': _i36.SmeEndpoint()
+      'sme': _i38.SmeEndpoint()
         ..initialize(
           server,
           'sme',
           null,
         ),
-      'sopLinkage': _i37.SopLinkageEndpoint()
+      'sopLinkage': _i39.SopLinkageEndpoint()
         ..initialize(
           server,
           'sopLinkage',
           null,
         ),
-      'standaloneAssignment': _i38.StandaloneAssignmentEndpoint()
+      'standaloneAssignment': _i40.StandaloneAssignmentEndpoint()
         ..initialize(
           server,
           'standaloneAssignment',
           null,
         ),
-      'trainingBatch': _i39.TrainingBatchEndpoint()
+      'trainingBatch': _i41.TrainingBatchEndpoint()
         ..initialize(
           server,
           'trainingBatch',
           null,
         ),
-      'training': _i40.TrainingEndpoint()
+      'training': _i42.TrainingEndpoint()
         ..initialize(
           server,
           'training',
           null,
         ),
-      'user': _i41.UserEndpoint()
+      'user': _i43.UserEndpoint()
         ..initialize(
           server,
           'user',
           null,
         ),
-      'validation': _i42.ValidationEndpoint()
+      'validation': _i44.ValidationEndpoint()
         ..initialize(
           server,
           'validation',
           null,
         ),
-      'greeting': _i43.GreetingEndpoint()
+      'greeting': _i45.GreetingEndpoint()
         ..initialize(
           server,
           'greeting',
@@ -3532,6 +3546,31 @@ class Endpoints extends _i1.EndpointDispatch {
                     recordCount: params['recordCount'],
                   ),
         ),
+        'getMyAuditTrail': _i1.MethodConnector(
+          name: 'getMyAuditTrail',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['audit'] as _i12.AuditEndpoint).getMyAuditTrail(
+                    session,
+                    limit: params['limit'],
+                    userId: params['userId'],
+                  ),
+        ),
         'getAuditTrail': _i1.MethodConnector(
           name: 'getAuditTrail',
           params: {
@@ -6039,6 +6078,16 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int>(),
               nullable: false,
             ),
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -6049,6 +6098,8 @@ class Endpoints extends _i1.EndpointDispatch {
                       .listThread(
                         session,
                         params['courseVersionId'],
+                        limit: params['limit'],
+                        offset: params['offset'],
                       ),
         ),
         'sendMessage': _i1.MethodConnector(
@@ -6916,6 +6967,267 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
+    connectors['messaging'] = _i1.EndpointConnector(
+      name: 'messaging',
+      endpoint: endpoints['messaging']!,
+      methodConnectors: {
+        'getUnreadCounts': _i1.MethodConnector(
+          name: 'getUnreadCounts',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getUnreadCounts(session),
+        ),
+        'getThreadMessages': _i1.MethodConnector(
+          name: 'getThreadMessages',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getThreadMessages(
+                    session,
+                    courseVersionId: params['courseVersionId'],
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'getTrainerInbox': _i1.MethodConnector(
+          name: 'getTrainerInbox',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getTrainerInbox(
+                    session,
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'getLearnerInbox': _i1.MethodConnector(
+          name: 'getLearnerInbox',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getLearnerInbox(
+                    session,
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'getQaInbox': _i1.MethodConnector(
+          name: 'getQaInbox',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['messaging'] as _i28.MessagingEndpoint).getQaInbox(
+                    session,
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'getQaReviewerInbox': _i1.MethodConnector(
+          name: 'getQaReviewerInbox',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getQaReviewerInbox(
+                    session,
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'getQaThreadComments': _i1.MethodConnector(
+          name: 'getQaThreadComments',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getQaThreadComments(
+                    session,
+                    courseVersionId: params['courseVersionId'],
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'markQaThreadRead': _i1.MethodConnector(
+          name: 'markQaThreadRead',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .markQaThreadRead(
+                    session,
+                    params['courseVersionId'],
+                  ),
+        ),
+        'markLearnerThreadRead': _i1.MethodConnector(
+          name: 'markLearnerThreadRead',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .markLearnerThreadRead(
+                    session,
+                    params['courseVersionId'],
+                  ),
+        ),
+        'getUnreadNotificationCount': _i1.MethodConnector(
+          name: 'getUnreadNotificationCount',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getUnreadNotificationCount(session),
+        ),
+        'getNotifications': _i1.MethodConnector(
+          name: 'getNotifications',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .getNotifications(
+                    session,
+                    limit: params['limit'],
+                    offset: params['offset'],
+                  ),
+        ),
+        'markAllNotificationsRead': _i1.MethodConnector(
+          name: 'markAllNotificationsRead',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['messaging'] as _i28.MessagingEndpoint)
+                  .markAllNotificationsRead(session),
+        ),
+      },
+    );
     connectors['mfa'] = _i1.EndpointConnector(
       name: 'mfa',
       endpoint: endpoints['mfa']!,
@@ -6928,7 +7240,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['mfa'] as _i28.MfaEndpoint).getMfaStatus(session),
+                  (endpoints['mfa'] as _i29.MfaEndpoint).getMfaStatus(session),
         ),
         'enrollMfa': _i1.MethodConnector(
           name: 'enrollMfa',
@@ -6938,7 +7250,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['mfa'] as _i28.MfaEndpoint).enrollMfa(session),
+                  (endpoints['mfa'] as _i29.MfaEndpoint).enrollMfa(session),
         ),
         'verifyMfaEnrollment': _i1.MethodConnector(
           name: 'verifyMfaEnrollment',
@@ -6954,7 +7266,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['mfa'] as _i28.MfaEndpoint).verifyMfaEnrollment(
+                  (endpoints['mfa'] as _i29.MfaEndpoint).verifyMfaEnrollment(
                     session,
                     params['code'],
                   ),
@@ -6972,7 +7284,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['mfa'] as _i28.MfaEndpoint).verifyMfa(
+              ) async => (endpoints['mfa'] as _i29.MfaEndpoint).verifyMfa(
                 session,
                 params['code'],
               ),
@@ -6985,7 +7297,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['mfa'] as _i28.MfaEndpoint).disableMfa(session),
+                  (endpoints['mfa'] as _i29.MfaEndpoint).disableMfa(session),
         ),
         'isMfaVerified': _i1.MethodConnector(
           name: 'isMfaVerified',
@@ -6995,7 +7307,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['mfa'] as _i28.MfaEndpoint).isMfaVerified(session),
+                  (endpoints['mfa'] as _i29.MfaEndpoint).isMfaVerified(session),
         ),
       },
     );
@@ -7017,7 +7329,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['notification'] as _i29.NotificationEndpoint)
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
                       .getInAppNotifications(
                         session,
                         params['userId'],
@@ -7037,7 +7349,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['notification'] as _i29.NotificationEndpoint)
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
                       .getTrainerNotifications(
                         session,
                         params['userId'],
@@ -7057,7 +7369,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['notification'] as _i29.NotificationEndpoint)
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
                       .markNotificationRead(
                         session,
                         notificationId: params['notificationId'],
@@ -7077,7 +7389,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['notification'] as _i29.NotificationEndpoint)
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
                       .getUnreadCount(
                         session,
                         params['userId'],
@@ -7117,7 +7429,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['notification'] as _i29.NotificationEndpoint)
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
                       .listNotifications(
                         session,
                         organizationId: params['organizationId'],
@@ -7151,7 +7463,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['notification'] as _i29.NotificationEndpoint)
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
                       .broadcastInAppToOrganization(
                         session,
                         organizationId: params['organizationId'],
@@ -7200,7 +7512,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .listTemplates(
                         session,
                         organizationId: params['organizationId'],
@@ -7225,7 +7537,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .getTemplate(
                         session,
                         params['templateId'],
@@ -7281,7 +7593,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .createTemplate(
                         session,
                         organizationId: params['organizationId'],
@@ -7344,7 +7656,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .updateTemplate(
                         session,
                         params['templateId'],
@@ -7372,7 +7684,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .deleteTemplate(
                         session,
                         params['templateId'],
@@ -7393,7 +7705,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .getTemplateStats(
                         session,
                         params['organizationId'],
@@ -7419,12 +7731,440 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['notificationTemplate']
-                          as _i30.NotificationTemplateEndpoint)
+                          as _i31.NotificationTemplateEndpoint)
                       .duplicateTemplate(
                         session,
                         params['templateId'],
                         newName: params['newName'],
                       ),
+        ),
+      },
+    );
+    connectors['oq'] = _i1.EndpointConnector(
+      name: 'oq',
+      endpoint: endpoints['oq']!,
+      methodConnectors: {
+        'createChecklistItem': _i1.MethodConnector(
+          name: 'createChecklistItem',
+          params: {
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'title': _i1.ParameterDescription(
+              name: 'title',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'description': _i1.ParameterDescription(
+              name: 'description',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'orderIndex': _i1.ParameterDescription(
+              name: 'orderIndex',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'isCritical': _i1.ParameterDescription(
+              name: 'isCritical',
+              type: _i1.getType<bool>(),
+              nullable: false,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['oq'] as _i32.OqEndpoint).createChecklistItem(
+                    session,
+                    competencyId: params['competencyId'],
+                    title: params['title'],
+                    description: params['description'],
+                    orderIndex: params['orderIndex'],
+                    isCritical: params['isCritical'],
+                    organizationId: params['organizationId'],
+                  ),
+        ),
+        'listChecklistItems': _i1.MethodConnector(
+          name: 'listChecklistItems',
+          params: {
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['oq'] as _i32.OqEndpoint).listChecklistItems(
+                    session,
+                    competencyId: params['competencyId'],
+                    organizationId: params['organizationId'],
+                  ),
+        ),
+        'updateChecklistItem': _i1.MethodConnector(
+          name: 'updateChecklistItem',
+          params: {
+            'itemId': _i1.ParameterDescription(
+              name: 'itemId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'title': _i1.ParameterDescription(
+              name: 'title',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'description': _i1.ParameterDescription(
+              name: 'description',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'orderIndex': _i1.ParameterDescription(
+              name: 'orderIndex',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'isCritical': _i1.ParameterDescription(
+              name: 'isCritical',
+              type: _i1.getType<bool?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['oq'] as _i32.OqEndpoint).updateChecklistItem(
+                    session,
+                    itemId: params['itemId'],
+                    title: params['title'],
+                    description: params['description'],
+                    orderIndex: params['orderIndex'],
+                    isCritical: params['isCritical'],
+                  ),
+        ),
+        'deleteChecklistItem': _i1.MethodConnector(
+          name: 'deleteChecklistItem',
+          params: {
+            'itemId': _i1.ParameterDescription(
+              name: 'itemId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['oq'] as _i32.OqEndpoint).deleteChecklistItem(
+                    session,
+                    params['itemId'],
+                  ),
+        ),
+        'recordObservation': _i1.MethodConnector(
+          name: 'recordObservation',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'checklistItemId': _i1.ParameterDescription(
+              name: 'checklistItemId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'result': _i1.ParameterDescription(
+              name: 'result',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'notes': _i1.ParameterDescription(
+              name: 'notes',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'evaluatorSignatureMeaning': _i1.ParameterDescription(
+              name: 'evaluatorSignatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'evaluatorPasswordPlaintext': _i1.ParameterDescription(
+              name: 'evaluatorPasswordPlaintext',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint).recordObservation(
+                session,
+                userId: params['userId'],
+                competencyId: params['competencyId'],
+                checklistItemId: params['checklistItemId'],
+                result: params['result'],
+                notes: params['notes'],
+                evaluatorSignatureMeaning: params['evaluatorSignatureMeaning'],
+                evaluatorPasswordPlaintext:
+                    params['evaluatorPasswordPlaintext'],
+                organizationId: params['organizationId'],
+              ),
+        ),
+        'traineeCountersignObservation': _i1.MethodConnector(
+          name: 'traineeCountersignObservation',
+          params: {
+            'observationLogId': _i1.ParameterDescription(
+              name: 'observationLogId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'signatureMeaning': _i1.ParameterDescription(
+              name: 'signatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint)
+                  .traineeCountersignObservation(
+                    session,
+                    observationLogId: params['observationLogId'],
+                    signatureMeaning: params['signatureMeaning'],
+                    passwordPlaintext: params['passwordPlaintext'],
+                  ),
+        ),
+        'listObservationsForUser': _i1.MethodConnector(
+          name: 'listObservationsForUser',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['oq'] as _i32.OqEndpoint).listObservationsForUser(
+                    session,
+                    userId: params['userId'],
+                    competencyId: params['competencyId'],
+                  ),
+        ),
+        'getOqProgress': _i1.MethodConnector(
+          name: 'getOqProgress',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint).getOqProgress(
+                session,
+                userId: params['userId'],
+                competencyId: params['competencyId'],
+                organizationId: params['organizationId'],
+              ),
+        ),
+        'qaVerifyAndAwardCompetency': _i1.MethodConnector(
+          name: 'qaVerifyAndAwardCompetency',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'organizationId': _i1.ParameterDescription(
+              name: 'organizationId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'qaSignatureMeaning': _i1.ParameterDescription(
+              name: 'qaSignatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'qaPasswordPlaintext': _i1.ParameterDescription(
+              name: 'qaPasswordPlaintext',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'expiresAt': _i1.ParameterDescription(
+              name: 'expiresAt',
+              type: _i1.getType<DateTime?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint)
+                  .qaVerifyAndAwardCompetency(
+                    session,
+                    userId: params['userId'],
+                    competencyId: params['competencyId'],
+                    organizationId: params['organizationId'],
+                    qaSignatureMeaning: params['qaSignatureMeaning'],
+                    qaPasswordPlaintext: params['qaPasswordPlaintext'],
+                    expiresAt: params['expiresAt'],
+                  ),
+        ),
+        'listUserCompetencies': _i1.MethodConnector(
+          name: 'listUserCompetencies',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'activeOnly': _i1.ParameterDescription(
+              name: 'activeOnly',
+              type: _i1.getType<bool>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['oq'] as _i32.OqEndpoint).listUserCompetencies(
+                    session,
+                    userId: params['userId'],
+                    activeOnly: params['activeOnly'],
+                  ),
+        ),
+        'isUserQualified': _i1.MethodConnector(
+          name: 'isUserQualified',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'competencyId': _i1.ParameterDescription(
+              name: 'competencyId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint).isUserQualified(
+                session,
+                userId: params['userId'],
+                competencyId: params['competencyId'],
+              ),
+        ),
+        'createCompetency': _i1.MethodConnector(
+          name: 'createCompetency',
+          params: {
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'code': _i1.ParameterDescription(
+              name: 'code',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'level': _i1.ParameterDescription(
+              name: 'level',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint).createCompetency(
+                session,
+                name: params['name'],
+                code: params['code'],
+                level: params['level'],
+              ),
+        ),
+        'listCompetencies': _i1.MethodConnector(
+          name: 'listCompetencies',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['oq'] as _i32.OqEndpoint).listCompetencies(
+                session,
+              ),
         ),
       },
     );
@@ -7440,7 +8180,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .listOrganizations(session),
         ),
         'getOrganization': _i1.MethodConnector(
@@ -7457,7 +8197,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .getOrganization(
                         session,
                         params['id'],
@@ -7482,7 +8222,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .createOrganization(
                         session,
                         name: params['name'],
@@ -7503,7 +8243,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .listSites(
                         session,
                         params['organizationId'],
@@ -7523,7 +8263,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .listDepartments(
                         session,
                         params['siteId'],
@@ -7543,7 +8283,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .listJobRoles(
                         session,
                         params['departmentId'],
@@ -7568,7 +8308,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .listUsers(
                         session,
                         organizationId: params['organizationId'],
@@ -7599,7 +8339,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .updateOrganization(
                         session,
                         organizationId: params['organizationId'],
@@ -7621,7 +8361,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .listOrganizationSettings(
                         session,
                         params['organizationId'],
@@ -7651,7 +8391,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['organization'] as _i31.OrganizationEndpoint)
+                  (endpoints['organization'] as _i33.OrganizationEndpoint)
                       .upsertOrganizationSetting(
                         session,
                         organizationId: params['organizationId'],
@@ -7672,7 +8412,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['qa'] as _i32.QaEndpoint)
+              ) async => (endpoints['qa'] as _i34.QaEndpoint)
                   .listPendingCourseVersions(session),
         ),
         'approveCourseVersion': _i1.MethodConnector(
@@ -7709,7 +8449,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qa'] as _i32.QaEndpoint).approveCourseVersion(
+                  (endpoints['qa'] as _i34.QaEndpoint).approveCourseVersion(
                     session,
                     courseVersionId: params['courseVersionId'],
                     passwordPlaintext: params['passwordPlaintext'],
@@ -7742,7 +8482,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qa'] as _i32.QaEndpoint).rejectCourseVersion(
+                  (endpoints['qa'] as _i34.QaEndpoint).rejectCourseVersion(
                     session,
                     courseVersionId: params['courseVersionId'],
                     reason: params['reason'],
@@ -7756,7 +8496,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['qa'] as _i32.QaEndpoint)
+              ) async => (endpoints['qa'] as _i34.QaEndpoint)
                   .getPendingDocumentApprovalsCount(session),
         ),
         'returnCourseForChanges': _i1.MethodConnector(
@@ -7783,7 +8523,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qa'] as _i32.QaEndpoint).returnCourseForChanges(
+                  (endpoints['qa'] as _i34.QaEndpoint).returnCourseForChanges(
                     session,
                     courseVersionId: params['courseVersionId'],
                     comments: params['comments'],
@@ -7803,10 +8543,29 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['qa'] as _i32.QaEndpoint).getCourseReviews(
+              ) async => (endpoints['qa'] as _i34.QaEndpoint).getCourseReviews(
                 session,
                 courseVersionId: params['courseVersionId'],
               ),
+        ),
+        'getCourseReviewsForTrainer': _i1.MethodConnector(
+          name: 'getCourseReviewsForTrainer',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['qa'] as _i34.QaEndpoint)
+                  .getCourseReviewsForTrainer(
+                    session,
+                    courseVersionId: params['courseVersionId'],
+                  ),
         ),
       },
     );
@@ -7838,7 +8597,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .listQualityEvents(
                         session,
                         siteId: params['siteId'],
@@ -7860,7 +8619,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .getQualityEvent(
                         session,
                         params['id'],
@@ -7885,7 +8644,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .listCapas(
                         session,
                         qualityEventId: params['qualityEventId'],
@@ -7926,7 +8685,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .createQualityEvent(
                         session,
                         eventType: params['eventType'],
@@ -7965,7 +8724,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .updateCapaStatus(
                         session,
                         capaId: params['capaId'],
@@ -7993,7 +8752,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .closeCapa(
                         session,
                         capaId: params['capaId'],
@@ -8019,7 +8778,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .closeCapaWithSignature(
                         session,
                         capaId: params['capaId'],
@@ -8055,7 +8814,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .createCapa(
                         session,
                         qualityEventId: params['qualityEventId'],
@@ -8098,7 +8857,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .assignTrainingFromCapa(
                         session,
                         capaId: params['capaId'],
@@ -8127,7 +8886,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .listInspectionReports(
                         session,
                         organizationId: params['organizationId'],
@@ -8173,7 +8932,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['qualityEvent'] as _i33.QualityEventEndpoint)
+                  (endpoints['qualityEvent'] as _i35.QualityEventEndpoint)
                       .createInspectionReport(
                         session,
                         organizationId: params['organizationId'],
@@ -8197,7 +8956,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['realtime'] as _i34.RealtimeEndpoint)
+              ) async => (endpoints['realtime'] as _i36.RealtimeEndpoint)
                   .getConnectionToken(session),
         ),
       },
@@ -8214,7 +8973,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['seed'] as _i35.SeedEndpoint).runSeed(session),
+                  (endpoints['seed'] as _i37.SeedEndpoint).runSeed(session),
         ),
         'runMvpSeed': _i1.MethodConnector(
           name: 'runMvpSeed',
@@ -8224,7 +8983,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['seed'] as _i35.SeedEndpoint).runMvpSeed(session),
+                  (endpoints['seed'] as _i37.SeedEndpoint).runMvpSeed(session),
         ),
         'clearAndReseed': _i1.MethodConnector(
           name: 'clearAndReseed',
@@ -8233,7 +8992,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['seed'] as _i35.SeedEndpoint)
+              ) async => (endpoints['seed'] as _i37.SeedEndpoint)
                   .clearAndReseed(session),
         ),
         'runComprehensiveSeed': _i1.MethodConnector(
@@ -8243,7 +9002,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['seed'] as _i35.SeedEndpoint)
+              ) async => (endpoints['seed'] as _i37.SeedEndpoint)
                   .runComprehensiveSeed(session),
         ),
         'provisionAuthAccounts': _i1.MethodConnector(
@@ -8253,7 +9012,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['seed'] as _i35.SeedEndpoint)
+              ) async => (endpoints['seed'] as _i37.SeedEndpoint)
                   .provisionAuthAccounts(session),
         ),
         'fixAdminPasswords': _i1.MethodConnector(
@@ -8263,7 +9022,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['seed'] as _i35.SeedEndpoint)
+              ) async => (endpoints['seed'] as _i37.SeedEndpoint)
                   .fixAdminPasswords(session),
         ),
       },
@@ -8285,7 +9044,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sme'] as _i36.SmeEndpoint)
+              ) async => (endpoints['sme'] as _i38.SmeEndpoint)
                   .listAssignmentsForCourse(
                     session,
                     params['courseId'],
@@ -8314,7 +9073,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sme'] as _i36.SmeEndpoint).inviteSme(
+              ) async => (endpoints['sme'] as _i38.SmeEndpoint).inviteSme(
                 session,
                 courseId: params['courseId'],
                 smeUserId: params['smeUserId'],
@@ -8329,15 +9088,27 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int>(),
               nullable: false,
             ),
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'offset': _i1.ParameterDescription(
+              name: 'offset',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
           },
           call:
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sme'] as _i36.SmeEndpoint)
+              ) async => (endpoints['sme'] as _i38.SmeEndpoint)
                   .listCommentsForCourseVersion(
                     session,
                     params['courseVersionId'],
+                    limit: params['limit'],
+                    offset: params['offset'],
                   ),
         ),
         'addComment': _i1.MethodConnector(
@@ -8373,7 +9144,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sme'] as _i36.SmeEndpoint).addComment(
+              ) async => (endpoints['sme'] as _i38.SmeEndpoint).addComment(
                 session,
                 courseVersionId: params['courseVersionId'],
                 sectionRef: params['sectionRef'],
@@ -8400,11 +9171,30 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sme'] as _i36.SmeEndpoint).resolveComment(
+              ) async => (endpoints['sme'] as _i38.SmeEndpoint).resolveComment(
                 session,
                 commentId: params['commentId'],
                 trainerResponse: params['trainerResponse'],
               ),
+        ),
+        'markCommentsRead': _i1.MethodConnector(
+          name: 'markCommentsRead',
+          params: {
+            'courseVersionId': _i1.ParameterDescription(
+              name: 'courseVersionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['sme'] as _i38.SmeEndpoint).markCommentsRead(
+                    session,
+                    params['courseVersionId'],
+                  ),
         ),
       },
     );
@@ -8435,7 +9225,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sopLinkage'] as _i37.SopLinkageEndpoint)
+              ) async => (endpoints['sopLinkage'] as _i39.SopLinkageEndpoint)
                   .linkSopToCourse(
                     session,
                     courseId: params['courseId'],
@@ -8461,7 +9251,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sopLinkage'] as _i37.SopLinkageEndpoint)
+              ) async => (endpoints['sopLinkage'] as _i39.SopLinkageEndpoint)
                   .unlinkSopFromCourse(
                     session,
                     linkId: params['linkId'],
@@ -8481,7 +9271,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sopLinkage'] as _i37.SopLinkageEndpoint)
+              ) async => (endpoints['sopLinkage'] as _i39.SopLinkageEndpoint)
                   .getLinkedSops(
                     session,
                     courseId: params['courseId'],
@@ -8500,7 +9290,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['sopLinkage'] as _i37.SopLinkageEndpoint)
+              ) async => (endpoints['sopLinkage'] as _i39.SopLinkageEndpoint)
                   .getCoursesForSop(
                     session,
                     documentId: params['documentId'],
@@ -8572,7 +9362,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .createStandaloneAssignment(
                         session,
                         organizationId: params['organizationId'],
@@ -8647,7 +9437,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .updateStandaloneAssignment(
                         session,
                         params['assignmentId'],
@@ -8682,7 +9472,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .publishStandaloneAssignment(
                         session,
                         params['assignmentId'],
@@ -8714,7 +9504,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .listStandaloneAssignmentsForOrganization(
                         session,
                         params['organizationId'],
@@ -8737,7 +9527,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .getStandaloneAssignment(
                         session,
                         params['assignmentId'],
@@ -8752,7 +9542,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .listMyStandaloneAssignmentRecipients(session),
         ),
         'getStandaloneAssignmentRecipient': _i1.MethodConnector(
@@ -8770,7 +9560,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .getStandaloneAssignmentRecipient(
                         session,
                         params['recipientId'],
@@ -8796,11 +9586,65 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async =>
                   (endpoints['standaloneAssignment']
-                          as _i38.StandaloneAssignmentEndpoint)
+                          as _i40.StandaloneAssignmentEndpoint)
                       .submitStandaloneAssignment(
                         session,
                         params['recipientId'],
                         responseJson: params['responseJson'],
+                      ),
+        ),
+        'gradeStandaloneSubmission': _i1.MethodConnector(
+          name: 'gradeStandaloneSubmission',
+          params: {
+            'recipientId': _i1.ParameterDescription(
+              name: 'recipientId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'grade': _i1.ParameterDescription(
+              name: 'grade',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'feedback': _i1.ParameterDescription(
+              name: 'feedback',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['standaloneAssignment']
+                          as _i40.StandaloneAssignmentEndpoint)
+                      .gradeStandaloneSubmission(
+                        session,
+                        recipientId: params['recipientId'],
+                        grade: params['grade'],
+                        feedback: params['feedback'],
+                      ),
+        ),
+        'listSubmittedForGrading': _i1.MethodConnector(
+          name: 'listSubmittedForGrading',
+          params: {
+            'assignmentId': _i1.ParameterDescription(
+              name: 'assignmentId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['standaloneAssignment']
+                          as _i40.StandaloneAssignmentEndpoint)
+                      .listSubmittedForGrading(
+                        session,
+                        assignmentId: params['assignmentId'],
                       ),
         ),
       },
@@ -8838,7 +9682,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .listBatches(
                         session,
                         organizationId: params['organizationId'],
@@ -8861,7 +9705,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .getBatch(
                         session,
                         params['batchId'],
@@ -8951,7 +9795,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .createBatch(
                         session,
                         organizationId: params['organizationId'],
@@ -9055,7 +9899,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .updateBatch(
                         session,
                         params['batchId'],
@@ -9089,7 +9933,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .deleteBatch(
                         session,
                         params['batchId'],
@@ -9109,7 +9953,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .getBatchStats(
                         session,
                         params['organizationId'],
@@ -9123,7 +9967,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .listBatchesForCurrentUser(session),
         ),
         'listBatchParticipantsForEmployee': _i1.MethodConnector(
@@ -9140,7 +9984,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .listBatchParticipantsForEmployee(
                         session,
                         params['batchId'],
@@ -9160,7 +10004,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .getBatchCohortProgress(
                         session,
                         params['batchId'],
@@ -9190,7 +10034,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .enrollUserInBatch(
                         session,
                         batchId: params['batchId'],
@@ -9217,11 +10061,171 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['trainingBatch'] as _i39.TrainingBatchEndpoint)
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
                       .removeUserFromBatch(
                         session,
                         batchId: params['batchId'],
                         userId: params['userId'],
+                      ),
+        ),
+        'markAttendance': _i1.MethodConnector(
+          name: 'markAttendance',
+          params: {
+            'batchId': _i1.ParameterDescription(
+              name: 'batchId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'liveClassId': _i1.ParameterDescription(
+              name: 'liveClassId',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'status': _i1.ParameterDescription(
+              name: 'status',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'notes': _i1.ParameterDescription(
+              name: 'notes',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
+                      .markAttendance(
+                        session,
+                        batchId: params['batchId'],
+                        userId: params['userId'],
+                        liveClassId: params['liveClassId'],
+                        status: params['status'],
+                        notes: params['notes'],
+                      ),
+        ),
+        'bulkMarkAttendance': _i1.MethodConnector(
+          name: 'bulkMarkAttendance',
+          params: {
+            'batchId': _i1.ParameterDescription(
+              name: 'batchId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'liveClassId': _i1.ParameterDescription(
+              name: 'liveClassId',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+            'attendanceList': _i1.ParameterDescription(
+              name: 'attendanceList',
+              type: _i1.getType<List<Map<String, dynamic>>>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
+                      .bulkMarkAttendance(
+                        session,
+                        batchId: params['batchId'],
+                        liveClassId: params['liveClassId'],
+                        attendanceList: params['attendanceList'],
+                      ),
+        ),
+        'listAttendance': _i1.MethodConnector(
+          name: 'listAttendance',
+          params: {
+            'batchId': _i1.ParameterDescription(
+              name: 'batchId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'liveClassId': _i1.ParameterDescription(
+              name: 'liveClassId',
+              type: _i1.getType<int?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
+                      .listAttendance(
+                        session,
+                        batchId: params['batchId'],
+                        liveClassId: params['liveClassId'],
+                      ),
+        ),
+        'getAttendanceSummary': _i1.MethodConnector(
+          name: 'getAttendanceSummary',
+          params: {
+            'batchId': _i1.ParameterDescription(
+              name: 'batchId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
+                      .getAttendanceSummary(
+                        session,
+                        batchId: params['batchId'],
+                      ),
+        ),
+        'closeBatch': _i1.MethodConnector(
+          name: 'closeBatch',
+          params: {
+            'batchId': _i1.ParameterDescription(
+              name: 'batchId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'signatureMeaning': _i1.ParameterDescription(
+              name: 'signatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'minAttendanceRate': _i1.ParameterDescription(
+              name: 'minAttendanceRate',
+              type: _i1.getType<double>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['trainingBatch'] as _i41.TrainingBatchEndpoint)
+                      .closeBatch(
+                        session,
+                        batchId: params['batchId'],
+                        signatureMeaning: params['signatureMeaning'],
+                        passwordPlaintext: params['passwordPlaintext'],
+                        minAttendanceRate: params['minAttendanceRate'],
                       ),
         ),
       },
@@ -9237,7 +10241,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .listSignatureMeanings(session),
         ),
         'getAssignmentsForUser': _i1.MethodConnector(
@@ -9253,7 +10257,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getAssignmentsForUser(
                     session,
                     params['userId'],
@@ -9307,7 +10311,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .assignTraining(
                     session,
                     userId: params['userId'],
@@ -9348,7 +10352,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .updateAssignment(
                     session,
                     assignmentId: params['assignmentId'],
@@ -9380,7 +10384,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .cancelAssignment(
                     session,
                     assignmentId: params['assignmentId'],
@@ -9401,7 +10405,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getEnrollmentsForUser(
                     session,
                     params['userId'],
@@ -9420,7 +10424,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getEnrollmentResumePosition(
                     session,
                     params['enrollmentId'],
@@ -9439,7 +10443,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getEnrollmentById(
                     session,
                     params['enrollmentId'],
@@ -9473,7 +10477,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .acknowledgeRetraining(
                     session,
                     enrollmentId: params['enrollmentId'],
@@ -9495,7 +10499,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getCertificatesForUser(
                     session,
                     params['userId'],
@@ -9514,7 +10518,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getTrainingRecordsForUser(
                     session,
                     params['userId'],
@@ -9533,7 +10537,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getCertificateById(
                     session,
                     params['certificateId'],
@@ -9552,7 +10556,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getWaiverById(
                     session,
                     params['waiverId'],
@@ -9571,7 +10575,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getSignatureWithIntegrityCheck(
                     session,
                     params['signatureId'],
@@ -9610,7 +10614,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .listElectronicSignatures(
                     session,
                     from: params['from'],
@@ -9638,7 +10642,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .issueBiometricToken(
                     session,
                     userId: params['userId'],
@@ -9688,7 +10692,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .createTrainingSignature(
                     session,
                     userId: params['userId'],
@@ -9733,7 +10737,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .completeTraining(
                     session,
                     enrollmentId: params['enrollmentId'],
@@ -9756,7 +10760,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .listAnnotations(
                     session,
                     params['trainingRecordId'],
@@ -9785,7 +10789,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .addAnnotation(
                     session,
                     trainingRecordId: params['trainingRecordId'],
@@ -9816,12 +10820,105 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .revokeSignature(
                     session,
                     signatureId: params['signatureId'],
                     reason: params['reason'],
                     passwordPlaintext: params['passwordPlaintext'],
+                  ),
+        ),
+        'qaApproveAssignment': _i1.MethodConnector(
+          name: 'qaApproveAssignment',
+          params: {
+            'assignmentId': _i1.ParameterDescription(
+              name: 'assignmentId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'signatureMeaning': _i1.ParameterDescription(
+              name: 'signatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'comments': _i1.ParameterDescription(
+              name: 'comments',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
+                  .qaApproveAssignment(
+                    session,
+                    assignmentId: params['assignmentId'],
+                    signatureMeaning: params['signatureMeaning'],
+                    passwordPlaintext: params['passwordPlaintext'],
+                    comments: params['comments'],
+                  ),
+        ),
+        'qaRejectAssignment': _i1.MethodConnector(
+          name: 'qaRejectAssignment',
+          params: {
+            'assignmentId': _i1.ParameterDescription(
+              name: 'assignmentId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'reason': _i1.ParameterDescription(
+              name: 'reason',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'signatureMeaning': _i1.ParameterDescription(
+              name: 'signatureMeaning',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'passwordPlaintext': _i1.ParameterDescription(
+              name: 'passwordPlaintext',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
+                  .qaRejectAssignment(
+                    session,
+                    assignmentId: params['assignmentId'],
+                    reason: params['reason'],
+                    signatureMeaning: params['signatureMeaning'],
+                    passwordPlaintext: params['passwordPlaintext'],
+                  ),
+        ),
+        'submitForQaApproval': _i1.MethodConnector(
+          name: 'submitForQaApproval',
+          params: {
+            'assignmentId': _i1.ParameterDescription(
+              name: 'assignmentId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
+                  .submitForQaApproval(
+                    session,
+                    assignmentId: params['assignmentId'],
                   ),
         ),
         'selfEnroll': _i1.MethodConnector(
@@ -9843,7 +10940,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['training'] as _i40.TrainingEndpoint).selfEnroll(
+                  (endpoints['training'] as _i42.TrainingEndpoint).selfEnroll(
                     session,
                     userId: params['userId'],
                     courseVersionId: params['courseVersionId'],
@@ -9867,7 +10964,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .listLearnersEnrolledInTrainerPublishedCourses(
                     session,
                     search: params['search'],
@@ -9887,7 +10984,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getEnrollmentsForCourseVersion(
                     session,
                     params['courseVersionId'],
@@ -9906,7 +11003,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getAssignmentsForCourseVersion(
                     session,
                     params['courseVersionId'],
@@ -9925,7 +11022,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getAllAssignments(
                     session,
                     organizationId: params['organizationId'],
@@ -9944,7 +11041,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getTrainingRecordsForCourseVersion(
                     session,
                     params['courseVersionId'],
@@ -9963,7 +11060,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getEnrollmentProgress(
                     session,
                     params['enrollmentId'],
@@ -9987,7 +11084,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .isCourseContentComplete(
                     session,
                     userId: params['userId'],
@@ -10007,7 +11104,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['training'] as _i40.TrainingEndpoint)
+              ) async => (endpoints['training'] as _i42.TrainingEndpoint)
                   .getCertificatesForCourseVersion(
                     session,
                     params['courseVersionId'],
@@ -10032,7 +11129,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['user'] as _i41.UserEndpoint).getUser(
+              ) async => (endpoints['user'] as _i43.UserEndpoint).getUser(
                 session,
                 params['id'],
               ),
@@ -10051,7 +11148,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['user'] as _i41.UserEndpoint).getUserByEmail(
+                  (endpoints['user'] as _i43.UserEndpoint).getUserByEmail(
                     session,
                     params['email'],
                   ),
@@ -10070,7 +11167,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['user'] as _i41.UserEndpoint).getUserRoleByEmail(
+                  (endpoints['user'] as _i43.UserEndpoint).getUserRoleByEmail(
                     session,
                     params['email'],
                   ),
@@ -10089,7 +11186,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['user'] as _i41.UserEndpoint).getUserPreferences(
+                  (endpoints['user'] as _i43.UserEndpoint).getUserPreferences(
                     session,
                     userId: params['userId'],
                   ),
@@ -10118,7 +11215,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['user'] as _i41.UserEndpoint).setUserPreference(
+                  (endpoints['user'] as _i43.UserEndpoint).setUserPreference(
                     session,
                     userId: params['userId'],
                     key: params['key'],
@@ -10138,7 +11235,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generateUrs(session),
         ),
         'generateFs': _i1.MethodConnector(
@@ -10148,7 +11245,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generateFs(session),
         ),
         'generateDs': _i1.MethodConnector(
@@ -10158,7 +11255,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generateDs(session),
         ),
         'generateIq': _i1.MethodConnector(
@@ -10168,7 +11265,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generateIq(session),
         ),
         'generateOq': _i1.MethodConnector(
@@ -10178,7 +11275,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generateOq(session),
         ),
         'generatePq': _i1.MethodConnector(
@@ -10188,7 +11285,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generatePq(session),
         ),
         'generateTraceabilityMatrix': _i1.MethodConnector(
@@ -10198,7 +11295,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['validation'] as _i42.ValidationEndpoint)
+              ) async => (endpoints['validation'] as _i44.ValidationEndpoint)
                   .generateTraceabilityMatrix(session),
         ),
       },
@@ -10220,22 +11317,22 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['greeting'] as _i43.GreetingEndpoint).hello(
+              ) async => (endpoints['greeting'] as _i45.GreetingEndpoint).hello(
                 session,
                 params['name'],
               ),
         ),
       },
     );
-    modules['serverpod_auth_core'] = _i44.Endpoints()
+    modules['serverpod_auth_core'] = _i46.Endpoints()
       ..initializeEndpoints(server);
-    modules['serverpod_auth_idp'] = _i45.Endpoints()
+    modules['serverpod_auth_idp'] = _i47.Endpoints()
       ..initializeEndpoints(server);
-    modules['serverpod_auth'] = _i46.Endpoints()..initializeEndpoints(server);
+    modules['serverpod_auth'] = _i48.Endpoints()..initializeEndpoints(server);
   }
 
   @override
   _i1.FutureCallDispatch? get futureCalls {
-    return _i47.FutureCalls();
+    return _i49.FutureCalls();
   }
 }

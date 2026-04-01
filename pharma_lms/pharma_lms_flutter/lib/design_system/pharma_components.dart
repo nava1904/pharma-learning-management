@@ -1196,3 +1196,595 @@ class PharmaExportButton extends StatelessWidget {
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA PAGE SCAFFOLD
+// Consistent page wrapper with header, padding, and background
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Standard page wrapper with consistent padding and optional page header.
+class PharmaPageScaffold extends StatelessWidget {
+  const PharmaPageScaffold({
+    super.key,
+    required this.body,
+    this.title,
+    this.subtitle,
+    this.actions,
+    this.padding,
+    this.scrollable = true,
+  });
+
+  final Widget body;
+  final String? title;
+  final String? subtitle;
+  final List<Widget>? actions;
+  final EdgeInsetsGeometry? padding;
+  final bool scrollable;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title!, style: PharmaTypography.headingLarge),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(subtitle!,
+                          style: PharmaTypography.body
+                              .copyWith(color: PharmaColors.textSecondary)),
+                    ],
+                  ],
+                ),
+              ),
+              if (actions != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < actions!.length; i++) ...[
+                      if (i > 0) const SizedBox(width: PharmaSpacing.sm),
+                      actions![i],
+                    ],
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: PharmaSpacing.sectionGap),
+        ],
+        body,
+      ],
+    );
+
+    final child = Padding(
+      padding: padding ?? const EdgeInsets.all(PharmaSpacing.pagePadding),
+      child: content,
+    );
+
+    return Container(
+      color: PharmaColors.pageBg,
+      child: scrollable ? SingleChildScrollView(child: child) : child,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA SECTION HEADER
+// Consistent section heading with optional trailing action
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaSectionHeader extends StatelessWidget {
+  const PharmaSectionHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.padding,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding ?? const EdgeInsets.only(bottom: PharmaSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: PharmaTypography.headingSmall),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(subtitle!,
+                      style: PharmaTypography.caption
+                          .copyWith(color: PharmaColors.textSecondary)),
+                ],
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA STAT CARD
+// Dashboard metric card with icon, value, label, and optional trend
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaStatCard extends StatelessWidget {
+  const PharmaStatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.iconBackgroundColor,
+    this.iconColor,
+    this.trend,
+    this.trendIsPositive = true,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color? iconBackgroundColor;
+  final Color? iconColor;
+  final String? trend;
+  final bool trendIsPositive;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PharmaCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: iconBackgroundColor ?? PharmaColors.emerald50,
+              borderRadius: BorderRadius.circular(PharmaRadius.lg),
+            ),
+            child: Icon(
+              icon,
+              size: 24,
+              color: iconColor ?? PharmaColors.emerald600,
+            ),
+          ),
+          const SizedBox(width: PharmaSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: PharmaTypography.caption),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: PharmaTypography.headingMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (trend != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    trend!,
+                    style: PharmaTypography.caption.copyWith(
+                      color: trendIsPositive
+                          ? PharmaColors.successText
+                          : PharmaColors.dangerText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA STATUS BADGE
+// Pill-shaped semantic status label
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaStatusBadge extends StatelessWidget {
+  const PharmaStatusBadge({
+    super.key,
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+    this.icon,
+  });
+
+  /// Build from the PharmaStatus enum for quick usage.
+  factory PharmaStatusBadge.fromStatus(PharmaStatus status) {
+    return PharmaStatusBadge(
+      label: status.label,
+      backgroundColor: status.backgroundColor,
+      textColor: status.textColor,
+      icon: status.icon,
+    );
+  }
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: PharmaRadius.pillRadius,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: textColor),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: PharmaTypography.labelMedium.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA COUNT BADGE
+// Numeric badge for unread counts, notifications
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaCountBadge extends StatelessWidget {
+  const PharmaCountBadge({
+    super.key,
+    required this.count,
+    this.color,
+  });
+
+  final int count;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color ?? PharmaColors.emerald600,
+        borderRadius: PharmaRadius.badgeRadius,
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA LOADING
+// Centered loading indicator
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaLoading extends StatelessWidget {
+  const PharmaLoading({super.key, this.message});
+
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(
+            color: PharmaColors.emerald600,
+            strokeWidth: 3,
+          ),
+          if (message != null) ...[
+            const SizedBox(height: PharmaSpacing.lg),
+            Text(message!,
+                style: PharmaTypography.body
+                    .copyWith(color: PharmaColors.textSecondary)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA ERROR STATE
+// Consistent error display with retry
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaErrorState extends StatelessWidget {
+  const PharmaErrorState({
+    super.key,
+    this.message = 'Something went wrong',
+    this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: PharmaColors.dangerBg,
+                borderRadius: BorderRadius.circular(PharmaRadius.full),
+              ),
+              child: const Icon(Icons.error_outline,
+                  size: 32, color: PharmaColors.danger),
+            ),
+            const SizedBox(height: PharmaSpacing.lg),
+            Text(
+              message,
+              style: PharmaTypography.body
+                  .copyWith(color: PharmaColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: PharmaSpacing.lg),
+              PharmaButton(
+                onPressed: onRetry,
+                variant: PharmaButtonVariant.outline,
+                icon: Icons.refresh,
+                child: const Text('Retry'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA AVATAR
+// User avatar with initials fallback
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaAvatar extends StatelessWidget {
+  const PharmaAvatar({
+    super.key,
+    this.name,
+    this.imageUrl,
+    this.radius = 20,
+    this.backgroundColor,
+  });
+
+  final String? name;
+  final String? imageUrl;
+  final double radius;
+  final Color? backgroundColor;
+
+  String get _initials {
+    if (name == null || name!.isEmpty) return '?';
+    final parts = name!.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name![0].toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: backgroundColor ?? PharmaColors.emerald100,
+      backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+      child: imageUrl == null
+          ? Text(
+              _initials,
+              style: TextStyle(
+                fontSize: radius * 0.7,
+                fontWeight: FontWeight.w600,
+                color: PharmaColors.emerald700,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA ICON BUTTON
+// Consistent icon button with subtle background
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaIconButton extends StatelessWidget {
+  const PharmaIconButton({
+    super.key,
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+    this.color,
+    this.size = 40,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+  final Color? color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: IconButton(
+        icon: Icon(icon,
+            size: size * 0.5,
+            color: color ?? PharmaColors.textSecondary),
+        onPressed: onPressed,
+        tooltip: tooltip,
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(PharmaRadius.lg),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA DIVIDER
+// Section divider with optional label
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaDivider extends StatelessWidget {
+  const PharmaDivider({super.key, this.label});
+
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    if (label == null) {
+      return const Divider(color: PharmaColors.borderLight, height: 1);
+    }
+    return Row(
+      children: [
+        const Expanded(child: Divider(color: PharmaColors.borderLight)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.md),
+          child: Text(label!, style: PharmaTypography.caption),
+        ),
+        const Expanded(child: Divider(color: PharmaColors.borderLight)),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA INFO BANNER
+// Page-level info/warning/success/error banners
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum PharmaInfoType {
+  info(
+    backgroundColor: PharmaColors.infoBg,
+    textColor: PharmaColors.infoText,
+    borderColor: PharmaColors.info,
+    defaultIcon: Icons.info_outline,
+  ),
+  success(
+    backgroundColor: PharmaColors.successBg,
+    textColor: PharmaColors.successText,
+    borderColor: PharmaColors.success,
+    defaultIcon: Icons.check_circle_outline,
+  ),
+  warning(
+    backgroundColor: PharmaColors.warningBg,
+    textColor: PharmaColors.warningText,
+    borderColor: PharmaColors.warning,
+    defaultIcon: Icons.warning_amber_rounded,
+  ),
+  error(
+    backgroundColor: PharmaColors.dangerBg,
+    textColor: PharmaColors.dangerText,
+    borderColor: PharmaColors.danger,
+    defaultIcon: Icons.error_outline,
+  );
+
+  const PharmaInfoType({
+    required this.backgroundColor,
+    required this.textColor,
+    required this.borderColor,
+    required this.defaultIcon,
+  });
+
+  final Color backgroundColor;
+  final Color textColor;
+  final Color borderColor;
+  final IconData defaultIcon;
+}
+
+class PharmaInfoBanner extends StatelessWidget {
+  const PharmaInfoBanner({
+    super.key,
+    required this.message,
+    this.type = PharmaInfoType.info,
+    this.icon,
+    this.onDismiss,
+  });
+
+  final String message;
+  final PharmaInfoType type;
+  final IconData? icon;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.md),
+      decoration: BoxDecoration(
+        color: type.backgroundColor,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: type.borderColor, width: 0.5),
+      ),
+      child: Row(
+        children: [
+          Icon(icon ?? type.defaultIcon, size: 20, color: type.textColor),
+          const SizedBox(width: PharmaSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: PharmaTypography.body.copyWith(color: type.textColor),
+            ),
+          ),
+          if (onDismiss != null)
+            PharmaIconButton(
+              icon: Icons.close,
+              onPressed: onDismiss,
+              size: 28,
+              color: type.textColor,
+            ),
+        ],
+      ),
+    );
+  }
+}

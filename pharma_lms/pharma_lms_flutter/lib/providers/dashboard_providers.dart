@@ -135,6 +135,35 @@ final enrollmentResumeLabelsProvider =
   return Map.fromEntries(entries.where((e) => e.value.isNotEmpty));
 });
 
+/// Real progress percentages for active (non-completed) enrollments.
+/// Maps enrollment.id → progressPct (0–100).
+final enrollmentProgressProvider =
+    FutureProvider<Map<int, double>>((ref) async {
+  final enrollments = await ref.watch(enrollmentsProvider.future);
+  final active = enrollments
+      .where((e) => e.status != 'completed' && e.id != null)
+      .toList();
+  if (active.isEmpty) return {};
+  try {
+    final entries = await Future.wait(
+      active.map((e) async {
+        try {
+          final result =
+              await client.training.getEnrollmentProgress(e.id!);
+          final pct = (result['progressPct'] as num?)?.toDouble() ?? 0.0;
+          return MapEntry(e.id!, pct);
+        } catch (_) {
+          return MapEntry(e.id!, 0.0);
+        }
+      }),
+    );
+    return Map.fromEntries(entries);
+  } catch (e, st) {
+    _logDashboardAnalytics('enrollmentProgress', e, st);
+    return {};
+  }
+});
+
 /// Training assignments for current user.
 final assignmentsProvider = FutureProvider<List<TrainingAssignment>>((ref) async {
   final user = await ref.watch(currentUserProvider.future);
@@ -338,6 +367,7 @@ void invalidateEmployeeDashboard(WidgetRef ref) {
   ref.invalidate(esignatureSummaryProvider);
   ref.invalidate(overdueDashboardItemsProvider);
   ref.invalidate(certificatesProvider);
+  ref.invalidate(enrollmentProgressProvider);
   ref.invalidate(dashboardSummaryProvider);
 }
 
@@ -373,6 +403,8 @@ class DashboardSummary {
   final int learningStreak;
   final double totalHoursThisYear;
   final DateTime fetchedAt;
+  /// Real progress % for each active enrollment (enrollmentId → 0–100).
+  final Map<int, double> enrollmentProgressMap;
   /// Server compliance reports overdue items, but no rows were returned from analytics
   /// and local assignment/certificate fallback could not build a list either.
   final bool overdueDetailIncomplete;
@@ -401,6 +433,7 @@ class DashboardSummary {
     this.esignatureSummary = const [],
     this.learningStreak = 0,
     this.totalHoursThisYear = 0.0,
+    this.enrollmentProgressMap = const {},
     DateTime? fetchedAt,
     this.overdueDetailIncomplete = false,
   }) : fetchedAt = fetchedAt ?? DateTime.now();
@@ -432,6 +465,7 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
     ref.watch(esignatureSummaryProvider.future),
     ref.watch(overdueDashboardItemsProvider.future),
     ref.watch(certificatesProvider.future),
+    ref.watch(enrollmentProgressProvider.future),
   ]);
 
   final enrollments = results[0] as List<Enrollment>;
@@ -448,6 +482,7 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final esignatureRows = results[11] as List<Map<String, dynamic>>;
   final overdueItemsRaw = results[12] as List<Map<String, dynamic>>;
   final certificates = results[13] as List<Certificate>;
+  final enrollmentProgressMap = results[14] as Map<int, double>;
 
   var mergedOverdue = overdueItemsRaw;
   if (overdueItemsRaw.isEmpty) {
@@ -500,7 +535,7 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
           overdueCount: displayOverdueCount,
           upcomingCount: 0,
           complianceRate: enrollmentBasedRate,
-          totalCertificates: 0,
+          totalCertificates: certificates.where((c) => c.status != 'obsolete').length,
           waivedCount: 0,
         );
 
@@ -528,6 +563,7 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
     esignatureSummary: esignatureRows,
     learningStreak: streak,
     totalHoursThisYear: totalHours,
+    enrollmentProgressMap: enrollmentProgressMap,
     overdueDetailIncomplete: overdueDetailIncomplete,
   );
 });

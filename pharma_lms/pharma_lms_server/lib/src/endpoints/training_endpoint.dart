@@ -8,6 +8,7 @@ import '../services/audit_service.dart';
 import '../services/esignature_service.dart';
 import '../services/event_service.dart';
 import '../services/rbac_helper.dart';
+import '../services/realtime_hub.dart';
 import '../services/training_assignment_service.dart';
 
 /// Training Assignment domain endpoint.
@@ -118,6 +119,16 @@ class TrainingEndpoint extends Endpoint {
           createdAt: DateTime.now(),
         ),
       );
+      // Push realtime notification so employee sees it instantly
+      RealtimeHub.instance.broadcast('notifications:user:$userId', {
+        'event': 'notification',
+        'type': 'training_assigned',
+        'courseTitle': courseTitle,
+        'enrollmentId': enrollment.id,
+        'dueDate': dueDate.toIso8601String(),
+        'message': 'You have been assigned to "$courseTitle". Please complete it before the due date.',
+        'ts': DateTime.now().toUtc().toIso8601String(),
+      });
     } catch (_) {}
 
     if (forceReassign && oldAssignmentId != null) {
@@ -292,6 +303,9 @@ class TrainingEndpoint extends Endpoint {
     return await Certificate.db.find(
       session,
       where: (t) => t.userId.equals(userId),
+      include: Certificate.include(
+        courseVersion: CourseVersion.include(course: Course.include()),
+      ),
     );
   }
 
@@ -682,6 +696,177 @@ class TrainingEndpoint extends Endpoint {
     );
   }
 
+  // ─── QA Approval Gating ────────────────────────────────────────────
+
+  /// QA approves a training assignment (allows learner to begin).
+  /// Sets assignment status from 'pending_qa' to 'active'.
+  Future<TrainingAssignment> qaApproveAssignment(
+    Session session, {
+    required int assignmentId,
+    required String signatureMeaning,
+    String? passwordPlaintext,
+    String? comments,
+  }) async {
+    final qa = await RbacHelper.getCurrentPharmaUser(session);
+    if (qa?.id == null) throw Exception('Not authenticated');
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
+
+    final assignment = await TrainingAssignment.db.findById(session, assignmentId);
+    if (assignment == null) throw Exception('Assignment not found');
+    if (assignment.status != 'pending_qa') {
+      throw Exception('Assignment is not in pending_qa status. Current: ${assignment.status}');
+    }
+
+    // QA e-signature
+    final sig = await EsignatureService.sign(
+      session,
+      userId: qa!.id!,
+      signatureMeaning: signatureMeaning,
+      entityType: 'qa_approval',
+      entityId: assignmentId.toString(),
+      passwordPlaintext: passwordPlaintext,
+    );
+
+    final updated = assignment.copyWith(status: 'active');
+    final result = await TrainingAssignment.db.updateRow(session, updated);
+
+    await AuditService.log(
+      session,
+      entityType: 'training_assignment',
+      entityId: assignmentId.toString(),
+      action: 'QaApproved',
+      newValueJson:
+          '{"qaUserId":${qa.id},"esignatureId":${sig.id},"comments":"${comments ?? ""}"}',
+      userId: qa.id,
+    );
+
+    // Notify the learner
+    try {
+      await Notification.db.insertRow(
+        session,
+        Notification(
+          userId: assignment.userId,
+          type: 'qa_approval',
+          body: 'Your training assignment has been approved by QA. You may now begin.',
+          channel: 'in_app',
+          createdAt: DateTime.now(),
+        ),
+      );
+    } catch (_) {}
+
+    return result;
+  }
+
+  /// QA rejects/holds a training assignment. Learner cannot begin until resubmitted.
+  Future<TrainingAssignment> qaRejectAssignment(
+    Session session, {
+    required int assignmentId,
+    required String reason,
+    required String signatureMeaning,
+    String? passwordPlaintext,
+  }) async {
+    final qa = await RbacHelper.getCurrentPharmaUser(session);
+    if (qa?.id == null) throw Exception('Not authenticated');
+    await RbacHelper.requirePermission(session, resource: 'quality_event', action: 'write');
+
+    final assignment = await TrainingAssignment.db.findById(session, assignmentId);
+    if (assignment == null) throw Exception('Assignment not found');
+    if (assignment.status != 'pending_qa') {
+      throw Exception('Assignment is not in pending_qa status. Current: ${assignment.status}');
+    }
+
+    final sig = await EsignatureService.sign(
+      session,
+      userId: qa!.id!,
+      signatureMeaning: signatureMeaning,
+      entityType: 'qa_rejection',
+      entityId: assignmentId.toString(),
+      passwordPlaintext: passwordPlaintext,
+    );
+
+    final updated = assignment.copyWith(status: 'qa_rejected');
+    final result = await TrainingAssignment.db.updateRow(session, updated);
+
+    await AuditService.log(
+      session,
+      entityType: 'training_assignment',
+      entityId: assignmentId.toString(),
+      action: 'QaRejected',
+      newValueJson:
+          '{"qaUserId":${qa.id},"esignatureId":${sig.id},"reason":"$reason"}',
+      userId: qa.id,
+    );
+
+    // Notify the assigner
+    try {
+      await Notification.db.insertRow(
+        session,
+        Notification(
+          userId: assignment.assignedById,
+          type: 'qa_rejection',
+          body: 'Training assignment #$assignmentId was rejected by QA. Reason: $reason',
+          channel: 'in_app',
+          createdAt: DateTime.now(),
+        ),
+      );
+    } catch (_) {}
+
+    return result;
+  }
+
+  /// Submit assignment for QA approval (trainer/admin sets status to pending_qa).
+  Future<TrainingAssignment> submitForQaApproval(
+    Session session, {
+    required int assignmentId,
+  }) async {
+    await RbacHelper.requirePermission(session, resource: 'training', action: 'assign');
+
+    final assignment = await TrainingAssignment.db.findById(session, assignmentId);
+    if (assignment == null) throw Exception('Assignment not found');
+
+    final updated = assignment.copyWith(status: 'pending_qa');
+    final result = await TrainingAssignment.db.updateRow(session, updated);
+
+    await AuditService.log(
+      session,
+      entityType: 'training_assignment',
+      entityId: assignmentId.toString(),
+      action: 'SubmittedForQaApproval',
+      newValueJson: '{"assignmentId":$assignmentId}',
+    );
+
+    // Notify QA users
+    try {
+      final qaRoles = await JobRole.db.find(
+        session,
+        where: (t) => t.name.ilike('%qa%') | t.name.ilike('%quality%'),
+      );
+      final qaRoleIds = qaRoles.map((r) => r.id).whereType<int>().toList();
+      if (qaRoleIds.isNotEmpty) {
+        final qaUsers = await PharmaUser.db.find(
+          session,
+          where: (t) => t.jobRoleId.inSet(qaRoleIds.toSet()),
+          limit: 10,
+        );
+        for (final qa in qaUsers) {
+          if (qa.id == null) continue;
+          await Notification.db.insertRow(
+            session,
+            Notification(
+              userId: qa.id!,
+              type: 'qa_review_needed',
+              body: 'Training assignment #$assignmentId requires QA approval.',
+              channel: 'in_app',
+              createdAt: DateTime.now(),
+            ),
+          );
+        }
+      }
+    } catch (_) {}
+
+    return result;
+  }
+
   /// Self-enrollment for employee-initiated course enrollment.
   /// Creates a "self" source assignment and associated enrollment.
   /// Returns the created enrollment.
@@ -803,7 +988,7 @@ class TrainingEndpoint extends Endpoint {
     if (useText) {
       result = await session.db.unsafeQuery(
         '''
-SELECT DISTINCT u.id
+SELECT DISTINCT u.id, u."firstName", u."lastName"
 FROM enrollment e
 INNER JOIN pharma_user u ON u.id = e."userId"
 WHERE e."courseVersionId" IN ($inClause)
@@ -825,7 +1010,7 @@ LIMIT @lim
     } else {
       result = await session.db.unsafeQuery(
         '''
-SELECT DISTINCT u.id
+SELECT DISTINCT u.id, u."firstName", u."lastName"
 FROM enrollment e
 INNER JOIN pharma_user u ON u.id = e."userId"
 WHERE e."courseVersionId" IN ($inClause)

@@ -1,0 +1,14 @@
+### Summary row for QA/SME review inbox (trainer ↔ QA threads).
+class: SmeThreadSummary
+
+fields:
+  courseVersionId: int
+  courseId: int
+  courseTitle: String
+  lastCommentBody: String
+  lastCommentAt: DateTime
+  lastFromUserId: int
+  lastFromName: String
+  commentCount: int
+  unresolvedCount: int
+  unreadCount: int

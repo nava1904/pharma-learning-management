@@ -645,6 +645,8 @@ class _HistoryCard extends StatelessWidget {
     final course = record.courseVersion?.course;
     final title = course?.title ?? 'Training Course';
     final score = record.score;
+    final versionLabel = record.courseVersion?.version;
+    final sopNumber = course?.sopNumber;
 
     return Material(
       color: AppColors.n0,
@@ -685,26 +687,72 @@ class _HistoryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.s2),
-                  Row(
+                  Wrap(
+                    spacing: AppSpacing.s4,
+                    runSpacing: AppSpacing.s1,
                     children: [
-                      Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.n400),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Completed ${record.completedAt.humanDate}',
-                        style: AppTypography.caption.copyWith(color: AppColors.n500),
-                      ),
-                      if (score != null) ...[
-                        const SizedBox(width: AppSpacing.s4),
-                        Icon(Icons.star_outline, size: 14, color: AppColors.warning),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Score: $score%',
-                          style: AppTypography.caption.copyWith(
-                            color: score >= 80 ? AppColors.success : AppColors.warning,
-                            fontWeight: FontWeight.w600,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.n400),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Completed ${record.completedAt.humanDate}',
+                            style: AppTypography.caption.copyWith(color: AppColors.n500),
                           ),
+                        ],
+                      ),
+                      if (versionLabel != null && versionLabel.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.history_outlined, size: 14, color: AppColors.n400),
+                            const SizedBox(width: 4),
+                            Text(
+                              'v$versionLabel',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.blue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      if (sopNumber != null && sopNumber.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.description_outlined, size: 14, color: AppColors.n400),
+                            const SizedBox(width: 4),
+                            Text(
+                              sopNumber,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.n600,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (score != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star_outline, size: 14, color: AppColors.warning),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Score: $score%',
+                              style: AppTypography.caption.copyWith(
+                                color: score >= 80 ? AppColors.success : AppColors.danger,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (score < 80)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.danger),
+                              ),
+                          ],
+                        ),
                     ],
                   ),
                 ],

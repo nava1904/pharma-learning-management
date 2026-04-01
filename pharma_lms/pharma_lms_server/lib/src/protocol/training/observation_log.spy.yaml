@@ -1,0 +1,26 @@
+### Observation log entry for OQ/OJT practical evaluation.
+class: ObservationLog
+
+table: observation_log
+
+fields:
+  ### The user being evaluated.
+  user: PharmaUser?, relation
+  ### The evaluator (trainer/SME).
+  evaluator: PharmaUser?, relation
+  ### The competency being observed.
+  competency: Competency?, relation
+  ### The checklist item being observed.
+  checklistItem: PracticalChecklistItem?, relation
+  ### Observation result: pass, fail, needs_improvement.
+  result: String, default='pending'
+  ### Evaluator notes/comments.
+  notes: String?
+  ### When the observation occurred.
+  observedAt: DateTime, default=now
+  ### E-signature of the evaluator (21 CFR Part 11).
+  evaluatorEsignatureId: int?
+  ### E-signature of the trainee (21 CFR Part 11).
+  traineeEsignatureId: int?
+  ### The organization.
+  organizationId: int

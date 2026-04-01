@@ -6,6 +6,7 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_components.dart';
+import '../../design_system/pharma_design_system.dart';
 import '../../providers/auth_provider.dart';
 import 'oidc_sign_in_widget.dart';
 
@@ -499,7 +500,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   height: 36,
                   decoration: BoxDecoration(
                     color: brandTeal.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(PharmaRadius.lg),
                   ),
                   child: const Icon(Icons.shield, color: brandTeal, size: 18),
                 ),
@@ -533,7 +534,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     padding: const EdgeInsets.all(s2),
                     decoration: BoxDecoration(
                       color: danger.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(PharmaRadius.lg),
                       border: Border.all(color: danger.withValues(alpha: 0.2)),
                     ),
                     child: Row(
@@ -579,15 +580,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     filled: true,
                     fillColor: gray50,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(PharmaRadius.lg),
                       borderSide: const BorderSide(color: gray200),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(PharmaRadius.lg),
                       borderSide: const BorderSide(color: gray200),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(PharmaRadius.lg),
                       borderSide: const BorderSide(
                         color: brandPrimary,
                         width: 2,
@@ -647,7 +648,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     vertical: s2,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(PharmaRadius.lg),
                   ),
                 ),
                 child: verifying
@@ -921,7 +922,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           end: Alignment.bottomRight,
           colors: [Color(0xE6006FED), Color(0xF20050B4)],
         ),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PharmaRadius.lg),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
@@ -1093,7 +1094,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: gray50,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PharmaRadius.lg),
       ),
       child: Row(
         children: [
@@ -1205,7 +1206,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             height: 36,
             decoration: BoxDecoration(
               color: brandTeal.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(PharmaRadius.lg),
             ),
             child: const Icon(
               Icons.shield_outlined,
@@ -1369,7 +1370,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       height: 48,
       decoration: BoxDecoration(
         color: gray50,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PharmaRadius.lg),
         border: Border.all(
           color: Colors.black.withValues(alpha: 0.12),
           width: 1.5,
@@ -1412,7 +1413,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       height: 48,
       decoration: BoxDecoration(
         color: hasError ? danger.withValues(alpha: 0.04) : gray50,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PharmaRadius.lg),
         border: Border.all(
           color: hasError ? danger : Colors.black.withValues(alpha: 0.12),
           width: 1.5,
@@ -1472,7 +1473,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       height: 48,
       decoration: BoxDecoration(
         color: hasError ? danger.withValues(alpha: 0.04) : gray50,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PharmaRadius.lg),
         border: Border.all(
           color: hasError ? danger : Colors.black.withValues(alpha: 0.12),
           width: 1.5,
@@ -1618,7 +1619,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           elevation: 0,
           shadowColor: brandPrimary.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(PharmaRadius.lg),
           ),
         ),
         child: _isLoading
@@ -1694,7 +1695,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       padding: const EdgeInsets.all(s2),
       decoration: BoxDecoration(
         color: brandGold.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PharmaRadius.lg),
         border: Border.all(color: brandGold.withValues(alpha: 0.25)),
       ),
       child: Column(

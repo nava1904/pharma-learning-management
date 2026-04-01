@@ -8,8 +8,10 @@ import '../services/realtime_hub.dart';
 class LearnerSupportEndpoint extends Endpoint {
   Future<List<LearnerTrainerMessage>> listThread(
     Session session,
-    int courseVersionId,
-  ) async {
+    int courseVersionId, {
+    int? limit,
+    int? offset,
+  }) async {
     if (!await _canAccessThread(session, courseVersionId)) return [];
     return LearnerTrainerMessage.db.find(
       session,
@@ -19,6 +21,8 @@ class LearnerSupportEndpoint extends Endpoint {
         fromUser: PharmaUser.include(),
         toUser: PharmaUser.include(),
       ),
+      limit: limit,
+      offset: offset,
     );
   }
 

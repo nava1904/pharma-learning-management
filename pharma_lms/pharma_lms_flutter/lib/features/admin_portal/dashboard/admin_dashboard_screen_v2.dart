@@ -1,54 +1,19 @@
 import '../../../core/client.dart';
-import 'package:pharma_lms_client/pharma_lms_client.dart';
-import '../../../widgets/audit_timeline.dart';
+import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/admin_page_frame.dart';
-import '../../../design_system/pharma_components.dart';
+import '../widgets/admin_shared_widgets.dart';
+import '../../../design_system/pharma_design_system.dart';
 import '../../../providers/admin_providers_v2.dart';
-import '../../../widgets/compliance_gauge.dart';
 
-// Helper to aggregate overdue enrollments by department
-Future<List<List<String>>> getOverdueByDepartmentRows(
-  WidgetRef ref,
-  List<dynamic> departments,
-  List<dynamic> users,
-) async {
-  List<List<String>> rows = [];
-  for (final dept in departments) {
-    final deptUsers = users.where((u) => u.departmentId == dept.id).toList();
-    int overdueCount = 0;
-    for (final user in deptUsers) {
-      final enrollments = await ref.read(adminUserEnrollmentsProvider(user.id!).future);
-      overdueCount += enrollments.where((e) => e.status == 'overdue').length;
-    }
-    rows.add([dept.name, overdueCount.toString()]);
-  }
-  // Sort descending by overdue count
-  rows.sort((a, b) => int.parse(b[1]).compareTo(int.parse(a[1])));
-  return rows;
-}
-
-// Helper widget for batch stats
-class BatchStatWidget extends StatelessWidget {
-  final String label;
-  final int value;
-  const BatchStatWidget({required this.label, required this.value, super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 18.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
-          Text(value.toString(), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-}
+// ═══════════════════════════════════════════════════════════════════════════════
+// STITCH "CLINICAL ARCHIVE" — ADMIN DASHBOARD V2
+// ═══════════════════════════════════════════════════════════════════════════════
+// All data wired to real backend via Riverpod providers.
+// RenderFlex-safe: every widget uses bounded constraints.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class AdminDashboardScreenV2 extends ConsumerWidget {
   const AdminDashboardScreenV2({super.key});
@@ -58,247 +23,726 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
     final kpiAsync = ref.watch(adminDashboardKpiProvider);
     final queuesAsync = ref.watch(adminPriorityQueuesProvider);
 
-    return AdminPageFrame(
-      title: 'Admin Dashboard',
-      subtitle: 'Compliance overview, pending approvals, and operational health.',
-      actions: const [
-        PharmaButton(
-          onPressed: null,
-          variant: PharmaButtonVariant.outline,
-          child: Text('Export PDF'),
-        ),
-      ],
-      children: [
-        kpiAsync.when(
-          data: (kpi) => AdminKpiRow(
-            items: [
-              (label: 'Total Users', value: kpi.totalUsers.toString(), icon: Icons.people_alt_outlined),
-              (label: 'Compliance', value: '${kpi.complianceRate}%', icon: Icons.verified_outlined),
-              (label: 'Pending QA', value: kpi.pendingQaCount.toString(), icon: Icons.pending_actions_outlined),
-              (label: 'Overdue', value: kpi.overdueCount.toString(), icon: Icons.warning_amber_outlined),
-            ],
+    return Container(
+      color: PharmaColors.clinicalSurfaceContainerLow,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // ─── CRITICAL BANNER ─────────────────────────────────────────
+          kpiAsync.when(
+            data: (kpi) {
+              if (kpi.overdueCount > 0) {
+                return ClinicalCriticalBanner(
+                  title: '${kpi.overdueCount} Overdue training assignments',
+                  subtitle:
+                      'Critical non-compliance detected in GxP-regulated modules. Immediate remediation required.',
+                  actionLabel: 'Initiate review',
+                  onAction: () {},
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
           ),
-          loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
-          error: (_, __) => const Text('Failed to load KPIs'),
-        ),
-        const SizedBox(height: 16),
-        AdminSectionCard(
-          title: 'Priority Queues',
-          subtitle: 'Live administrative work queues across modules.',
-          child: queuesAsync.when(
-            data: (queues) => AdminDataTable(
-              columns: ['Queue', 'Count', 'SLA', 'Owner'],
-              rows: queues
-                  .map((q) => [q.name, q.count.toString(), q.sla, q.owner])
-                  .toList(),
-            ),
-            loading: () => const SizedBox(height: 60, child: Center(child: CircularProgressIndicator())),
-            error: (_, __) => const Text('Failed to load queues'),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // --- Active Batches Section ---
-        Consumer(
-          builder: (context, ref, _) {
-            final batchStatsAsync = ref.watch(adminBatchStatsProvider);
-            final batchesAsync = ref.watch(adminBatchesProvider);
-            return AdminSectionCard(
-              title: 'Active Batches',
-              subtitle: 'Current and upcoming training batches across the organization.',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  batchStatsAsync.when(
-                    data: (stats) => Row(
-                      children: [
-                        BatchStatWidget(label: 'Total', value: stats.total),
-                        BatchStatWidget(label: 'Scheduled', value: stats.scheduled),
-                        BatchStatWidget(label: 'In Progress', value: stats.inProgress),
-                        BatchStatWidget(label: 'Completed', value: stats.completed),
-                        BatchStatWidget(label: 'Cancelled', value: stats.cancelled),
-                      ],
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const Text('Failed to load batch stats'),
-                  ),
-                  const SizedBox(height: 12),
-                  batchesAsync.when(
-                    data: (batches) => batches.isEmpty
-                        ? const Text('No active batches.')
-                        : AdminDataTable(
-                            columns: ['Batch', 'Status', 'Start', 'End', 'Location'],
-                            rows: batches
-                                .where((b) => b.status == 'scheduled' || b.status == 'in_progress')
-                                .map((b) => [
-                                      b.name,
-                                      b.status,
-                                      b.startDate.toString().split(' ').first,
-                                      b.endDate.toString().split(' ').first,
-                                      b.location ?? '-',
-                                    ])
-                                .toList(),
+
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ─── KPI GRID ────────────────────────────────────────────
+                _KpiGridSection(),
+
+                const SizedBox(height: 24),
+
+                // ─── OVERDUE TABLE + SIDEBAR ─────────────────────────────
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth > 1000) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 2, child: _OverdueTrainingsTable()),
+                          const SizedBox(width: 24),
+                          SizedBox(
+                            width: (constraints.maxWidth - 24) / 3,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _ESignatureReadinessSection(),
+                                const SizedBox(height: 24),
+                                _RecentAuditFeedSection(),
+                              ],
+                            ),
                           ),
-                    loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                    error: (_, __) => const Text('Failed to load batches'),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        // --- End Active Batches Section ---
-        const SizedBox(height: 16),
-        // --- Overdue by Department Section ---
-        Consumer(
-          builder: (context, ref, _) {
-            final departmentsAsync = ref.watch(adminDepartmentsProvider);
-            final usersAsync = ref.watch(adminUsersProvider);
-            return AdminSectionCard(
-              title: 'Overdue by Department',
-              subtitle: 'Departments with the most overdue enrollments.',
-              child: departmentsAsync.when(
-                data: (departments) => usersAsync.when(
-                  data: (users) {
-                    if (departments.isEmpty || users.isEmpty) {
-                      return const Text('No department or user data.');
+                        ],
+                      );
                     }
-                    return FutureBuilder<List<List<String>>>(
-                      future: getOverdueByDepartmentRows(ref, departments, users),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const SizedBox(height: 40, child: Center(child: CircularProgressIndicator()));
-                        }
-                        if (!snapshot.hasData) {
-                          return const Text('No overdue data.');
-                        }
-                        return AdminDataTable(
-                          columns: ['Department', 'Overdue Enrollments'],
-                          rows: snapshot.data!,
-                        );
-                      },
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _OverdueTrainingsTable(),
+                        const SizedBox(height: 24),
+                        _ESignatureReadinessSection(),
+                        const SizedBox(height: 24),
+                        _RecentAuditFeedSection(),
+                      ],
                     );
                   },
-                  loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                  error: (_, __) => const Text('Failed to load users'),
                 ),
-                loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Text('Failed to load departments'),
-              ),
-            );
-          },
-        ),
-        // --- End Overdue by Department Section ---
-        const SizedBox(height: 16),
-        // --- Compliance Score Section ---
-        Consumer(
-          builder: (context, ref, _) {
-            final kpiAsync = ref.watch(adminDashboardKpiProvider);
-            return AdminSectionCard(
-              title: 'Compliance Score',
-              subtitle: 'Current overall compliance rate across the organization.',
-              child: kpiAsync.when(
-                data: (kpi) => Center(
-                  child: SizedBox(
-                    width: 180,
-                    height: 180,
-                    child: ComplianceGauge(
-                      percentage: kpi.complianceRate.toDouble(),
-                      label: 'Compliance',
+
+                const SizedBox(height: 24),
+
+                // ─── PRIORITY QUEUES ─────────────────────────────────────
+                AdminSectionCard(
+                  title: 'Priority queues',
+                  subtitle: 'Live administrative work queues across modules.',
+                  child: queuesAsync.when(
+                    data: (queues) {
+                      if (queues.isEmpty) {
+                        return Text('No pending queues.',
+                            style: PharmaTypography.clinicalBody);
+                      }
+                      return AdminDataTable(
+                        columns: const ['Queue', 'Count', 'SLA', 'Owner'],
+                        rows: queues
+                            .map((q) =>
+                                [q.name, q.count.toString(), q.sla, q.owner])
+                            .toList(),
+                      );
+                    },
+                    loading: () => const SizedBox(
+                      height: 60,
+                      child: Center(
+                          child: CircularProgressIndicator(
+                              color: PharmaColors.clinicalPrimary)),
                     ),
+                    error: (_, __) => const Text('Failed to load queues'),
                   ),
                 ),
-                loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Text('Failed to load compliance score'),
-              ),
+
+                const SizedBox(height: 24),
+
+                // ─── ACTIVE BATCHES ──────────────────────────────────────
+                _ActiveBatchesSection(),
+
+                const SizedBox(height: 24),
+
+                // ─── PREDICTIVE RISK ─────────────────────────────────────
+                _PredictiveRiskSection(),
+
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// KPI GRID
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _KpiGridSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kpiAsync = ref.watch(adminDashboardKpiProvider);
+    final healthAsync = ref.watch(adminSystemHealthProvider);
+
+    return kpiAsync.when(
+      data: (kpi) {
+        final complianceColor = kpi.complianceRate < 90
+            ? PharmaColors.clinicalTertiary
+            : PharmaColors.clinicalSecondary;
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            final isWide = w > 900;
+            final isMedium = w > 600;
+            double cardW;
+            if (isWide) {
+              cardW = (w - 48) / 4;
+            } else if (isMedium) {
+              cardW = (w - 16) / 2;
+            } else {
+              cardW = w;
+            }
+
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                SizedBox(
+                  width: cardW,
+                  child: ClinicalKpiCard(
+                    label: 'Compliance status',
+                    value: '${kpi.complianceRate}%',
+                    icon: Icons.verified_user_outlined,
+                    valueColor: complianceColor,
+                    progress: kpi.complianceRate / 100,
+                    progressColor: complianceColor,
+                    changeLabel: kpi.complianceRate < 95
+                        ? '-${95 - kpi.complianceRate}% vs target'
+                        : null,
+                    changeColor: PharmaColors.clinicalTertiary,
+                    subtitle: 'Audit readiness threshold: 95%',
+                  ),
+                ),
+                SizedBox(
+                  width: cardW,
+                  child: ClinicalKpiCard(
+                    label: 'Total users',
+                    value: kpi.totalUsers.toString(),
+                    icon: Icons.people_alt_outlined,
+                    subtitle: '${kpi.totalCourses} active courses',
+                  ),
+                ),
+                SizedBox(
+                  width: isWide ? cardW * 2 + 16 : w,
+                  child: _SystemHealthMonitorCard(healthAsync: healthAsync),
+                ),
+              ],
             );
           },
-        ),
-        // --- End Compliance Score Section ---
-        const SizedBox(height: 16),
-        // --- Live Audit Feed Section ---
-        Consumer(
-          builder: (context, ref, _) {
-            final auditAsync = ref.watch(adminRecentAuditProvider);
-            return AdminSectionCard(
-              title: 'Live Audit Feed',
-              subtitle: 'Recent system and compliance events.',
-              child: auditAsync.when(
-                data: (events) => events.isEmpty
-                    ? const Text('No recent audit events.')
-                    : SizedBox(
-                        height: 320,
-                        child: AuditTimeline(
-                          events: events.map((e) => AuditTimelineEvent(
-                            timestamp: e.timestamp,
-                            title: e.action,
-                            subtitle: e.entityType,
-                            detail: e.reason,
-                            icon: Icons.event_note,
-                            type: AuditEventType.info,
-                          )).toList(),
-                        ),
-                      ),
-                loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Text('Failed to load audit feed'),
-              ),
-            );
-          },
-        ),
-        // --- End Live Audit Feed Section ---
-        const SizedBox(height: 16),
-        // --- Predictive Risk Section ---
-        Consumer(
-          builder: (context, ref, _) {
-            // Use the analytics client directly for risk and readiness
-            return FutureBuilder<List<dynamic>>(
-              future: Future.wait([
-                client.analytics.getCertificationExpiryRiskCount(),
-                client.analytics.getAuditReadinessScore(),
-              ]),
+        );
+      },
+      loading: () => const SizedBox(
+        height: 140,
+        child: Center(
+            child: CircularProgressIndicator(
+                color: PharmaColors.clinicalPrimary)),
+      ),
+      error: (_, __) => const Text('Failed to load KPIs'),
+    );
+  }
+}
+
+class _SystemHealthMonitorCard extends StatelessWidget {
+  const _SystemHealthMonitorCard({required this.healthAsync});
+  final AsyncValue<SystemHealthStatus> healthAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClinicalTonalCard(
+      borderBottom: PharmaColors.clinicalPrimaryContainer,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SYSTEM HEALTH MONITOR', style: PharmaTypography.clinicalLabel),
+          const SizedBox(height: 16),
+          healthAsync.when(
+            data: (h) => Row(
+              children: [
+                Expanded(
+                  child: ClinicalHealthCell(
+                    label: 'SCIM Sync',
+                    value: h.scimSync,
+                    icon: h.scimSync == 'Active'
+                        ? Icons.check_circle_outline
+                        : Icons.error_outline,
+                    statusColor: h.scimSync == 'Active'
+                        ? PharmaColors.clinicalSecondary
+                        : PharmaColors.clinicalTertiary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ClinicalHealthCell(
+                    label: 'Kafka Lag',
+                    value: h.kafkaLag,
+                    icon: Icons.trending_flat,
+                    statusColor: PharmaColors.clinicalSecondary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ClinicalHealthCell(
+                    label: 'DB Status',
+                    value: h.dbStatus,
+                    icon: Icons.storage_outlined,
+                    statusColor: h.dbStatus == 'Healthy'
+                        ? PharmaColors.clinicalSecondary
+                        : PharmaColors.clinicalTertiary,
+                  ),
+                ),
+              ],
+            ),
+            loading: () => const SizedBox(
+              height: 48,
+              child: Center(
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: PharmaColors.clinicalPrimary)),
+            ),
+            error: (_, __) => Row(
+              children: [
+                Expanded(
+                  child: ClinicalHealthCell(
+                      label: 'SCIM Sync',
+                      value: 'Unknown',
+                      icon: Icons.help_outline),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ClinicalHealthCell(
+                      label: 'Kafka Lag',
+                      value: 'Unknown',
+                      icon: Icons.help_outline),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ClinicalHealthCell(
+                      label: 'DB Status',
+                      value: 'Unknown',
+                      icon: Icons.help_outline),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OVERDUE TRAININGS TABLE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _OverdueTrainingsTable extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final departmentsAsync = ref.watch(adminDepartmentsProvider);
+    final usersAsync = ref.watch(adminUsersProvider);
+    final kpiAsync = ref.watch(adminDashboardKpiProvider);
+
+    return AdminSectionCard(
+      title: 'Overdue trainings breakdown',
+      trailing: kpiAsync.when(
+        data: (kpi) => kpi.overdueCount > 0
+            ? Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: PharmaColors.clinicalTertiaryContainer
+                      .withValues(alpha: 0.1),
+                  borderRadius: PharmaRadius.clinicalCardRadius,
+                ),
+                child: Text(
+                  '${kpi.overdueCount} CRITICAL',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: PharmaColors.clinicalTertiary,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(),
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+      ),
+      child: departmentsAsync.when(
+        data: (departments) => usersAsync.when(
+          data: (users) {
+            if (departments.isEmpty || users.isEmpty) {
+              return Text('No department or user data.',
+                  style: PharmaTypography.clinicalBody);
+            }
+            return FutureBuilder<List<List<String>>>(
+              future: _getOverdueByDepartmentRows(ref, departments, users),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()));
+                  return const SizedBox(
+                    height: 80,
+                    child: Center(
+                        child: CircularProgressIndicator(
+                            color: PharmaColors.clinicalPrimary)),
+                  );
                 }
-                if (!snapshot.hasData || snapshot.data == null) {
-                  return const Text('No predictive risk data.');
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'No overdue trainings detected — all departments compliant.',
+                      style: PharmaTypography.clinicalBody,
+                    ),
+                  );
                 }
-                final certRisk = snapshot.data![0] as int;
-                final AuditReadinessScore readiness = snapshot.data![1] as AuditReadinessScore;
-                return AdminSectionCard(
-                  title: 'Predictive Risk',
-                  subtitle: 'Upcoming compliance risks and audit readiness.',
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Certificates Expiring Soon', style: Theme.of(context).textTheme.labelMedium),
-                            const SizedBox(height: 8),
-                            Text('$certRisk', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.orange, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Audit Readiness Score', style: Theme.of(context).textTheme.labelMedium),
-                            const SizedBox(height: 8),
-                            Text('${readiness.overallScore.toStringAsFixed(1)}%', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.teal, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                return AdminDataTable(
+                  columns: const ['Department', 'Overdue count'],
+                  rows: snapshot.data!,
                 );
               },
             );
           },
+          loading: () => const SizedBox(
+            height: 60,
+            child: Center(
+                child: CircularProgressIndicator(
+                    color: PharmaColors.clinicalPrimary)),
+          ),
+          error: (_, __) => const Text('Failed to load users'),
         ),
-        // --- End Predictive Risk Section ---
-// Helper to aggregate overdue enrollments by department
+        loading: () => const SizedBox(
+          height: 60,
+          child: Center(
+              child: CircularProgressIndicator(
+                  color: PharmaColors.clinicalPrimary)),
+        ),
+        error: (_, __) => const Text('Failed to load departments'),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// E-SIGNATURE READINESS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _ESignatureReadinessSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(adminDashboardKpiProvider).when(
+          data: (kpi) => ClinicalESignatureWidget(
+            pendingCount: kpi.pendingQaCount,
+            onProcess: () {},
+          ),
+          loading: () => const SizedBox(
+            height: 200,
+            child: Center(
+                child: CircularProgressIndicator(
+                    color: PharmaColors.clinicalPrimary)),
+          ),
+          error: (_, __) => const Text('Failed to load e-signature data'),
+        );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RECENT AUDIT FEED
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _RecentAuditFeedSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auditAsync = ref.watch(adminRecentAuditProvider);
+
+    return ClinicalTonalCard(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('RECENT AUDIT LOG', style: PharmaTypography.clinicalLabel),
+          const SizedBox(height: 20),
+          auditAsync.when(
+            data: (events) {
+              if (events.isEmpty) {
+                return Text('No recent audit events.',
+                    style: PharmaTypography.clinicalBody);
+              }
+              return ClinicalAuditTimeline(
+                events: events.take(5).map((e) {
+                  Color dotColor;
+                  IconData icon;
+                  final a = e.action.toLowerCase();
+                  if (a.contains('create') || a.contains('provision')) {
+                    dotColor = PharmaColors.clinicalPrimary;
+                    icon = Icons.person_add_alt;
+                  } else if (a.contains('approve') ||
+                      a.contains('sign') ||
+                      a.contains('verify')) {
+                    dotColor = PharmaColors.clinicalSecondary;
+                    icon = Icons.done_all;
+                  } else if (a.contains('delete') ||
+                      a.contains('deactivate') ||
+                      a.contains('reject')) {
+                    dotColor = PharmaColors.clinicalTertiary;
+                    icon = Icons.report_outlined;
+                  } else {
+                    dotColor = PharmaColors.clinicalPrimary;
+                    icon = Icons.event_note;
+                  }
+                  return ClinicalTimelineEvent(
+                    title: e.action,
+                    subtitle:
+                        '${e.entityType} | ${e.reason ?? 'System event'}',
+                    timestamp: _fmtTs(e.timestamp),
+                    icon: icon,
+                    dotColor: dotColor,
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const SizedBox(
+              height: 120,
+              child: Center(
+                  child: CircularProgressIndicator(
+                      color: PharmaColors.clinicalPrimary)),
+            ),
+            error: (_, __) => const Text('Failed to load audit feed'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTIVE BATCHES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _ActiveBatchesSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final batchStatsAsync = ref.watch(adminBatchStatsProvider);
+    final batchesAsync = ref.watch(adminBatchesProvider);
+
+    return AdminSectionCard(
+      title: 'Active batches',
+      subtitle:
+          'Current and upcoming training batches across the organization.',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          batchStatsAsync.when(
+            data: (stats) => Wrap(
+              spacing: 24,
+              runSpacing: 8,
+              children: [
+                _BatchStatChip(label: 'Total', value: stats.total),
+                _BatchStatChip(label: 'Scheduled', value: stats.scheduled),
+                _BatchStatChip(
+                    label: 'In progress',
+                    value: stats.inProgress,
+                    color: PharmaColors.clinicalSecondary),
+                _BatchStatChip(label: 'Completed', value: stats.completed),
+                _BatchStatChip(
+                    label: 'Cancelled',
+                    value: stats.cancelled,
+                    color: PharmaColors.clinicalTertiary),
+              ],
+            ),
+            loading: () => const LinearProgressIndicator(
+                color: PharmaColors.clinicalPrimary),
+            error: (_, __) => const Text('Failed to load batch stats'),
+          ),
+          const SizedBox(height: 16),
+          batchesAsync.when(
+            data: (batches) {
+              final active = batches
+                  .where((b) =>
+                      b.status == 'scheduled' || b.status == 'in_progress')
+                  .toList();
+              if (active.isEmpty) {
+                return Text('No active batches.',
+                    style: PharmaTypography.clinicalBody);
+              }
+              return AdminDataTable(
+                columns: const [
+                  'Batch',
+                  'Status',
+                  'Start',
+                  'End',
+                  'Location'
+                ],
+                rows: active
+                    .map((b) => [
+                          b.name,
+                          b.status,
+                          b.startDate.toString().split(' ').first,
+                          b.endDate.toString().split(' ').first,
+                          b.location ?? '-',
+                        ])
+                    .toList(),
+              );
+            },
+            loading: () => const SizedBox(
+              height: 60,
+              child: Center(
+                  child: CircularProgressIndicator(
+                      color: PharmaColors.clinicalPrimary)),
+            ),
+            error: (_, __) => const Text('Failed to load batches'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PREDICTIVE RISK
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _PredictiveRiskSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([
+        client.analytics.getCertificationExpiryRiskCount(),
+        client.analytics.getAuditReadinessScore(),
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 120,
+            child: Center(
+                child: CircularProgressIndicator(
+                    color: PharmaColors.clinicalPrimary)),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+        final certRisk = snapshot.data![0] as int;
+        final readiness = snapshot.data![1] as AuditReadinessScore;
+        return AdminSectionCard(
+          title: 'Predictive risk',
+          subtitle: 'Upcoming compliance risks and audit readiness.',
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final halfW = constraints.maxWidth > 600
+                  ? (constraints.maxWidth - 24) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 24,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: halfW,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: PharmaColors.clinicalSurfaceContainerLow,
+                        borderRadius: PharmaRadius.clinicalCardRadius,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('CERTIFICATES EXPIRING SOON',
+                              style: PharmaTypography.clinicalLabel),
+                          const SizedBox(height: 8),
+                          Text(
+                            certRisk.toString(),
+                            style: PharmaTypography.clinicalKpiValue.copyWith(
+                              color: certRisk > 0
+                                  ? PharmaColors.warning
+                                  : PharmaColors.clinicalOnSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: halfW,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: PharmaColors.clinicalSurfaceContainerLow,
+                        borderRadius: PharmaRadius.clinicalCardRadius,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('AUDIT READINESS SCORE',
+                              style: PharmaTypography.clinicalLabel),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${readiness.overallScore.toStringAsFixed(1)}%',
+                            style: PharmaTypography.clinicalKpiValue.copyWith(
+                              color: PharmaColors.clinicalSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPER WIDGETS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _BatchStatChip extends StatelessWidget {
+  const _BatchStatChip(
+      {required this.label, required this.value, this.color});
+  final String label;
+  final int value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: PharmaTypography.clinicalLabel),
+        const SizedBox(height: 2),
+        Text(
+          value.toString(),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: color ?? PharmaColors.clinicalOnSurface,
+            letterSpacing: -0.5,
+          ),
+        ),
       ],
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DATA HELPERS — Wired to real DB via providers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+Future<List<List<String>>> _getOverdueByDepartmentRows(
+  WidgetRef ref,
+  List<dynamic> departments,
+  List<dynamic> users,
+) async {
+  final rows = <List<String>>[];
+  for (final dept in departments) {
+    final deptUsers =
+        users.where((u) => u.departmentId == dept.id).toList();
+    int overdueCount = 0;
+    for (final user in deptUsers) {
+      try {
+        final enrollments =
+            await ref.read(adminUserEnrollmentsProvider(user.id!).future);
+        overdueCount +=
+            enrollments.where((e) => e.status == 'overdue').length;
+      } catch (_) {}
+    }
+    if (overdueCount > 0) {
+      rows.add([dept.name, overdueCount.toString()]);
+    }
+  }
+  rows.sort((a, b) => int.parse(b[1]).compareTo(int.parse(a[1])));
+  return rows;
+}
+
+String _fmtTs(DateTime dt) {
+  return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')} UTC';
 }

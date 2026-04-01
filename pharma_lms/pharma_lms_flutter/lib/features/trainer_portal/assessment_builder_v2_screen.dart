@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart' hide Material;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
+import '../../core/file_download.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
 
@@ -252,6 +255,415 @@ class _AssessmentBuilderV2ScreenState
     ));
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PREVIEW — Shows the assessment as the learner would see it
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  void _showPreviewDialog() {
+    // Pick random subset just like the real assessment engine
+    final pool = List<Question>.from(_questions);
+    if (_shuffleQuestions) pool.shuffle();
+    final preview = pool.take(_displayCount.clamp(0, pool.length)).toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog.fullscreen(
+        child: Scaffold(
+          backgroundColor: const Color(0xFF0F172A),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF1E293B),
+            foregroundColor: Colors.white,
+            title: Row(children: [
+              const Icon(Icons.visibility, size: 18),
+              const SizedBox(width: 8),
+              const Text('Assessment Preview'),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(12)),
+                child: const Text('PREVIEW MODE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF92400E))),
+              ),
+            ]),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(children: [
+                  Icon(Icons.timer_outlined, size: 16, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Text('$_timeLimitMinutes min', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  const SizedBox(width: 16),
+                  Text('${preview.length} of ${_questions.length} questions', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  const SizedBox(width: 16),
+                  Text('Pass: $_passingScore%', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                ]),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.pop(ctx),
+                icon: const Icon(Icons.close, color: Colors.white),
+                label: const Text('Close Preview', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+          body: ListView.builder(
+            padding: const EdgeInsets.all(24),
+            itemCount: preview.length,
+            itemBuilder: (context, i) {
+              final q = preview[i];
+              return _buildPreviewQuestionCard(i, q);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewQuestionCard(int index, Question q) {
+    final typeInfo = _questionTypeInfo(q.questionType);
+    List<String> options = [];
+    try {
+      final decoded = jsonDecode(q.optionsJson);
+      if (decoded is List) options = decoded.map((e) => e.toString()).toList();
+    } catch (_) {}
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(color: PharmaColors.emerald50, borderRadius: BorderRadius.circular(8)),
+            child: Center(child: Text('${index + 1}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: PharmaColors.emerald700))),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: typeInfo.color.withValues(alpha: 0.1), borderRadius: PharmaRadius.pillRadius),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(typeInfo.icon, size: 12, color: typeInfo.color),
+              const SizedBox(width: 4),
+              Text(typeInfo.label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: typeInfo.color)),
+            ]),
+          ),
+          if (q.difficulty != null) ...[
+            const SizedBox(width: 8),
+            _DifficultyChip(difficulty: _cap(q.difficulty!)),
+          ],
+        ]),
+        const SizedBox(height: 14),
+        Text(q.text, style: PharmaTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500, fontSize: 15)),
+        const SizedBox(height: 16),
+        // Show answer options based on type
+        if (q.questionType == 'multiple_choice' && options.isNotEmpty)
+          ...options.asMap().entries.map((entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: PharmaColors.pageBg,
+                borderRadius: PharmaRadius.inputRadius,
+                border: Border.all(color: PharmaColors.borderLight),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: PharmaColors.gray300, width: 2)),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(color: PharmaColors.emerald50, borderRadius: BorderRadius.circular(4)),
+                  child: Center(child: Text(String.fromCharCode(65 + entry.key), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: PharmaColors.emerald700))),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Text(entry.value, style: PharmaTypography.body)),
+              ]),
+            ),
+          ))
+        else if (q.questionType == 'true_false')
+          Row(children: [
+            _previewTfChip('True'),
+            const SizedBox(width: 12),
+            _previewTfChip('False'),
+          ])
+        else if (q.questionType == 'short_answer')
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: PharmaColors.pageBg,
+              borderRadius: PharmaRadius.inputRadius,
+              border: Border.all(color: PharmaColors.borderLight),
+            ),
+            child: Text('Learner types answer here…', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
+          )
+        else if (q.questionType == 'open_ended')
+          Container(
+            height: 80,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: PharmaColors.pageBg,
+              borderRadius: PharmaRadius.inputRadius,
+              border: Border.all(color: PharmaColors.borderLight),
+            ),
+            child: Text('Learner writes a detailed response here…', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
+          ),
+      ]),
+    );
+  }
+
+  Widget _previewTfChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: PharmaColors.pageBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 20, height: 20,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: PharmaColors.gray300, width: 2)),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: PharmaTypography.bodyMedium),
+      ]),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PDF — Generate a real PDF question paper and trigger download
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Future<void> _generatePdfPreview() async {
+    if (_questions.isEmpty) {
+      _snack('No questions to export', err: true);
+      return;
+    }
+
+    _snack('Generating PDF…');
+
+    try {
+      final pdf = pw.Document();
+      final bankName = _questionBank?.name ?? 'Assessment';
+
+      // ── Styles ──
+      final titleStyle = pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold);
+      final headerStyle = pw.TextStyle(fontSize: 10, color: PdfColors.grey700);
+      final questionStyle = pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold);
+      final optionStyle = const pw.TextStyle(fontSize: 11);
+      final metaStyle = pw.TextStyle(fontSize: 9, color: PdfColors.grey600);
+      final answerKeyTitle = pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold);
+      final answerStyle = const pw.TextStyle(fontSize: 10);
+
+      // ── Build question widgets ──
+      final questionWidgets = <pw.Widget>[];
+      for (var i = 0; i < _questions.length; i++) {
+        final q = _questions[i];
+        List<String> options = [];
+        try {
+          final decoded = jsonDecode(q.optionsJson);
+          if (decoded is List) options = decoded.map((e) => e.toString()).toList();
+        } catch (_) {}
+
+        final typeLabel = q.questionType.replaceAll('_', ' ').toUpperCase();
+        final diffLabel = (q.difficulty ?? 'medium').toUpperCase();
+
+        questionWidgets.add(
+          pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 14),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(children: [
+                  pw.Text('Q${i + 1}.', style: questionStyle),
+                  pw.SizedBox(width: 6),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey200,
+                      borderRadius: pw.BorderRadius.circular(3),
+                    ),
+                    child: pw.Text(typeLabel, style: metaStyle),
+                  ),
+                  pw.SizedBox(width: 4),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey200,
+                      borderRadius: pw.BorderRadius.circular(3),
+                    ),
+                    child: pw.Text(diffLabel, style: metaStyle),
+                  ),
+                ]),
+                pw.SizedBox(height: 4),
+                pw.Text(q.text, style: const pw.TextStyle(fontSize: 11)),
+                pw.SizedBox(height: 6),
+                // Options
+                if (q.questionType == 'multiple_choice' && options.isNotEmpty)
+                  ...options.asMap().entries.map((entry) {
+                    final letter = String.fromCharCode(65 + entry.key);
+                    return pw.Padding(
+                      padding: const pw.EdgeInsets.only(left: 16, bottom: 2),
+                      child: pw.Row(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Container(
+                            width: 16, height: 16,
+                            decoration: pw.BoxDecoration(
+                              shape: pw.BoxShape.circle,
+                              border: pw.Border.all(color: PdfColors.grey400, width: 1),
+                            ),
+                          ),
+                          pw.SizedBox(width: 6),
+                          pw.Text('$letter)  ', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                          pw.Expanded(child: pw.Text(entry.value, style: optionStyle)),
+                        ],
+                      ),
+                    );
+                  })
+                else if (q.questionType == 'true_false')
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(left: 16),
+                    child: pw.Row(children: [
+                      pw.Container(width: 14, height: 14, decoration: pw.BoxDecoration(shape: pw.BoxShape.circle, border: pw.Border.all(color: PdfColors.grey400))),
+                      pw.SizedBox(width: 4),
+                      pw.Text('A) True', style: optionStyle),
+                      pw.SizedBox(width: 24),
+                      pw.Container(width: 14, height: 14, decoration: pw.BoxDecoration(shape: pw.BoxShape.circle, border: pw.Border.all(color: PdfColors.grey400))),
+                      pw.SizedBox(width: 4),
+                      pw.Text('B) False', style: optionStyle),
+                    ]),
+                  )
+                else if (q.questionType == 'short_answer')
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(left: 16, top: 4),
+                    child: pw.Container(
+                      height: 24,
+                      decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey400))),
+                    ),
+                  )
+                else
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(left: 16, top: 4),
+                    child: pw.Container(
+                      height: 60,
+                      decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300), borderRadius: pw.BorderRadius.circular(4)),
+                    ),
+                  ),
+                pw.SizedBox(height: 6),
+                pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // ── Answer key widgets ──
+      final answerKeyWidgets = <pw.Widget>[];
+      for (var i = 0; i < _questions.length; i++) {
+        final q = _questions[i];
+        String answer;
+        if (q.questionType == 'multiple_choice') {
+          final idx = int.tryParse(q.correctAnswer ?? '') ?? 0;
+          List<String> opts = [];
+          try { final d = jsonDecode(q.optionsJson); if (d is List) opts = d.map((e) => e.toString()).toList(); } catch (_) {}
+          answer = idx < opts.length ? '${String.fromCharCode(65 + idx)}) ${opts[idx]}' : q.correctAnswer ?? '';
+        } else if (q.questionType == 'true_false') {
+          answer = (int.tryParse(q.correctAnswer ?? '') ?? 0) == 0 ? 'True' : 'False';
+        } else {
+          answer = q.correctAnswer?.isNotEmpty == true ? q.correctAnswer! : '(Manual grading)';
+        }
+        answerKeyWidgets.add(
+          pw.Text('Q${i + 1}: $answer', style: answerStyle),
+        );
+      }
+
+      // ── Compose pages ──
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          header: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('ASSESSMENT — QUESTION PAPER', style: titleStyle),
+                  pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: metaStyle),
+                ],
+              ),
+              pw.SizedBox(height: 8),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(4),
+                ),
+                child: pw.Row(children: [
+                  pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                    pw.Text('Question Bank: $bankName', style: headerStyle),
+                    pw.Text('Total in Pool: ${_questions.length} · Displayed: $_displayCount', style: headerStyle),
+                  ])),
+                  pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                    pw.Text('Time Limit: $_timeLimitMinutes min · Pass: $_passingScore%', style: headerStyle),
+                    pw.Text('Max Attempts: ${_maxAttempts == 0 ? "Unlimited" : "$_maxAttempts"} · Shuffle: ${_shuffleQuestions ? "Yes" : "No"}', style: headerStyle),
+                  ])),
+                ]),
+              ),
+              pw.SizedBox(height: 12),
+              pw.Divider(thickness: 1),
+              pw.SizedBox(height: 8),
+            ],
+          ),
+          footer: (context) => pw.Container(
+            alignment: pw.Alignment.centerRight,
+            margin: const pw.EdgeInsets.only(top: 10),
+            child: pw.Text(
+              'Generated ${DateTime.now().toString().substring(0, 16)} · Pharma LMS',
+              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
+            ),
+          ),
+          build: (context) => [
+            ...questionWidgets,
+            // Answer key on the last page
+            pw.SizedBox(height: 20),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfColors.grey400),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('ANSWER KEY', style: answerKeyTitle),
+                  pw.SizedBox(height: 8),
+                  pw.Divider(thickness: 0.5),
+                  pw.SizedBox(height: 6),
+                  ...answerKeyWidgets,
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+      final bytes = await pdf.save();
+      final fileName = 'Assessment_${bankName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      await saveBytesToFile(bytes, fileName);
+      _snack('PDF downloaded: $fileName');
+    } catch (e) {
+      _snack('Failed to generate PDF: $e', err: true);
+    }
+  }
+
   String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -309,6 +721,33 @@ class _AssessmentBuilderV2ScreenState
           Text(_assessment != null ? 'Editing assessment · ${_questions.length} questions in pool' : 'Configure quiz settings and add questions', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
         ])),
         if (_selectedQuestionBankId != null && widget.courseId > 0) ...[
+          // ── Preview button ──
+          if (_assessment != null) ...[
+            OutlinedButton.icon(
+              onPressed: () => _showPreviewDialog(),
+              icon: const Icon(Icons.visibility, size: 16),
+              label: const Text('Preview'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.emerald700,
+                side: BorderSide(color: PharmaColors.emerald200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // ── PDF Download button ──
+            OutlinedButton.icon(
+              onPressed: () => _generatePdfPreview(),
+              icon: const Icon(Icons.picture_as_pdf, size: 16),
+              label: const Text('PDF'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.danger,
+                side: BorderSide(color: PharmaColors.danger.withValues(alpha: 0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          // ── Save / Update button ──
           FilledButton.icon(
             onPressed: _isSaving ? null : _saveAssessment,
             icon: _isSaving
@@ -319,6 +758,7 @@ class _AssessmentBuilderV2ScreenState
           ),
           if (_assessment != null) ...[
             const SizedBox(width: 8),
+            // ── Grade button ──
             OutlinedButton.icon(
               onPressed: () => context.go('/trainer/assessments/grading/${_assessment!.id}'),
               icon: const Icon(Icons.grading, size: 16),
@@ -870,7 +1310,7 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
       child: Row(children: [
         Icon(Icons.info_outline, size: 18, color: PharmaColors.info),
         const SizedBox(width: 12),
-        Expanded(child: Text('Open-ended questions require manual grading by the instructor. Students can enter detailed text responses.', style: PharmaTypography.body.copyWith(color: PharmaColors.info, fontSize: 13))),
+        Expanded(child: Text('Open-ended questions require manual grading by the instructor. Learners can enter detailed text responses.', style: PharmaTypography.body.copyWith(color: PharmaColors.info, fontSize: 13))),
       ]),
     );
   }

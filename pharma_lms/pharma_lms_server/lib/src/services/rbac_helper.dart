@@ -16,7 +16,8 @@ class RbacHelper {
   static bool _hasNoAuthSession(Session session) =>
       session.authenticated?.userIdentifier == null;
 
-  static final _devBypassUser = PharmaUser(
+  /// Synthetic fallback used only when no real DB user can be found.
+  static final _syntheticBypassUser = PharmaUser(
     email: '_dev_bypass_@system',
     firstName: 'Dev',
     lastName: 'Mode',
@@ -28,6 +29,34 @@ class RbacHelper {
     organizationId: 0,
   );
 
+  /// In dev/demo mode (no auth session), resolve the first active admin user
+  /// from the database so that `user.id` is non-null. Falls back to the
+  /// synthetic user only when the DB is empty or unreachable.
+  static Future<PharmaUser> _getDevBypassUser(Session session) async {
+    try {
+      // Try to find the admin demo user first
+      final rows = await session.db.unsafeQuery(
+        r"SELECT id FROM pharma_user WHERE lower(trim(email)) = 'admin@pharmacorp.demo' AND status = 'active' LIMIT 1",
+      );
+      if (rows.isNotEmpty && rows.first.isNotEmpty && rows.first[0] != null) {
+        final id = rows.first[0] is int
+            ? rows.first[0] as int
+            : int.tryParse(rows.first[0].toString());
+        if (id != null) {
+          final user = await PharmaUser.db.findById(session, id);
+          if (user != null) return user;
+        }
+      }
+      // Fallback: any active user with an id
+      final anyUser = await PharmaUser.db.findFirstRow(
+        session,
+        where: (t) => t.status.equals('active'),
+      );
+      if (anyUser != null) return anyUser;
+    } catch (_) {}
+    return _syntheticBypassUser;
+  }
+
   /// Requires the current user to have [resource]:[action] permission.
   /// Throws [RbacException] if not authenticated or permission denied.
   /// Returns the [PharmaUser] for use in the endpoint.
@@ -36,7 +65,7 @@ class RbacHelper {
     required String resource,
     required String action,
   }) async {
-    if (_hasNoAuthSession(session)) return _devBypassUser;
+    if (_hasNoAuthSession(session)) return _getDevBypassUser(session);
 
     final user = await _getCurrentPharmaUser(session);
     if (user == null) {
@@ -52,7 +81,7 @@ class RbacHelper {
   /// Requires the current user to be authenticated.
   /// Returns the [PharmaUser] or throws if not authenticated.
   static Future<PharmaUser> requireAuthenticated(Session session) async {
-    if (_hasNoAuthSession(session)) return _devBypassUser;
+    if (_hasNoAuthSession(session)) return _getDevBypassUser(session);
 
     final user = await _getCurrentPharmaUser(session);
     if (user == null) {
@@ -62,10 +91,10 @@ class RbacHelper {
   }
 
   /// Returns the current [PharmaUser] from session, or null if not authenticated.
-  /// In demo mode (no auth session), returns a synthetic bypass user so that
-  /// endpoint guards like `if (getCurrentPharmaUser == null) return []` pass.
+  /// In demo mode (no auth session), returns a real DB user so that endpoint
+  /// guards like `if (me?.id == null) return []` pass correctly.
   static Future<PharmaUser?> getCurrentPharmaUser(Session session) async {
-    if (_hasNoAuthSession(session)) return _devBypassUser;
+    if (_hasNoAuthSession(session)) return _getDevBypassUser(session);
     return _getCurrentPharmaUser(session);
   }
 

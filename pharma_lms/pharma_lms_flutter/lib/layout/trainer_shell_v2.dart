@@ -412,13 +412,6 @@ class _TrainerSidebar extends StatelessWidget {
                     route: '/trainer/question-bank',
                     currentPath: currentPath,
                   ),
-                  _TrainerNavItem(
-                    icon: Icons.description_outlined,
-                    activeIcon: Icons.description_rounded,
-                    label: 'Exam generator',
-                    route: '/trainer/exam-generator',
-                    currentPath: currentPath,
-                  ),
 
                   const SizedBox(height: PharmaSpacing.md),
 
@@ -431,13 +424,13 @@ class _TrainerSidebar extends StatelessWidget {
                     route: '/trainer/assignments',
                     currentPath: currentPath,
                   ),
-                  _TrainerNavItem(
-                    icon: Icons.auto_awesome_motion_outlined,
-                    activeIcon: Icons.auto_awesome_motion_rounded,
-                    label: 'Assignment campaigns',
-                    route: '/trainer/assignment-campaigns/new',
-                    currentPath: currentPath,
-                  ),
+                  //_TrainerNavItem(
+                    //icon: Icons.auto_awesome_motion_outlined,
+                    //activeIcon: Icons.auto_awesome_motion_rounded,
+                    //label: 'Assignment campaigns',
+                    //route: '/trainer/assignment-campaigns/new',
+                    //currentPath: currentPath,
+                  //),
                   _TrainerNavItem(
                     icon: Icons.groups_outlined,
                     activeIcon: Icons.groups_rounded,
@@ -490,6 +483,18 @@ class _TrainerSidebar extends StatelessWidget {
                     activeIcon: Icons.shield_rounded,
                     label: 'Compliance',
                     route: '/trainer/compliance',
+                    currentPath: currentPath,
+                  ),
+
+                  const SizedBox(height: PharmaSpacing.md),
+
+                  // ── COMMUNICATION ──
+                  _SidebarSection(label: 'COMMUNICATION'),
+                  _TrainerNavItem(
+                    icon: Icons.chat_bubble_outline,
+                    activeIcon: Icons.chat_bubble,
+                    label: 'Messages',
+                    route: '/trainer/messages',
                     currentPath: currentPath,
                   ),
                 ],

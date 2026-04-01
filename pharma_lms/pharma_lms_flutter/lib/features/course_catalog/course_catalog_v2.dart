@@ -468,7 +468,7 @@ class _CourseCardV2State extends State<_CourseCardV2> {
     final isContentApproved = tags.contains('Content approved');
     final regulatoryTags = tags.where((t) => t == 'GMP' || t == '21 CFR').toList();
     // Fallback: try meta, then null
-    final dueDate = metaJsonDate(meta) ?? null;
+    final dueDate = metaJsonDate(meta);
     final sopNumber = widget.course.sopNumber;
     final progress = enrollmentProgress(widget.enrollment, status);
 

@@ -1,0 +1,18 @@
+### Practical checklist item for OQ/OJT observation.
+class: PracticalChecklistItem
+
+table: practical_checklist_item
+
+fields:
+  ### The competency this checklist item belongs to.
+  competency: Competency?, relation
+  ### Step/task title.
+  title: String
+  ### Detailed description of expected performance.
+  description: String?
+  ### Order within the checklist.
+  orderIndex: int, default=0
+  ### Whether this step is critical (must-pass).
+  isCritical: bool, default=false
+  ### The organization that owns this checklist item.
+  organizationId: int

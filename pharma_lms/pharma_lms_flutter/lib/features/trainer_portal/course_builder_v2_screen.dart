@@ -258,6 +258,28 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
   int _autoSaveCount = 0;
   Timer? _autoSaveTimer;
 
+  /// Whether the current version is editable (only draft / needs_revision).
+  bool get _isEditable {
+    final status = _selectedVersion?.status ?? 'draft';
+    return status == 'draft' || status == 'needs_revision';
+  }
+
+  /// Whether the current version is approved / effective (read-only).
+  bool get _isApproved {
+    final status = _selectedVersion?.status ?? 'draft';
+    return status == 'approved' || status == 'effective';
+  }
+
+  /// Whether the current version is rejected / needs revision.
+  bool get _isRejectedOrNeedsRevision {
+    final status = _selectedVersion?.status ?? 'draft';
+    return status == 'rejected' || status == 'needs_revision';
+  }
+
+  /// QA reviews loaded for the current version (to show rejection comments).
+  List<CourseReview> _qaReviews = [];
+  bool _creatingNewVersion = false;
+
   // Inline controllers
   final _lessonTitleController = TextEditingController();
   final _lessonDurationController = TextEditingController();
@@ -324,7 +346,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
 
   void _startAutoSave() {
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      if (mounted && !_saving && _selectedVersion != null) {
+      if (mounted && !_saving && _selectedVersion != null && _isEditable) {
         _saveDraft();
         setState(() => _autoSaveCount++);
       }
@@ -341,7 +363,8 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
       if (course == null) throw Exception('Course not found');
 
       final versions = await client.course.getCourseVersions(widget.courseId);
-      final draft = versions.where((v) => v.status == 'draft').firstOrNull;
+      // Prefer a draft/needs_revision version, then fall back to latest
+      final draft = versions.where((v) => v.status == 'draft' || v.status == 'needs_revision').firstOrNull;
       final editable = draft ?? (versions.isNotEmpty ? versions.first : null);
 
       List<Module> modules = [];
@@ -364,6 +387,18 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
         }
       }
 
+      // Load QA reviews for this version (to show rejection comments)
+      List<CourseReview> qaReviews = [];
+      if (editable?.id != null) {
+        try {
+          qaReviews = await client.qa.getCourseReviewsForTrainer(
+            courseVersionId: editable!.id!,
+          );
+        } catch (_) {
+          // Not critical
+        }
+      }
+
       if (mounted) {
         setState(() {
           _course = course;
@@ -372,6 +407,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
           _modules = modules;
           _lessonsByModule = lessonsByModule;
           _linkedAssessment = linkedAssessment;
+          _qaReviews = qaReviews;
           _loading = false;
         });
       }
@@ -457,6 +493,10 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
                 v.status == 'published') &&
             (_selectedVersion?.status == 'draft'))
           _buildDraftVersionAuditBanner(),
+        // Approved course lock banner
+        if (_isApproved) _buildApprovedLockBanner(),
+        // Rejected/needs revision banner with QA comments
+        if (_isRejectedOrNeedsRevision) _buildRejectionBanner(),
         // ── TAB BAR ──
         Container(
           decoration: BoxDecoration(
@@ -564,8 +604,8 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
               onPressed: _selectedVersion == null
                   ? null
                   : () {
-                      context.go(
-                        '/employee/course/${widget.courseId}',
+                      context.push(
+                        '/trainer/preview-course/${widget.courseId}',
                         extra: <String, dynamic>{
                           'courseVersionId': _selectedVersion!.id!,
                         },
@@ -618,6 +658,12 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
   // ── WORKFLOW STEPPER ──
   Widget _buildWorkflowStepper() {
     final status = _selectedVersion?.status ?? 'draft';
+    final isUnderReview = status == 'under_review' || status == 'pending_qa' || status == 'pending_approval';
+    final isApproved = status == 'approved' || status == 'effective' || status == 'published';
+    final isRejected = status == 'rejected';
+    final isNeedsRevision = status == 'needs_revision';
+    final pastDraft = isUnderReview || isApproved || isRejected || isNeedsRevision;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 8),
       decoration: BoxDecoration(
@@ -627,11 +673,23 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _StepperDot(label: 'DRAFT', isActive: status == 'draft', isCompleted: status != 'draft'),
-          _StepperLine(isCompleted: status == 'under_review' || status == 'pending_qa' || status == 'approved' || status == 'published'),
-          _StepperDot(label: 'UNDER REVIEW', isActive: status == 'under_review' || status == 'pending_qa', isCompleted: status == 'approved' || status == 'published'),
-          _StepperLine(isCompleted: status == 'approved' || status == 'published'),
-          _StepperDot(label: 'QA APPROVED', isActive: status == 'approved' || status == 'published', isCompleted: false),
+          _StepperDot(
+            label: isNeedsRevision ? 'NEEDS REVISION' : 'DRAFT',
+            isActive: status == 'draft' || isNeedsRevision,
+            isCompleted: pastDraft && !isNeedsRevision,
+          ),
+          _StepperLine(isCompleted: pastDraft),
+          _StepperDot(
+            label: isRejected ? 'REJECTED' : 'UNDER REVIEW',
+            isActive: isUnderReview,
+            isCompleted: isApproved,
+          ),
+          _StepperLine(isCompleted: isApproved),
+          _StepperDot(
+            label: 'QA APPROVED',
+            isActive: isApproved,
+            isCompleted: false,
+          ),
         ],
       ),
     );
@@ -666,6 +724,273 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
     );
   }
 
+  /// Banner shown when the selected version is approved/effective — read-only mode.
+  Widget _buildApprovedLockBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 12),
+      decoration: BoxDecoration(
+        color: PharmaColors.successBg,
+        border: Border(bottom: BorderSide(color: PharmaColors.success.withValues(alpha: 0.3))),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_rounded, size: 20, color: PharmaColors.successText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This course version is QA-approved and locked for editing.',
+                  style: PharmaTypography.bodyMedium.copyWith(
+                    color: PharmaColors.successText,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'To make changes, create a new draft version below. It will be sent to QA for review.',
+                  style: PharmaTypography.caption.copyWith(
+                    color: PharmaColors.successText,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: _creatingNewVersion ? null : _createNewVersionFromApproved,
+            icon: _creatingNewVersion
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.add_circle_outline, size: 16),
+            label: Text(_creatingNewVersion ? 'Creating...' : 'Create New Version'),
+            style: FilledButton.styleFrom(
+              backgroundColor: PharmaColors.emerald600,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Banner shown when the selected version is rejected / needs_revision — show QA comments.
+  Widget _buildRejectionBanner() {
+    final isRejected = _selectedVersion?.status == 'rejected';
+    final latestReview = _qaReviews.where((r) =>
+        r.decision == 'rejected' || r.decision == 'returned_for_changes').firstOrNull;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 12),
+      decoration: BoxDecoration(
+        color: isRejected ? PharmaColors.dangerBg : PharmaColors.warningBg,
+        border: Border(
+          bottom: BorderSide(
+            color: (isRejected ? PharmaColors.danger : PharmaColors.warning).withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isRejected ? Icons.cancel_rounded : Icons.edit_note_rounded,
+            size: 20,
+            color: isRejected ? PharmaColors.dangerText : PharmaColors.warningText,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isRejected
+                      ? 'This course version was rejected by QA.'
+                      : 'This course version needs revision. Address the feedback and re-submit.',
+                  style: PharmaTypography.bodyMedium.copyWith(
+                    color: isRejected ? PharmaColors.dangerText : PharmaColors.warningText,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                if (latestReview?.comments != null && latestReview!.comments!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: PharmaColors.cardBg,
+                      borderRadius: PharmaRadius.cardRadius,
+                      border: Border.all(color: PharmaColors.borderLight),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.format_quote, size: 14, color: PharmaColors.textQuaternary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'QA Reviewer Comment:',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: PharmaColors.textQuaternary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            if (latestReview.reviewer != null) ...[
+                              const Spacer(),
+                              Text(
+                                '${latestReview.reviewer!.firstName} ${latestReview.reviewer!.lastName}',
+                                style: PharmaTypography.caption,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          latestReview.comments!,
+                          style: PharmaTypography.body.copyWith(height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (_qaReviews.length > 1) ...[
+                  const SizedBox(height: 6),
+                  TextButton.icon(
+                    onPressed: () => context.go(
+                      '/trainer/courses/${widget.courseId}/qa-review',
+                    ),
+                    icon: Icon(Icons.history, size: 14,
+                        color: isRejected ? PharmaColors.dangerText : PharmaColors.warningText),
+                    label: Text(
+                      'View all ${_qaReviews.length} QA reviews',
+                      style: PharmaTypography.caption.copyWith(
+                        color: isRejected ? PharmaColors.dangerText : PharmaColors.warningText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Creates a new draft version from the current approved version.
+  Future<void> _createNewVersionFromApproved() async {
+    if (_selectedVersion?.id == null) return;
+
+    final changeSummary = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(PharmaRadius.xl),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.add_circle, color: PharmaColors.emerald600),
+              const SizedBox(width: 8),
+              const Text('Create New Version'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Describe what you plan to change in this new version. '
+                'The current approved content will be cloned and a new draft created.',
+                style: PharmaTypography.body,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Change summary (required)...',
+                  filled: true,
+                  fillColor: PharmaColors.pageBg,
+                  border: OutlineInputBorder(
+                    borderRadius: PharmaRadius.inputRadius,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                controller.dispose();
+                Navigator.pop(ctx);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                controller.dispose();
+                if (text.isEmpty) return;
+                Navigator.pop(ctx, text);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: PharmaColors.emerald600,
+              ),
+              child: const Text('Create Draft'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (changeSummary == null || changeSummary.isEmpty) return;
+
+    setState(() => _creatingNewVersion = true);
+    try {
+      await client.courseBuilder.createNewVersionFromExisting(
+        existingVersionId: _selectedVersion!.id!,
+        changeSummary: changeSummary,
+        isMajorVersion: false,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('New draft version created — you can now edit'),
+          backgroundColor: PharmaColors.emerald600,
+        ),
+      );
+      // Reload to pick up the new draft version
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create new version: $e'),
+          backgroundColor: PharmaColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _creatingNewVersion = false);
+    }
+  }
+
   // ── LEFT PANEL: MODULE TREE ──
   Widget _buildModuleTree() {
     return Container(
@@ -687,13 +1012,21 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
                 Text('Curriculum',
                     style: PharmaTypography.headingSmall.copyWith(fontSize: 13)),
                 const Spacer(),
-                IconButton(
-                  onPressed: _addModule,
-                  icon: const Icon(Icons.add, size: 18),
-                  tooltip: 'Add Module',
-                  color: PharmaColors.emerald600,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                ),
+                if (_isEditable)
+                  IconButton(
+                    onPressed: _addModule,
+                    icon: const Icon(Icons.add, size: 18),
+                    tooltip: 'Add Module',
+                    color: PharmaColors.emerald600,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                if (!_isEditable)
+                  Tooltip(
+                    message: _isApproved
+                        ? 'Course is approved — create a new version to edit'
+                        : 'Course is under review',
+                    child: Icon(Icons.lock_outline, size: 16, color: PharmaColors.gray400),
+                  ),
               ],
             ),
           ),
@@ -708,11 +1041,12 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
                         const SizedBox(height: 8),
                         Text('No modules yet', style: PharmaTypography.body),
                         const SizedBox(height: 8),
-                        TextButton.icon(
-                          onPressed: _addModule,
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add Module'),
-                        ),
+                        if (_isEditable)
+                          TextButton.icon(
+                            onPressed: _addModule,
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('Add Module'),
+                          ),
                       ],
                     ),
                   )
@@ -739,33 +1073,34 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
                             _selectedLessonId = null;
                           }),
                           onLessonTap: (lessonId) => _selectLesson(lessonId),
-                          onAddLesson: () => _addLesson(_modules[i].id!),
-                          onDeleteModule: () => _deleteModule(_modules[i].id!),
-                          onRenameModule: () => _renameModule(_modules[i]),
+                          onAddLesson: _isEditable ? () => _addLesson(_modules[i].id!) : null,
+                          onDeleteModule: _isEditable ? () => _deleteModule(_modules[i].id!) : null,
+                          onRenameModule: _isEditable ? () => _renameModule(_modules[i]) : null,
                         ),
                     ],
                   ),
           ),
           // Add Module CTA
-          Container(
-            padding: const EdgeInsets.all(PharmaSpacing.md),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: PharmaColors.borderLight)),
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _addModule,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Module'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: PharmaColors.emerald600,
-                  side: BorderSide(color: PharmaColors.emerald200),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+          if (_isEditable)
+            Container(
+              padding: const EdgeInsets.all(PharmaSpacing.md),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: PharmaColors.borderLight)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _addModule,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add Module'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: PharmaColors.emerald600,
+                    side: BorderSide(color: PharmaColors.emerald200),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -1312,23 +1647,44 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
             const SizedBox(height: PharmaSpacing.lg),
 
             // Save Draft CTA
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _saving ? null : _saveDraft,
-                icon: const Icon(Icons.save, size: 16),
-                label: Text(_saving ? 'Saving...' : 'Save Draft'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: PharmaColors.emerald600,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+            if (_isEditable)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _saving ? null : _saveDraft,
+                  icon: const Icon(Icons.save, size: 16),
+                  label: Text(_saving ? 'Saving...' : 'Save Draft'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PharmaColors.emerald600,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
               ),
-            ),
+
+            if (_isApproved)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _creatingNewVersion ? null : _createNewVersionFromApproved,
+                  icon: _creatingNewVersion
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.add_circle_outline, size: 16),
+                  label: Text(_creatingNewVersion ? 'Creating...' : 'Create New Version'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PharmaColors.emerald600,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
 
             const SizedBox(height: 8),
 
             // Submit for QA
-            if (_selectedVersion?.status == 'draft')
+            if (_selectedVersion?.status == 'draft' || _selectedVersion?.status == 'needs_revision')
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -2128,7 +2484,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
   }
 
   Future<void> _saveDraft() async {
-    if (_selectedVersion == null) return;
+    if (_selectedVersion == null || !_isEditable) return;
     setState(() => _saving = true);
     try {
       for (int i = 0; i < _modules.length; i++) {
@@ -2228,7 +2584,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
   }
 
   Future<void> _addModule() async {
-    if (_selectedVersion == null) return;
+    if (_selectedVersion == null || !_isEditable) return;
     try {
       final module = await client.courseBuilder.createModule(
         courseVersionId: _selectedVersion!.id!,
@@ -2256,6 +2612,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
   }
 
   Future<void> _addLesson(int moduleId) async {
+    if (!_isEditable) return;
     final titleController = TextEditingController(text: 'New Lesson');
     final minEngagementController = TextEditingController(text: '15');
     final result = await showDialog<bool>(
@@ -2412,9 +2769,9 @@ class _ModuleTreeItem extends StatelessWidget {
   final int? selectedLessonId;
   final VoidCallback onModuleTap;
   final Function(int) onLessonTap;
-  final VoidCallback onAddLesson;
-  final VoidCallback onDeleteModule;
-  final VoidCallback onRenameModule;
+  final VoidCallback? onAddLesson;
+  final VoidCallback? onDeleteModule;
+  final VoidCallback? onRenameModule;
 
   @override
   Widget build(BuildContext context) {
@@ -2475,31 +2832,35 @@ class _ModuleTreeItem extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(width: 4),
-                PopupMenuButton<String>(
-                  iconSize: 16,
-                  icon: Icon(Icons.more_vert, size: 16, color: PharmaColors.gray400),
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(value: 'add', child: Text('Add Lesson')),
-                    const PopupMenuItem(value: 'rename', child: Text('Rename')),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete', style: TextStyle(color: PharmaColors.danger)),
-                    ),
-                  ],
-                  onSelected: (v) {
-                    switch (v) {
-                      case 'add':
-                        onAddLesson();
-                        break;
-                      case 'rename':
-                        onRenameModule();
-                        break;
-                      case 'delete':
-                        onDeleteModule();
-                        break;
-                    }
-                  },
-                ),
+                if (onAddLesson != null || onRenameModule != null || onDeleteModule != null)
+                  PopupMenuButton<String>(
+                    iconSize: 16,
+                    icon: Icon(Icons.more_vert, size: 16, color: PharmaColors.gray400),
+                    itemBuilder: (ctx) => [
+                      if (onAddLesson != null)
+                        const PopupMenuItem(value: 'add', child: Text('Add Lesson')),
+                      if (onRenameModule != null)
+                        const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                      if (onDeleteModule != null)
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete', style: TextStyle(color: PharmaColors.danger)),
+                        ),
+                    ],
+                    onSelected: (v) {
+                      switch (v) {
+                        case 'add':
+                          onAddLesson?.call();
+                          break;
+                        case 'rename':
+                          onRenameModule?.call();
+                          break;
+                        case 'delete':
+                          onDeleteModule?.call();
+                          break;
+                      }
+                    },
+                  ),
               ],
             ),
           ),
@@ -2534,25 +2895,26 @@ class _ModuleTreeItem extends StatelessWidget {
               ),
             )),
         // Add lesson inline
-        InkWell(
-          onTap: onAddLesson,
-          child: Container(
-            padding: const EdgeInsets.only(left: 44, right: 12, top: 4, bottom: 4),
-            child: Row(
-              children: [
-                Icon(Icons.add, size: 14, color: PharmaColors.emerald500),
-                const SizedBox(width: 4),
-                Text(
-                  'Add Lesson',
-                  style: PharmaTypography.caption.copyWith(
-                    color: PharmaColors.emerald600,
-                    fontSize: 11,
+        if (onAddLesson != null)
+          InkWell(
+            onTap: onAddLesson,
+            child: Container(
+              padding: const EdgeInsets.only(left: 44, right: 12, top: 4, bottom: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.add, size: 14, color: PharmaColors.emerald500),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Add Lesson',
+                    style: PharmaTypography.caption.copyWith(
+                      color: PharmaColors.emerald600,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
         Divider(height: 1, color: PharmaColors.borderLight),
       ],
     );
@@ -3306,7 +3668,7 @@ class _BlockEditorWidgetState extends State<_BlockEditorWidget> {
         const SizedBox(height: 8),
         TextField(
           controller: TextEditingController(text: instructions),
-          decoration: widget.inputDecoration('Instructions for the student...'),
+          decoration: widget.inputDecoration('Instructions for the learner...'),
           maxLines: 4,
           style: PharmaTypography.body,
           onChanged: (v) {

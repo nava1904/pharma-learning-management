@@ -14,13 +14,13 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Material;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 import 'package:intl/intl.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
-import '../shared/employee_multi_select_dialog.dart';
 
 // ─── PROVIDERS ───────────────────────────────────────────────────────────────
 
@@ -31,6 +31,15 @@ final _assignmentsProvider =
   return client.training.getAllAssignments(
     organizationId: user.organizationId,
   );
+});
+
+/// Standalone assignments (assignment campaigns) for the organization.
+final _standaloneAssignmentsProvider =
+    FutureProvider.autoDispose<List<StandaloneAssignment>>((ref) async {
+  final user = await ref.watch(currentUserProvider.future);
+  if (user == null) return [];
+  return client.standaloneAssignment
+      .listStandaloneAssignmentsForOrganization(user.organizationId);
 });
 
 /// Courses you created that are published (or have an approved/effective version).
@@ -62,10 +71,28 @@ class TrainingAssignmentsScreen extends ConsumerStatefulWidget {
 }
 
 class _TrainingAssignmentsScreenState
-    extends ConsumerState<TrainingAssignmentsScreen> {
+    extends ConsumerState<TrainingAssignmentsScreen>
+    with SingleTickerProviderStateMixin {
   String _filterStatus = 'All';
   String _searchQuery = '';
   TrainingAssignment? _selectedAssignment;
+  StandaloneAssignment? _selectedCampaign;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   List<TrainingAssignment> _applyFilters(List<TrainingAssignment> all) {
     return all.where((a) {
@@ -88,6 +115,36 @@ class _TrainingAssignmentsScreenState
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ── Tabs ──────────────────────────────────────────────────────
+        Container(
+          color: PharmaColors.cardBg,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: PharmaColors.emerald600,
+            unselectedLabelColor: PharmaColors.textTertiary,
+            indicatorColor: PharmaColors.emerald600,
+            tabs: const [
+              Tab(text: 'Training Assignments'),
+              Tab(text: 'Assignment Campaigns'),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildTrainingAssignmentsTab(),
+              _buildCampaignsTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrainingAssignmentsTab() {
     final assignmentsAsync = ref.watch(_assignmentsProvider);
 
     return assignmentsAsync.when(
@@ -111,6 +168,354 @@ class _TrainingAssignmentsScreenState
         ),
       ),
       data: (assignments) => _buildContent(assignments),
+    );
+  }
+
+  Widget _buildCampaignsTab() {
+    final campaignsAsync = ref.watch(_standaloneAssignmentsProvider);
+
+    return campaignsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
+            const SizedBox(height: 12),
+            Text('Failed to load campaigns', style: PharmaTypography.headingSmall),
+            const SizedBox(height: 4),
+            Text('$e', style: PharmaTypography.caption),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => ref.invalidate(_standaloneAssignmentsProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (campaigns) => _buildCampaignsContent(campaigns),
+    );
+  }
+
+  // ─── Campaigns Tab Content ─────────────────────────────────────────────
+
+  Widget _buildCampaignsContent(List<StandaloneAssignment> campaigns) {
+    final filtered = campaigns.where((c) {
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        if (!c.title.toLowerCase().contains(q)) return false;
+      }
+      return true;
+    }).toList();
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(_standaloneAssignmentsProvider),
+      child: ListView(
+        padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+        children: [
+          _buildCampaignsHeader(),
+          const SizedBox(height: 16),
+          _buildCampaignsStatsRow(campaigns),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...filtered.map((c) => _buildCampaignCard(c)),
+                    if (filtered.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(48),
+                        decoration: BoxDecoration(
+                          color: PharmaColors.cardBg,
+                          borderRadius: PharmaRadius.cardRadius,
+                          border: Border.all(color: PharmaColors.borderLight),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.campaign_outlined,
+                                size: 48, color: PharmaColors.gray300),
+                            const SizedBox(height: 8),
+                            Text('No assignment campaigns yet',
+                                style: PharmaTypography.bodyMedium),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Create one using the "New Assignment" button above.',
+                              style: PharmaTypography.caption
+                                  .copyWith(color: PharmaColors.textTertiary),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (_selectedCampaign != null) ...[
+                const SizedBox(width: 24),
+                SizedBox(
+                  width: 400,
+                  child: _buildCampaignDetailPanel(_selectedCampaign!),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCampaignsHeader() {
+    return Row(
+      children: [
+        Icon(Icons.campaign, color: PharmaColors.emerald600, size: 24),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Assignment Campaigns',
+                  style: PharmaTypography.headingLarge
+                      .copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
+              Text('Standalone assignments with open-ended or MCQ content',
+                  style: PharmaTypography.body
+                      .copyWith(color: PharmaColors.textTertiary)),
+            ],
+          ),
+        ),
+        FilledButton.icon(
+          onPressed: () => context.push('/trainer/assignment-campaigns/new'),
+          icon: const Icon(Icons.add, size: 16),
+          label: const Text('New Assignment'),
+          style: FilledButton.styleFrom(
+            backgroundColor: PharmaColors.emerald600,
+            foregroundColor: PharmaColors.cardBg,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCampaignsStatsRow(List<StandaloneAssignment> campaigns) {
+    final draft = campaigns.where((c) => c.status == 'draft').length;
+    final published = campaigns.where((c) => c.status == 'published').length;
+    return Row(
+      children: [
+        _stat('Published', '$published', Icons.check_circle, PharmaColors.emerald600),
+        _stat('Drafts', '$draft', Icons.edit_note, PharmaColors.warningText),
+        _stat('Total', '${campaigns.length}', Icons.campaign, PharmaColors.gray600),
+      ]
+          .map((w) => Expanded(
+              child: Padding(
+                  padding: const EdgeInsets.only(right: 12), child: w)))
+          .toList(),
+    );
+  }
+
+  Widget _buildCampaignCard(StandaloneAssignment campaign) {
+    final isSelected = _selectedCampaign?.id == campaign.id;
+    final isDraft = campaign.status == 'draft';
+    final statusColor = isDraft ? PharmaColors.warningText : PharmaColors.emerald600;
+    final statusLabel = isDraft ? 'DRAFT' : 'PUBLISHED';
+    final dueStr = DateFormat('MMM d, yyyy').format(campaign.dueAt);
+    final creatorName = campaign.createdBy != null
+        ? '${campaign.createdBy!.firstName} ${campaign.createdBy!.lastName}'
+        : '';
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedCampaign = campaign),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: PharmaColors.cardBg,
+          borderRadius: PharmaRadius.cardRadius,
+          border: Border.all(
+              color: isSelected ? PharmaColors.emerald600 : PharmaColors.borderLight),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.campaign_outlined,
+                  size: 18, color: PharmaColors.textTertiary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(campaign.title,
+                    style: PharmaTypography.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w600)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: PharmaRadius.pillRadius),
+                child: Text(statusLabel,
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                        letterSpacing: 0.5)),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                    color: PharmaColors.info.withValues(alpha: 0.1),
+                    borderRadius: PharmaRadius.pillRadius),
+                child: Text(campaign.contentKind.toUpperCase(),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: PharmaColors.info,
+                        letterSpacing: 0.5)),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Text(
+                'Target: ${campaign.targetType} · Due: $dueStr',
+                style: PharmaTypography.caption
+                    .copyWith(color: PharmaColors.textTertiary),
+              ),
+              if (creatorName.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text('by $creatorName',
+                    style: PharmaTypography.caption
+                        .copyWith(color: PharmaColors.textTertiary)),
+              ],
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCampaignDetailPanel(StandaloneAssignment campaign) {
+    final dueStr = DateFormat('MMM d, yyyy').format(campaign.dueAt);
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+        boxShadow: PharmaShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Campaign Details',
+                    style: PharmaTypography.headingSmall
+                        .copyWith(fontWeight: FontWeight.w600)),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _selectedCampaign = null),
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(campaign.title,
+              style: PharmaTypography.bodyMedium
+                  .copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          if (campaign.instructions != null &&
+              campaign.instructions!.isNotEmpty) ...[
+            Text(campaign.instructions!,
+                style: PharmaTypography.caption
+                    .copyWith(color: PharmaColors.textTertiary)),
+            const SizedBox(height: 8),
+          ],
+          Text('Type: ${campaign.contentKind}',
+              style: PharmaTypography.body),
+          Text('Target: ${campaign.targetType}',
+              style: PharmaTypography.body),
+          Text('Due: $dueStr', style: PharmaTypography.body),
+          Text('Status: ${campaign.status}',
+              style: PharmaTypography.body),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 12),
+
+          // ── Check Submissions ────────────────────────────────────
+          if (campaign.status == 'published' && campaign.id != null)
+            FilledButton.icon(
+              onPressed: () => _showSubmissionsDialog(campaign),
+              icon: const Icon(Icons.grading, size: 16),
+              label: const Text('Check Submissions'),
+              style: FilledButton.styleFrom(
+                backgroundColor: PharmaColors.emerald600,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 42),
+              ),
+            ),
+          if (campaign.status == 'published' && campaign.id != null)
+            const SizedBox(height: 8),
+
+          // ── Extend Deadline ──────────────────────────────────────
+          if (campaign.status == 'published' && campaign.id != null)
+            OutlinedButton.icon(
+              onPressed: () => _showExtendCampaignDeadlineDialog(campaign),
+              icon: const Icon(Icons.schedule, size: 16),
+              label: const Text('Extend Deadline'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.emerald600,
+                side: BorderSide(
+                    color: PharmaColors.emerald600.withValues(alpha: 0.5)),
+                minimumSize: const Size(double.infinity, 42),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showExtendCampaignDeadlineDialog(
+      StandaloneAssignment campaign) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: campaign.dueAt.add(const Duration(days: 7)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null || !mounted) return;
+
+    try {
+      await client.standaloneAssignment.updateStandaloneAssignment(
+        campaign.id!,
+        dueAt: picked,
+      );
+      ref.invalidate(_standaloneAssignmentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Deadline extended')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showSubmissionsDialog(StandaloneAssignment campaign) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _SubmissionsDialog(
+        campaign: campaign,
+        onGraded: () => ref.invalidate(_standaloneAssignmentsProvider),
+      ),
     );
   }
 
@@ -228,18 +633,63 @@ class _TrainingAssignmentsScreenState
             'Due: ${DateFormat('MMM d, yyyy').format(a.dueDate)}',
             style: PharmaTypography.body,
           ),
+          Text('Status: ${a.status}', style: PharmaTypography.body),
+          Text('Priority: ${a.priority}', style: PharmaTypography.body),
+          Text('Source: ${a.source}', style: PharmaTypography.caption),
           if (a.reason != null && a.reason!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('Reason: ${a.reason}',
                 style: PharmaTypography.caption),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 12),
+
+          // ── Extend Deadline ──────────────────────────────────────
           if (a.status == 'active' || a.status == 'completed') ...[
-            OutlinedButton(
+            OutlinedButton.icon(
               onPressed: () => _onAssignmentAction('extend', a),
-              child: const Text('Extend deadline'),
+              icon: const Icon(Icons.schedule, size: 16),
+              label: const Text('Extend Deadline'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.emerald600,
+                side: BorderSide(
+                    color: PharmaColors.emerald600.withValues(alpha: 0.5)),
+                minimumSize: const Size(double.infinity, 42),
+              ),
             ),
             const SizedBox(height: 8),
+          ],
+
+          // ── Change Priority ──────────────────────────────────────
+          if (a.status == 'active') ...[
+            OutlinedButton.icon(
+              onPressed: () => _onAssignmentAction('priority', a),
+              icon: const Icon(Icons.flag, size: 16),
+              label: const Text('Change Priority'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.info,
+                side: BorderSide(
+                    color: PharmaColors.info.withValues(alpha: 0.5)),
+                minimumSize: const Size(double.infinity, 42),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
+          // ── Cancel ───────────────────────────────────────────────
+          if (a.status == 'active') ...[
+            OutlinedButton.icon(
+              onPressed: () => _onAssignmentAction('cancel', a),
+              icon: const Icon(Icons.cancel_outlined, size: 16),
+              label: const Text('Cancel Assignment'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PharmaColors.danger,
+                side: BorderSide(
+                    color: PharmaColors.danger.withValues(alpha: 0.5)),
+                minimumSize: const Size(double.infinity, 42),
+              ),
+            ),
           ],
         ],
       ),
@@ -277,7 +727,8 @@ class _TrainingAssignmentsScreenState
         ),
         const SizedBox(width: 10),
         FilledButton.icon(
-          onPressed: _showNewAssignmentDialog,
+          onPressed: () =>
+              context.push('/trainer/assignment-campaigns/new'),
           icon: const Icon(Icons.add, size: 16),
           label: const Text('New Assignment'),
           style: FilledButton.styleFrom(
@@ -739,527 +1190,6 @@ class _TrainingAssignmentsScreenState
       }
     }
   }
-
-  // ─── NEW ASSIGNMENT DIALOG ───────────────────────────────────────────────
-
-  void _showNewAssignmentDialog() {
-    ref.invalidate(_trainerPublishedCoursesProvider);
-    ref.invalidate(_trainerPublishedCourseLearnersProvider);
-    showDialog(
-      context: context,
-      builder: (ctx) => _NewAssignmentDialog(
-        onCreated: () {
-          ref.invalidate(_assignmentsProvider);
-          ref.invalidate(_trainerPublishedCourseLearnersProvider);
-        },
-        currentUserFuture: ref.read(currentUserProvider.future),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// NEW ASSIGNMENT DIALOG
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _NewAssignmentDialog extends ConsumerStatefulWidget {
-  const _NewAssignmentDialog({
-    required this.onCreated,
-    required this.currentUserFuture,
-  });
-
-  final VoidCallback onCreated;
-  final Future<PharmaUser?> currentUserFuture;
-
-  @override
-  ConsumerState<_NewAssignmentDialog> createState() =>
-      _NewAssignmentDialogState();
-}
-
-class _NewAssignmentDialogState extends ConsumerState<_NewAssignmentDialog> {
-  Course? _selectedCourse;
-  CourseVersion? _selectedVersion;
-  String _priority = 'medium';
-  DateTime? _dueDate;
-  late final TextEditingController _dueDateController;
-  String _reason = '';
-  bool _submitting = false;
-  List<CourseVersion> _versions = [];
-  bool _loadingVersions = false;
-
-  String _assignTarget = 'individual';
-  final List<PharmaUser> _selectedUsers = [];
-  Department? _selectedDepartment;
-  TrainingBatch? _selectedBatch;
-
-  List<Department> _departments = [];
-  List<TrainingBatch> _batches = [];
-  bool _loadingDepts = false;
-  bool _loadingBatches = false;
-  int _assignedCount = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _dueDateController = TextEditingController();
-    _loadDepartmentsAndBatches();
-  }
-
-  @override
-  void dispose() {
-    _dueDateController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadDepartmentsAndBatches() async {
-    final currentUser = await widget.currentUserFuture;
-    if (currentUser == null) return;
-    setState(() { _loadingDepts = true; _loadingBatches = true; });
-    try {
-      final depts = await client.organization.listDepartments(currentUser.siteId);
-      if (mounted) setState(() { _departments = depts; _loadingDepts = false; });
-    } catch (_) { if (mounted) setState(() => _loadingDepts = false); }
-    try {
-      final batches = await client.trainingBatch.listBatches(organizationId: currentUser.organizationId);
-      if (mounted) setState(() { _batches = batches; _loadingBatches = false; });
-    } catch (_) { if (mounted) setState(() => _loadingBatches = false); }
-  }
-
-  Future<void> _loadVersions(int courseId) async {
-    setState(() { _loadingVersions = true; _selectedVersion = null; });
-    try {
-      final versions = await client.course.getCourseVersions(courseId);
-      if (mounted) {
-        setState(() {
-          _versions = versions;
-          _selectedVersion = versions.isNotEmpty ? versions.first : null;
-          _loadingVersions = false;
-        });
-      }
-    } catch (_) { if (mounted) setState(() => _loadingVersions = false); }
-  }
-
-  // ── Search & pick helpers ─────────────────────────────────────────────────
-
-  Future<void> _pickCourse() async {
-    if (!mounted) return;
-    final picked = await showDialog<Course>(
-      context: context,
-      builder: (ctx) => _CourseDbSearchDialog(
-        load: (query) => client.course.listTrainerPublishedCoursesForAssignment(
-          search: query.trim().isEmpty ? null : query.trim(),
-        ),
-      ),
-    );
-    if (picked == null) return;
-    setState(() {
-      _selectedCourse = picked;
-      _selectedVersion = null;
-      _versions = [];
-    });
-    if (picked.id != null) _loadVersions(picked.id!);
-  }
-
-  Future<void> _pickUsersMulti() async {
-    if (!mounted) return;
-    final picked = await showDialog<List<PharmaUser>>(
-      context: context,
-      builder: (ctx) => EmployeeMultiSelectDbSearchDialog(
-        initialSelection: List<PharmaUser>.from(_selectedUsers),
-        load: (query) =>
-            client.training.listLearnersEnrolledInTrainerPublishedCourses(
-              search: query.trim().isEmpty ? null : query.trim(),
-              limit: 150,
-            ),
-      ),
-    );
-    if (picked == null) return;
-    setState(() {
-      _selectedUsers
-        ..clear()
-        ..addAll(picked);
-    });
-  }
-
-  // ── Submit ────────────────────────────────────────────────────────────────
-
-  Future<void> _submit() async {
-    if (_selectedCourse == null) {
-      _snack('Please select a course'); return;
-    }
-    if (_selectedVersion == null) {
-      _snack('Please select a course version'); return;
-    }
-    if (_dueDate == null) {
-      _snack('Please select a due date'); return;
-    }
-    if (_assignTarget == 'individual' && _selectedUsers.isEmpty) {
-      _snack('Please select at least one employee');
-      return;
-    }
-    if (_assignTarget == 'department' && _selectedDepartment == null) {
-      _snack('Please select a department'); return;
-    }
-    if (_assignTarget == 'batch' && _selectedBatch == null) {
-      _snack('Please select a batch'); return;
-    }
-
-    setState(() { _submitting = true; _assignedCount = 0; });
-    try {
-      final currentUser = await widget.currentUserFuture;
-      final assignedById = currentUser!.id!;
-      final courseVersionId = _selectedVersion!.id!;
-      final reason = _reason.isNotEmpty ? _reason : null;
-
-      if (_assignTarget == 'individual') {
-        for (final u in _selectedUsers) {
-          if (u.id == null) continue;
-          try {
-            await client.training.assignTraining(
-              userId: u.id!,
-              courseVersionId: courseVersionId,
-              assignedById: assignedById,
-              dueDate: _dueDate!,
-              priority: _priority,
-              reason: reason,
-              source: 'manual',
-              forceReassign: false,
-            );
-            _assignedCount++;
-          } catch (_) {}
-        }
-      } else if (_assignTarget == 'department') {
-        final orgId = currentUser.organizationId;
-        final deptId = _selectedDepartment!.id;
-        final users = await client.organization.listUsers(
-          organizationId: orgId,
-          departmentId: deptId,
-        );
-        final active = users.where((u) => u.status == 'active' && u.id != null).toList();
-        for (final u in active) {
-          try {
-            await client.training.assignTraining(
-              userId: u.id!, courseVersionId: courseVersionId,
-              assignedById: assignedById, dueDate: _dueDate!,
-              priority: _priority, reason: reason, source: 'department_assignment', forceReassign: false,
-            );
-            _assignedCount++;
-          } catch (_) {}
-        }
-      } else if (_assignTarget == 'batch') {
-        final participants = await client.trainingBatch.listBatchParticipantsForEmployee(_selectedBatch!.id!);
-        for (final p in participants) {
-          try {
-            await client.training.assignTraining(
-              userId: p.userId, courseVersionId: courseVersionId,
-              assignedById: assignedById, dueDate: _dueDate!,
-              priority: _priority, reason: reason, source: 'batch_assignment', forceReassign: false,
-            );
-            _assignedCount++;
-          } catch (_) {}
-        }
-      }
-
-      if (_assignedCount == 0) {
-        if (mounted) {
-          setState(() => _submitting = false);
-          _snack(
-            'No assignments were created. Users may already be assigned to this version.',
-          );
-        }
-        return;
-      }
-
-      widget.onCreated();
-      if (mounted) {
-        setState(() => _submitting = false);
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully assigned to $_assignedCount user(s)'),
-            backgroundColor: PharmaColors.emerald600,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _submitting = false);
-        _snack('Error: $e');
-      }
-    }
-  }
-
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  // ── Build ─────────────────────────────────────────────────────────────────
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
-      title: const Text('New Training Assignment'),
-      content: SizedBox(
-        width: 560,
-        child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(
-              'Course and employee pickers search the server (database). Individual assignments: choose one or more employees who are already enrolled on at least one of your published courses.',
-              style: PharmaTypography.caption
-                  .copyWith(color: PharmaColors.textTertiary),
-            ),
-            const SizedBox(height: 8),
-
-            // ── Course ────────────────────────────────────────────────────
-            _buildPickerField(
-              label: 'Course *',
-              value: _selectedCourse?.title,
-              hint: 'Tap to search courses (server)',
-              icon: Icons.menu_book,
-              onTap: _pickCourse,
-              onClear: () => setState(() { _selectedCourse = null; _selectedVersion = null; _versions = []; }),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Version ───────────────────────────────────────────────────
-            if (_loadingVersions)
-              const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
-            else if (_selectedCourse != null && _versions.isNotEmpty)
-              _buildVersionSelector(),
-            const SizedBox(height: 16),
-
-            // ── Assign target ─────────────────────────────────────────────
-            Align(alignment: Alignment.centerLeft, child: Text('Assign To *', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600))),
-            const SizedBox(height: 8),
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'individual', icon: Icon(Icons.person, size: 16), label: Text('Individual')),
-                ButtonSegment(value: 'department', icon: Icon(Icons.business, size: 16), label: Text('Department')),
-                ButtonSegment(value: 'batch', icon: Icon(Icons.groups, size: 16), label: Text('Batch')),
-              ],
-              selected: {_assignTarget},
-              onSelectionChanged: (val) => setState(() {
-                _assignTarget = val.first;
-                _selectedUsers.clear();
-                _selectedDepartment = null;
-                _selectedBatch = null;
-              }),
-              style: const ButtonStyle(visualDensity: VisualDensity.compact),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Target selector ───────────────────────────────────────────
-            if (_assignTarget == 'individual') ...[
-              _buildPickerField(
-                label: 'Employees *',
-                value: _selectedUsers.isEmpty
-                    ? null
-                    : '${_selectedUsers.length} selected — tap to add or change',
-                hint: 'Tap to search the directory (DB); select one or more',
-                icon: Icons.person_search,
-                onTap: _pickUsersMulti,
-                onClear: () => setState(() => _selectedUsers.clear()),
-              ),
-              if (_selectedUsers.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: _selectedUsers.map((u) {
-                      return Chip(
-                        label: Text(
-                          '${u.firstName} ${u.lastName}',
-                          style: PharmaTypography.caption,
-                        ),
-                        deleteIcon: const Icon(Icons.close, size: 16),
-                        onDeleted: () => setState(() {
-                          _selectedUsers.removeWhere(
-                            (x) => x.id != null && x.id == u.id,
-                          );
-                        }),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
-            ]
-            else if (_assignTarget == 'department')
-              _loadingDepts
-                  ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
-                  : _buildDepartmentSelector()
-            else if (_assignTarget == 'batch')
-              _loadingBatches
-                  ? const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2))
-                  : _buildBatchSelector(),
-            const SizedBox(height: 12),
-
-            // ── Priority + Due Date ───────────────────────────────────────
-            Row(children: [
-              Expanded(child: _buildPrioritySelector()),
-              const SizedBox(width: 12),
-              Expanded(child: _buildDueDateField()),
-            ]),
-            const SizedBox(height: 12),
-
-            // ── Reason ────────────────────────────────────────────────────
-            TextField(
-              onChanged: (v) => _reason = v,
-              maxLines: 2,
-              decoration: InputDecoration(labelText: 'Reason (optional)', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
-            ),
-          ]),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(
-          onPressed: _submitting ? null : _submit,
-          style: FilledButton.styleFrom(backgroundColor: PharmaColors.emerald600),
-          child: _submitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: PharmaColors.cardBg))
-              : const Text('Create Assignment'),
-        ),
-      ],
-    );
-  }
-
-  // ── Reusable picker field ─────────────────────────────────────────────────
-
-  Widget _buildPickerField({required String label, String? value, required String hint, required IconData icon, required VoidCallback onTap, VoidCallback? onClear}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: PharmaRadius.inputRadius,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, size: 18),
-          suffixIcon: value != null && onClear != null
-              ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: onClear)
-              : const Icon(Icons.arrow_drop_down),
-          filled: true, fillColor: PharmaColors.pageBg,
-          border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
-        ),
-        child: Text(
-          value ?? hint,
-          style: TextStyle(color: value != null ? PharmaColors.textPrimary : PharmaColors.textTertiary),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
-
-  // ── Version selector (uses int ID to avoid object equality issues) ────────
-
-  Widget _buildVersionSelector() {
-    final versionIds = _versions.map((v) => v.id!).toList();
-    final selectedId = _selectedVersion?.id;
-    final initial = versionIds.contains(selectedId)
-        ? selectedId
-        : (versionIds.isNotEmpty ? versionIds.first : null);
-    return DropdownButtonFormField<int>(
-      key: ValueKey('ver_${_selectedCourse?.id}_${_versions.length}_$initial'),
-      initialValue: initial,
-      items: _versions.map((v) => DropdownMenuItem(value: v.id!, child: Text('v${v.version} (${v.status})'))).toList(),
-      onChanged: (id) {
-        if (id == null) return;
-        setState(() => _selectedVersion = _versions.firstWhere((v) => v.id == id));
-      },
-      decoration: InputDecoration(labelText: 'Select Version *', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
-      isExpanded: true,
-    );
-  }
-
-  Widget _buildDepartmentSelector() {
-    final deptItems = _departments.where((d) => d.id != null).toList();
-    final selectedId = _selectedDepartment?.id;
-    final value = selectedId != null && deptItems.any((d) => d.id == selectedId)
-        ? selectedId
-        : null;
-    return DropdownButtonFormField<int>(
-      key: ValueKey('dept_${deptItems.length}_$value'),
-      initialValue: value,
-      items: deptItems
-          .map((d) => DropdownMenuItem(
-                value: d.id!,
-                child: Text(d.name, overflow: TextOverflow.ellipsis),
-              ))
-          .toList(),
-      onChanged: (id) {
-        if (id == null) return;
-        setState(() => _selectedDepartment = _departments.firstWhere((d) => d.id == id));
-      },
-      decoration: InputDecoration(labelText: 'Select Department *', helperText: 'All active employees in this department will be assigned', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
-      isExpanded: true,
-    );
-  }
-
-  Widget _buildBatchSelector() {
-    final batchItems = _batches.where((b) => b.id != null).toList();
-    final selectedId = _selectedBatch?.id;
-    final value = selectedId != null && batchItems.any((b) => b.id == selectedId)
-        ? selectedId
-        : null;
-    return DropdownButtonFormField<int>(
-      key: ValueKey('batch_${batchItems.length}_$value'),
-      initialValue: value,
-      items: batchItems
-          .map((b) => DropdownMenuItem(
-                value: b.id!,
-                child: Text('${b.name} (${b.enrolledCount} enrolled)',
-                    overflow: TextOverflow.ellipsis),
-              ))
-          .toList(),
-      onChanged: (id) {
-        if (id == null) return;
-        setState(() => _selectedBatch = _batches.firstWhere((b) => b.id == id));
-      },
-      decoration: InputDecoration(labelText: 'Select Batch *', helperText: 'All participants in this batch will be assigned', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
-      isExpanded: true,
-    );
-  }
-
-  Widget _buildPrioritySelector() {
-    return DropdownButtonFormField<String>(
-      initialValue: _priority,
-      items: ['critical', 'high', 'medium', 'low'].map((p) => DropdownMenuItem(value: p, child: Text(p[0].toUpperCase() + p.substring(1)))).toList(),
-      onChanged: (v) { if (v != null) setState(() => _priority = v); },
-      decoration: InputDecoration(labelText: 'Priority', filled: true, fillColor: PharmaColors.pageBg, border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius)),
-    );
-  }
-
-  Widget _buildDueDateField() {
-    return TextField(
-      readOnly: true,
-      controller: _dueDateController,
-      decoration: InputDecoration(
-        labelText: 'Due Date *',
-        hintText: 'Select date',
-        suffixIcon: const Icon(Icons.calendar_today, size: 16),
-        filled: true, fillColor: PharmaColors.pageBg,
-        border: OutlineInputBorder(borderRadius: PharmaRadius.inputRadius),
-      ),
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 14)),
-          firstDate: DateTime.now(),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
-        );
-        if (picked != null) {
-          setState(() {
-            _dueDate = picked;
-            _dueDateController.text = DateFormat('MMM d, yyyy').format(picked);
-          });
-        }
-      },
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1488,6 +1418,435 @@ class _CourseDbSearchDialogState extends State<_CourseDbSearchDialog> {
         ),
       ],
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUBMISSIONS DIALOG  (grading queue + scores / open‑ended review)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _SubmissionsDialog extends StatefulWidget {
+  const _SubmissionsDialog({
+    required this.campaign,
+    required this.onGraded,
+  });
+
+  final StandaloneAssignment campaign;
+  final VoidCallback onGraded;
+
+  @override
+  State<_SubmissionsDialog> createState() =>
+      _SubmissionsDialogState();
+}
+
+class _SubmissionsDialogState extends State<_SubmissionsDialog> {
+  List<StandaloneAssignmentRecipient>? _submissions;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubmissions();
+  }
+
+  Future<void> _loadSubmissions() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await client.standaloneAssignment
+          .listSubmittedForGrading(assignmentId: widget.campaign.id!);
+      if (mounted) setState(() => _submissions = list);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final kind = widget.campaign.contentKind;
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.grading, color: PharmaColors.emerald600, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Submissions – ${widget.campaign.title}',
+              style: PharmaTypography.headingSmall
+                  .copyWith(fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Chip(
+            label: Text(kind,
+                style: PharmaTypography.caption
+                    .copyWith(color: PharmaColors.cardBg, fontSize: 11)),
+            backgroundColor: PharmaColors.info,
+            padding: EdgeInsets.zero,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 620,
+        height: 480,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline,
+                            size: 40, color: PharmaColors.danger),
+                        const SizedBox(height: 8),
+                        Text(_error!,
+                            style: PharmaTypography.body
+                                .copyWith(color: PharmaColors.danger)),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: _loadSubmissions,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _submissions == null || _submissions!.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.inbox,
+                                size: 48,
+                                color: PharmaColors.gray400),
+                            const SizedBox(height: 12),
+                            Text('No submissions yet',
+                                style: PharmaTypography.bodyMedium.copyWith(
+                                    color: PharmaColors.textTertiary)),
+                            const SizedBox(height: 4),
+                            Text(
+                                'Learners who submit will appear here for grading.',
+                                style: PharmaTypography.caption.copyWith(
+                                    color: PharmaColors.textTertiary)),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: _submissions!.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1),
+                        itemBuilder: (ctx, i) =>
+                            _buildSubmissionTile(_submissions![i], kind),
+                      ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmissionTile(
+      StandaloneAssignmentRecipient r, String kind) {
+    final name =
+        '${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}'.trim();
+    final displayName = name.isNotEmpty ? name : 'User #${r.userId}';
+    final isGraded = r.grade != null;
+
+    return ExpansionTile(
+      leading: CircleAvatar(
+        radius: 16,
+        backgroundColor: isGraded
+            ? PharmaColors.emerald600.withValues(alpha: 0.15)
+            : PharmaColors.info.withValues(alpha: 0.15),
+        child: Icon(
+          isGraded ? Icons.check_circle : Icons.pending,
+          size: 18,
+          color: isGraded ? PharmaColors.emerald600 : PharmaColors.info,
+        ),
+      ),
+      title: Text(displayName,
+          style: PharmaTypography.bodyMedium
+              .copyWith(fontWeight: FontWeight.w600)),
+      subtitle: Row(
+        children: [
+          Text(
+            r.submittedAt != null
+                ? 'Submitted ${DateFormat('MMM d, yyyy HH:mm').format(r.submittedAt!)}'
+                : 'Pending',
+            style: PharmaTypography.caption
+                .copyWith(color: PharmaColors.textTertiary, fontSize: 11),
+          ),
+          if (isGraded) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: PharmaColors.emerald600.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text('Score: ${r.grade}',
+                  style: PharmaTypography.caption.copyWith(
+                      color: PharmaColors.emerald600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11)),
+            ),
+          ],
+        ],
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Response content ──────────────────────────────
+              if (r.responseJson != null &&
+                  r.responseJson!.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PharmaColors.pageBg,
+                    borderRadius: PharmaRadius.cardRadius,
+                    border:
+                        Border.all(color: PharmaColors.borderLight),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        kind == 'open_ended'
+                            ? 'Response'
+                            : 'Submitted Answers',
+                        style: PharmaTypography.caption.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: PharmaColors.textTertiary),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _formatResponse(r.responseJson!, kind),
+                        style: PharmaTypography.body,
+                        maxLines: 12,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // ── Feedback (if already graded) ─────────────────
+              if (isGraded && r.feedback != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PharmaColors.emerald600
+                        .withValues(alpha: 0.06),
+                    borderRadius: PharmaRadius.cardRadius,
+                    border: Border.all(
+                        color: PharmaColors.emerald600
+                            .withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Trainer Feedback',
+                          style: PharmaTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: PharmaColors.emerald600)),
+                      const SizedBox(height: 4),
+                      Text(r.feedback!,
+                          style: PharmaTypography.body),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+
+              // ── Grade button (only for ungraded) ─────────────
+              if (!isGraded)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () => _showGradeSheet(r),
+                    icon: const Icon(Icons.rate_review, size: 16),
+                    label: const Text('Grade'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: PharmaColors.emerald600,
+                      foregroundColor: PharmaColors.cardBg,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatResponse(String json, String kind) {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map) {
+        if (kind == 'open_ended') {
+          return decoded['answer']?.toString() ??
+              decoded['text']?.toString() ??
+              json;
+        }
+        // For quiz‑style assignments show score summary
+        final buf = StringBuffer();
+        decoded.forEach((k, v) {
+          buf.writeln('$k: $v');
+        });
+        return buf.toString().trim();
+      }
+      return decoded.toString();
+    } catch (_) {
+      return json;
+    }
+  }
+
+  Future<void> _showGradeSheet(StandaloneAssignmentRecipient r) async {
+    final gradeCtrl = TextEditingController();
+    final feedbackCtrl = TextEditingController();
+    bool submitting = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.rate_review,
+                    color: PharmaColors.emerald600, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Grade Submission')),
+              ],
+            ),
+            content: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}'
+                        .trim(),
+                    style: PharmaTypography.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: gradeCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Score (0–100)',
+                      hintText: 'e.g. 85',
+                      filled: true,
+                      fillColor: PharmaColors.pageBg,
+                      border: OutlineInputBorder(
+                          borderRadius: PharmaRadius.inputRadius),
+                      prefixIcon: const Icon(Icons.score, size: 18),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: feedbackCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'Feedback (optional)',
+                      hintText:
+                          'Provide constructive feedback for the learner…',
+                      filled: true,
+                      fillColor: PharmaColors.pageBg,
+                      border: OutlineInputBorder(
+                          borderRadius: PharmaRadius.inputRadius),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed:
+                    submitting ? null : () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        final grade =
+                            int.tryParse(gradeCtrl.text.trim());
+                        if (grade == null || grade < 0 || grade > 100) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Please enter a valid score between 0 and 100'),
+                            ),
+                          );
+                          return;
+                        }
+                        setDialogState(() => submitting = true);
+                        try {
+                          await client.standaloneAssignment
+                              .gradeStandaloneSubmission(
+                            recipientId: r.id!,
+                            grade: grade,
+                            feedback: feedbackCtrl.text.trim().isNotEmpty
+                                ? feedbackCtrl.text.trim()
+                                : null,
+                          );
+                          if (ctx.mounted) Navigator.pop(ctx, true);
+                        } catch (e) {
+                          setDialogState(() => submitting = false);
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Grading failed: $e'),
+                                backgroundColor: PharmaColors.danger,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                style: FilledButton.styleFrom(
+                  backgroundColor: PharmaColors.emerald600,
+                ),
+                child: submitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: PharmaColors.cardBg,
+                        ),
+                      )
+                    : const Text('Submit Grade'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result == true) {
+      widget.onGraded();
+      _loadSubmissions(); // refresh the list
+    }
   }
 }
 

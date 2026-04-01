@@ -21,7 +21,7 @@ pharma_lms/
 
 ## Quick Start
 
-See **[docs/LOCAL_DEVELOPMENT_SETUP.md](../../docs/LOCAL_DEVELOPMENT_SETUP.md)** for the full step-by-step guide.
+See **[docs/LOCAL_DEVELOPMENT_SETUP.md](../docs/LOCAL_DEVELOPMENT_SETUP.md)** for the full step-by-step guide.
 
 ### TL;DR
 

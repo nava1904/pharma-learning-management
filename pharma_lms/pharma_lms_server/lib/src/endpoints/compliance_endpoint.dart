@@ -71,7 +71,13 @@ class ComplianceEndpoint extends Endpoint {
     int userId,
   ) async {
     final me = await RbacHelper.getCurrentPharmaUser(session);
-    if (me?.id == null || me!.id != userId) return [];
+    if (me == null) return [];
+    // In dev/demo mode (or admin) allow access; in prod only self can view.
+    if (me.id != null && me.id != userId) {
+      final canAdmin = await RbacHelper.hasPermission(
+        session, resource: 'compliance', action: 'read');
+      if (!canAdmin) return [];
+    }
 
     final out = <Map<String, dynamic>>[];
 

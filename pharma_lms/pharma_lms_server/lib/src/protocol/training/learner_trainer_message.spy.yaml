@@ -15,3 +15,9 @@ fields:
 indexes:
   learner_trainer_cv_idx:
     fields: courseVersionId, createdAt
+  learner_trainer_from_idx:
+    fields: fromUserId, createdAt
+  learner_trainer_to_idx:
+    fields: toUserId, readAt
+  learner_trainer_to_created_idx:
+    fields: toUserId, createdAt

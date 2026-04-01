@@ -24,3 +24,11 @@ fields:
   createdAt: DateTime, default=now
   ### Optional parent comment for threaded QA / trainer replies.
   parentComment: SmeReviewComment?, relation(optional)
+  ### When the recipient read this comment (null = unread).
+  readAt: DateTime?
+
+indexes:
+  sme_comment_cv_idx:
+    fields: courseVersionId, createdAt
+  sme_comment_author_idx:
+    fields: authorId, createdAt

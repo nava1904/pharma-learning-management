@@ -157,6 +157,10 @@ class _CourseQaThreadSheetState extends ConsumerState<CourseQaThreadSheet> {
       final course = await client.course.getCourse(cv.courseId);
       final list = await client.sme.listCommentsForCourseVersion(widget.courseVersionId);
       list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      // Mark QA comments as read for the current user
+      try {
+        await client.sme.markCommentsRead(widget.courseVersionId);
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _ownerId = course?.createdById;

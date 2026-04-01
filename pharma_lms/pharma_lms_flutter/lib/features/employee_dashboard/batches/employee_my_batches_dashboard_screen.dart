@@ -487,7 +487,7 @@ class _BatchRightPanel extends ConsumerWidget {
                           Text(a.body, style: PharmaTypography.bodyMedium),
                           const SizedBox(height: 4),
                           Text(
-                            'By ${a.createdBy != null ? (a.createdBy!.firstName + ' ' + a.createdBy!.lastName) : 'Trainer'} on ${DateFormat.yMMMd().format(a.createdAt)}',
+                            'By ${a.createdBy != null ? ('${a.createdBy!.firstName} ${a.createdBy!.lastName}') : 'Trainer'} on ${DateFormat.yMMMd().format(a.createdAt)}',
                             style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary),
                           ),
                         ],

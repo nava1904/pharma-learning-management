@@ -5,6 +5,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../audit_event_types.dart';
 import '../generated/protocol.dart';
+import 'rbac_helper.dart';
 
 /// Central audit logging service for FDA 21 CFR Part 11 compliance.
 /// Every mutation must log to the immutable audit trail.
@@ -13,6 +14,11 @@ class AuditService {
   /// Log an audit trail entry. Append-only - no updates or deletes.
   /// [action] should be from [AuditEventType] for full coverage.
   /// Automatically computes SHA-256 row hash for integrity verification (SYS-WF-08).
+  ///
+  /// When [userId] is not provided, the service attempts to resolve the current
+  /// PharmaUser from the Serverpod session so that audit entries are always
+  /// attributed to a real user. This is important for the trainer "Recent
+  /// Activity" feed and any per-user audit queries.
   static Future<void> log(
     Session session, {
     required String entityType,
@@ -27,6 +33,17 @@ class AuditService {
     if (!AuditEventType.isKnown(action)) {
       session.log('Audit: unknown action "$action" - consider adding to AuditEventType');
     }
+
+    // Auto-resolve userId from session when the caller didn't provide one.
+    int? effectiveUserId = userId;
+    if (effectiveUserId == null) {
+      try {
+        final currentUser = await RbacHelper.getCurrentPharmaUser(session);
+        effectiveUserId = currentUser?.id;
+      } catch (_) {
+        // Silently ignore — the audit entry will just have a null userId.
+      }
+    }
     
     final timestamp = DateTime.now();
     
@@ -36,7 +53,7 @@ class AuditService {
       entityId: entityId,
       action: action,
       timestamp: timestamp,
-      userId: userId,
+      userId: effectiveUserId,
       oldValueJson: oldValueJson,
       newValueJson: newValueJson,
       reason: reason,
@@ -51,7 +68,7 @@ class AuditService {
       newValueJson: newValueJson,
       reason: reason,
       ipAddress: ipAddress,
-      userId: userId,
+      userId: effectiveUserId,
       rowHash: rowHash,
     );
     await AuditTrail.db.insertRow(session, audit);

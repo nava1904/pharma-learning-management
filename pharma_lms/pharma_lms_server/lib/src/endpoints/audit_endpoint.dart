@@ -39,6 +39,51 @@ class AuditEndpoint extends Endpoint {
       userId: userId,
     );
   }
+  /// Get audit trail entries for the currently authenticated user (no special permission required).
+  /// Trainers call this to populate their "Recent Activity" feed on the dashboard.
+  ///
+  /// In demo/dev mode the session has no real auth, so the caller can pass
+  /// [userId] explicitly. When a real auth session exists the server resolves
+  /// the user from the session and ignores [userId].
+  ///
+  /// If no entries are found for the specific user (e.g. older entries were
+  /// logged without a userId), recent entries across the entire audit trail
+  /// are returned as a fallback so the card is never empty when data exists.
+  Future<List<AuditTrail>> getMyAuditTrail(
+    Session session, {
+    int limit = 20,
+    int? userId,
+  }) async {
+    final currentUser = await RbacHelper.getCurrentPharmaUser(session);
+    // Determine the effective user id: prefer authenticated user, fall back to
+    // the client-supplied userId (demo mode).
+    final effectiveId = currentUser?.id ?? userId;
+
+    // 1. Try to find entries specifically for this user.
+    if (effectiveId != null) {
+      var results = await AuditTrail.db.find(
+        session,
+        where: (t) => t.userId.equals(effectiveId),
+        orderBy: (t) => t.timestamp,
+        orderDescending: true,
+        limit: limit,
+        include: AuditTrail.include(user: PharmaUser.include()),
+      );
+      if (results.isNotEmpty) return results;
+    }
+
+    // 2. Fallback: return the most recent audit entries regardless of user
+    //    (covers dev-mode entries logged without userId and brand-new DBs).
+    var fallback = await AuditTrail.db.find(
+      session,
+      orderBy: (t) => t.timestamp,
+      orderDescending: true,
+      limit: limit,
+      include: AuditTrail.include(user: PharmaUser.include()),
+    );
+    return fallback;
+  }
+
   Future<List<AuditTrail>> getAuditTrail(
     Session session, {
     String? entityType,

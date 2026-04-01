@@ -33,7 +33,10 @@ database:
   name: ${SERVERPOD_DATABASE_NAME:pharma_lms}
   user: ${SERVERPOD_DATABASE_USER:postgres}
   requireSsl: true
-  maxConnectionCount: 20
+  # Scaled for 1000 concurrent users. Use PgBouncer in transaction mode
+  # in front of PostgreSQL for connection multiplexing at scale.
+  # Each heartbeat (10s interval) + API call = ~100 concurrent DB connections at 1000 users.
+  maxConnectionCount: 50
 
 # Redis configuration - disabled for starter plan.
 # Enable when scaling up.

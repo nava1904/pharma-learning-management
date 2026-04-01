@@ -137,6 +137,7 @@ assignment:
   - gradeSubmission:
 audit:
   - logReportExport:
+  - getMyAuditTrail:
   - getAuditTrail:
   - getConfigChangeLog:
   - getAccessLogs:
@@ -261,6 +262,19 @@ material:
   - recordEngagement:
   - deleteMaterial:
   - getMaterialWithVersions:
+messaging:
+  - getUnreadCounts:
+  - getThreadMessages:
+  - getTrainerInbox:
+  - getLearnerInbox:
+  - getQaInbox:
+  - getQaReviewerInbox:
+  - getQaThreadComments:
+  - markQaThreadRead:
+  - markLearnerThreadRead:
+  - getUnreadNotificationCount:
+  - getNotifications:
+  - markAllNotificationsRead:
 mfa:
   - getMfaStatus:
   - enrollMfa:
@@ -283,6 +297,20 @@ notificationTemplate:
   - deleteTemplate:
   - getTemplateStats:
   - duplicateTemplate:
+oq:
+  - createChecklistItem:
+  - listChecklistItems:
+  - updateChecklistItem:
+  - deleteChecklistItem:
+  - recordObservation:
+  - traineeCountersignObservation:
+  - listObservationsForUser:
+  - getOqProgress:
+  - qaVerifyAndAwardCompetency:
+  - listUserCompetencies:
+  - isUserQualified:
+  - createCompetency:
+  - listCompetencies:
 organization:
   - listOrganizations:
   - getOrganization:
@@ -301,6 +329,7 @@ qa:
   - getPendingDocumentApprovalsCount:
   - returnCourseForChanges:
   - getCourseReviews:
+  - getCourseReviewsForTrainer:
 qualityEvent:
   - listQualityEvents:
   - getQualityEvent:
@@ -328,6 +357,7 @@ sme:
   - listCommentsForCourseVersion:
   - addComment:
   - resolveComment:
+  - markCommentsRead:
 sopLinkage:
   - linkSopToCourse:
   - unlinkSopFromCourse:
@@ -342,6 +372,8 @@ standaloneAssignment:
   - listMyStandaloneAssignmentRecipients:
   - getStandaloneAssignmentRecipient:
   - submitStandaloneAssignment:
+  - gradeStandaloneSubmission:
+  - listSubmittedForGrading:
 trainingBatch:
   - listBatches:
   - getBatch:
@@ -354,6 +386,11 @@ trainingBatch:
   - getBatchCohortProgress:
   - enrollUserInBatch:
   - removeUserFromBatch:
+  - markAttendance:
+  - bulkMarkAttendance:
+  - listAttendance:
+  - getAttendanceSummary:
+  - closeBatch:
 training:
   - listSignatureMeanings:
   - getAssignmentsForUser:
@@ -376,6 +413,9 @@ training:
   - listAnnotations:
   - addAnnotation:
   - revokeSignature:
+  - qaApproveAssignment:
+  - qaRejectAssignment:
+  - submitForQaApproval:
   - selfEnroll:
   - listLearnersEnrolledInTrainerPublishedCourses:
   - getEnrollmentsForCourseVersion:

@@ -715,7 +715,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
   bool _savingInstructor = false;
   List<PharmaUser> _instructorChoices = [];
   List<Map<String, dynamic>> _participants = [];
-  final _studentEmailController = TextEditingController();
+  final _learnerEmailController = TextEditingController();
   final _liveClassTitleController = TextEditingController();
   final _liveClassUrlController = TextEditingController();
 
@@ -729,7 +729,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    _studentEmailController.dispose();
+    _learnerEmailController.dispose();
     _liveClassTitleController.dispose();
     _liveClassUrlController.dispose();
     super.dispose();
@@ -777,8 +777,8 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
     }
   }
 
-  Future<void> _enrollStudent() async {
-    final email = _studentEmailController.text.trim();
+  Future<void> _enrollLearner() async {
+    final email = _learnerEmailController.text.trim();
     if (email.isEmpty || _batch?.id == null) return;
     final me = await ref.read(currentUserProvider.future);
     if (me?.organizationId == null) return;
@@ -835,7 +835,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
         }
         return;
       }
-      _studentEmailController.clear();
+      _learnerEmailController.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -943,7 +943,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
             indicatorColor: PharmaColors.emerald600,
             tabs: const [
               Tab(text: 'Summary'),
-              Tab(text: 'Students'),
+              Tab(text: 'Learners'),
               Tab(text: 'Live Classes'),
               Tab(text: 'Announcements'),
             ],
@@ -954,7 +954,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
             controller: _tabController,
             children: [
               _buildSummaryTab(b),
-              _buildStudentsTab(b),
+              _buildLearnersTab(b),
               _buildLiveClassesTab(b),
               _buildAnnouncementsTab(b),
             ],
@@ -1061,7 +1061,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
     );
   }
 
-  Widget _buildStudentsTab(TrainingBatch b) {
+  Widget _buildLearnersTab(TrainingBatch b) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(PharmaSpacing.pagePadding),
       child: Column(
@@ -1071,9 +1071,9 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
             children: [
               Expanded(
                 child: TextField(
-                  controller: _studentEmailController,
+                  controller: _learnerEmailController,
                   decoration: const InputDecoration(
-                    labelText: 'Add student by email',
+                    labelText: 'Add learner by email',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person_add_outlined),
                   ),
@@ -1081,7 +1081,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
               ),
               SizedBox(width: PharmaSpacing.sm),
               FilledButton.icon(
-                onPressed: _enrolling ? null : _enrollStudent,
+                onPressed: _enrolling ? null : _enrollLearner,
                 icon: _enrolling
                     ? const SizedBox(
                         width: 18,
@@ -1100,7 +1100,7 @@ class _AdminBatchDetailScreenState extends ConsumerState<AdminBatchDetailScreen>
             child: _participants.isEmpty
                 ? Padding(
                     padding: EdgeInsets.all(PharmaSpacing.md),
-                    child: Text('No students enrolled yet', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
+                    child: Text('No learners enrolled yet', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
                   )
                 : AdminDataTable(
                     columns: const ['Name', 'Email', 'Role'],

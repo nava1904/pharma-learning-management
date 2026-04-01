@@ -28,6 +28,10 @@ abstract class StandaloneAssignmentRecipient
     String? status,
     this.submittedAt,
     this.responseJson,
+    this.grade,
+    this.feedback,
+    this.gradedAt,
+    this.gradedById,
     DateTime? createdAt,
   }) : status = status ?? 'pending',
        createdAt = createdAt ?? DateTime.now();
@@ -41,6 +45,10 @@ abstract class StandaloneAssignmentRecipient
     String? status,
     DateTime? submittedAt,
     String? responseJson,
+    int? grade,
+    String? feedback,
+    DateTime? gradedAt,
+    int? gradedById,
     DateTime? createdAt,
   }) = _StandaloneAssignmentRecipientImpl;
 
@@ -68,6 +76,12 @@ abstract class StandaloneAssignmentRecipient
               jsonSerialization['submittedAt'],
             ),
       responseJson: jsonSerialization['responseJson'] as String?,
+      grade: jsonSerialization['grade'] as int?,
+      feedback: jsonSerialization['feedback'] as String?,
+      gradedAt: jsonSerialization['gradedAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['gradedAt']),
+      gradedById: jsonSerialization['gradedById'] as int?,
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
@@ -89,13 +103,25 @@ abstract class StandaloneAssignmentRecipient
 
   _i3.PharmaUser? user;
 
-  /// pending | submitted
+  /// pending | submitted | graded
   String status;
 
   DateTime? submittedAt;
 
   /// JSON: answers or open-ended text
   String? responseJson;
+
+  /// Grade (0-100).
+  int? grade;
+
+  /// Trainer feedback.
+  String? feedback;
+
+  /// When graded.
+  DateTime? gradedAt;
+
+  /// Who graded.
+  int? gradedById;
 
   DateTime createdAt;
 
@@ -114,6 +140,10 @@ abstract class StandaloneAssignmentRecipient
     String? status,
     DateTime? submittedAt,
     String? responseJson,
+    int? grade,
+    String? feedback,
+    DateTime? gradedAt,
+    int? gradedById,
     DateTime? createdAt,
   });
   @override
@@ -128,6 +158,10 @@ abstract class StandaloneAssignmentRecipient
       'status': status,
       if (submittedAt != null) 'submittedAt': submittedAt?.toJson(),
       if (responseJson != null) 'responseJson': responseJson,
+      if (grade != null) 'grade': grade,
+      if (feedback != null) 'feedback': feedback,
+      if (gradedAt != null) 'gradedAt': gradedAt?.toJson(),
+      if (gradedById != null) 'gradedById': gradedById,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -144,6 +178,10 @@ abstract class StandaloneAssignmentRecipient
       'status': status,
       if (submittedAt != null) 'submittedAt': submittedAt?.toJson(),
       if (responseJson != null) 'responseJson': responseJson,
+      if (grade != null) 'grade': grade,
+      if (feedback != null) 'feedback': feedback,
+      if (gradedAt != null) 'gradedAt': gradedAt?.toJson(),
+      if (gradedById != null) 'gradedById': gradedById,
       'createdAt': createdAt.toJson(),
     };
   }
@@ -196,6 +234,10 @@ class _StandaloneAssignmentRecipientImpl extends StandaloneAssignmentRecipient {
     String? status,
     DateTime? submittedAt,
     String? responseJson,
+    int? grade,
+    String? feedback,
+    DateTime? gradedAt,
+    int? gradedById,
     DateTime? createdAt,
   }) : super._(
          id: id,
@@ -206,6 +248,10 @@ class _StandaloneAssignmentRecipientImpl extends StandaloneAssignmentRecipient {
          status: status,
          submittedAt: submittedAt,
          responseJson: responseJson,
+         grade: grade,
+         feedback: feedback,
+         gradedAt: gradedAt,
+         gradedById: gradedById,
          createdAt: createdAt,
        );
 
@@ -222,6 +268,10 @@ class _StandaloneAssignmentRecipientImpl extends StandaloneAssignmentRecipient {
     String? status,
     Object? submittedAt = _Undefined,
     Object? responseJson = _Undefined,
+    Object? grade = _Undefined,
+    Object? feedback = _Undefined,
+    Object? gradedAt = _Undefined,
+    Object? gradedById = _Undefined,
     DateTime? createdAt,
   }) {
     return StandaloneAssignmentRecipient(
@@ -235,6 +285,10 @@ class _StandaloneAssignmentRecipientImpl extends StandaloneAssignmentRecipient {
       status: status ?? this.status,
       submittedAt: submittedAt is DateTime? ? submittedAt : this.submittedAt,
       responseJson: responseJson is String? ? responseJson : this.responseJson,
+      grade: grade is int? ? grade : this.grade,
+      feedback: feedback is String? ? feedback : this.feedback,
+      gradedAt: gradedAt is DateTime? ? gradedAt : this.gradedAt,
+      gradedById: gradedById is int? ? gradedById : this.gradedById,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -271,6 +325,27 @@ class StandaloneAssignmentRecipientUpdateTable
         value,
       );
 
+  _i1.ColumnValue<int, int> grade(int? value) => _i1.ColumnValue(
+    table.grade,
+    value,
+  );
+
+  _i1.ColumnValue<String, String> feedback(String? value) => _i1.ColumnValue(
+    table.feedback,
+    value,
+  );
+
+  _i1.ColumnValue<DateTime, DateTime> gradedAt(DateTime? value) =>
+      _i1.ColumnValue(
+        table.gradedAt,
+        value,
+      );
+
+  _i1.ColumnValue<int, int> gradedById(int? value) => _i1.ColumnValue(
+    table.gradedById,
+    value,
+  );
+
   _i1.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
       _i1.ColumnValue(
         table.createdAt,
@@ -303,6 +378,22 @@ class StandaloneAssignmentRecipientTable extends _i1.Table<int?> {
       'responseJson',
       this,
     );
+    grade = _i1.ColumnInt(
+      'grade',
+      this,
+    );
+    feedback = _i1.ColumnString(
+      'feedback',
+      this,
+    );
+    gradedAt = _i1.ColumnDateTime(
+      'gradedAt',
+      this,
+    );
+    gradedById = _i1.ColumnInt(
+      'gradedById',
+      this,
+    );
     createdAt = _i1.ColumnDateTime(
       'createdAt',
       this,
@@ -320,13 +411,25 @@ class StandaloneAssignmentRecipientTable extends _i1.Table<int?> {
 
   _i3.PharmaUserTable? _user;
 
-  /// pending | submitted
+  /// pending | submitted | graded
   late final _i1.ColumnString status;
 
   late final _i1.ColumnDateTime submittedAt;
 
   /// JSON: answers or open-ended text
   late final _i1.ColumnString responseJson;
+
+  /// Grade (0-100).
+  late final _i1.ColumnInt grade;
+
+  /// Trainer feedback.
+  late final _i1.ColumnString feedback;
+
+  /// When graded.
+  late final _i1.ColumnDateTime gradedAt;
+
+  /// Who graded.
+  late final _i1.ColumnInt gradedById;
 
   late final _i1.ColumnDateTime createdAt;
 
@@ -364,6 +467,10 @@ class StandaloneAssignmentRecipientTable extends _i1.Table<int?> {
     status,
     submittedAt,
     responseJson,
+    grade,
+    feedback,
+    gradedAt,
+    gradedById,
     createdAt,
   ];
 

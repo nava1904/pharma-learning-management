@@ -1,6 +1,10 @@
+import 'dart:math';
+
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../services/audit_service.dart';
+import '../services/esignature_service.dart';
 import '../services/rbac_helper.dart';
 import 'training_endpoint.dart';
 
@@ -428,5 +432,350 @@ class TrainingBatchEndpoint extends Endpoint {
       batch.copyWith(enrolledCount: nextCount),
     );
     return true;
+  }
+
+  // ─── Attendance Tracking ────────────────────────────────────────────
+
+  /// Mark attendance for a user in a batch (optionally tied to a live class session).
+  Future<BatchAttendanceRecord?> markAttendance(
+    Session session, {
+    required int batchId,
+    required int userId,
+    int? liveClassId,
+    String status = 'present',
+    String? notes,
+  }) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'update') &&
+        !await RbacHelper.hasPermission(session, resource: 'training', action: 'write') &&
+        !await RbacHelper.hasPermission(session, resource: 'training', action: 'create')) {
+      return null;
+    }
+
+    final batch = await TrainingBatch.db.findById(session, batchId);
+    if (batch == null) return null;
+
+    // Verify user is a batch participant
+    final participant = await TrainingBatchParticipant.db.findFirstRow(
+      session,
+      where: (t) => t.batchId.equals(batchId) & t.userId.equals(userId),
+    );
+    if (participant == null) {
+      throw Exception('User is not a participant of this batch');
+    }
+
+    // Check for existing attendance record for this session
+    if (liveClassId != null) {
+      final existing = await BatchAttendanceRecord.db.findFirstRow(
+        session,
+        where: (t) =>
+            t.batchId.equals(batchId) &
+            t.userId.equals(userId) &
+            t.liveClassId.equals(liveClassId),
+      );
+      if (existing != null) {
+        // Update existing attendance
+        return BatchAttendanceRecord.db.updateRow(
+          session,
+          existing.copyWith(status: status, notes: notes),
+        );
+      }
+    }
+
+    final record = BatchAttendanceRecord(
+      batchId: batchId,
+      liveClassId: liveClassId,
+      userId: userId,
+      status: status,
+      markedById: me!.id!,
+      notes: notes,
+    );
+
+    final saved = await BatchAttendanceRecord.db.insertRow(session, record);
+
+    await AuditService.log(
+      session,
+      entityType: 'batch_attendance',
+      entityId: saved.id.toString(),
+      action: 'AttendanceMarked',
+      newValueJson:
+          '{"batchId":$batchId,"userId":$userId,"status":"$status","liveClassId":$liveClassId}',
+      userId: me.id,
+    );
+
+    return saved;
+  }
+
+  /// Bulk mark attendance for multiple users in a batch session.
+  Future<List<BatchAttendanceRecord>> bulkMarkAttendance(
+    Session session, {
+    required int batchId,
+    int? liveClassId,
+    required List<Map<String, dynamic>> attendanceList,
+  }) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'update') &&
+        !await RbacHelper.hasPermission(session, resource: 'training', action: 'write')) {
+      return [];
+    }
+
+    final results = <BatchAttendanceRecord>[];
+    for (final entry in attendanceList) {
+      final uid = entry['userId'] as int?;
+      final status = entry['status'] as String? ?? 'present';
+      final notes = entry['notes'] as String?;
+      if (uid == null) continue;
+
+      final record = await markAttendance(
+        session,
+        batchId: batchId,
+        userId: uid,
+        liveClassId: liveClassId,
+        status: status,
+        notes: notes,
+      );
+      if (record != null) results.add(record);
+    }
+    return results;
+  }
+
+  /// List attendance records for a batch (optionally filtered by live class session).
+  Future<List<BatchAttendanceRecord>> listAttendance(
+    Session session, {
+    required int batchId,
+    int? liveClassId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+
+    var whereExpr = BatchAttendanceRecord.t.batchId.equals(batchId);
+    if (liveClassId != null) {
+      whereExpr = whereExpr & BatchAttendanceRecord.t.liveClassId.equals(liveClassId);
+    }
+
+    return BatchAttendanceRecord.db.find(
+      session,
+      where: (_) => whereExpr,
+      include: BatchAttendanceRecord.include(
+        user: PharmaUser.include(),
+        markedBy: PharmaUser.include(),
+        liveClass: LiveClass.include(),
+      ),
+      orderBy: (t) => t.markedAt,
+      orderDescending: true,
+    );
+  }
+
+  /// Get attendance summary for a batch (per participant: total sessions, attended, absent).
+  Future<List<Map<String, dynamic>>> getAttendanceSummary(
+    Session session, {
+    required int batchId,
+  }) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) return [];
+
+    final participants = await TrainingBatchParticipant.db.find(
+      session,
+      where: (t) => t.batchId.equals(batchId),
+      include: TrainingBatchParticipant.include(user: PharmaUser.include()),
+    );
+
+    final liveClasses = await LiveClass.db.find(
+      session,
+      where: (t) => t.batchId.equals(batchId),
+    );
+    final totalSessions = liveClasses.length;
+
+    final summary = <Map<String, dynamic>>[];
+    for (final p in participants) {
+      final records = await BatchAttendanceRecord.db.find(
+        session,
+        where: (t) =>
+            t.batchId.equals(batchId) &
+            t.userId.equals(p.userId),
+      );
+      final present = records.where((r) => r.status == 'present').length;
+      final absent = records.where((r) => r.status == 'absent').length;
+      final excused = records.where((r) => r.status == 'excused').length;
+      final late_ = records.where((r) => r.status == 'late').length;
+
+      summary.add({
+        'userId': p.userId,
+        'firstName': p.user?.firstName ?? '',
+        'lastName': p.user?.lastName ?? '',
+        'totalSessions': totalSessions,
+        'present': present,
+        'absent': absent,
+        'excused': excused,
+        'late': late_,
+        'attendanceRate': totalSessions > 0
+            ? ((present + late_) / totalSessions * 100).round()
+            : 0,
+      });
+    }
+    return summary;
+  }
+
+  // ─── Batch Closure with Certificate Generation ────────────────────
+
+  /// Close a batch: mark as completed, generate certificates for all
+  /// participants who met attendance requirements and passed assessments.
+  /// Requires e-signature from the closer (instructor/admin).
+  Future<Map<String, dynamic>> closeBatch(
+    Session session, {
+    required int batchId,
+    required String signatureMeaning,
+    String? passwordPlaintext,
+    double minAttendanceRate = 0.80,
+  }) async {
+    final closer = await RbacHelper.getCurrentPharmaUser(session);
+    if (closer?.id == null) {
+      return {'success': false, 'error': 'Not authenticated'};
+    }
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'update') &&
+        !await RbacHelper.hasPermission(session, resource: 'training', action: 'write')) {
+      return {'success': false, 'error': 'Permission denied'};
+    }
+
+    final batch = await TrainingBatch.db.findById(session, batchId);
+    if (batch == null) return {'success': false, 'error': 'Batch not found'};
+    if (batch.status == 'completed') {
+      return {'success': false, 'error': 'Batch already completed'};
+    }
+
+    // E-signature for batch closure
+    final sig = await EsignatureService.sign(
+      session,
+      userId: closer!.id!,
+      signatureMeaning: signatureMeaning,
+      entityType: 'batch_closure',
+      entityId: batchId.toString(),
+      passwordPlaintext: passwordPlaintext,
+    );
+
+    // Get attendance summary
+    final attendanceSummary = await getAttendanceSummary(session, batchId: batchId);
+    final liveClasses = await LiveClass.db.find(
+      session,
+      where: (t) => t.batchId.equals(batchId),
+    );
+    final totalSessions = liveClasses.length;
+
+    final certifiedUserIds = <int>[];
+    final failedUserIds = <int>[];
+    final now = DateTime.now();
+    final expiresAt = now.add(const Duration(days: 365));
+
+    for (final summary in attendanceSummary) {
+      final uid = summary['userId'] as int;
+      final attended = (summary['present'] as int) + (summary['late'] as int? ?? 0);
+      final rate = totalSessions > 0 ? attended / totalSessions : 1.0;
+
+      if (rate < minAttendanceRate) {
+        failedUserIds.add(uid);
+        continue;
+      }
+
+      // Check if user has a completed enrollment for this course version
+      final enrollment = await Enrollment.db.findFirstRow(
+        session,
+        where: (t) =>
+            t.userId.equals(uid) &
+            t.courseVersionId.equals(batch.courseVersionId),
+        orderBy: (t) => t.startedAt,
+        orderDescending: true,
+      );
+
+      // Create training record + certificate
+      final qrCode =
+          'BATCH-$batchId-$uid-${Random().nextInt(999999).toString().padLeft(6, '0')}';
+
+      final trainingRecord = await TrainingRecord.db.insertRow(
+        session,
+        TrainingRecord(
+          enrollmentId: enrollment?.id ?? 0,
+          userId: uid,
+          courseVersionId: batch.courseVersionId,
+          esignatureId: sig.id!,
+        ),
+      );
+
+      final certificate = await Certificate.db.insertRow(
+        session,
+        Certificate(
+          userId: uid,
+          courseVersionId: batch.courseVersionId,
+          trainingRecordId: trainingRecord.id!,
+          expiresAt: expiresAt,
+          qrCode: qrCode,
+          esignatureId: sig.id!,
+        ),
+      );
+
+      certifiedUserIds.add(uid);
+
+      // Update enrollment to completed if exists
+      if (enrollment != null && enrollment.status != 'completed') {
+        await Enrollment.db.updateRow(
+          session,
+          enrollment.copyWith(status: 'completed', completedAt: now),
+        );
+      }
+
+      // Notify user
+      try {
+        await Notification.db.insertRow(
+          session,
+          Notification(
+            userId: uid,
+            type: 'batch_certificate',
+            body:
+                'Congratulations! You have been certified for "${batch.name}". Certificate ID: ${certificate.id}',
+            channel: 'in_app',
+            createdAt: now,
+          ),
+        );
+      } catch (_) {}
+
+      await AuditService.log(
+        session,
+        entityType: 'certificate',
+        entityId: certificate.id.toString(),
+        action: 'BatchCertificateIssued',
+        newValueJson:
+            '{"batchId":$batchId,"userId":$uid,"courseVersionId":${batch.courseVersionId}}',
+        userId: closer.id,
+      );
+    }
+
+    // Update batch status
+    await TrainingBatch.db.updateRow(
+      session,
+      batch.copyWith(
+        status: 'completed',
+        completedCount: certifiedUserIds.length,
+      ),
+    );
+
+    await AuditService.log(
+      session,
+      entityType: 'training_batch',
+      entityId: batchId.toString(),
+      action: 'BatchClosed',
+      newValueJson:
+          '{"certified":${certifiedUserIds.length},"failed":${failedUserIds.length},"closerEsignatureId":${sig.id}}',
+      userId: closer.id,
+    );
+
+    return {
+      'success': true,
+      'batchId': batchId,
+      'certifiedCount': certifiedUserIds.length,
+      'failedCount': failedUserIds.length,
+      'certifiedUserIds': certifiedUserIds,
+      'failedUserIds': failedUserIds,
+    };
   }
 }

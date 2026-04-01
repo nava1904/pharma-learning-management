@@ -5,6 +5,7 @@ import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../services/event_service.dart';
 import '../services/rbac_helper.dart';
+import '../services/realtime_hub.dart';
 
 /// Material & progress endpoint (M1 + M2 upload).
 class MaterialEndpoint extends Endpoint {
@@ -364,6 +365,15 @@ class MaterialEndpoint extends Endpoint {
         enrollmentId: enrollmentId ?? existing.enrollmentId,
         lessonId: lessonId,
       );
+      // Broadcast realtime progress update via WebSocket hub
+      _broadcastProgressUpdate(
+        userId: userId,
+        materialId: materialId,
+        enrollmentId: enrollmentId ?? existing.enrollmentId,
+        progressPct: progressPct,
+        completedAt: completedAt ?? existing.completedAt,
+        readTimeMet: readTimeMet ?? existing.readTimeMet,
+      );
       if (enrollmentId != null &&
           progressPct > 0 &&
           (existing.progressPct == 0 || existing.progressPct < progressPct)) {
@@ -412,6 +422,15 @@ class MaterialEndpoint extends Endpoint {
       completedAt: completedAt,
       enrollmentId: enrollmentId,
       lessonId: lessonId,
+    );
+    // Broadcast realtime progress update via WebSocket hub
+    _broadcastProgressUpdate(
+      userId: userId,
+      materialId: materialId,
+      enrollmentId: enrollmentId,
+      progressPct: progressPct,
+      completedAt: completedAt,
+      readTimeMet: readTimeMet,
     );
     if (enrollmentId != null && progressPct > 0) {
       final enrollment = await Enrollment.db.findById(session, enrollmentId);
@@ -549,10 +568,20 @@ class MaterialEndpoint extends Endpoint {
         readTimeMet: readTimeMet ? true : existing.readTimeMet,
         enrollmentId: enrollmentId ?? existing.enrollmentId,
       );
-      return await MaterialProgress.db.updateRow(session, updated);
+      final result = await MaterialProgress.db.updateRow(session, updated);
+      // Broadcast heartbeat progress update via WebSocket for realtime UI
+      _broadcastEngagementUpdate(
+        userId: userId,
+        materialId: materialId,
+        enrollmentId: enrollmentId ?? existing.enrollmentId,
+        timeSpentSeconds: newTimeSpent,
+        requiredSeconds: requiredSeconds,
+        readTimeMet: readTimeMet,
+      );
+      return result;
     }
 
-    return await MaterialProgress.db.insertRow(
+    final inserted = await MaterialProgress.db.insertRow(
       session,
       MaterialProgress(
         userId: userId,
@@ -565,6 +594,74 @@ class MaterialEndpoint extends Endpoint {
         enrollmentId: enrollmentId,
       ),
     );
+    _broadcastEngagementUpdate(
+      userId: userId,
+      materialId: materialId,
+      enrollmentId: enrollmentId,
+      timeSpentSeconds: newTimeSpent,
+      requiredSeconds: requiredSeconds,
+      readTimeMet: readTimeMet,
+    );
+    return inserted;
+  }
+
+  // ─── Realtime broadcast helpers ────────────────────────────────────────────
+
+  /// Broadcast material progress update to all subscribers on the user's
+  /// progress room (`progress:user:<userId>`). This enables the employee
+  /// dashboard to update the progress bar in real time.
+  void _broadcastProgressUpdate({
+    required int userId,
+    required int materialId,
+    int? enrollmentId,
+    required int progressPct,
+    DateTime? completedAt,
+    bool? readTimeMet,
+  }) {
+    RealtimeHub.instance.broadcast('progress:user:$userId', {
+      'event': 'material_progress',
+      'userId': userId,
+      'materialId': materialId,
+      'enrollmentId': enrollmentId,
+      'progressPct': progressPct,
+      'completedAt': completedAt?.toIso8601String(),
+      'readTimeMet': readTimeMet,
+      'ts': DateTime.now().toUtc().toIso8601String(),
+    });
+    // Also broadcast to enrollment-specific room for the course viewer
+    if (enrollmentId != null) {
+      RealtimeHub.instance.broadcast('enrollment:$enrollmentId', {
+        'event': 'material_progress',
+        'materialId': materialId,
+        'progressPct': progressPct,
+        'completedAt': completedAt?.toIso8601String(),
+        'readTimeMet': readTimeMet,
+        'ts': DateTime.now().toUtc().toIso8601String(),
+      });
+    }
+  }
+
+  /// Broadcast engagement heartbeat (time spent, read-time progress).
+  /// Lighter-weight than full progress updates — sent every 10s during
+  /// active learning for realtime lesson timer and progress ring.
+  void _broadcastEngagementUpdate({
+    required int userId,
+    required int materialId,
+    int? enrollmentId,
+    required int timeSpentSeconds,
+    required int requiredSeconds,
+    required bool readTimeMet,
+  }) {
+    RealtimeHub.instance.broadcast('progress:user:$userId', {
+      'event': 'engagement_heartbeat',
+      'userId': userId,
+      'materialId': materialId,
+      'enrollmentId': enrollmentId,
+      'timeSpentSeconds': timeSpentSeconds,
+      'requiredSeconds': requiredSeconds,
+      'readTimeMet': readTimeMet,
+      'ts': DateTime.now().toUtc().toIso8601String(),
+    });
   }
 
   /// Soft-delete material. Rejects if material is used in any active lesson.

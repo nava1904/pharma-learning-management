@@ -259,13 +259,15 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
                           LayoutBuilder(
                             builder: (context, c) {
                               final w = c.maxWidth > 0 ? c.maxWidth : tableMaxWidth;
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(PharmaRadius.sm),
+                              return ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 520),
                                 child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(minWidth: w),
-                                    child: _buildCourseTable(),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(minWidth: w),
+                                      child: _buildCourseTable(),
+                                    ),
                                   ),
                                 ),
                               );

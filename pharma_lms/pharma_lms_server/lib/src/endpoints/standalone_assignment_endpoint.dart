@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../services/audit_service.dart';
 import '../services/rbac_helper.dart';
 
 /// Standalone trainer assignments (not tied to a course lesson).
@@ -343,6 +344,98 @@ class StandaloneAssignmentEndpoint extends Endpoint {
         submittedAt: now,
         responseJson: responseJson,
       ),
+    );
+  }
+
+  /// Grade a standalone assignment submission (trainer/admin).
+  Future<StandaloneAssignmentRecipient?> gradeStandaloneSubmission(
+    Session session, {
+    required int recipientId,
+    required int grade,
+    String? feedback,
+  }) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return null;
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'assign') &&
+        !await RbacHelper.hasPermission(session, resource: 'training', action: 'write')) {
+      return null;
+    }
+
+    final row = await StandaloneAssignmentRecipient.db.findById(session, recipientId);
+    if (row == null) throw Exception('Recipient not found');
+    if (row.status != 'submitted') {
+      throw Exception('Can only grade submitted assignments. Current status: ${row.status}');
+    }
+
+    final a = await StandaloneAssignment.db.findById(session, row.assignmentId);
+    if (a == null || !_sameOrg(me!, a.organizationId)) {
+      throw Exception('Assignment not found or access denied');
+    }
+
+    final now = DateTime.now();
+    final updated = await StandaloneAssignmentRecipient.db.updateRow(
+      session,
+      row.copyWith(
+        status: 'graded',
+        grade: grade,
+        feedback: feedback,
+        gradedAt: now,
+        gradedById: me.id,
+      ),
+    );
+
+    await AuditService.log(
+      session,
+      entityType: 'standalone_assignment_recipient',
+      entityId: recipientId.toString(),
+      action: 'StandaloneAssignmentGraded',
+      newValueJson:
+          '{"assignmentId":${row.assignmentId},"userId":${row.userId},"grade":$grade,"gradedById":${me.id}}',
+      userId: me.id,
+    );
+
+    // Notify the learner
+    try {
+      await Notification.db.insertRow(
+        session,
+        Notification(
+          userId: row.userId,
+          type: 'standalone_assignment_graded',
+          body: 'Your assignment "${a.title}" has been graded. Score: $grade.',
+          channel: 'in_app',
+          createdAt: now,
+        ),
+      );
+    } catch (_) {}
+
+    return updated;
+  }
+
+  /// List all submitted (ungraded) recipients for an assignment (trainer grading queue).
+  Future<List<StandaloneAssignmentRecipient>> listSubmittedForGrading(
+    Session session, {
+    required int assignmentId,
+  }) async {
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me?.id == null) return [];
+    if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'assign') &&
+        !await RbacHelper.hasPermission(session, resource: 'training', action: 'read')) {
+      return [];
+    }
+
+    final a = await StandaloneAssignment.db.findById(session, assignmentId);
+    if (a == null || !_sameOrg(me!, a.organizationId)) return [];
+
+    return StandaloneAssignmentRecipient.db.find(
+      session,
+      where: (t) =>
+          t.assignmentId.equals(assignmentId) &
+          t.status.equals('submitted'),
+      include: StandaloneAssignmentRecipient.include(
+        user: PharmaUser.include(),
+        assignment: StandaloneAssignment.include(),
+      ),
+      orderBy: (t) => t.submittedAt,
     );
   }
 }

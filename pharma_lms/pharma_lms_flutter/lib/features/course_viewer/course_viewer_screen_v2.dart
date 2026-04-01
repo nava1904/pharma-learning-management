@@ -11,6 +11,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/client.dart';
+import '../../core/lms_realtime.dart';
 import '../../core/video_url_parser.dart';
 import '../../core/webview_safe.dart';
 import '../../design_system/pharma_design_system.dart';
@@ -27,6 +28,7 @@ class CourseViewerScreenV2 extends ConsumerStatefulWidget {
     this.enrollmentId,
     this.userId,
     this.enrollmentStatus,
+    this.previewMode = false,
   });
 
   final String courseId;
@@ -35,6 +37,9 @@ class CourseViewerScreenV2 extends ConsumerStatefulWidget {
   final int? enrollmentId;
   final int? userId;
   final String? enrollmentStatus;
+  /// When true, shows a "Preview Mode" banner and a back button. No enrollment
+  /// progress is recorded.
+  final bool previewMode;
 
   @override
   ConsumerState<CourseViewerScreenV2> createState() => _CourseViewerScreenV2State();
@@ -70,13 +75,10 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
   /// Server [Assignment] rows for the current lesson (lesson coursework).
   List<Assignment> _lessonAssignments = [];
 
-  // ─── Compliance State (for future e-signature/acknowledgement) ───
+  // ─── Compliance State (for e-signature/acknowledgement) ───
   Enrollment? _enrollment;
-  // ignore: unused_field
-  final bool _acknowledgementChecked = false;
-  // ignore: unused_field
-  final bool _acknowledging = false;
-  // ignore: unused_field
+  bool _acknowledgementChecked = false;
+  bool _acknowledging = false;
   String? _acknowledgementError;
   // ignore: unused_field
   List<SignatureMeaning> _signatureMeanings = [];
@@ -88,6 +90,8 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
   int? _resolvedCourseVersionId;
   /// When route omits [enrollmentId], resolved from the user’s enrollments for this course version.
   int? _resolvedEnrollmentId;
+  /// WebSocket subscription for realtime progress sync across tabs/devices.
+  StreamSubscription<Map<String, dynamic>>? _realtimeSub;
 
   int get _effectiveUserId => widget.userId ?? _resolvedUserId ?? 0;
   int get _effectiveCourseVersionId =>
@@ -109,8 +113,14 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _heartbeatTimer?.cancel();
+    _realtimeSub?.cancel();
     _videoController?.dispose();
     _passwordController.dispose();
+    // Unsubscribe from enrollment progress room
+    final eid = _effectiveEnrollmentId;
+    if (eid != null) {
+      LmsRealtime.unsubscribeRooms(['enrollment:$eid']);
+    }
     super.dispose();
   }
 
@@ -279,6 +289,10 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
           _startReadTimer(allLessons[startLessonIndex]);
         }
       }
+
+      // Subscribe to realtime progress events for this enrollment
+      // so multi-tab or cross-device updates reflect instantly.
+      _setupRealtimeProgressSubscription();
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -313,6 +327,8 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
   // [Keep all other backend/timer methods: _startReadTimer, _getPdfScrollDepth, etc...]
   void _startReadTimer(Lesson lesson) {
     _heartbeatTimer?.cancel();
+    // In preview mode, don't record engagement or progress.
+    if (widget.previewMode) return;
     if (_lessonViewedMaterialIds.contains(lesson.materialId)) return;
     if (lesson.id == null || _effectiveUserId <= 0) return;
 
@@ -351,6 +367,147 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
         }
       } catch (_) {}
     });
+  }
+
+  /// Acknowledge SOP retraining with e-signature (21 CFR Part 11 §11.50).
+  /// Uses the server-side `acknowledgeRetraining` which creates the signature internally.
+  Future<void> _acknowledgeRetraining() async {
+    if (!_acknowledgementChecked || _acknowledging) return;
+
+    // Prompt for password in-line for re-authentication
+    final password = await _showPasswordDialog();
+    if (password == null || password.isEmpty || !mounted) return;
+
+    setState(() { _acknowledging = true; _acknowledgementError = null; });
+
+    try {
+      final meaning = _selectedSignatureMeaning ?? 'I have read and understood';
+      final updatedEnrollment = await client.training.acknowledgeRetraining(
+        enrollmentId: _effectiveEnrollmentId!,
+        userId: _effectiveUserId,
+        signatureMeaning: meaning,
+        passwordPlaintext: password,
+      );
+      if (!mounted) return;
+      setState(() {
+        _enrollment = updatedEnrollment;
+        _acknowledging = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _acknowledging = false;
+        _acknowledgementError = e.toString().contains('password')
+            ? 'Re-authentication failed. Please check your password.'
+            : 'Acknowledgement failed: $e';
+      });
+    }
+  }
+
+  /// Show a password re-authentication dialog for e-signature.
+  Future<String?> _showPasswordDialog() {
+    _passwordController.clear();
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.draw_outlined, size: 22, color: _accent),
+            const SizedBox(width: 8),
+            const Text('Re-authenticate to Sign'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your password to electronically sign this acknowledgement.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+              onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F4FF),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.verified_user, size: 14, color: Color(0xFF3B82F6)),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '21 CFR Part 11 · HMAC-SHA256 integrity',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF3B82F6), fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_passwordController.text.trim()),
+            style: FilledButton.styleFrom(backgroundColor: _accent),
+            child: const Text('Sign'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Subscribe to realtime WebSocket events for this enrollment.
+  /// Handles `material_progress` events from other tabs/devices so the
+  /// lesson-completion state stays in sync without re-fetching.
+  Future<void> _setupRealtimeProgressSubscription() async {
+    if (widget.previewMode) return;
+    final enrollmentId = _effectiveEnrollmentId;
+    if (enrollmentId == null) return;
+
+    try {
+      await LmsRealtime.ensureConnected();
+      LmsRealtime.subscribeRooms(['enrollment:$enrollmentId']);
+
+      _realtimeSub = LmsRealtime.events.listen((event) {
+        if (!mounted) return;
+        final eventType = event['event'] as String?;
+
+        if (eventType == 'material_progress') {
+          final materialId = event['materialId'] as int?;
+          final pct = (event['progressPct'] as num?)?.toInt() ?? 0;
+          final readTimeMet = event['readTimeMet'] as bool? ?? false;
+
+          if (materialId != null && (pct >= 100 || readTimeMet)) {
+            if (!_lessonViewedMaterialIds.contains(materialId)) {
+              setState(() {
+                _lessonViewedMaterialIds.add(materialId);
+              });
+              debugPrint('[CourseViewer] Realtime: material $materialId completed');
+            }
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('[CourseViewer] WebSocket subscription failed: $e');
+    }
   }
 
   Future<int?> _getPdfScrollDepth() async {
@@ -583,9 +740,126 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
       );
     }
     if (_showRetrainingGate) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: _bg,
-        body: Center(child: Text('SOP Retraining Required', style: TextStyle(color: _textLight, fontSize: 18))),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Card(
+              margin: const EdgeInsets.all(24),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.update_rounded, color: Colors.orange.shade700, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'SOP Retraining Required',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: _textLight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Change Summary',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _enrollment?.retrainingChangeSummary ?? 'SOP content has been updated.',
+                            style: const TextStyle(fontSize: 14, height: 1.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    CheckboxListTile(
+                      value: _acknowledgementChecked,
+                      onChanged: _acknowledging
+                          ? null
+                          : (v) => setState(() => _acknowledgementChecked = v ?? false),
+                      title: const Text(
+                        'I have read and understood the changes described above',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                    if (_acknowledgementError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _acknowledgementError!,
+                        style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: (_acknowledgementChecked && !_acknowledging)
+                            ? _acknowledgeRetraining
+                            : null,
+                        icon: _acknowledging
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.draw_outlined, size: 18),
+                        label: Text(_acknowledging ? 'Signing...' : 'Acknowledge & Continue'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _accent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4FF),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.verified_user, size: 14, color: Color(0xFF3B82F6)),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '21 CFR Part 11 · E-signature required before proceeding',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF3B82F6), fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       );
     }
 
@@ -686,25 +960,82 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
                     ),
                   ),
                   const SizedBox(width: 40),
-                  OutlinedButton(
-                    onPressed: () {
-                      if (GoRouter.of(context).canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/employee/lessons');
-                      }
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFEF4444)),
-                      foregroundColor: const Color(0xFFEF4444),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  if (widget.previewMode)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        if (GoRouter.of(context).canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/trainer/courses/${widget.courseId}/builder');
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_back, size: 16),
+                      label: const Text('Back to Builder', style: TextStyle(fontWeight: FontWeight.w600)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: _accent),
+                        foregroundColor: _accent,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    )
+                  else
+                    OutlinedButton(
+                      onPressed: () {
+                        if (GoRouter.of(context).canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/employee/lessons');
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFEF4444)),
+                        foregroundColor: const Color(0xFFEF4444),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Exit Course', style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
-                    child: const Text('Exit Course', style: TextStyle(fontWeight: FontWeight.w600)),
-                  ),
                 ],
               ),
             ),
+
+            // ─── PREVIEW MODE BANNER ───
+            if (widget.previewMode)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 24),
+                color: const Color(0xFFFEF3C7),
+                child: Row(
+                  children: [
+                    const Icon(Icons.visibility, size: 16, color: Color(0xFF92400E)),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'PREVIEW MODE — This is how employees/learners see this course. No progress is recorded.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {
+                        if (GoRouter.of(context).canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/trainer/courses/${widget.courseId}/builder');
+                        }
+                      },
+                      icon: const Icon(Icons.edit, size: 14),
+                      label: const Text('Return to Editor'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF92400E),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // ─── BODY ───
             Expanded(
@@ -935,7 +1266,52 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
         material.contentUrl != null &&
         material.contentUrl!.trim().isNotEmpty;
 
-    if (material == null || (!hasFile && !hasLink)) {
+    // Collect all attached resources from lesson blocks
+    final blockResources = <_BlockResource>[];
+    for (final block in _lessonBlocks) {
+      try {
+        final content = jsonDecode(block.contentJson) as Map<String, dynamic>;
+        final bt = block.blockType;
+        if (bt == 'google_doc' || bt == 'google_sheet' || bt == 'google_slide') {
+          final url = content['url'] as String? ?? '';
+          if (url.isNotEmpty) {
+            blockResources.add(_BlockResource(
+              title: content['title'] as String? ?? '${bt.replaceAll('_', ' ').toUpperCase()}',
+              type: bt,
+              url: url,
+            ));
+          }
+        } else if (bt == 'video') {
+          final url = content['url'] as String? ?? '';
+          if (url.isNotEmpty) {
+            blockResources.add(_BlockResource(
+              title: content['title'] as String? ?? 'Video',
+              type: 'video',
+              url: url,
+            ));
+          }
+        } else if (bt == 'code_sandbox') {
+          final url = content['url'] as String? ?? '';
+          if (url.isNotEmpty) {
+            blockResources.add(_BlockResource(
+              title: content['title'] as String? ?? 'Code Sandbox',
+              type: 'code_sandbox',
+              url: url,
+            ));
+          }
+        } else if (bt == 'audio') {
+          final fileName = content['fileName'] as String? ?? 'Audio file';
+          final url = content['url'] as String? ?? '';
+          if (url.isNotEmpty) {
+            blockResources.add(_BlockResource(title: fileName, type: 'audio', url: url));
+          }
+        }
+      } catch (_) {}
+    }
+
+    final hasNoResources = (material == null || (!hasFile && !hasLink)) && blockResources.isEmpty;
+
+    if (hasNoResources) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -965,27 +1341,6 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
       );
     }
 
-    final type = material.materialType.toLowerCase();
-    IconData typeIcon;
-    Color typeColor;
-    switch (type) {
-      case 'video':
-        typeIcon = Icons.videocam_rounded;
-        typeColor = const Color(0xFFF59E0B);
-        break;
-      case 'pdf':
-        typeIcon = Icons.picture_as_pdf_rounded;
-        typeColor = const Color(0xFFEF4444);
-        break;
-      case 'scorm':
-        typeIcon = Icons.web_rounded;
-        typeColor = const Color(0xFF8B5CF6);
-        break;
-      default:
-        typeIcon = Icons.insert_drive_file_rounded;
-        typeColor = _accent;
-    }
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -996,64 +1351,131 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Lesson Resources', style: TextStyle(color: _textLight, fontSize: 15, fontWeight: FontWeight.w600)),
+          Text(
+            'Lesson Resources (${1 + blockResources.length})',
+            style: const TextStyle(color: _textLight, fontSize: 15, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: _bg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _border),
+          // Primary material
+          if (material != null && (hasFile || hasLink))
+            _buildResourceRow(
+              title: material.title,
+              type: material.materialType.toLowerCase(),
+              onOpen: () => _openMaterialResource(
+                materialId: material.id,
+                storageKey: material.storageKey,
+                contentUrl: material.contentUrl,
+              ),
+              isLink: hasLink && !hasFile,
             ),
-            child: Row(
+          // Additional resources from lesson blocks
+          for (final res in blockResources) ...[
+            const SizedBox(height: 10),
+            _buildResourceRow(
+              title: res.title,
+              type: res.type,
+              onOpen: () async {
+                final uri = Uri.tryParse(res.url);
+                if (uri != null && await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              isLink: true,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single resource row with icon, title, type badge, and open button.
+  Widget _buildResourceRow({
+    required String title,
+    required String type,
+    required VoidCallback onOpen,
+    bool isLink = false,
+  }) {
+    IconData typeIcon;
+    Color typeColor;
+    switch (type) {
+      case 'video':
+        typeIcon = Icons.videocam_rounded;
+        typeColor = const Color(0xFFF59E0B);
+      case 'pdf':
+        typeIcon = Icons.picture_as_pdf_rounded;
+        typeColor = const Color(0xFFEF4444);
+      case 'scorm':
+        typeIcon = Icons.web_rounded;
+        typeColor = const Color(0xFF8B5CF6);
+      case 'google_doc':
+        typeIcon = Icons.article_rounded;
+        typeColor = const Color(0xFF4285F4);
+      case 'google_sheet':
+        typeIcon = Icons.table_chart_rounded;
+        typeColor = const Color(0xFF0F9D58);
+      case 'google_slide':
+        typeIcon = Icons.slideshow_rounded;
+        typeColor = const Color(0xFFF4B400);
+      case 'audio':
+        typeIcon = Icons.audiotrack_rounded;
+        typeColor = const Color(0xFF8B5CF6);
+      case 'code_sandbox':
+        typeIcon = Icons.code_rounded;
+        typeColor = const Color(0xFF06B6D4);
+      default:
+        typeIcon = Icons.insert_drive_file_rounded;
+        typeColor = _accent;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: typeColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(typeIcon, color: typeColor, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: typeColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(typeIcon, color: typeColor, size: 20),
+                Text(
+                  title,
+                  style: const TextStyle(color: _textLight, fontSize: 14, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        material.title,
-                        style: const TextStyle(color: _textLight, fontSize: 14, fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        type.toUpperCase(),
-                        style: TextStyle(color: typeColor, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
-                      ),
-                    ],
-                  ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _openMaterialResource(
-                    materialId: material.id,
-                    storageKey: material.storageKey,
-                    contentUrl: material.contentUrl,
-                  ),
-                  icon: Icon(
-                    hasLink && !hasFile ? Icons.link_rounded : Icons.open_in_new_rounded,
-                    size: 16,
-                  ),
-                  label: Text(hasLink && !hasFile ? 'Open link' : 'Open'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _accent,
-                    side: const BorderSide(color: _accent),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
+                const SizedBox(height: 2),
+                Text(
+                  type.replaceAll('_', ' ').toUpperCase(),
+                  style: TextStyle(color: typeColor, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
                 ),
               ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: onOpen,
+            icon: Icon(
+              isLink ? Icons.link_rounded : Icons.open_in_new_rounded,
+              size: 16,
+            ),
+            label: Text(isLink ? 'Open link' : 'Open'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _accent,
+              side: const BorderSide(color: _accent),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           ),
         ],
@@ -1701,4 +2123,17 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
       ],
     );
   }
+}
+
+/// Helper class for collecting resources from lesson blocks for the Resources tab.
+class _BlockResource {
+  final String title;
+  final String type;
+  final String url;
+
+  const _BlockResource({
+    required this.title,
+    required this.type,
+    required this.url,
+  });
 }

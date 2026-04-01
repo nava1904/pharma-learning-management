@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app_colors.dart';
+import '../../design_system/pharma_design_system.dart';
 import 'app_typography.dart';
 
 /// App spacing constants (0.625rem = 10px base).
@@ -26,7 +26,7 @@ class AppRadius {
   static const double xxl = 16;
 }
 
-/// Vyuh lms theme matching Figma reference.
+/// Vyuh lms theme — unified with PharmaDesignSystem tokens.
 class AppTheme {
   AppTheme._();
 
@@ -34,91 +34,198 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.light(
-        primary: AppColors.indigo600,
+        primary: PharmaColors.emerald600,
         onPrimary: Colors.white,
-        primaryContainer: AppColors.indigo100,
-        onPrimaryContainer: AppColors.indigo900,
-        secondary: AppColors.slate200,
-        onSecondary: AppColors.slate900,
-        error: AppColors.destructive,
+        primaryContainer: PharmaColors.emerald100,
+        onPrimaryContainer: PharmaColors.emerald700,
+        secondary: PharmaColors.gray200,
+        onSecondary: PharmaColors.gray900,
+        error: PharmaColors.danger,
         onError: Colors.white,
-        surface: AppColors.background,
-        onSurface: AppColors.slate900,
-        surfaceContainerHighest: AppColors.slate100,
-        outline: AppColors.slate300,
+        surface: PharmaColors.cardBg,
+        onSurface: PharmaColors.textPrimary,
+        surfaceContainerHighest: PharmaColors.gray100,
+        outline: PharmaColors.borderMedium,
       ),
-      scaffoldBackgroundColor: AppColors.slate50,
-      textTheme: AppTypography.textTheme(AppColors.slate900),
+      scaffoldBackgroundColor: PharmaColors.pageBg,
+      textTheme: AppTypography.textTheme(PharmaColors.textPrimary),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.slate900,
+        backgroundColor: PharmaColors.cardBg,
+        foregroundColor: PharmaColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
-        titleTextStyle: AppTypography.textTheme(AppColors.slate900).titleLarge,
+        titleTextStyle: PharmaTypography.headingMedium,
       ),
       cardTheme: CardThemeData(
-        color: AppColors.background,
-        elevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.06),
+        color: PharmaColors.cardBg,
+        elevation: 0,
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          side: const BorderSide(color: AppColors.slate200, width: 0.5),
+          borderRadius: PharmaRadius.cardRadius,
+          side: const BorderSide(color: PharmaColors.borderLight, width: 1),
         ),
         clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: PharmaColors.emerald600,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: PharmaColors.gray200,
+          disabledForegroundColor: PharmaColors.textTertiary,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          minimumSize: const Size(0, 44),
+          shape: RoundedRectangleBorder(
+            borderRadius: PharmaRadius.buttonRadius,
+          ),
+          textStyle: PharmaTypography.button,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.indigo600,
+          backgroundColor: PharmaColors.emerald600,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          minimumSize: const Size(0, 44),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: PharmaRadius.buttonRadius,
           ),
+          textStyle: PharmaTypography.button,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.slate700,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          foregroundColor: PharmaColors.textSecondary,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          minimumSize: const Size(0, 44),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: PharmaRadius.buttonRadius,
           ),
+          side: const BorderSide(color: PharmaColors.borderMedium),
+          textStyle: PharmaTypography.button,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.slate700,
+          foregroundColor: PharmaColors.emerald600,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          textStyle: PharmaTypography.button,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.slate50,
+        fillColor: PharmaColors.inputBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: PharmaRadius.inputRadius,
+          borderSide: const BorderSide(color: PharmaColors.borderLight),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.slate300),
+          borderRadius: PharmaRadius.inputRadius,
+          borderSide: const BorderSide(color: PharmaColors.borderLight),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.indigo600, width: 2),
+          borderRadius: PharmaRadius.inputRadius,
+          borderSide: const BorderSide(color: PharmaColors.emerald600, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: PharmaRadius.inputRadius,
+          borderSide: const BorderSide(color: PharmaColors.danger),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        hintStyle: PharmaTypography.body.copyWith(color: PharmaColors.textQuaternary),
+        labelStyle: PharmaTypography.labelLarge,
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: AppColors.background,
+          fillColor: PharmaColors.inputBg,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: PharmaRadius.inputRadius,
+            borderSide: const BorderSide(color: PharmaColors.borderLight),
           ),
         ),
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: PharmaColors.gray100,
+        labelStyle: PharmaTypography.labelMedium,
+        shape: RoundedRectangleBorder(
+          borderRadius: PharmaRadius.pillRadius,
+          side: const BorderSide(color: PharmaColors.borderLight),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: PharmaColors.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(PharmaRadius.xl),
+        ),
+        titleTextStyle: PharmaTypography.headingMedium,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: PharmaColors.cardBg,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: PharmaColors.emerald600,
+        unselectedLabelColor: PharmaColors.textTertiary,
+        indicatorColor: PharmaColors.emerald600,
+        labelStyle: PharmaTypography.labelLarge,
+        unselectedLabelStyle: PharmaTypography.body,
+      ),
       dividerTheme: const DividerThemeData(
-        color: AppColors.slate200,
+        color: PharmaColors.borderLight,
         thickness: 1,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: PharmaColors.gray900,
+        contentTextStyle: PharmaTypography.body.copyWith(color: Colors.white),
+        shape: RoundedRectangleBorder(
+          borderRadius: PharmaRadius.cardRadius,
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: PharmaColors.gray800,
+          borderRadius: PharmaRadius.cardRadius,
+        ),
+        textStyle: PharmaTypography.caption.copyWith(color: Colors.white),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: PharmaColors.emerald600,
+        linearTrackColor: PharmaColors.gray100,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return PharmaColors.emerald600;
+          return PharmaColors.gray400;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return PharmaColors.emerald200;
+          return PharmaColors.gray200;
+        }),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return PharmaColors.emerald600;
+          return Colors.transparent;
+        }),
+        checkColor: WidgetStateProperty.all(Colors.white),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        side: const BorderSide(color: PharmaColors.borderMedium, width: 1.5),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return PharmaColors.emerald600;
+          return PharmaColors.borderMedium;
+        }),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: PharmaColors.emerald600,
+        foregroundColor: Colors.white,
       ),
     );
   }

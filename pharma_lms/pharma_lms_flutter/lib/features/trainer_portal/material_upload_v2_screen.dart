@@ -84,52 +84,101 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       children: [
         _buildHeader(),
-        const SizedBox(height: PharmaSpacing.sectionGap),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 3, child: Column(children: [
-              _buildDropZone(),
-              const SizedBox(height: 16),
-              if (_isUploading) _buildUploadProgress(),
-              if (_scanStatus != null) _buildScanIndicator(),
-              if (_lastHash != null) _buildHashDisplay(),
-              const SizedBox(height: 20),
-              _buildFilterRow(),
-              const SizedBox(height: 12),
-              _buildMaterialsTable(),
-            ])),
-            const SizedBox(width: 24),
-            SizedBox(width: 280, child: _buildInfoPanel()),
-          ],
+        const SizedBox(height: PharmaSpacing.lg),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 860) {
+              // Stack vertically on narrow screens
+              return Column(children: [
+                _buildMainContent(),
+                const SizedBox(height: PharmaSpacing.lg),
+                _buildInfoPanel(),
+              ]);
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: _buildMainContent()),
+                const SizedBox(width: PharmaSpacing.lg),
+                SizedBox(width: 300, child: _buildInfoPanel()),
+              ],
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () => context.go('/trainer/courses/${widget.courseId}/builder'),
-          icon: const Icon(Icons.arrow_back, size: 20),
-        ),
-        const SizedBox(width: 8),
-        Icon(Icons.cloud_upload_outlined, color: PharmaColors.emerald600, size: 24),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Material Upload', style: PharmaTypography.headingLarge.copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
-              Text('Upload and manage training materials', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
-            ],
-          ),
-        ),
+  Widget _buildMainContent() {
+    return Column(children: [
+      _buildDropZone(),
+      if (_isUploading) ...[
+        const SizedBox(height: PharmaSpacing.md),
+        _buildUploadProgress(),
       ],
+      if (_scanStatus != null) _buildScanIndicator(),
+      if (_lastHash != null) _buildHashDisplay(),
+      const SizedBox(height: PharmaSpacing.lg),
+      _buildFilterRow(),
+      _buildMaterialsTable(),
+    ]);
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => context.go('/trainer/courses/${widget.courseId}/builder'),
+            icon: const Icon(Icons.arrow_back, size: 20),
+            style: IconButton.styleFrom(
+              backgroundColor: PharmaColors.pageBg,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.md)),
+            ),
+          ),
+          const SizedBox(width: PharmaSpacing.md),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: PharmaColors.emerald50,
+              borderRadius: BorderRadius.circular(PharmaRadius.md),
+            ),
+            child: Icon(Icons.cloud_upload_outlined, color: PharmaColors.emerald600, size: 22),
+          ),
+          const SizedBox(width: PharmaSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Material Upload', style: PharmaTypography.headingLarge.copyWith(fontSize: 20, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text('Upload and manage training materials', style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary)),
+              ],
+            ),
+          ),
+          // Material count badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: PharmaColors.emerald50,
+              borderRadius: PharmaRadius.pillRadius,
+            ),
+            child: Text(
+              '${_materials.length} material${_materials.length == 1 ? '' : 's'}',
+              style: PharmaTypography.labelMedium.copyWith(color: PharmaColors.emerald600, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -138,26 +187,34 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
       onTap: _pickAndUpload,
       child: AnimatedContainer(
         duration: EmployeePortalTokens.durationBase,
-        padding: const EdgeInsets.symmetric(vertical: 48),
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: PharmaSpacing.lg),
         decoration: BoxDecoration(
           color: _isDragOver ? PharmaColors.emerald50 : PharmaColors.pageBg,
           borderRadius: PharmaRadius.cardRadius,
           border: Border.all(
             color: _isDragOver ? PharmaColors.emerald600 : PharmaColors.borderLight,
-            width: _isDragOver ? 2 : 1,
+            width: _isDragOver ? 2 : 1.5,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_upload_outlined, size: 48,
-                color: _isDragOver ? PharmaColors.emerald600 : PharmaColors.gray400),
-            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _isDragOver ? PharmaColors.emerald100 : PharmaColors.gray100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.cloud_upload_outlined, size: 36,
+                  color: _isDragOver ? PharmaColors.emerald600 : PharmaColors.gray400),
+            ),
+            const SizedBox(height: PharmaSpacing.md),
             Text('Drag & Drop files here or click to browse',
                 style: PharmaTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: _isDragOver ? PharmaColors.emerald600 : PharmaColors.textSecondary)),
-            const SizedBox(height: 8),
+            const SizedBox(height: PharmaSpacing.xs),
             Text('Supported: PDF, MP4, MOV, SCORM (ZIP), PNG, JPG — Max 500 MB',
                 style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
           ],
@@ -168,7 +225,7 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
 
   Widget _buildUploadProgress() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg,
         borderRadius: PharmaRadius.cardRadius,
@@ -179,13 +236,13 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
         children: [
           Row(children: [
             const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-            const SizedBox(width: 12),
+            const SizedBox(width: PharmaSpacing.md),
             Expanded(
               child: Text('Uploading $_uploadingFileName…', style: PharmaTypography.bodyMedium),
             ),
-            Text('${(_uploadProgress * 100).toInt()}%', style: PharmaTypography.caption),
+            Text('${(_uploadProgress * 100).toInt()}%', style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600)),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: PharmaSpacing.sm),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
@@ -215,12 +272,12 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
         return const SizedBox.shrink();
     }
     return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.only(top: PharmaSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 10),
       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: PharmaRadius.cardRadius),
       child: Row(children: [
         Icon(icon, size: 18, color: color),
-        const SizedBox(width: 10),
+        const SizedBox(width: PharmaSpacing.sm),
         Text(label, style: PharmaTypography.bodyMedium.copyWith(color: color)),
       ]),
     );
@@ -228,12 +285,12 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
 
   Widget _buildHashDisplay() {
     return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.only(top: PharmaSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: 10),
       decoration: BoxDecoration(color: PharmaColors.gray50, borderRadius: PharmaRadius.cardRadius),
       child: Row(children: [
         Icon(Icons.fingerprint, size: 18, color: PharmaColors.textTertiary),
-        const SizedBox(width: 10),
+        const SizedBox(width: PharmaSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,36 +315,68 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
   }
 
   Widget _buildFilterRow() {
-    return Row(
-      children: _types.map((t) {
-        final isActive = t == _filterType;
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: FilterChip(
-            label: Text(t),
-            selected: isActive,
-            onSelected: (_) => setState(() => _filterType = t),
-            selectedColor: PharmaColors.emerald50,
-            checkmarkColor: PharmaColors.emerald600,
-            labelStyle: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w500,
-              color: isActive ? PharmaColors.emerald600 : PharmaColors.textSecondary,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.lg, vertical: PharmaSpacing.md),
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(PharmaRadius.lg),
+          topRight: Radius.circular(PharmaRadius.lg),
+        ),
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          Text('Filter:', style: PharmaTypography.labelMedium.copyWith(color: PharmaColors.textTertiary, fontWeight: FontWeight.w600)),
+          const SizedBox(width: PharmaSpacing.md),
+          Expanded(
+            child: Wrap(
+              spacing: PharmaSpacing.sm,
+              runSpacing: PharmaSpacing.xs,
+              children: _types.map((t) {
+                final isActive = t == _filterType;
+                return FilterChip(
+                  label: Text(t),
+                  selected: isActive,
+                  onSelected: (_) => setState(() => _filterType = t),
+                  selectedColor: PharmaColors.emerald50,
+                  checkmarkColor: PharmaColors.emerald600,
+                  labelStyle: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w500,
+                    color: isActive ? PharmaColors.emerald600 : PharmaColors.textSecondary,
+                  ),
+                  side: BorderSide(color: isActive ? PharmaColors.emerald600 : PharmaColors.borderLight),
+                  visualDensity: VisualDensity.compact,
+                );
+              }).toList(),
             ),
-            side: BorderSide(color: isActive ? PharmaColors.emerald600 : PharmaColors.borderLight),
           ),
-        );
-      }).toList(),
+        ],
+      ),
     );
   }
 
   Widget _buildMaterialsTable() {
+    final bottomRadius = BorderRadius.only(
+      bottomLeft: Radius.circular(PharmaRadius.lg),
+      bottomRight: Radius.circular(PharmaRadius.lg),
+    );
+    final bottomBorder = Border(
+      left: BorderSide(color: PharmaColors.borderLight),
+      right: BorderSide(color: PharmaColors.borderLight),
+      bottom: BorderSide(color: PharmaColors.borderLight),
+    );
+
     if (_loading) {
-      return const SizedBox(
+      return Container(
         width: double.infinity,
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 48),
-          child: Center(child: CircularProgressIndicator()),
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        decoration: BoxDecoration(
+          color: PharmaColors.cardBg,
+          borderRadius: bottomRadius,
+          border: bottomBorder,
         ),
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_filtered.isEmpty) {
@@ -295,15 +384,17 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
         width: double.infinity,
         padding: const EdgeInsets.all(48),
         decoration: BoxDecoration(
-          color: PharmaColors.cardBg, borderRadius: PharmaRadius.cardRadius,
-          border: Border.all(color: PharmaColors.borderLight),
+          color: PharmaColors.cardBg, borderRadius: bottomRadius,
+          border: bottomBorder,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.folder_off, size: 48, color: PharmaColors.gray300),
-            const SizedBox(height: 8),
+            const SizedBox(height: PharmaSpacing.sm),
             Text('No materials found', style: PharmaTypography.headingSmall),
+            const SizedBox(height: PharmaSpacing.xs),
+            Text('Upload files using the drop zone above', style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary)),
           ],
         ),
       );
@@ -312,53 +403,79 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: PharmaColors.cardBg, borderRadius: PharmaRadius.cardRadius,
-        border: Border.all(color: PharmaColors.borderLight),
+        color: PharmaColors.cardBg, borderRadius: bottomRadius,
+        border: bottomBorder,
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-        headingRowHeight: 44,
-        dataRowMinHeight: 52,
-        dataRowMaxHeight: 60,
-        columnSpacing: 20,
-        headingTextStyle: PharmaTypography.labelMedium.copyWith(
-          fontWeight: FontWeight.w600, color: PharmaColors.textTertiary,
-          fontSize: 11, letterSpacing: 0.5,
-        ),
-        columns: const [
-          DataColumn(label: Text('NAME')),
-          DataColumn(label: Text('TYPE')),
-          DataColumn(label: Text('SIZE')),
-          DataColumn(label: Text('ACTIONS')),
-        ],
-        rows: _filtered.map((m) => DataRow(cells: [
-          DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-            _materialIcon(m.materialType),
-            const SizedBox(width: 10),
-            Text(m.title, style: PharmaTypography.bodyMedium),
-          ])),
-          DataCell(_TypeChip(type: m.materialType)),
-          DataCell(Text('—', style: PharmaTypography.caption)),
-          DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-            IconButton(
-              onPressed: () => _previewMaterial(m),
-              icon: const Icon(Icons.visibility_outlined, size: 18),
-              tooltip: 'Preview',
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: DataTable(
+              headingRowHeight: 44,
+              dataRowMinHeight: 52,
+              dataRowMaxHeight: 60,
+              columnSpacing: PharmaSpacing.lg,
+              horizontalMargin: PharmaSpacing.lg,
+              headingRowColor: WidgetStateProperty.all(PharmaColors.pageBg),
+              headingTextStyle: PharmaTypography.labelMedium.copyWith(
+                fontWeight: FontWeight.w600, color: PharmaColors.textTertiary,
+                fontSize: 11, letterSpacing: 0.5,
+              ),
+              columns: const [
+                DataColumn(label: Text('NAME')),
+                DataColumn(label: Text('TYPE')),
+                DataColumn(label: Text('SIZE')),
+                DataColumn(label: Text('ACTIONS')),
+              ],
+              rows: _filtered.map((m) => DataRow(
+                cells: [
+                  DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                    _materialIcon(m.materialType),
+                    const SizedBox(width: PharmaSpacing.sm),
+                    Flexible(child: Text(m.title, style: PharmaTypography.bodyMedium, overflow: TextOverflow.ellipsis)),
+                  ])),
+                  DataCell(_TypeChip(type: m.materialType)),
+                  DataCell(Text('—', style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary))),
+                  DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                      onPressed: () => _previewMaterial(m),
+                      icon: Icon(Icons.visibility_outlined, size: 18, color: PharmaColors.info),
+                      tooltip: 'Preview',
+                      style: IconButton.styleFrom(
+                        backgroundColor: PharmaColors.infoBg,
+                        padding: const EdgeInsets.all(6),
+                        minimumSize: const Size(32, 32),
+                      ),
+                    ),
+                    const SizedBox(width: PharmaSpacing.xs),
+                    IconButton(
+                      onPressed: () => _showVersionHistory(m),
+                      icon: Icon(Icons.history, size: 18, color: PharmaColors.textSecondary),
+                      tooltip: 'Version History',
+                      style: IconButton.styleFrom(
+                        backgroundColor: PharmaColors.gray100,
+                        padding: const EdgeInsets.all(6),
+                        minimumSize: const Size(32, 32),
+                      ),
+                    ),
+                    const SizedBox(width: PharmaSpacing.xs),
+                    IconButton(
+                      onPressed: () => _deleteMaterial(m),
+                      icon: Icon(Icons.delete_outline, size: 18, color: PharmaColors.danger),
+                      tooltip: 'Delete',
+                      style: IconButton.styleFrom(
+                        backgroundColor: PharmaColors.dangerBg,
+                        padding: const EdgeInsets.all(6),
+                        minimumSize: const Size(32, 32),
+                      ),
+                    ),
+                  ])),
+                ],
+              )).toList(),
             ),
-            IconButton(
-              onPressed: () => _showVersionHistory(m),
-              icon: const Icon(Icons.history, size: 18),
-              tooltip: 'Version History',
-            ),
-            IconButton(
-              onPressed: () => _deleteMaterial(m),
-              icon: Icon(Icons.delete_outline, size: 18, color: PharmaColors.danger),
-              tooltip: 'Delete',
-            ),
-          ])),
-        ])).toList(),
-        ),
+          );
+        },
       ),
     );
   }
@@ -378,21 +495,29 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
 
   Widget _buildInfoPanel() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(PharmaSpacing.lg),
       decoration: BoxDecoration(
         color: PharmaColors.cardBg, borderRadius: PharmaRadius.cardRadius,
         border: Border.all(color: PharmaColors.borderLight),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Upload Guidelines', style: PharmaTypography.headingSmall.copyWith(fontSize: 14)),
-        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(Icons.info_outline, size: 16, color: PharmaColors.emerald600),
+            const SizedBox(width: PharmaSpacing.sm),
+            Text('Upload Guidelines', style: PharmaTypography.headingSmall.copyWith(fontSize: 14)),
+          ],
+        ),
+        const SizedBox(height: PharmaSpacing.lg),
         _guideline(Icons.security, 'All files undergo antivirus scanning before acceptance'),
         _guideline(Icons.fingerprint, 'SHA-256 hash computed for integrity verification'),
         _guideline(Icons.history, 'Every upload creates a version record in the audit trail'),
         _guideline(Icons.storage, 'Max file size: 500 MB per upload'),
-        const SizedBox(height: 20),
-        Text('Accepted Formats', style: PharmaTypography.labelLarge.copyWith(fontSize: 12)),
-        const SizedBox(height: 8),
+        const SizedBox(height: PharmaSpacing.lg),
+        const Divider(height: 1),
+        const SizedBox(height: PharmaSpacing.lg),
+        Text('Accepted Formats', style: PharmaTypography.labelLarge.copyWith(fontSize: 12, fontWeight: FontWeight.w600)),
+        const SizedBox(height: PharmaSpacing.md),
         _formatRow('PDF', 'Training documents, SOPs'),
         _formatRow('Video', 'MP4, MOV, WebM'),
         _formatRow('SCORM', 'ZIP packages (1.2, 2004)'),
@@ -403,10 +528,17 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
 
   Widget _guideline(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: PharmaSpacing.md),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 16, color: PharmaColors.emerald600),
-        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: PharmaColors.emerald50,
+            borderRadius: BorderRadius.circular(PharmaRadius.sm),
+          ),
+          child: Icon(icon, size: 14, color: PharmaColors.emerald600),
+        ),
+        const SizedBox(width: PharmaSpacing.sm),
         Expanded(child: Text(text, style: PharmaTypography.caption.copyWith(color: PharmaColors.textSecondary, height: 1.4))),
       ]),
     );
@@ -414,7 +546,7 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
 
   Widget _formatRow(String type, String desc) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: PharmaSpacing.sm),
       child: Row(children: [
         SizedBox(width: 52, child: Text(type, style: PharmaTypography.caption.copyWith(fontWeight: FontWeight.w600))),
         Expanded(child: Text(desc, style: PharmaTypography.caption.copyWith(color: PharmaColors.textTertiary))),
@@ -541,7 +673,7 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.xl)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PharmaRadius.lg)),
         title: const Text('Delete Material?'),
         content: Text('Are you sure you want to delete "${m.title}"? This action cannot be undone.'),
         actions: [

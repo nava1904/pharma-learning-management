@@ -1014,25 +1014,20 @@ Pharma LMS Admin
     
     final offset = (page - 1) * perPage;
     
-    // Start with base query
-    final users = await PharmaUser.db.find(
+    // Fetch with SQL-level status filter when provided
+    var users = await PharmaUser.db.find(
       session,
-      limit: perPage,
-      offset: offset,
+      where: (status != null && status.isNotEmpty)
+          ? (t) => t.status.equals(status)
+          : null,
       orderBy: (t) => t.createdAt,
+      orderDescending: true,
     );
     
-    // If we have filters, apply them in-memory for now
-    // TODO: Optimize with SQL WHERE clauses
-    var filtered = users;
-    
-    if (status != null && status.isNotEmpty) {
-      filtered = filtered.where((u) => u.status == status).toList();
-    }
-    
+    // Search filter (cross-column text match done in-memory)
     if (searchQuery != null && searchQuery.isNotEmpty) {
       final lowerSearch = searchQuery.toLowerCase();
-      filtered = filtered.where((u) =>
+      users = users.where((u) =>
         u.email.toLowerCase().contains(lowerSearch) ||
         u.firstName.toLowerCase().contains(lowerSearch) ||
         u.lastName.toLowerCase().contains(lowerSearch) ||
@@ -1040,12 +1035,29 @@ Pharma LMS Admin
       ).toList();
     }
     
+    // Role-based filtering: find user IDs that have the specified role
     if (roleCode != null && roleCode.isNotEmpty) {
-      // TODO: Load roles and filter by role
-      // For now, return all
+      final role = await Role.db.findFirstRow(
+        session,
+        where: (t) => t.code.equals(roleCode),
+      );
+      if (role != null && role.id != null) {
+        final userRoles = await UserRole.db.find(
+          session,
+          where: (t) => t.roleId.equals(role.id!),
+        );
+        final userIdsWithRole = userRoles
+            .map((ur) => ur.userId)
+            .toSet();
+        users = users.where((u) => u.id != null && userIdsWithRole.contains(u.id)).toList();
+      } else {
+        // Role not found — no users match
+        return [];
+      }
     }
     
-    return filtered.take(perPage).toList();
+    // Apply pagination on filtered results
+    return users.skip(offset).take(perPage).toList();
   }
   
   /// Get total count of users with optional filtering
@@ -1057,17 +1069,17 @@ Pharma LMS Admin
   }) async {
     await RbacHelper.requirePermission(session, resource: 'training', action: 'read');
     
-    final allUsers = await PharmaUser.db.find(session);
-    
-    var filtered = allUsers;
-    
-    if (status != null && status.isNotEmpty) {
-      filtered = filtered.where((u) => u.status == status).toList();
-    }
+    // Fetch with SQL-level status filter when provided
+    var users = await PharmaUser.db.find(
+      session,
+      where: (status != null && status.isNotEmpty)
+          ? (t) => t.status.equals(status)
+          : null,
+    );
     
     if (searchQuery != null && searchQuery.isNotEmpty) {
       final lowerSearch = searchQuery.toLowerCase();
-      filtered = filtered.where((u) =>
+      users = users.where((u) =>
         u.email.toLowerCase().contains(lowerSearch) ||
         u.firstName.toLowerCase().contains(lowerSearch) ||
         u.lastName.toLowerCase().contains(lowerSearch) ||
@@ -1075,12 +1087,27 @@ Pharma LMS Admin
       ).toList();
     }
     
+    // Role-based filtering
     if (roleCode != null && roleCode.isNotEmpty) {
-      // TODO: Load roles and filter by role
-      // For now, return all
+      final role = await Role.db.findFirstRow(
+        session,
+        where: (t) => t.code.equals(roleCode),
+      );
+      if (role != null && role.id != null) {
+        final userRoles = await UserRole.db.find(
+          session,
+          where: (t) => t.roleId.equals(role.id!),
+        );
+        final userIdsWithRole = userRoles
+            .map((ur) => ur.userId)
+            .toSet();
+        users = users.where((u) => u.id != null && userIdsWithRole.contains(u.id)).toList();
+      } else {
+        return 0;
+      }
     }
     
-    return filtered.length;
+    return users.length;
   }
   
   /// Get a single user by ID

@@ -50,9 +50,9 @@ final _trainerAuditProvider = FutureProvider<List<AuditTrail>>((ref) async {
   final user = await ref.watch(currentUserProvider.future);
   if (user == null) return [];
   try {
-    return await client.audit.getAuditTrail(
-      userId: user.id,
+    return await client.audit.getMyAuditTrail(
       limit: 10,
+      userId: user.id,
     );
   } catch (_) {
     return [];
@@ -306,9 +306,11 @@ class _DashboardContent extends ConsumerWidget {
                 ],
               ),
             )
-          : ListView.separated(
+          : ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: ListView.separated(
               shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
               itemCount: actionCourses.length,
               separatorBuilder: (_, __) => Divider(
                 height: 1,
@@ -318,6 +320,7 @@ class _DashboardContent extends ConsumerWidget {
                 final course = actionCourses[index];
                 return _ActionCourseRow(course: course);
               },
+            ),
             ),
     );
   }
@@ -470,23 +473,29 @@ class _RecentActivitySection extends ConsumerWidget {
               ]),
             );
           }
-          return Column(
-            children: entries.map((entry) {
-              final icon = _iconForAuditAction(entry.action);
-              final color = _colorForAuditAction(entry.action);
-              final title = _titleForAuditAction(entry.action);
-              final subtitle =
-                  '${entry.entityType} #${entry.entityId}';
-              final timeAgo = _formatTimeAgo(entry.timestamp);
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 360),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: entries.map((entry) {
+                  final icon = _iconForAuditAction(entry.action);
+                  final color = _colorForAuditAction(entry.action);
+                  final title = _titleForAuditAction(entry.action);
+                  final subtitle =
+                      '${entry.entityType} #${entry.entityId}';
+                  final timeAgo = _formatTimeAgo(entry.timestamp);
 
-              return _ActivityItem(
-                icon: icon,
-                iconColor: color,
-                title: title,
-                subtitle: subtitle,
-                time: timeAgo,
-              );
-            }).toList(),
+                  return _ActivityItem(
+                    icon: icon,
+                    iconColor: color,
+                    title: title,
+                    subtitle: subtitle,
+                    time: timeAgo,
+                  );
+                }).toList(),
+              ),
+            ),
           );
         },
       ),

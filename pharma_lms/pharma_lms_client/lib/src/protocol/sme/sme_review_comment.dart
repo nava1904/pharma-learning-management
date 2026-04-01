@@ -33,6 +33,7 @@ abstract class SmeReviewComment implements _i1.SerializableModel {
     DateTime? createdAt,
     this.parentCommentId,
     this.parentComment,
+    this.readAt,
   }) : severity = severity ?? 'note',
        resolved = resolved ?? false,
        createdAt = createdAt ?? DateTime.now();
@@ -52,6 +53,7 @@ abstract class SmeReviewComment implements _i1.SerializableModel {
     DateTime? createdAt,
     int? parentCommentId,
     _i4.SmeReviewComment? parentComment,
+    DateTime? readAt,
   }) = _SmeReviewCommentImpl;
 
   factory SmeReviewComment.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -88,6 +90,9 @@ abstract class SmeReviewComment implements _i1.SerializableModel {
           : _i5.Protocol().deserialize<_i4.SmeReviewComment>(
               jsonSerialization['parentComment'],
             ),
+      readAt: jsonSerialization['readAt'] == null
+          ? null
+          : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['readAt']),
     );
   }
 
@@ -132,6 +137,9 @@ abstract class SmeReviewComment implements _i1.SerializableModel {
   /// Optional parent comment for threaded QA / trainer replies.
   _i4.SmeReviewComment? parentComment;
 
+  /// When the recipient read this comment (null = unread).
+  DateTime? readAt;
+
   /// Returns a shallow copy of this [SmeReviewComment]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -150,6 +158,7 @@ abstract class SmeReviewComment implements _i1.SerializableModel {
     DateTime? createdAt,
     int? parentCommentId,
     _i4.SmeReviewComment? parentComment,
+    DateTime? readAt,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -169,6 +178,7 @@ abstract class SmeReviewComment implements _i1.SerializableModel {
       'createdAt': createdAt.toJson(),
       if (parentCommentId != null) 'parentCommentId': parentCommentId,
       if (parentComment != null) 'parentComment': parentComment?.toJson(),
+      if (readAt != null) 'readAt': readAt?.toJson(),
     };
   }
 
@@ -196,6 +206,7 @@ class _SmeReviewCommentImpl extends SmeReviewComment {
     DateTime? createdAt,
     int? parentCommentId,
     _i4.SmeReviewComment? parentComment,
+    DateTime? readAt,
   }) : super._(
          id: id,
          courseVersionId: courseVersionId,
@@ -211,6 +222,7 @@ class _SmeReviewCommentImpl extends SmeReviewComment {
          createdAt: createdAt,
          parentCommentId: parentCommentId,
          parentComment: parentComment,
+         readAt: readAt,
        );
 
   /// Returns a shallow copy of this [SmeReviewComment]
@@ -232,6 +244,7 @@ class _SmeReviewCommentImpl extends SmeReviewComment {
     DateTime? createdAt,
     Object? parentCommentId = _Undefined,
     Object? parentComment = _Undefined,
+    Object? readAt = _Undefined,
   }) {
     return SmeReviewComment(
       id: id is int? ? id : this.id,
@@ -256,6 +269,7 @@ class _SmeReviewCommentImpl extends SmeReviewComment {
       parentComment: parentComment is _i4.SmeReviewComment?
           ? parentComment
           : this.parentComment?.copyWith(),
+      readAt: readAt is DateTime? ? readAt : this.readAt,
     );
   }
 }

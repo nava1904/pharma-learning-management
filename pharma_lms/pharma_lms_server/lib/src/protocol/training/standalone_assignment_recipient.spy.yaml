@@ -6,11 +6,19 @@ table: standalone_assignment_recipient
 fields:
   assignment: StandaloneAssignment?, relation
   user: PharmaUser?, relation
-  ### pending | submitted
+  ### pending | submitted | graded
   status: String, default='pending'
   submittedAt: DateTime?
   ### JSON: answers or open-ended text
   responseJson: String?
+  ### Grade (0-100).
+  grade: int?
+  ### Trainer feedback.
+  feedback: String?
+  ### When graded.
+  gradedAt: DateTime?
+  ### Who graded.
+  gradedById: int?
   createdAt: DateTime, default=now
 
 indexes:

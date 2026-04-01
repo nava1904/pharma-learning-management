@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'client.dart';
@@ -24,51 +25,103 @@ Uri lmsRealtimeWsUri(String apiHost) {
 }
 
 /// Singleton push channel: connect once, subscribe per screen.
+/// Includes auto-reconnect with exponential backoff for reliability at scale.
 class LmsRealtime {
   LmsRealtime._();
   static WebSocketChannel? _channel;
   static StreamSubscription<dynamic>? _listenSub;
   static final StreamController<Map<String, dynamic>> _events =
       StreamController<Map<String, dynamic>>.broadcast();
+  static final Set<String> _activeRooms = {};
+  static int _reconnectAttempts = 0;
+  static Timer? _reconnectTimer;
+  static bool _intentionalDisconnect = false;
 
   static Stream<Map<String, dynamic>> get events => _events.stream;
 
   static Future<void> ensureConnected() async {
     if (_channel != null) return;
-    final token = await client.realtime.getConnectionToken();
-    final uri = lmsRealtimeWsUri(client.host).replace(queryParameters: {'token': token});
-    _channel = WebSocketChannel.connect(uri);
-    _listenSub = _channel!.stream.listen(
-      (raw) {
-        if (raw is String) {
-          try {
-            final m = jsonDecode(raw) as Map<String, dynamic>;
-            if (!_events.isClosed) _events.add(m);
-          } catch (_) {}
-        }
-      },
-      onError: (_) {},
-      onDone: () {
-        _channel = null;
-        _listenSub = null;
-      },
+    _intentionalDisconnect = false;
+    try {
+      final token = await client.realtime.getConnectionToken();
+      final uri = lmsRealtimeWsUri(client.host).replace(queryParameters: {'token': token});
+      _channel = WebSocketChannel.connect(uri);
+      _listenSub = _channel!.stream.listen(
+        (raw) {
+          if (raw is String) {
+            try {
+              final m = jsonDecode(raw) as Map<String, dynamic>;
+              if (!_events.isClosed) _events.add(m);
+            } catch (_) {}
+          }
+        },
+        onError: (e) {
+          debugPrint('[LmsRealtime] WebSocket error: $e');
+          _scheduleReconnect();
+        },
+        onDone: () {
+          debugPrint('[LmsRealtime] WebSocket closed');
+          _channel = null;
+          _listenSub = null;
+          if (!_intentionalDisconnect) {
+            _scheduleReconnect();
+          }
+        },
+      );
+      // Re-subscribe to all active rooms after reconnect
+      if (_activeRooms.isNotEmpty) {
+        _channel!.sink.add(jsonEncode({'op': 'subscribe', 'rooms': _activeRooms.toList()}));
+      }
+      _reconnectAttempts = 0; // Reset backoff on successful connect
+      debugPrint('[LmsRealtime] Connected, rooms: ${_activeRooms.length}');
+    } catch (e) {
+      debugPrint('[LmsRealtime] Connection failed: $e');
+      _channel = null;
+      _listenSub = null;
+      _scheduleReconnect();
+    }
+  }
+
+  /// Exponential backoff reconnect: 1s, 2s, 4s, 8s, 16s, 30s max.
+  static void _scheduleReconnect() {
+    if (_intentionalDisconnect) return;
+    _reconnectTimer?.cancel();
+    final delay = Duration(
+      seconds: (_reconnectAttempts < 5
+              ? (1 << _reconnectAttempts)
+              : 30)
+          .clamp(1, 30),
     );
+    _reconnectAttempts++;
+    debugPrint('[LmsRealtime] Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)');
+    _reconnectTimer = Timer(delay, () async {
+      _channel = null;
+      _listenSub = null;
+      await ensureConnected();
+    });
   }
 
   static void subscribeRooms(Iterable<String> rooms) {
+    _activeRooms.addAll(rooms);
     if (_channel == null) return;
     _channel!.sink.add(jsonEncode({'op': 'subscribe', 'rooms': rooms.toList()}));
   }
 
   static void unsubscribeRooms(Iterable<String> rooms) {
+    _activeRooms.removeAll(rooms);
     if (_channel == null) return;
     _channel!.sink.add(jsonEncode({'op': 'unsubscribe', 'rooms': rooms.toList()}));
   }
 
   static Future<void> disconnect() async {
+    _intentionalDisconnect = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _activeRooms.clear();
     await _listenSub?.cancel();
     _listenSub = null;
     await _channel?.sink.close();
     _channel = null;
+    _reconnectAttempts = 0;
   }
 }

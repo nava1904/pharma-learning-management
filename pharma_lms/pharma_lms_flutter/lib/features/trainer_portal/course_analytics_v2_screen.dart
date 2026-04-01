@@ -5,8 +5,10 @@
 // Route: /trainer/courses/:courseId/analytics
 // Stats row, completion trends, score distribution, dropout funnel.
 // All data loaded from backend via real API calls.
+// Auto-refreshes every 30 seconds for near-real-time learner analytics.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart' hide Material;
@@ -42,10 +44,75 @@ class _CourseAnalyticsV2ScreenState
 
   Map<String, int> _scoreDistribution = {};
 
+  /// Auto-refresh timer — refreshes analytics every 30 seconds.
+  Timer? _autoRefreshTimer;
+  bool _autoRefreshEnabled = true;
+  DateTime? _lastRefreshedAt;
+
   @override
   void initState() {
     super.initState();
     _loadVersions();
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted || !_autoRefreshEnabled) return;
+      if (_selectedVersion != null) {
+        _silentRefresh();
+      }
+    });
+  }
+
+  /// Refresh data without showing the loading spinner (for background auto-refresh).
+  Future<void> _silentRefresh() async {
+    if (_selectedVersion == null) return;
+    try {
+      final versionId = _selectedVersion!.id!;
+      final results = await Future.wait([
+        client.analytics.getCourseAnalytics(versionId),
+        client.training.getEnrollmentsForCourseVersion(versionId),
+        client.training.getCertificatesForCourseVersion(versionId),
+        client.training.getTrainingRecordsForCourseVersion(versionId),
+      ]);
+
+      final analytics = results[0] as CourseAnalytics;
+      final enrollments = results[1] as List<Enrollment>;
+      final certificates = results[2] as List<Certificate>;
+      final records = results[3] as List<TrainingRecord>;
+
+      Map<String, int> scoreDist = {};
+      if (analytics.scoreDistributionJson != null &&
+          analytics.scoreDistributionJson!.isNotEmpty) {
+        final decoded = jsonDecode(analytics.scoreDistributionJson!);
+        if (decoded is Map) {
+          scoreDist = decoded.map(
+            (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+          );
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _analytics = analytics;
+          _enrollments = enrollments;
+          _certificates = certificates;
+          _trainingRecords = records;
+          _scoreDistribution = scoreDist;
+          _lastRefreshedAt = DateTime.now();
+        });
+      }
+    } catch (_) {
+      // Silent — don't show error for background refresh
+    }
   }
 
   Future<void> _loadVersions() async {
@@ -114,6 +181,7 @@ class _CourseAnalyticsV2ScreenState
         _trainingRecords = records;
         _scoreDistribution = scoreDist;
         _loading = false;
+        _lastRefreshedAt = DateTime.now();
       });
     } catch (e) {
       setState(() {
@@ -230,6 +298,8 @@ class _CourseAnalyticsV2ScreenState
               ),
             ],
           ),
+          const SizedBox(height: 24),
+          _buildLearnerTable(),
         ],
       ),
     );
@@ -307,6 +377,49 @@ class _CourseAnalyticsV2ScreenState
               : _loadVersions,
           icon: const Icon(Icons.refresh, size: 20),
           tooltip: 'Refresh',
+        ),
+        const SizedBox(width: 4),
+        // ── Live auto-refresh indicator ──
+        GestureDetector(
+          onTap: () => setState(() => _autoRefreshEnabled = !_autoRefreshEnabled),
+          child: Tooltip(
+            message: _autoRefreshEnabled
+                ? 'Auto-refresh ON (every 30s) — tap to pause'
+                : 'Auto-refresh paused — tap to resume',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: _autoRefreshEnabled ? const Color(0xFFECFDF5) : PharmaColors.gray100,
+                borderRadius: PharmaRadius.pillRadius,
+                border: Border.all(color: _autoRefreshEnabled ? PharmaColors.emerald600 : PharmaColors.gray300),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  width: 8, height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _autoRefreshEnabled ? PharmaColors.emerald600 : PharmaColors.gray400,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _autoRefreshEnabled ? 'LIVE' : 'PAUSED',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: _autoRefreshEnabled ? PharmaColors.emerald700 : PharmaColors.gray600,
+                  ),
+                ),
+                if (_lastRefreshedAt != null) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatTimeAgo(_lastRefreshedAt!),
+                    style: TextStyle(fontSize: 9, color: PharmaColors.textTertiary),
+                  ),
+                ],
+              ]),
+            ),
+          ),
         ),
         const SizedBox(width: 8),
         OutlinedButton.icon(
@@ -612,12 +725,16 @@ class _CourseAnalyticsV2ScreenState
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          height: 170 * frac,
-                          decoration: BoxDecoration(
-                            color: PharmaColors.emerald600,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(3),
+                        Flexible(
+                          child: FractionallySizedBox(
+                            heightFactor: frac,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: PharmaColors.emerald600,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(3),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -720,12 +837,16 @@ class _CourseAnalyticsV2ScreenState
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          height: 140 * frac,
-                          decoration: BoxDecoration(
-                            color: barColor,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(3),
+                        Flexible(
+                          child: FractionallySizedBox(
+                            heightFactor: frac,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: barColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(3),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -901,6 +1022,222 @@ class _CourseAnalyticsV2ScreenState
         ],
       ),
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEARNER TABLE — Real-time individual user analytics
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildLearnerTable() {
+    if (_enrollments.isEmpty) {
+      return _emptyCard(
+        'Learner Analytics',
+        'No enrolled learners yet.',
+        Icons.people_outline,
+      );
+    }
+
+    // Build a map of userId → TrainingRecord for quick lookup
+    final recordsByUser = <int, TrainingRecord>{};
+    for (final r in _trainingRecords) {
+      recordsByUser[r.userId] = r;
+    }
+
+    // Sort enrollments: completed first, then in_progress, then others
+    final sorted = List<Enrollment>.from(_enrollments)
+      ..sort((a, b) {
+        const order = {'completed': 0, 'in_progress': 1, 'not_started': 2, 'overdue': 3};
+        final oa = order[a.status] ?? 4;
+        final ob = order[b.status] ?? 4;
+        if (oa != ob) return oa.compareTo(ob);
+        return (b.status == 'completed' ? 100 : 0).compareTo(a.status == 'completed' ? 100 : 0);
+      });
+
+    return Container(
+      decoration: BoxDecoration(
+        color: PharmaColors.cardBg,
+        borderRadius: PharmaRadius.cardRadius,
+        border: Border.all(color: PharmaColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Icon(Icons.people, size: 20, color: PharmaColors.emerald600),
+                const SizedBox(width: 10),
+                Text(
+                  'Learner Analytics',
+                  style: PharmaTypography.headingSmall.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: PharmaColors.emerald50, borderRadius: PharmaRadius.pillRadius),
+                  child: Text(
+                    '${_enrollments.length} learners',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: PharmaColors.emerald700),
+                  ),
+                ),
+                const Spacer(),
+                if (_autoRefreshEnabled)
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 6, height: 6,
+                      decoration: const BoxDecoration(shape: BoxShape.circle, color: PharmaColors.emerald600),
+                    ),
+                    const SizedBox(width: 4),
+                    Text('Live', style: TextStyle(fontSize: 10, color: PharmaColors.emerald600, fontWeight: FontWeight.w600)),
+                  ]),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: PharmaColors.borderLight),
+          // Table header
+          Container(
+            color: PharmaColors.pageBg,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              children: [
+                SizedBox(width: 200, child: Text('Learner', style: _tableHeaderStyle)),
+                SizedBox(width: 100, child: Text('Status', style: _tableHeaderStyle)),
+                SizedBox(width: 90, child: Text('Progress', style: _tableHeaderStyle)),
+                SizedBox(width: 80, child: Text('Score', style: _tableHeaderStyle)),
+                Expanded(child: Text('Enrolled', style: _tableHeaderStyle)),
+                SizedBox(width: 100, child: Text('Completed', style: _tableHeaderStyle)),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: PharmaColors.borderLight),
+          // Table rows
+          ...sorted.map((enrollment) {
+            final record = recordsByUser[enrollment.userId];
+            final userName = enrollment.user != null
+                ? '${enrollment.user!.firstName} ${enrollment.user!.lastName}'
+                : 'User #${enrollment.userId}';
+            final progress = enrollment.status == 'completed' ? 100 : (enrollment.status == 'in_progress' ? 50 : 0);
+            final score = record?.score;
+            final enrolledAt = enrollment.startedAt;
+            final completedAt = enrollment.completedAt;
+
+            return Container(
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: PharmaColors.borderLight.withValues(alpha: 0.5))),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 200,
+                    child: Row(children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: PharmaColors.emerald50,
+                        child: Text(
+                          userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: PharmaColors.emerald700),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(userName, style: PharmaTypography.bodyMedium, overflow: TextOverflow.ellipsis),
+                      ),
+                    ]),
+                  ),
+                  SizedBox(
+                    width: 100,
+                    child: _statusChip(enrollment.status),
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: Row(children: [
+                      SizedBox(
+                        width: 50,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: progress / 100,
+                            backgroundColor: PharmaColors.gray100,
+                            color: progress >= 100 ? PharmaColors.emerald600 : PharmaColors.info,
+                            minHeight: 6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text('$progress%', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                    ]),
+                  ),
+                  SizedBox(
+                    width: 80,
+                    child: score != null
+                        ? Text(
+                            '$score%',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: score >= (_analytics?.passRate != null ? 80 : 80)
+                                  ? PharmaColors.emerald600
+                                  : PharmaColors.danger,
+                            ),
+                          )
+                        : Text('—', style: TextStyle(color: PharmaColors.textTertiary)),
+                  ),
+                  Expanded(
+                    child: Text(
+                      enrolledAt != null ? _formatDate(enrolledAt) : '—',
+                      style: PharmaTypography.caption,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      completedAt != null ? _formatDate(completedAt) : '—',
+                      style: PharmaTypography.caption,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip(String status) {
+    Color bg, fg;
+    String label;
+    switch (status) {
+      case 'completed':
+        bg = PharmaColors.successBg; fg = PharmaColors.successText; label = 'Completed';
+      case 'in_progress':
+        bg = PharmaColors.infoBg; fg = PharmaColors.info; label = 'In Progress';
+      case 'overdue':
+        bg = PharmaColors.dangerBg; fg = PharmaColors.danger; label = 'Overdue';
+      case 'not_started':
+        bg = PharmaColors.gray100; fg = PharmaColors.gray600; label = 'Not Started';
+      default:
+        bg = PharmaColors.gray100; fg = PharmaColors.gray600; label = status;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: PharmaRadius.pillRadius),
+      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg)),
+    );
+  }
+
+  TextStyle get _tableHeaderStyle => PharmaTypography.caption.copyWith(
+    fontWeight: FontWeight.w600,
+    color: PharmaColors.textTertiary,
+    fontSize: 11,
+  );
+
+  String _formatDate(DateTime dt) {
+    final d = dt.day.toString().padLeft(2, '0');
+    final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '$d ${months[dt.month]} ${dt.year}';
   }
 
   Widget _emptyCard(String title, String message, IconData icon) {
