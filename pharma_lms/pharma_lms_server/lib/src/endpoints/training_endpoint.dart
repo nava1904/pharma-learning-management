@@ -1123,17 +1123,17 @@ LIMIT @lim
 
   /// Get enrollment progress as a fraction: completedLessons / totalLessons.
   /// Returns a map with keys: completedLessons, totalLessons, progressPct.
-  Future<Map<String, dynamic>> getEnrollmentProgress(
+  Future<Map<String, String>> getEnrollmentProgress(
     Session session,
     int enrollmentId,
   ) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) {
-      return {'completedLessons': 0, 'totalLessons': 0, 'progressPct': 0.0};
+      return {'completedLessons': '0', 'totalLessons': '0', 'progressPct': '0.0'};
     }
 
     final enrollment = await Enrollment.db.findById(session, enrollmentId);
     if (enrollment == null) {
-      return {'completedLessons': 0, 'totalLessons': 0, 'progressPct': 0.0};
+      return {'completedLessons': '0', 'totalLessons': '0', 'progressPct': '0.0'};
     }
 
     if (enrollment.status == 'completed') {
@@ -1149,7 +1149,7 @@ LIMIT @lim
         );
         total += lessons.length;
       }
-      return {'completedLessons': total, 'totalLessons': total, 'progressPct': 100.0};
+      return {'completedLessons': total.toString(), 'totalLessons': total.toString(), 'progressPct': '100.0'};
     }
 
     final modules = await Module.db.find(
@@ -1180,9 +1180,9 @@ LIMIT @lim
 
     final pct = totalLessons > 0 ? (completedLessons / totalLessons * 100.0) : 0.0;
     return {
-      'completedLessons': completedLessons,
-      'totalLessons': totalLessons,
-      'progressPct': pct,
+      'completedLessons': completedLessons.toString(),
+      'totalLessons': totalLessons.toString(),
+      'progressPct': pct.toStringAsFixed(1),
     };
   }
 

@@ -8,6 +8,11 @@ import '../services/compliance_calculator_service.dart';
 import '../services/rbac_helper.dart';
 import '../services/scheduled_job_service.dart';
 
+/// Converts a Map<String, dynamic> to Map<String, String> so Serverpod can
+/// serialize it across the wire (Serverpod cannot deserialize `dynamic`).
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+
 /// Analytics & Reporting domain endpoint.
 class AnalyticsEndpoint extends Endpoint {
   /// Course analytics - pass rate and score distribution from TrainingRecord.
@@ -1010,7 +1015,7 @@ class AnalyticsEndpoint extends Endpoint {
 
   /// Recent activity for the learner: audit events for this user, outbound
   /// learner messages, and enrollment milestones (merged, newest first).
-  Future<List<Map<String, dynamic>>> getRecentActivity(
+  Future<List<Map<String, String>>> getRecentActivity(
     Session session,
     int userId,
   ) async {
@@ -1162,13 +1167,13 @@ class AnalyticsEndpoint extends Endpoint {
       deduped.add(row);
       if (deduped.length >= 30) break; // Increased from 15 to 30
     }
-    return deduped;
+    return deduped.map(_stringifyMap).toList();
   }
 
   /// Unified overdue rows for the learner dashboard (assignments past due +
   /// expired certificates). Matches [ComplianceCalculatorService.getUserCompliance]
   /// overdue components for display (banner + table stay in sync).
-  Future<List<Map<String, dynamic>>> getOverdueDashboardItems(
+  Future<List<Map<String, String>>> getOverdueDashboardItems(
     Session session,
     int userId,
   ) async {
@@ -1236,7 +1241,7 @@ class AnalyticsEndpoint extends Endpoint {
     items.sort(
       (a, b) => (b['daysOverdue'] as int).compareTo(a['daysOverdue'] as int),
     );
-    return items;
+    return items.map(_stringifyMap).toList();
   }
 
   /// Get the count of open quality events.
@@ -1252,7 +1257,7 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// Get monthly training hours for a user (last 5 months) for the Dashboard chart.
-  Future<List<Map<String, dynamic>>> getMonthlyTrainingHours(
+  Future<List<Map<String, String>>> getMonthlyTrainingHours(
     Session session,
     int userId,
   ) async {
@@ -1297,12 +1302,12 @@ class AnalyticsEndpoint extends Endpoint {
 
     // 5. Return as a list of maps for easy consumption by fl_chart in Flutter
     return monthlyHours.entries
-        .map((e) => {'month': e.key, 'hours': e.value})
+        .map((e) => {'month': e.key, 'hours': e.value.toStringAsFixed(2)})
         .toList();
   }
 
   /// Get weekly learning progress for a user (last 6 weeks) for the Dashboard area chart.
-  Future<List<Map<String, dynamic>>> getWeeklyLearningProgress(
+  Future<List<Map<String, String>>> getWeeklyLearningProgress(
     Session session,
     int userId,
   ) async {
@@ -1341,13 +1346,13 @@ class AnalyticsEndpoint extends Endpoint {
 
     // Convert to cumulative progress
     var cumulative = 0;
-    final result = <Map<String, dynamic>>[];
+    final result = <Map<String, String>>[];
     for (final entry in weeklyProgress.entries) {
       cumulative += entry.value;
       result.add({
         'week': entry.key,
-        'completed': cumulative,
-        'total': enrollments.length,
+        'completed': cumulative.toString(),
+        'total': enrollments.length.toString(),
       });
     }
 
@@ -1436,7 +1441,7 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// Get upcoming due dates for a user's training assignments.
-  Future<List<Map<String, dynamic>>> getUpcomingDueDates(
+  Future<List<Map<String, String>>> getUpcomingDueDates(
     Session session,
     int userId,
   ) async {
@@ -1465,7 +1470,7 @@ class AnalyticsEndpoint extends Endpoint {
     return assignments.map((a) {
       final daysUntilDue = a.dueDate.difference(now).inDays;
       final course = a.courseVersion?.course;
-      return {
+      return _stringifyMap({
         'assignmentId': a.id,
         'courseTitle': course?.title ?? 'Unknown Course',
         'courseCategory': course?.category,
@@ -1478,12 +1483,12 @@ class AnalyticsEndpoint extends Endpoint {
         'daysUntilDue': daysUntilDue,
         'priority': a.priority,
         'isOverdue': daysUntilDue < 0,
-      };
+      });
     }).toList();
   }
 
   /// Get compliance alerts for a user (SOP retraining, overdue, expiring certs).
-  Future<List<Map<String, dynamic>>> getComplianceAlerts(
+  Future<List<Map<String, String>>> getComplianceAlerts(
     Session session,
     int userId,
   ) async {
@@ -1578,7 +1583,7 @@ class AnalyticsEndpoint extends Endpoint {
       return (severityOrder[a['severity']] ?? 3).compareTo(severityOrder[b['severity']] ?? 3);
     });
 
-    return alerts;
+    return alerts.map(_stringifyMap).toList();
   }
 
   /// Export course analytics as CSV.

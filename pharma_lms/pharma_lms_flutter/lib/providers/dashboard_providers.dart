@@ -150,7 +150,7 @@ final enrollmentProgressProvider =
         try {
           final result =
               await client.training.getEnrollmentProgress(e.id!);
-          final pct = (result['progressPct'] as num?)?.toDouble() ?? 0.0;
+          final pct = double.tryParse(result['progressPct']?.toString() ?? '') ?? 0.0;
           return MapEntry(e.id!, pct);
         } catch (_) {
           return MapEntry(e.id!, 0.0);
@@ -507,7 +507,7 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   // Compute total hours this year from monthly data
   final totalHours = monthlyHours.fold<double>(
     0.0,
-    (sum, m) => sum + ((m['hours'] as num?)?.toDouble() ?? 0.0),
+    (sum, m) => sum + (double.tryParse(m['hours']?.toString() ?? '') ?? 0.0),
   );
 
   // Update last-refreshed timestamp (FR-07-01 AC-08)

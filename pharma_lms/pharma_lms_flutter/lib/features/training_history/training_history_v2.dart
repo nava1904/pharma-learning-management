@@ -44,7 +44,7 @@ class _TrainingHistoryV2State extends ConsumerState<TrainingHistoryV2> {
       client.training.getEnrollmentProgress(e.id!).then((result) {
         if (mounted) {
           setState(() {
-            _progressCache[e.id!] = (result['progressPct'] as num?)?.toDouble() ?? 0.0;
+            _progressCache[e.id!] = double.tryParse(result['progressPct']?.toString() ?? '') ?? 0.0;
           });
         }
       }).catchError((_) {});

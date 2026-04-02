@@ -4,6 +4,10 @@ import '../generated/protocol.dart';
 import '../services/compliance_calculator_service.dart';
 import '../services/rbac_helper.dart';
 
+/// Converts a Map<String, dynamic> to Map<String, String> for Serverpod serialization.
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+
 /// Compliance Engine domain endpoint.
 class ComplianceEndpoint extends Endpoint {
   Future<ComplianceMetrics> getDepartmentCompliance(
@@ -66,7 +70,7 @@ class ComplianceEndpoint extends Endpoint {
 
   /// E-signature readiness for the learner dashboard: signed training records,
   /// pending retraining acknowledgement, and assessments awaiting signature.
-  Future<List<Map<String, dynamic>>> getEsignatureSummaryForUser(
+  Future<List<Map<String, String>>> getEsignatureSummaryForUser(
     Session session,
     int userId,
   ) async {
@@ -155,6 +159,6 @@ class ComplianceEndpoint extends Endpoint {
       });
     }
 
-    return out;
+    return out.map(_stringifyMap).toList();
   }
 }

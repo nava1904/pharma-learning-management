@@ -522,6 +522,11 @@ class _CertificateCard extends StatelessWidget {
   }
 
   Future<void> _downloadCertificate(BuildContext context) async {
+    // Capture navigator & messenger BEFORE the async gap so we can always
+    // close the dialog even if the widget tree has rebuilt.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -529,30 +534,25 @@ class _CertificateCard extends StatelessWidget {
     );
     try {
       final bytes = await generateCertificatePdf(certificate);
-      if (!context.mounted) return;
       final id = certificate.id ?? 0;
       final saved = await saveBytesToFile(bytes, 'vyuh_lms_certificate_$id.pdf');
-      if (context.mounted) Navigator.pop(context);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(saved ? 'Certificate downloaded successfully' : 'Download cancelled'),
-            backgroundColor: saved ? const Color(0xFF10B981) : null,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop(); // always close the loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(saved ? 'Certificate downloaded successfully' : 'Download cancelled'),
+          backgroundColor: saved ? const Color(0xFF10B981) : null,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      if (context.mounted) Navigator.pop(context);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error downloading certificate: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop(); // always close the loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error downloading certificate: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

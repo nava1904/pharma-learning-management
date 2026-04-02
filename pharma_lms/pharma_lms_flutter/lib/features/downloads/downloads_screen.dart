@@ -213,6 +213,11 @@ class DownloadsScreen extends ConsumerWidget {
 
   static Future<void> _downloadCertificate(BuildContext context, Certificate certificate) async {
     final id = certificate.id ?? 0;
+    // Capture navigator & messenger BEFORE the async gap so we can always
+    // close the dialog even if the widget tree has rebuilt.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -220,29 +225,24 @@ class DownloadsScreen extends ConsumerWidget {
     );
     try {
       final bytes = await generateCertificatePdf(certificate);
-      if (!context.mounted) return;
       final saved = await saveBytesToFile(bytes, 'vyuh_lms_certificate_$id.pdf');
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(saved ? 'Certificate downloaded' : 'Download cancelled'),
-            backgroundColor: saved ? PharmaColors.emerald600 : null,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop(); // always close the loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(saved ? 'Certificate downloaded' : 'Download cancelled'),
+          backgroundColor: saved ? PharmaColors.emerald600 : null,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download failed: $e'),
-            backgroundColor: PharmaColors.danger,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop(); // always close the loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: PharmaColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }

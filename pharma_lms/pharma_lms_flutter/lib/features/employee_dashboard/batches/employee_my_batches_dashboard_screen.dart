@@ -221,8 +221,8 @@ class _BatchMainPanel extends ConsumerWidget {
                           }
                           final due = match?.dueDate ?? batch.endDate;
                           final completedL =
-                              (cohort['myCompletedLessons'] as num?)?.toInt() ?? 0;
-                          final totalL = (cohort['myTotalLessons'] as num?)?.toInt() ?? 0;
+                              int.tryParse(cohort['myCompletedLessons']?.toString() ?? '') ?? 0;
+                          final totalL = int.tryParse(cohort['myTotalLessons']?.toString() ?? '') ?? 0;
                           final status = enrollment?.status ?? 'not_started';
 
                           return Column(
@@ -287,10 +287,8 @@ class _BatchMainPanel extends ConsumerWidget {
                               _DualBarRow(
                                 label: courseTitle,
                                 selfPct:
-                                    (cohort['myProgressPct'] as num?)?.toDouble() ?? 0,
-                                cohortPct: (cohort['cohortAverageProgressPct'] as num?)
-                                        ?.toDouble() ??
-                                    0,
+                                    double.tryParse(cohort['myProgressPct']?.toString() ?? '') ?? 0,
+                                cohortPct: double.tryParse(cohort['cohortAverageProgressPct']?.toString() ?? '') ?? 0,
                               ),
                             ],
                           );

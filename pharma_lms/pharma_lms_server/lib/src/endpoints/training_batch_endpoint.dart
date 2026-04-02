@@ -257,7 +257,7 @@ class TrainingBatchEndpoint extends Endpoint {
   }
 
   /// Cohort average lesson progress vs current user for the batch's course version.
-  Future<Map<String, dynamic>> getBatchCohortProgress(
+  Future<Map<String, String>> getBatchCohortProgress(
     Session session,
     int batchId,
   ) async {
@@ -283,7 +283,7 @@ class TrainingBatchEndpoint extends Endpoint {
     if (participants.isEmpty) {
       return {
         ..._emptyCohortProgress(),
-        'participantCount': 0,
+        'participantCount': '0',
       };
     }
 
@@ -311,13 +311,13 @@ class TrainingBatchEndpoint extends Endpoint {
       }
 
       final prog = await trainingEndpoint.getEnrollmentProgress(session, enrollment!.id!);
-      final pct = (prog['progressPct'] as num?)?.toDouble() ?? 0;
+      final pct = double.tryParse(prog['progressPct'] ?? '0') ?? 0;
       progressValues.add(pct);
 
       if (p.userId == me.id) {
         myProgressPct = pct;
-        myCompleted = (prog['completedLessons'] as num?)?.toInt() ?? 0;
-        myTotal = (prog['totalLessons'] as num?)?.toInt() ?? 0;
+        myCompleted = int.tryParse(prog['completedLessons'] ?? '0') ?? 0;
+        myTotal = int.tryParse(prog['totalLessons'] ?? '0') ?? 0;
       }
     }
 
@@ -326,22 +326,22 @@ class TrainingBatchEndpoint extends Endpoint {
         : progressValues.reduce((a, b) => a + b) / progressValues.length;
 
     return {
-      'cohortAverageProgressPct': avg,
-      'myProgressPct': myProgressPct,
-      'myCompletedLessons': myCompleted,
-      'myTotalLessons': myTotal,
-      'participantCount': participants.length,
-      'courseVersionId': batch.courseVersionId,
+      'cohortAverageProgressPct': avg.toStringAsFixed(1),
+      'myProgressPct': myProgressPct.toStringAsFixed(1),
+      'myCompletedLessons': myCompleted.toString(),
+      'myTotalLessons': myTotal.toString(),
+      'participantCount': participants.length.toString(),
+      'courseVersionId': batch.courseVersionId.toString(),
     };
   }
 
-  Map<String, dynamic> _emptyCohortProgress() => {
-        'cohortAverageProgressPct': 0.0,
-        'myProgressPct': 0.0,
-        'myCompletedLessons': 0,
-        'myTotalLessons': 0,
-        'participantCount': 0,
-        'courseVersionId': 0,
+  Map<String, String> _emptyCohortProgress() => {
+        'cohortAverageProgressPct': '0.0',
+        'myProgressPct': '0.0',
+        'myCompletedLessons': '0',
+        'myTotalLessons': '0',
+        'participantCount': '0',
+        'courseVersionId': '0',
       };
 
   Future<bool> _canViewBatchRoster(Session session, int batchId, int userId) async {
@@ -569,7 +569,7 @@ class TrainingBatchEndpoint extends Endpoint {
   }
 
   /// Get attendance summary for a batch (per participant: total sessions, attended, absent).
-  Future<List<Map<String, dynamic>>> getAttendanceSummary(
+  Future<List<Map<String, String>>> getAttendanceSummary(
     Session session, {
     required int batchId,
   }) async {
@@ -588,7 +588,7 @@ class TrainingBatchEndpoint extends Endpoint {
     );
     final totalSessions = liveClasses.length;
 
-    final summary = <Map<String, dynamic>>[];
+    final summary = <Map<String, String>>[];
     for (final p in participants) {
       final records = await BatchAttendanceRecord.db.find(
         session,
@@ -602,17 +602,17 @@ class TrainingBatchEndpoint extends Endpoint {
       final late_ = records.where((r) => r.status == 'late').length;
 
       summary.add({
-        'userId': p.userId,
+        'userId': p.userId.toString(),
         'firstName': p.user?.firstName ?? '',
         'lastName': p.user?.lastName ?? '',
-        'totalSessions': totalSessions,
-        'present': present,
-        'absent': absent,
-        'excused': excused,
-        'late': late_,
+        'totalSessions': totalSessions.toString(),
+        'present': present.toString(),
+        'absent': absent.toString(),
+        'excused': excused.toString(),
+        'late': late_.toString(),
         'attendanceRate': totalSessions > 0
-            ? ((present + late_) / totalSessions * 100).round()
-            : 0,
+            ? ((present + late_) / totalSessions * 100).round().toString()
+            : '0',
       });
     }
     return summary;
@@ -623,7 +623,7 @@ class TrainingBatchEndpoint extends Endpoint {
   /// Close a batch: mark as completed, generate certificates for all
   /// participants who met attendance requirements and passed assessments.
   /// Requires e-signature from the closer (instructor/admin).
-  Future<Map<String, dynamic>> closeBatch(
+  Future<Map<String, String>> closeBatch(
     Session session, {
     required int batchId,
     required String signatureMeaning,
@@ -632,17 +632,17 @@ class TrainingBatchEndpoint extends Endpoint {
   }) async {
     final closer = await RbacHelper.getCurrentPharmaUser(session);
     if (closer?.id == null) {
-      return {'success': false, 'error': 'Not authenticated'};
+      return {'success': 'false', 'error': 'Not authenticated'};
     }
     if (!await RbacHelper.hasPermission(session, resource: 'training', action: 'update') &&
         !await RbacHelper.hasPermission(session, resource: 'training', action: 'write')) {
-      return {'success': false, 'error': 'Permission denied'};
+      return {'success': 'false', 'error': 'Permission denied'};
     }
 
     final batch = await TrainingBatch.db.findById(session, batchId);
-    if (batch == null) return {'success': false, 'error': 'Batch not found'};
+    if (batch == null) return {'success': 'false', 'error': 'Batch not found'};
     if (batch.status == 'completed') {
-      return {'success': false, 'error': 'Batch already completed'};
+      return {'success': 'false', 'error': 'Batch already completed'};
     }
 
     // E-signature for batch closure
@@ -669,8 +669,9 @@ class TrainingBatchEndpoint extends Endpoint {
     final expiresAt = now.add(const Duration(days: 365));
 
     for (final summary in attendanceSummary) {
-      final uid = summary['userId'] as int;
-      final attended = (summary['present'] as int) + (summary['late'] as int? ?? 0);
+      final uid = int.tryParse(summary['userId'] ?? '') ?? 0;
+      final attended = (int.tryParse(summary['present'] ?? '') ?? 0) +
+          (int.tryParse(summary['late'] ?? '') ?? 0);
       final rate = totalSessions > 0 ? attended / totalSessions : 1.0;
 
       if (rate < minAttendanceRate) {
@@ -770,12 +771,12 @@ class TrainingBatchEndpoint extends Endpoint {
     );
 
     return {
-      'success': true,
-      'batchId': batchId,
-      'certifiedCount': certifiedUserIds.length,
-      'failedCount': failedUserIds.length,
-      'certifiedUserIds': certifiedUserIds,
-      'failedUserIds': failedUserIds,
+      'success': 'true',
+      'batchId': batchId.toString(),
+      'certifiedCount': certifiedUserIds.length.toString(),
+      'failedCount': failedUserIds.length.toString(),
+      'certifiedUserIds': certifiedUserIds.join(','),
+      'failedUserIds': failedUserIds.join(','),
     };
   }
 }

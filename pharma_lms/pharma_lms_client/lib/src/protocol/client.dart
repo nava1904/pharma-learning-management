@@ -1340,8 +1340,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
 
   /// Recent activity for the learner: audit events for this user, outbound
   /// learner messages, and enrollment milestones (merged, newest first).
-  _i3.Future<List<Map<String, dynamic>>> getRecentActivity(int userId) =>
-      caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  _i3.Future<List<Map<String, String>>> getRecentActivity(int userId) =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
         'analytics',
         'getRecentActivity',
         {'userId': userId},
@@ -1350,8 +1350,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
   /// Unified overdue rows for the learner dashboard (assignments past due +
   /// expired certificates). Matches [ComplianceCalculatorService.getUserCompliance]
   /// overdue components for display (banner + table stay in sync).
-  _i3.Future<List<Map<String, dynamic>>> getOverdueDashboardItems(int userId) =>
-      caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  _i3.Future<List<Map<String, String>>> getOverdueDashboardItems(int userId) =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
         'analytics',
         'getOverdueDashboardItems',
         {'userId': userId},
@@ -1373,21 +1373,20 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// Get monthly training hours for a user (last 5 months) for the Dashboard chart.
-  _i3.Future<List<Map<String, dynamic>>> getMonthlyTrainingHours(int userId) =>
-      caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  _i3.Future<List<Map<String, String>>> getMonthlyTrainingHours(int userId) =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
         'analytics',
         'getMonthlyTrainingHours',
         {'userId': userId},
       );
 
   /// Get weekly learning progress for a user (last 6 weeks) for the Dashboard area chart.
-  _i3.Future<List<Map<String, dynamic>>> getWeeklyLearningProgress(
-    int userId,
-  ) => caller.callServerEndpoint<List<Map<String, dynamic>>>(
-    'analytics',
-    'getWeeklyLearningProgress',
-    {'userId': userId},
-  );
+  _i3.Future<List<Map<String, String>>> getWeeklyLearningProgress(int userId) =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
+        'analytics',
+        'getWeeklyLearningProgress',
+        {'userId': userId},
+      );
 
   /// Get user's average quiz score from all completed assessments.
   _i3.Future<double> getUserAverageQuizScore(int userId) =>
@@ -1414,16 +1413,16 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// Get upcoming due dates for a user's training assignments.
-  _i3.Future<List<Map<String, dynamic>>> getUpcomingDueDates(int userId) =>
-      caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  _i3.Future<List<Map<String, String>>> getUpcomingDueDates(int userId) =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
         'analytics',
         'getUpcomingDueDates',
         {'userId': userId},
       );
 
   /// Get compliance alerts for a user (SOP retraining, overdue, expiring certs).
-  _i3.Future<List<Map<String, dynamic>>> getComplianceAlerts(int userId) =>
-      caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  _i3.Future<List<Map<String, String>>> getComplianceAlerts(int userId) =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
         'analytics',
         'getComplianceAlerts',
         {'userId': userId},
@@ -2363,9 +2362,9 @@ class EndpointCompliance extends _i2.EndpointRef {
 
   /// E-signature readiness for the learner dashboard: signed training records,
   /// pending retraining acknowledgement, and assessments awaiting signature.
-  _i3.Future<List<Map<String, dynamic>>> getEsignatureSummaryForUser(
+  _i3.Future<List<Map<String, String>>> getEsignatureSummaryForUser(
     int userId,
-  ) => caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  ) => caller.callServerEndpoint<List<Map<String, String>>>(
     'compliance',
     'getEsignatureSummaryForUser',
     {'userId': userId},
@@ -5064,8 +5063,8 @@ class EndpointTrainingBatch extends _i2.EndpointRef {
   );
 
   /// Cohort average lesson progress vs current user for the batch's course version.
-  _i3.Future<Map<String, dynamic>> getBatchCohortProgress(int batchId) =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getBatchCohortProgress(int batchId) =>
+      caller.callServerEndpoint<Map<String, String>>(
         'trainingBatch',
         'getBatchCohortProgress',
         {'batchId': batchId},
@@ -5147,9 +5146,9 @@ class EndpointTrainingBatch extends _i2.EndpointRef {
   );
 
   /// Get attendance summary for a batch (per participant: total sessions, attended, absent).
-  _i3.Future<List<Map<String, dynamic>>> getAttendanceSummary({
+  _i3.Future<List<Map<String, String>>> getAttendanceSummary({
     required int batchId,
-  }) => caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  }) => caller.callServerEndpoint<List<Map<String, String>>>(
     'trainingBatch',
     'getAttendanceSummary',
     {'batchId': batchId},
@@ -5158,12 +5157,12 @@ class EndpointTrainingBatch extends _i2.EndpointRef {
   /// Close a batch: mark as completed, generate certificates for all
   /// participants who met attendance requirements and passed assessments.
   /// Requires e-signature from the closer (instructor/admin).
-  _i3.Future<Map<String, dynamic>> closeBatch({
+  _i3.Future<Map<String, String>> closeBatch({
     required int batchId,
     required String signatureMeaning,
     String? passwordPlaintext,
     required double minAttendanceRate,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'trainingBatch',
     'closeBatch',
     {
@@ -5570,8 +5569,8 @@ class EndpointTraining extends _i2.EndpointRef {
 
   /// Get enrollment progress as a fraction: completedLessons / totalLessons.
   /// Returns a map with keys: completedLessons, totalLessons, progressPct.
-  _i3.Future<Map<String, dynamic>> getEnrollmentProgress(int enrollmentId) =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getEnrollmentProgress(int enrollmentId) =>
+      caller.callServerEndpoint<Map<String, String>>(
         'training',
         'getEnrollmentProgress',
         {'enrollmentId': enrollmentId},

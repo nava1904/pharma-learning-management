@@ -154,8 +154,8 @@ class _BatchDetailContentState extends ConsumerState<_BatchDetailContent>
           );
           if (enrollment?.id != null) {
             final prog = await client.training.getEnrollmentProgress(enrollment!.id!);
-            progressPct = (prog['progressPct'] as num?)?.toDouble() ?? 0;
-            timeSpentSeconds = (prog['timeSpentSeconds'] as num?)?.toInt() ?? 0;
+            progressPct = double.tryParse(prog['progressPct']?.toString() ?? '') ?? 0;
+            timeSpentSeconds = int.tryParse(prog['timeSpentSeconds']?.toString() ?? '') ?? 0;
           }
         } catch (_) {}
 

@@ -48,7 +48,7 @@ class _MyTrainingScreenState extends ConsumerState<MyTrainingScreen> {
       _progressLoading.add(id);
       client.training.getEnrollmentProgress(id).then((result) {
         if (!mounted) return;
-        final pct = (result['progressPct'] as num?)?.toDouble() ?? 0.0;
+        final pct = double.tryParse(result['progressPct']?.toString() ?? '') ?? 0.0;
         setState(() {
           _progressCache[id] = pct / 100.0;
           _progressLoading.remove(id);

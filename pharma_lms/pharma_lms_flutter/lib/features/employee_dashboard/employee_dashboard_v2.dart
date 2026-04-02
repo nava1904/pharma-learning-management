@@ -466,7 +466,8 @@ Map<String, dynamic>? _dueRowForEnrollment(
 ) {
   final title = e.courseVersion?.course?.title;
   for (final d in summary.upcomingDueDates) {
-    if (e.assignmentId != null && d['assignmentId'] == e.assignmentId) {
+    if (e.assignmentId != null &&
+        d['assignmentId']?.toString() == e.assignmentId.toString()) {
       return d;
     }
     if (title != null && d['courseTitle'] == title) return d;
@@ -540,7 +541,7 @@ class _OverdueTrainingsBreakdownCard extends StatelessWidget {
                         item['courseCategory'] as String? ??
                         item['sopNumber'] as String? ??
                         'GMP';
-                    final days = item['daysOverdue'] as int? ?? 0;
+                    final days = int.tryParse(item['daysOverdue']?.toString() ?? '') ?? 0;
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Row(
@@ -764,7 +765,7 @@ class _LearningProgressCarousel extends StatelessWidget {
     final list = [...summary.inProgress, ...summary.toDo];
     final dueLookup = <int, Map<String, dynamic>>{};
     for (final d in summary.upcomingDueDates) {
-      final aid = d['assignmentId'] as int?;
+      final aid = int.tryParse(d['assignmentId']?.toString() ?? '');
       if (aid != null) dueLookup[aid] = d;
     }
 
@@ -799,7 +800,7 @@ class _LearningProgressCarousel extends StatelessWidget {
                       due = dueLookup[e.assignmentId!];
                     }
                     due ??= _dueRowForEnrollment(e, summary);
-                    final isOverdue = due?['isOverdue'] == true;
+                    final isOverdue = due?['isOverdue']?.toString() == 'true';
                     final priority = due?['priority'] as String?;
                     // Use real progress from server MaterialProgress data
                     final progress = e.status == 'completed'
@@ -1068,7 +1069,7 @@ class _WelcomeCard extends StatelessWidget {
 
   Widget _buildStatCards({required bool isNarrow}) {
     final dueThisWeekCount = summary.upcomingDueDates.where((d) {
-      final daysUntilDue = d['daysUntilDue'] as int? ?? 999;
+      final daysUntilDue = int.tryParse(d['daysUntilDue']?.toString() ?? '') ?? 999;
       return daysUntilDue >= 0 && daysUntilDue <= 7;
     }).length;
 
@@ -1436,8 +1437,8 @@ class _UpcomingDeadlinesCard extends StatelessWidget {
             const _EmptyState(icon: Icons.event_available_rounded, message: 'No upcoming deadlines')
           else
             ...dueDates.take(4).map((item) {
-              final isOverdue = item['isOverdue'] == true;
-              final daysUntilDue = item['daysUntilDue'] as int? ?? 0;
+              final isOverdue = item['isOverdue']?.toString() == 'true';
+              final daysUntilDue = int.tryParse(item['daysUntilDue']?.toString() ?? '') ?? 0;
               final courseTitle = item['courseTitle'] as String? ?? 'Training';
               final (iconColor, bgColor, badgeText) = _getUrgencyStyle(isOverdue, daysUntilDue);
 
