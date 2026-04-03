@@ -1,21 +1,20 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHARMA LMS — EMPLOYEE NOTIFICATION CENTRE
-// ═══════════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// Vyuh lms -- EMPLOYEE NOTIFICATION CENTRE
+// =============================================================================
 //
 // Route: /employee/notifications
 // Full inbox for in-app notifications with action links.
-// Uses: AppColors/AppTypography tokens from the unified design system.
 // Backend: notification.getInAppNotifications
-// ═══════════════════════════════════════════════════════════════════════════════
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart' hide Material;
 
-import '../../../design_system/tokens.dart';
-import '../../../design_system/components.dart';
+import '../../../design_system/pharma_design_system.dart';
 import '../../../providers/employee_portal_providers.dart';
+import '../widgets/employee_page_scaffold.dart';
 
 class EmployeeNotificationScreen extends ConsumerWidget {
   const EmployeeNotificationScreen({super.key});
@@ -25,31 +24,13 @@ class EmployeeNotificationScreen extends ConsumerWidget {
     final notifAsync = ref.watch(employeeNotificationListProvider);
 
     return notifAsync.when(
-      loading: () => _buildLoading(),
-      error: (e, _) => AppErrorWidget(
-        title: 'Unable to Load Notifications',
+      loading: () => const EmployeePageLoading(cardCount: 5),
+      error: (e, _) => EmployeePageError(
         message: e.toString(),
         onRetry: () => ref.invalidate(employeeNotificationListProvider),
       ),
       data: (notifications) => _NotificationCentreContent(
         notifications: notifications,
-      ),
-    );
-  }
-
-  Widget _buildLoading() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.pagePadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SkeletonLoader(height: 36, width: 240),
-          const SizedBox(height: AppSpacing.s6),
-          ...List.generate(5, (_) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.s4),
-            child: SkeletonLoader(height: 80, borderRadius: AppRadius.br2),
-          )),
-        ],
       ),
     );
   }
@@ -66,7 +47,7 @@ class _NotificationCentreContent extends StatefulWidget {
 
 class _NotificationCentreContentState
     extends State<_NotificationCentreContent> {
-  String _filter = 'all'; // 'all' or filter by type
+  String _filter = 'all';
 
   List<InAppNotification> get _filtered {
     if (_filter == 'all') return widget.notifications;
@@ -78,65 +59,83 @@ class _NotificationCentreContentState
     final filtered = _filtered;
     final total = widget.notifications.length;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.pagePadding),
+    return EmployeePageScaffold(
+      title: 'Notifications',
+      subtitle: total > 0
+          ? '$total notification${total == 1 ? "" : "s"}'
+          : 'All caught up!',
+      icon: Icons.notifications_rounded,
+      scrollable: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── Header ───
-          Text('Notifications', style: AppTypography.display.copyWith(
-            fontSize: 32, fontWeight: FontWeight.w700,
-          )),
-          const SizedBox(height: AppSpacing.s2),
-          Text(
-            total > 0
-                ? '$total notification${total == 1 ? "" : "s"}'
-                : 'All caught up!',
-            style: AppTypography.body.copyWith(color: AppColors.n500),
-          ),
-          const SizedBox(height: AppSpacing.s6),
-
-          // ─── Filter Chips ───
+          // -- Filter Chips --
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.md),
             child: Row(
               children: [
-                _FilterChip(label: 'All ($total)', value: 'all', current: _filter,
-                    onTap: () => setState(() => _filter = 'all')),
-                const SizedBox(width: AppSpacing.s2),
-                _FilterChip(label: 'Overdue', value: 'overdue', current: _filter,
-                    onTap: () => setState(() => _filter = 'overdue')),
-                const SizedBox(width: AppSpacing.s2),
-                _FilterChip(label: 'Due Soon', value: 'due_soon', current: _filter,
-                    onTap: () => setState(() => _filter = 'due_soon')),
-                const SizedBox(width: AppSpacing.s2),
-                _FilterChip(label: 'Assignments', value: 'assignment', current: _filter,
-                    onTap: () => setState(() => _filter = 'assignment')),
-                const SizedBox(width: AppSpacing.s2),
-                _FilterChip(label: 'Retraining', value: 'retraining', current: _filter,
-                    onTap: () => setState(() => _filter = 'retraining')),
+                _FilterChip(
+                  label: 'All ($total)',
+                  value: 'all',
+                  current: _filter,
+                  onTap: () => setState(() => _filter = 'all'),
+                ),
+                const SizedBox(width: PharmaSpacing.sm),
+                _FilterChip(
+                  label: 'Overdue',
+                  value: 'overdue',
+                  current: _filter,
+                  onTap: () => setState(() => _filter = 'overdue'),
+                ),
+                const SizedBox(width: PharmaSpacing.sm),
+                _FilterChip(
+                  label: 'Due Soon',
+                  value: 'due_soon',
+                  current: _filter,
+                  onTap: () => setState(() => _filter = 'due_soon'),
+                ),
+                const SizedBox(width: PharmaSpacing.sm),
+                _FilterChip(
+                  label: 'Assignments',
+                  value: 'assignment',
+                  current: _filter,
+                  onTap: () => setState(() => _filter = 'assignment'),
+                ),
+                const SizedBox(width: PharmaSpacing.sm),
+                _FilterChip(
+                  label: 'Retraining',
+                  value: 'retraining',
+                  current: _filter,
+                  onTap: () => setState(() => _filter = 'retraining'),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.s6),
+          const SizedBox(height: PharmaSpacing.lg),
 
-          // ─── Notification List ───
+          // -- Notification List --
           if (filtered.isEmpty)
-            AppEmptyState(
-              icon: Icons.notifications_none_outlined,
+            const EmployeePageEmpty(
               title: 'No Notifications',
-              description: 'Notifications about training assignments, deadlines, and compliance updates will appear here.',
+              subtitle:
+                  'Notifications about training assignments, deadlines, and compliance updates will appear here.',
+              icon: Icons.notifications_none_outlined,
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s3),
-              itemBuilder: (context, index) {
-                final n = filtered[index];
-                return _NotificationCard(notification: n);
-              },
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: PharmaSpacing.md,
+                ),
+                itemCount: filtered.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: PharmaSpacing.md),
+                itemBuilder: (context, index) {
+                  final n = filtered[index];
+                  return _NotificationCard(notification: n);
+                },
+              ),
             ),
         ],
       ),
@@ -151,30 +150,30 @@ class _NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.n0,
-      borderRadius: AppRadius.br2,
+      color: PharmaColors.cardBg,
+      borderRadius: PharmaRadius.cardRadius,
       child: InkWell(
-        borderRadius: AppRadius.br2,
+        borderRadius: PharmaRadius.cardRadius,
         onTap: () {
           final route = _routeForNotification(notification);
           if (route != null) context.go(route);
         },
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.s4),
+          padding: const EdgeInsets.all(PharmaSpacing.lg),
           decoration: BoxDecoration(
-            borderRadius: AppRadius.br2,
-            border: Border.all(color: AppColors.n200),
-            boxShadow: AppShadows.sh1,
+            borderRadius: PharmaRadius.cardRadius,
+            border: Border.all(color: PharmaColors.borderLight),
+            boxShadow: PharmaShadows.sm,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Icon
               Container(
-                padding: const EdgeInsets.all(AppSpacing.s3),
+                padding: const EdgeInsets.all(PharmaSpacing.md),
                 decoration: BoxDecoration(
                   color: _iconColor(notification.type).withValues(alpha: 0.1),
-                  borderRadius: AppRadius.br2,
+                  borderRadius: PharmaRadius.cardRadius,
                 ),
                 child: Icon(
                   _iconForType(notification.type),
@@ -182,7 +181,7 @@ class _NotificationCard extends StatelessWidget {
                   size: 20,
                 ),
               ),
-              const SizedBox(width: AppSpacing.s4),
+              const SizedBox(width: PharmaSpacing.lg),
               // Content
               Expanded(
                 child: Column(
@@ -190,45 +189,56 @@ class _NotificationCard extends StatelessWidget {
                   children: [
                     Text(
                       notification.courseTitle,
-                      style: AppTypography.title.copyWith(fontSize: 15),
+                      style: PharmaTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.s1),
+                    const SizedBox(height: PharmaSpacing.xs),
                     Text(
                       notification.message,
-                      style: AppTypography.body.copyWith(color: AppColors.n500),
+                      style: PharmaTypography.body.copyWith(
+                        color: PharmaColors.textSecondary,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: AppSpacing.s2),
+                    const SizedBox(height: PharmaSpacing.sm),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: PharmaSpacing.sm,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: _iconColor(notification.type).withValues(alpha: 0.1),
-                            borderRadius: AppRadius.br5,
+                            color: _iconColor(notification.type)
+                                .withValues(alpha: 0.1),
+                            borderRadius: PharmaRadius.pillRadius,
                           ),
                           child: Text(
                             _typeLabel(notification.type),
-                            style: AppTypography.caption.copyWith(
+                            style: PharmaTypography.labelSmall.copyWith(
                               color: _iconColor(notification.type),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.s3),
-                        Icon(Icons.calendar_today, size: 12, color: AppColors.n400),
+                        const SizedBox(width: PharmaSpacing.md),
+                        Icon(Icons.calendar_today,
+                            size: 12, color: PharmaColors.gray400),
                         const SizedBox(width: 4),
                         Text(
                           'Due: ${notification.dueDate}',
-                          style: AppTypography.caption.copyWith(color: AppColors.n400),
+                          style: PharmaTypography.caption.copyWith(
+                            color: PharmaColors.gray400,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.n400),
+              Icon(Icons.chevron_right, color: PharmaColors.gray400),
             ],
           ),
         ),
@@ -237,54 +247,36 @@ class _NotificationCard extends StatelessWidget {
   }
 
   IconData _iconForType(String type) {
-    switch (type) {
-      case 'overdue':
-        return Icons.warning_amber_rounded;
-      case 'due_soon':
-        return Icons.schedule;
-      case 'assignment':
-        return Icons.assignment_outlined;
-      case 'completion':
-        return Icons.check_circle_outline;
-      case 'retraining':
-        return Icons.refresh;
-      default:
-        return Icons.notifications_outlined;
-    }
+    return switch (type) {
+      'overdue' => Icons.warning_amber_rounded,
+      'due_soon' => Icons.schedule,
+      'assignment' => Icons.assignment_outlined,
+      'completion' => Icons.check_circle_outline,
+      'retraining' => Icons.refresh,
+      _ => Icons.notifications_outlined,
+    };
   }
 
   Color _iconColor(String type) {
-    switch (type) {
-      case 'overdue':
-        return AppColors.danger;
-      case 'due_soon':
-        return AppColors.warning;
-      case 'assignment':
-        return AppColors.blue;
-      case 'completion':
-        return AppColors.success;
-      case 'retraining':
-        return AppColors.teal;
-      default:
-        return AppColors.n500;
-    }
+    return switch (type) {
+      'overdue' => PharmaColors.danger,
+      'due_soon' => PharmaColors.warning,
+      'assignment' => PharmaColors.info,
+      'completion' => PharmaColors.success,
+      'retraining' => PharmaColors.emerald600,
+      _ => PharmaColors.gray500,
+    };
   }
 
   String _typeLabel(String type) {
-    switch (type) {
-      case 'overdue':
-        return 'Overdue';
-      case 'due_soon':
-        return 'Due Soon';
-      case 'assignment':
-        return 'Assignment';
-      case 'completion':
-        return 'Completed';
-      case 'retraining':
-        return 'Retraining';
-      default:
-        return 'Info';
-    }
+    return switch (type) {
+      'overdue' => 'Overdue',
+      'due_soon' => 'Due Soon',
+      'assignment' => 'Assignment',
+      'completion' => 'Completed',
+      'retraining' => 'Retraining',
+      _ => 'Info',
+    };
   }
 
   String? _routeForNotification(InAppNotification n) {
@@ -314,17 +306,23 @@ class _FilterChip extends StatelessWidget {
     final isActive = value == current;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: AppSpacing.s2),
+      child: AnimatedContainer(
+        duration: PharmaDurations.fast,
+        padding: const EdgeInsets.symmetric(
+          horizontal: PharmaSpacing.lg,
+          vertical: PharmaSpacing.sm,
+        ),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.blue : AppColors.n0,
-          borderRadius: AppRadius.br5,
-          border: Border.all(color: isActive ? AppColors.blue : AppColors.n200),
+          color: isActive ? PharmaColors.emerald600 : PharmaColors.cardBg,
+          borderRadius: PharmaRadius.pillRadius,
+          border: Border.all(
+            color: isActive ? PharmaColors.emerald600 : PharmaColors.borderLight,
+          ),
         ),
         child: Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: isActive ? AppColors.n0 : AppColors.n600,
+          style: PharmaTypography.labelSmall.copyWith(
+            color: isActive ? Colors.white : PharmaColors.gray600,
             fontWeight: FontWeight.w600,
           ),
         ),

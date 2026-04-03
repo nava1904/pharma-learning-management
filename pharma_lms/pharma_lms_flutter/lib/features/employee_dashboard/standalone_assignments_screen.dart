@@ -8,6 +8,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
+import 'widgets/employee_page_scaffold.dart';
 
 final _myStandaloneRecipientsProvider =
     FutureProvider.autoDispose<List<StandaloneAssignmentRecipient>>((ref) async {
@@ -22,59 +23,27 @@ class EmployeeStandaloneAssignmentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(_myStandaloneRecipientsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Assignments'),
+    return async.when(
+      loading: () => const EmployeePageLoading(cardCount: 4),
+      error: (e, _) => EmployeePageError(
+        message: '$e',
+        onRetry: () => ref.invalidate(_myStandaloneRecipientsProvider),
       ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Could not load assignments', style: PharmaTypography.headingSmall),
-                const SizedBox(height: 8),
-                Text('$e', style: PharmaTypography.caption),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => ref.invalidate(_myStandaloneRecipientsProvider),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        data: (rows) {
-          if (rows.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.task_alt, size: 56, color: PharmaColors.gray300),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No standalone assignments yet',
-                      style: PharmaTypography.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'When a trainer assigns you a task here, it will appear in this list.',
-                      style: PharmaTypography.caption,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(_myStandaloneRecipientsProvider),
-            child: ListView.separated(
+      data: (rows) {
+        if (rows.isEmpty) {
+          return const EmployeePageEmpty(
+            title: 'No standalone assignments yet',
+            subtitle: 'When a trainer assigns you a task here, it will appear in this list.',
+            icon: Icons.task_alt,
+          );
+        }
+        return EmployeePageScaffold(
+          title: 'Assignments',
+          subtitle: '${rows.length} task${rows.length == 1 ? '' : 's'}',
+          icon: Icons.task_alt_rounded,
+          onRefresh: () async => ref.invalidate(_myStandaloneRecipientsProvider),
+          scrollable: false,
+          child: ListView.separated(
               padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
               itemCount: rows.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -114,8 +83,7 @@ class EmployeeStandaloneAssignmentsScreen extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
+      );
   }
 }
 
@@ -224,14 +192,12 @@ class _EmployeeStandaloneAssignmentDetailScreenState
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const EmployeePageLoading(cardCount: 2);
     }
     if (_error != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Assignment')),
-        body: Center(child: Text(_error!)),
+      return EmployeePageError(
+        message: _error!,
+        onRetry: _load,
       );
     }
     final r = _row!;
@@ -240,15 +206,19 @@ class _EmployeeStandaloneAssignmentDetailScreenState
     final submitted = r.status == 'submitted';
     final due = a?.dueAt;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(a?.title ?? 'Assignment'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+    return EmployeePageScaffold(
+      title: a?.title ?? 'Assignment',
+      subtitle: submitted ? 'Submitted' : 'Pending response',
+      icon: Icons.task_alt_rounded,
+      actions: [
+        TextButton.icon(
           onPressed: () => context.go('/employee/standalone-assignments'),
+          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+          label: const Text('Back to list'),
         ),
-      ),
-      body: ListView(
+      ],
+      scrollable: false,
+      child: ListView(
         padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
         children: [
           if (due != null)
