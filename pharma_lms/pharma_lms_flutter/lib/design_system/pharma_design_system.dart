@@ -588,15 +588,47 @@ abstract class PharmaTypography {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SIZING — Component dimensions (Fitts's Law)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+abstract class PharmaSizing {
+  PharmaSizing._();
+
+  // Navigation
+  static const double sidebarWidth = 240.0;
+  static const double sidebarWidthExpanded = 280.0;
+  static const double topBarHeight = 56.0;
+  static const double bottomNavHeight = 64.0;
+
+  // Components
+  static const double buttonHeight = 48.0;
+  static const double buttonHeightSmall = 36.0;
+  static const double inputHeight = 44.0;
+  static const double minTapTarget = 44.0; // Apple HIG minimum
+
+  // Course viewer
+  static const double courseOutlineWidth = 320.0;
+
+  // Cards
+  static const double cardMaxWidth = 380.0;
+  static const double courseCardHeight = 280.0;
+  static const double credentialCardHeight = 200.0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ANIMATION DURATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 abstract class PharmaDurations {
   PharmaDurations._();
 
-  static const Duration fast = Duration(milliseconds: 150);
+  static const Duration fast = Duration(milliseconds: 120);
   static const Duration normal = Duration(milliseconds: 200);
   static const Duration slow = Duration(milliseconds: 300);
+  static const Duration page = Duration(milliseconds: 280);
+
+  // Stagger delay for list animations
+  static const Duration stagger = Duration(milliseconds: 40);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

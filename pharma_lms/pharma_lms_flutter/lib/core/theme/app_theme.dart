@@ -3,28 +3,9 @@ import 'package:flutter/material.dart';
 import '../../design_system/pharma_design_system.dart';
 import 'app_typography.dart';
 
-/// App spacing constants (0.625rem = 10px base).
-class AppSpacing {
-  AppSpacing._();
-
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 24;
-  static const double xxl = 32;
-}
-
-/// App radius (0.625rem = 10px).
-class AppRadius {
-  AppRadius._();
-
-  static const double sm = 6;
-  static const double md = 8;
-  static const double lg = 10;
-  static const double xl = 12;
-  static const double xxl = 16;
-}
+// Note: AppSpacing and AppRadius were previously defined here but are now
+// consolidated in the canonical design system (PharmaSpacing, PharmaRadius).
+// For backward compatibility, they remain in design_system/tokens.dart.
 
 /// Vyuh lms theme — unified with PharmaDesignSystem tokens.
 class AppTheme {
