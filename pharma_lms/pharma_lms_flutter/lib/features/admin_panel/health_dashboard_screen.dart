@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../core/client.dart';
@@ -13,7 +15,7 @@ class HealthDashboardScreen extends StatefulWidget {
 }
 
 class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
-  Map<String, dynamic>? _health;
+  Map<String, String>? _health;
   bool _loading = true;
   String? _error;
 
@@ -39,7 +41,7 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
     try {
       final health = await client.analytics.getSystemHealth();
       setState(() {
-        _health = health;
+        _health = health.map((k, v) => MapEntry(k, v.toString()));
         _loading = false;
       });
     } catch (e) {
@@ -50,7 +52,7 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
     }
   }
 
-  void _showSuccessSnackBar(String message, {Map<String, dynamic>? result}) {
+  void _showSuccessSnackBar(String message, {Map<String, String>? result}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -104,7 +106,7 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
     setState(() => _jobLoadingStates[jobName] = true);
     try {
       final result = await jobFn();
-      _showSuccessSnackBar('$jobName completed successfully', result: result);
+      _showSuccessSnackBar('$jobName completed successfully', result: result.map((k, v) => MapEntry(k, v.toString())));
       _load(); // Refresh to show updated job history
     } catch (e) {
       _showErrorSnackBar('$jobName failed: $e');
@@ -157,8 +159,8 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
   }
 
   Widget _buildHeroHeader() {
-    final dlqCount = _health?['dlqCount'] as int? ?? 0;
-    final dbOk = _health?['databaseConnected'] as bool? ?? false;
+    final dlqCount = int.tryParse(_health?['dlqCount'] ?? '') ?? 0;
+    final dbOk = _health?['databaseConnected'] == 'true';
 
     return Container(
       decoration: BoxDecoration(
@@ -332,10 +334,17 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
   }
 
   Widget _buildDashboardContent() {
-    final dbOk = _health!['databaseConnected'] as bool? ?? false;
-    final dlqCount = _health!['dlqCount'] as int? ?? 0;
-    final kafkaLag = _health!['kafkaConsumerLag'] as int? ?? 0;
-    final recentJobs = _health!['recentJobs'] as List<dynamic>? ?? [];
+    final dbOk = _health!['databaseConnected'] == 'true';
+    final dlqCount = int.tryParse(_health!['dlqCount'] ?? '') ?? 0;
+    final kafkaLag = int.tryParse(_health!['kafkaConsumerLag'] ?? '') ?? 0;
+    final recentJobsRaw = _health!['recentJobs'];
+    List<dynamic> recentJobs = [];
+    if (recentJobsRaw != null && recentJobsRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(recentJobsRaw);
+        if (decoded is List) recentJobs = decoded;
+      } catch (_) {}
+    }
 
     return Container(
       decoration: BoxDecoration(

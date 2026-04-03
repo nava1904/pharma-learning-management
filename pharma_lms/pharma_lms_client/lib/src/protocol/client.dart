@@ -1106,8 +1106,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
   );
 
   /// IT-02: System health - job status, DLQ count, DB connectivity.
-  _i3.Future<Map<String, dynamic>> getSystemHealth() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getSystemHealth() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'getSystemHealth',
         {},
@@ -1115,19 +1115,18 @@ class EndpointAnalytics extends _i2.EndpointRef {
 
   /// IT-WF-04: Manual trigger for background jobs.
   /// Supported jobNames: CertExpiryCheck, NotificationWorker, ComplianceCalc, AuditTrailIntegrityCheck
-  _i3.Future<Map<String, dynamic>> triggerManualJob({
-    required String jobName,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
-    'analytics',
-    'triggerManualJob',
-    {'jobName': jobName},
-  );
+  _i3.Future<Map<String, String>> triggerManualJob({required String jobName}) =>
+      caller.callServerEndpoint<Map<String, String>>(
+        'analytics',
+        'triggerManualJob',
+        {'jobName': jobName},
+      );
 
   /// SYS-WF-04: Run certificate expiry check job.
   /// Creates renewal assignments for certificates expiring in 30-60 days.
   /// Marks expired certificates and logs to audit trail.
-  _i3.Future<Map<String, dynamic>> runCertExpiryCheck() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> runCertExpiryCheck() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'runCertExpiryCheck',
         {},
@@ -1135,8 +1134,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
 
   /// SYS-WF-05: Run notification worker job.
   /// Processes escalation ladder for due/overdue enrollments.
-  _i3.Future<Map<String, dynamic>> runNotificationWorker() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> runNotificationWorker() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'runNotificationWorker',
         {},
@@ -1144,8 +1143,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
 
   /// SYS-WF-07: Run compliance calculation job.
   /// Computes org-wide and dept-wide compliance, writes snapshots.
-  _i3.Future<Map<String, dynamic>> runComplianceCalc() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> runComplianceCalc() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'runComplianceCalc',
         {},
@@ -1154,16 +1153,16 @@ class EndpointAnalytics extends _i2.EndpointRef {
   /// SYS-WF-08: Run audit trail integrity check (CRITICAL - 21 CFR Part 11).
   /// Verifies SHA-256 hashes and sequence continuity.
   /// Throws exception if integrity issues found.
-  _i3.Future<Map<String, dynamic>> runAuditTrailIntegrityCheck() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> runAuditTrailIntegrityCheck() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'runAuditTrailIntegrityCheck',
         {},
       );
 
   /// Aggregate KPIs for the admin dashboard (org-scoped enrollments, compliance average).
-  _i3.Future<Map<String, dynamic>> getAdminDashboardKpis() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getAdminDashboardKpis() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'getAdminDashboardKpis',
         {},
@@ -1260,8 +1259,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// SOP retraining queue - documents with training_required, employees not retrained.
-  _i3.Future<List<Map<String, dynamic>>> getSopRetrainingQueue() =>
-      caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  _i3.Future<List<Map<String, String>>> getSopRetrainingQueue() =>
+      caller.callServerEndpoint<List<Map<String, String>>>(
         'analytics',
         'getSopRetrainingQueue',
         {},
@@ -1275,24 +1274,24 @@ class EndpointAnalytics extends _i2.EndpointRef {
   );
 
   /// ANA-02: Training vs deviation correlation - departments/courses with deviation count vs training completion, CAPA effectiveness rate.
-  _i3.Future<Map<String, dynamic>> getTrainingVsDeviationCorrelation() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getTrainingVsDeviationCorrelation() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'getTrainingVsDeviationCorrelation',
         {},
       );
 
   /// QA-07: Compliance vs deviation overlay - training completion vs deviation count by department.
-  _i3.Future<Map<String, dynamic>> getComplianceDeviationOverlay() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getComplianceDeviationOverlay() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'getComplianceDeviationOverlay',
         {},
       );
 
   /// ANA-03: SLA policy status and breach count.
-  _i3.Future<Map<String, dynamic>> getSlaSummary() =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getSlaSummary() =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'getSlaSummary',
         {},
@@ -1453,8 +1452,8 @@ class EndpointAnalytics extends _i2.EndpointRef {
       );
 
   /// Get employee dashboard summary (combines multiple data sources for efficiency).
-  _i3.Future<Map<String, dynamic>> getEmployeeDashboardSummary(int userId) =>
-      caller.callServerEndpoint<Map<String, dynamic>>(
+  _i3.Future<Map<String, String>> getEmployeeDashboardSummary(int userId) =>
+      caller.callServerEndpoint<Map<String, String>>(
         'analytics',
         'getEmployeeDashboardSummary',
         {'userId': userId},
@@ -1552,9 +1551,9 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
   );
 
   /// TRN-WF-03: Get questions in a bank with count for validation.
-  _i3.Future<Map<String, dynamic>> getQuestionBankDetails({
+  _i3.Future<Map<String, String>> getQuestionBankDetails({
     required int questionBankId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'assessmentBuilder',
     'getQuestionBankDetails',
     {'questionBankId': questionBankId},
@@ -1619,9 +1618,9 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
 
   /// TRN-WF-03: Validate assessment configuration for QA submission.
   /// Returns validation status and any issues found.
-  _i3.Future<Map<String, dynamic>> validateAssessmentForSubmission({
+  _i3.Future<Map<String, String>> validateAssessmentForSubmission({
     required int assessmentId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'assessmentBuilder',
     'validateAssessmentForSubmission',
     {'assessmentId': assessmentId},
@@ -2477,12 +2476,12 @@ class EndpointCourseBuilder extends _i2.EndpointRef {
   /// This clones all modules and lessons, increments version, and sets supersededByVersionId.
   /// changeSummary is MANDATORY - describes what changed and why.
   /// Returns the new CourseVersion with all content copied.
-  _i3.Future<Map<String, dynamic>> createNewVersionFromExisting({
+  _i3.Future<Map<String, String>> createNewVersionFromExisting({
     required int existingVersionId,
     required String changeSummary,
     required bool isMajorVersion,
     int? createdById,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'courseBuilder',
     'createNewVersionFromExisting',
     {
@@ -2654,7 +2653,7 @@ class EndpointCourse extends _i2.EndpointRef {
   /// TRN-WF-01: Create Course with initial CourseVersion v1.0 atomically.
   /// This is the correct workflow entry point for trainers creating new courses.
   /// Returns a map with 'course' and 'courseVersion' keys.
-  _i3.Future<Map<String, dynamic>> createCourseWithVersion({
+  _i3.Future<Map<String, String>> createCourseWithVersion({
     required String title,
     required int organizationId,
     String? sopNumber,
@@ -2663,7 +2662,7 @@ class EndpointCourse extends _i2.EndpointRef {
     String? previewVideoUrl,
     String? imageUrl,
     String? tags,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'course',
     'createCourseWithVersion',
     {
@@ -2956,9 +2955,9 @@ class EndpointEvent extends _i2.EndpointRef {
 
   /// Trigger CAPA training complete event (SYS-WF-06).
   /// Sets effectiveness check due date and updates CAPA status.
-  _i3.Future<Map<String, dynamic>> triggerCapaTrainingComplete({
+  _i3.Future<Map<String, String>> triggerCapaTrainingComplete({
     required int capaId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'event',
     'triggerCapaTrainingComplete',
     {'capaId': capaId},
@@ -2967,9 +2966,9 @@ class EndpointEvent extends _i2.EndpointRef {
   /// SYS-WF-08b: Compliance Drop Alert - check departments below threshold and notify QA.
   /// Triggers: When compliance rate falls below configured threshold (default 90%).
   /// Actions: Creates compliance alerts, notifies QA team, records in audit trail.
-  _i3.Future<Map<String, dynamic>> triggerComplianceDropAlert({
+  _i3.Future<Map<String, String>> triggerComplianceDropAlert({
     required double threshold,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'event',
     'triggerComplianceDropAlert',
     {'threshold': threshold},
@@ -2978,9 +2977,9 @@ class EndpointEvent extends _i2.EndpointRef {
   /// SYS-WF-09: New Training Course Release - assigns training to target roles.
   /// Triggers: When a new course version is published (status='effective').
   /// Actions: Uses TrainingMatrix to assign to affected job roles.
-  _i3.Future<Map<String, dynamic>> triggerNewCourseRelease({
+  _i3.Future<Map<String, String>> triggerNewCourseRelease({
     required int courseVersionId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'event',
     'triggerNewCourseRelease',
     {'courseVersionId': courseVersionId},
@@ -3005,7 +3004,7 @@ class EndpointInspection extends _i2.EndpointRef {
   );
 
   /// Create inspection record and generate time-limited access token.
-  _i3.Future<Map<String, dynamic>> createInspectionRecord({
+  _i3.Future<Map<String, String>> createInspectionRecord({
     required String inspectionType,
     required int siteId,
     String? scopeDescription,
@@ -3013,7 +3012,7 @@ class EndpointInspection extends _i2.EndpointRef {
     String? inspectorNames,
     required int tokenHoursValid,
     int? createdById,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'inspection',
     'createInspectionRecord',
     {
@@ -3028,9 +3027,9 @@ class EndpointInspection extends _i2.EndpointRef {
   );
 
   /// Validate auditor token and return session scope.
-  _i3.Future<Map<String, dynamic>?> validateAuditorToken({
+  _i3.Future<Map<String, String>?> validateAuditorToken({
     required String token,
-  }) => caller.callServerEndpoint<Map<String, dynamic>?>(
+  }) => caller.callServerEndpoint<Map<String, String>?>(
     'inspection',
     'validateAuditorToken',
     {'token': token},
@@ -3084,9 +3083,9 @@ class EndpointInspection extends _i2.EndpointRef {
   );
 
   /// Generate evidence package for auditor (token-based). One-click from auditor portal.
-  _i3.Future<Map<String, dynamic>> generateEvidencePackageForAuditor({
+  _i3.Future<Map<String, String>> generateEvidencePackageForAuditor({
     required String token,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'inspection',
     'generateEvidencePackageForAuditor',
     {'token': token},
@@ -3094,10 +3093,10 @@ class EndpointInspection extends _i2.EndpointRef {
 
   /// Generate inspection package (summary of in-scope records).
   /// Creates package with isOfficial: false; QA Director must sign to make official.
-  _i3.Future<Map<String, dynamic>> generateInspectionPackage({
+  _i3.Future<Map<String, String>> generateInspectionPackage({
     required int inspectionRecordId,
     required int generatedById,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'inspection',
     'generateInspectionPackage',
     {
@@ -3129,11 +3128,11 @@ class EndpointInspection extends _i2.EndpointRef {
   /// AUD-02: Search employees for audit with full training chain.
   /// Returns users matching query (by name, email, or ID) with assignments,
   /// enrollments, training records, certificates.
-  _i3.Future<List<Map<String, dynamic>>> searchEmployeesForAudit({
+  _i3.Future<List<Map<String, String>>> searchEmployeesForAudit({
     required String query,
     int? inspectionRecordId,
     required int limit,
-  }) => caller.callServerEndpoint<List<Map<String, dynamic>>>(
+  }) => caller.callServerEndpoint<List<Map<String, String>>>(
     'inspection',
     'searchEmployeesForAudit',
     {
@@ -3146,10 +3145,10 @@ class EndpointInspection extends _i2.EndpointRef {
   /// AUD-03: SOP training coverage - qualified vs non-qualified users.
   /// qualified = completed training for that SOP/course version.
   /// nonQualified = users in affected depts/roles who haven't completed.
-  _i3.Future<Map<String, dynamic>> getSopTrainingCoverage({
+  _i3.Future<Map<String, String>> getSopTrainingCoverage({
     required int sopDocumentId,
     required int versionId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'inspection',
     'getSopTrainingCoverage',
     {
@@ -3565,9 +3564,9 @@ class EndpointMaterial extends _i2.EndpointRef {
       );
 
   /// Get material with all its versions for Version History display.
-  _i3.Future<Map<String, dynamic>> getMaterialWithVersions({
+  _i3.Future<Map<String, String>> getMaterialWithVersions({
     required int materialId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'material',
     'getMaterialWithVersions',
     {'materialId': materialId},
@@ -4093,11 +4092,11 @@ class EndpointOq extends _i2.EndpointRef {
 
   /// Check if all practical checklist items for a competency are passed by a user,
   /// with both evaluator and trainee e-signatures.
-  _i3.Future<Map<String, dynamic>> getOqProgress({
+  _i3.Future<Map<String, String>> getOqProgress({
     required int userId,
     required int competencyId,
     required int organizationId,
-  }) => caller.callServerEndpoint<Map<String, dynamic>>(
+  }) => caller.callServerEndpoint<Map<String, String>>(
     'oq',
     'getOqProgress',
     {

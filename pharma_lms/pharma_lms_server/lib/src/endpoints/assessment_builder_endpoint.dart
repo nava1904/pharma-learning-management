@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:serverpod/serverpod.dart';
 
 import '../audit_event_types.dart';
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
 import '../services/rbac_helper.dart';
+
+/// Converts a Map<String, dynamic> to Map<String, String> for Serverpod wire serialization.
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v is Map || v is List ? jsonEncode(v) : (v?.toString() ?? '')));
 
 /// Assessment builder endpoint for SME/trainers.
 /// TRN-WF-03: Build Assessment and Question Bank
@@ -129,7 +135,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
   }
   
   /// TRN-WF-03: Get questions in a bank with count for validation.
-  Future<Map<String, dynamic>> getQuestionBankDetails(
+  Future<Map<String, String>> getQuestionBankDetails(
     Session session, {
     required int questionBankId,
   }) async {
@@ -152,7 +158,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     final multipleChoiceCount = questions.where((q) => q.questionType == 'multiple_choice').length;
     final trueFalseCount = questions.where((q) => q.questionType == 'true_false').length;
     
-    return {
+    return _stringifyMap({
       'id': bank.id,
       'name': bank.name,
       'totalQuestions': questions.length,
@@ -167,7 +173,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
       },
       // TRN-WF-03: Maximum questions that can be displayed (half of total)
       'maxQuestionsToDisplay': (questions.length / 2).floor(),
-    };
+    });
   }
 
   /// TRN-WF-03: Create assessment with 2x question pool validation.
@@ -286,7 +292,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
   
   /// TRN-WF-03: Validate assessment configuration for QA submission.
   /// Returns validation status and any issues found.
-  Future<Map<String, dynamic>> validateAssessmentForSubmission(
+  Future<Map<String, String>> validateAssessmentForSubmission(
     Session session, {
     required int assessmentId,
   }) async {
@@ -319,7 +325,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
       issues.add('Passing score must be between 10 and 100');
     }
     
-    return {
+    return _stringifyMap({
       'valid': issues.isEmpty,
       'issues': issues,
       'assessment': {
@@ -331,7 +337,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
         'passingScore': assessment.passingScore,
         'randomize': assessment.randomize,
       },
-    };
+    });
   }
 
   /// Admin/Trainer: List assessments for an organization (basic admin visibility).

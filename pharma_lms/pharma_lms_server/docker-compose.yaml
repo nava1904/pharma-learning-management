@@ -11,11 +11,29 @@ services:
     volumes:
       - pharma_lms_data:/var/lib/postgresql/data
 
+  # PgBouncer — connection pooling in transaction mode.
+  # Serverpod connects to PgBouncer (port 6432), PgBouncer multiplexes to PostgreSQL.
+  # This allows 200+ Serverpod connections to share ~50 real PostgreSQL connections.
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.0
+    ports:
+      - "6432:6432"
+    environment:
+      DATABASE_URL: "postgres://postgres:vtiA6Sewk4NgyriJtYgg0zEHR1EZvsAr@postgres:5432/pharma_lms"
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 400
+      DEFAULT_POOL_SIZE: 50
+      MIN_POOL_SIZE: 10
+      SERVER_RESET_QUERY: "DISCARD ALL"
+      AUTH_TYPE: plain
+    depends_on:
+      - postgres
+
   redis:
-    image: redis:6.2.6
+    image: redis:7-alpine
     ports:
       - "8091:6379"
-    command: redis-server --requirepass "O0m9SlB724P6jFwbfZS-t0A2WNEZCgIH"
+    command: redis-server --requirepass "O0m9SlB724P6jFwbfZS-t0A2WNEZCgIH" --maxmemory 256mb --maxmemory-policy allkeys-lru
     environment:
       - REDIS_REPLICATION_MODE=master
 
@@ -32,7 +50,7 @@ services:
       - pharma_lms_test_data:/var/lib/postgresql/data
 
   redis_test:
-    image: redis:6.2.6
+    image: redis:7-alpine
     ports:
       - "9091:6379"
     command: redis-server --requirepass "c1G-6w5hSrRZL-H6QH5hFAkqIpmQrlfh"

@@ -8,6 +8,10 @@ import '../services/system_automation_service.dart';
 import '../services/audit_service.dart';
 import '../audit_event_types.dart';
 
+/// Converts a Map<String, dynamic> to Map<String, String> for Serverpod wire serialization.
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v is Map || v is List ? jsonEncode(v) : (v?.toString() ?? '')));
+
 /// Event trigger endpoint — invokes workflow processors (Kafka/future calls, automation services).
 /// Triggers future calls (SOP update retraining, employee onboarding).
 /// Implements all Pharma LMS event workflows per GMP and 21 CFR Part 11.
@@ -63,7 +67,7 @@ class EventEndpoint extends Endpoint {
 
   /// Trigger CAPA training complete event (SYS-WF-06).
   /// Sets effectiveness check due date and updates CAPA status.
-  Future<Map<String, dynamic>> triggerCapaTrainingComplete(
+  Future<Map<String, String>> triggerCapaTrainingComplete(
     Session session, {
     required int capaId,
   }) async {
@@ -72,16 +76,16 @@ class EventEndpoint extends Endpoint {
         session,
         capaId: capaId,
       );
-      return {'success': true, 'capaId': capaId, 'message': 'CAPA training complete processed'};
+      return _stringifyMap({'success': true, 'capaId': capaId, 'message': 'CAPA training complete processed'});
     } catch (e) {
-      return {'success': false, 'capaId': capaId, 'error': e.toString()};
+      return _stringifyMap({'success': false, 'capaId': capaId, 'error': e.toString()});
     }
   }
 
   /// SYS-WF-08b: Compliance Drop Alert - check departments below threshold and notify QA.
   /// Triggers: When compliance rate falls below configured threshold (default 90%).
   /// Actions: Creates compliance alerts, notifies QA team, records in audit trail.
-  Future<Map<String, dynamic>> triggerComplianceDropAlert(
+  Future<Map<String, String>> triggerComplianceDropAlert(
     Session session, {
     double threshold = 0.90,
   }) async {
@@ -150,21 +154,21 @@ class EventEndpoint extends Endpoint {
         }
       }
       
-      return {
+      return _stringifyMap({
         'success': true,
         'alertCount': alertedDepartments.length,
         'alertedDepartments': alertedDepartments,
         'threshold': threshold * 100,
-      };
+      });
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      return _stringifyMap({'success': false, 'error': e.toString()});
     }
   }
 
   /// SYS-WF-09: New Training Course Release - assigns training to target roles.
   /// Triggers: When a new course version is published (status='effective').
   /// Actions: Uses TrainingMatrix to assign to affected job roles.
-  Future<Map<String, dynamic>> triggerNewCourseRelease(
+  Future<Map<String, String>> triggerNewCourseRelease(
     Session session, {
     required int courseVersionId,
   }) async {
@@ -175,7 +179,7 @@ class EventEndpoint extends Endpoint {
         include: CourseVersion.include(course: Course.include()),
       );
       if (courseVersion == null) {
-        return {'success': false, 'error': 'Course version not found'};
+        return _stringifyMap({'success': false, 'error': 'Course version not found'});
       }
       
       final courseId = courseVersion.courseId;
@@ -187,11 +191,11 @@ class EventEndpoint extends Endpoint {
       );
       
       if (matrixRows.isEmpty) {
-        return {
+        return _stringifyMap({
           'success': true,
           'message': 'No training matrix entries found for this course',
           'assignmentsCreated': 0,
-        };
+        });
       }
       
       final assignedUserIds = <int>[];
@@ -268,14 +272,14 @@ class EventEndpoint extends Endpoint {
         reason: 'New course release - ${assignedUserIds.length} assignments created',
       );
       
-      return {
+      return _stringifyMap({
         'success': true,
         'courseVersionId': courseVersionId,
         'assignmentsCreated': assignedUserIds.length,
         'assignedUserIds': assignedUserIds,
-      };
+      });
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      return _stringifyMap({'success': false, 'error': e.toString()});
     }
   }
 }

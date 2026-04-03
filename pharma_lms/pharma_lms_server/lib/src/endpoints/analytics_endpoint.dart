@@ -10,8 +10,9 @@ import '../services/scheduled_job_service.dart';
 
 /// Converts a Map<String, dynamic> to Map<String, String> so Serverpod can
 /// serialize it across the wire (Serverpod cannot deserialize `dynamic`).
+/// Nested Maps/Lists are JSON-encoded; scalars use `.toString()`.
 Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
-    m.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+    m.map((k, v) => MapEntry(k, v is Map || v is List ? jsonEncode(v) : (v?.toString() ?? '')));
 
 /// Analytics & Reporting domain endpoint.
 class AnalyticsEndpoint extends Endpoint {
@@ -212,12 +213,12 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// IT-02: System health - job status, DLQ count, DB connectivity.
-  Future<Map<String, dynamic>> getSystemHealth(Session session) async {
+  Future<Map<String, String>> getSystemHealth(Session session) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) {
-      return {'databaseConnected': false, 'dlqCount': 0, 'kafkaConsumerLag': 0, 'recentJobs': <Map<String, dynamic>>[]};
+      return _stringifyMap({'databaseConnected': false, 'dlqCount': 0, 'kafkaConsumerLag': 0, 'recentJobs': <Map<String, dynamic>>[]});
     }
     if (!await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read')) {
-      return {'databaseConnected': false, 'dlqCount': 0, 'kafkaConsumerLag': 0, 'recentJobs': <Map<String, dynamic>>[]};
+      return _stringifyMap({'databaseConnected': false, 'dlqCount': 0, 'kafkaConsumerLag': 0, 'recentJobs': <Map<String, dynamic>>[]});
     }
     var dbOk = true;
     try {
@@ -238,7 +239,7 @@ class AnalyticsEndpoint extends Endpoint {
       orderDescending: true,
       limit: 5,
     );
-    return {
+    return _stringifyMap({
       'databaseConnected': dbOk,
       'dlqCount': dlqCount,
       'kafkaConsumerLag': 0,
@@ -251,12 +252,12 @@ class AnalyticsEndpoint extends Endpoint {
                 'recordsProcessed': j.recordsProcessed,
               })
           .toList(),
-    };
+    });
   }
 
   /// IT-WF-04: Manual trigger for background jobs.
   /// Supported jobNames: CertExpiryCheck, NotificationWorker, ComplianceCalc, AuditTrailIntegrityCheck
-  Future<Map<String, dynamic>> triggerManualJob(
+  Future<Map<String, String>> triggerManualJob(
     Session session, {
     required String jobName,
   }) async {
@@ -264,13 +265,13 @@ class AnalyticsEndpoint extends Endpoint {
     
     switch (jobName) {
       case 'CertExpiryCheck':
-        return await ScheduledJobService.runCertExpiryCheck(session);
+        return _stringifyMap(await ScheduledJobService.runCertExpiryCheck(session));
       case 'NotificationWorker':
-        return await ScheduledJobService.runNotificationWorker(session);
+        return _stringifyMap(await ScheduledJobService.runNotificationWorker(session));
       case 'ComplianceCalc':
-        return await ScheduledJobService.runComplianceCalc(session);
+        return _stringifyMap(await ScheduledJobService.runComplianceCalc(session));
       case 'AuditTrailIntegrityCheck':
-        return await ScheduledJobService.runAuditTrailIntegrityCheck(session);
+        return _stringifyMap(await ScheduledJobService.runAuditTrailIntegrityCheck(session));
       default:
         // Legacy: just log the trigger
         await ScheduledJobLog.db.insertRow(
@@ -281,58 +282,58 @@ class AnalyticsEndpoint extends Endpoint {
             recordsProcessed: 0,
           ),
         );
-        return {'success': true, 'jobName': jobName, 'message': 'Job triggered (legacy mode)'};
+        return _stringifyMap({'success': true, 'jobName': jobName, 'message': 'Job triggered (legacy mode)'});
     }
   }
 
   /// SYS-WF-04: Run certificate expiry check job.
   /// Creates renewal assignments for certificates expiring in 30-60 days.
   /// Marks expired certificates and logs to audit trail.
-  Future<Map<String, dynamic>> runCertExpiryCheck(Session session) async {
+  Future<Map<String, String>> runCertExpiryCheck(Session session) async {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
-    return await ScheduledJobService.runCertExpiryCheck(session);
+    return _stringifyMap(await ScheduledJobService.runCertExpiryCheck(session));
   }
 
   /// SYS-WF-05: Run notification worker job.
   /// Processes escalation ladder for due/overdue enrollments.
-  Future<Map<String, dynamic>> runNotificationWorker(Session session) async {
+  Future<Map<String, String>> runNotificationWorker(Session session) async {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
-    return await ScheduledJobService.runNotificationWorker(session);
+    return _stringifyMap(await ScheduledJobService.runNotificationWorker(session));
   }
 
   /// SYS-WF-07: Run compliance calculation job.
   /// Computes org-wide and dept-wide compliance, writes snapshots.
-  Future<Map<String, dynamic>> runComplianceCalc(Session session) async {
+  Future<Map<String, String>> runComplianceCalc(Session session) async {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
-    return await ScheduledJobService.runComplianceCalc(session);
+    return _stringifyMap(await ScheduledJobService.runComplianceCalc(session));
   }
 
   /// SYS-WF-08: Run audit trail integrity check (CRITICAL - 21 CFR Part 11).
   /// Verifies SHA-256 hashes and sequence continuity.
   /// Throws exception if integrity issues found.
-  Future<Map<String, dynamic>> runAuditTrailIntegrityCheck(Session session) async {
+  Future<Map<String, String>> runAuditTrailIntegrityCheck(Session session) async {
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'write');
-    return await ScheduledJobService.runAuditTrailIntegrityCheck(session);
+    return _stringifyMap(await ScheduledJobService.runAuditTrailIntegrityCheck(session));
   }
 
   /// Aggregate KPIs for the admin dashboard (org-scoped enrollments, compliance average).
-  Future<Map<String, dynamic>> getAdminDashboardKpis(Session session) async {
+  Future<Map<String, String>> getAdminDashboardKpis(Session session) async {
     final me = await RbacHelper.getCurrentPharmaUser(session);
     if (me == null) {
-      return {
+      return _stringifyMap({
         'totalEnrollments': 0,
         'overdueEnrollments': 0,
         'complianceRatePercent': 0,
-      };
+      });
     }
     final canSee = await RbacHelper.hasPermission(session, resource: 'analytics', action: 'read') ||
         await RbacHelper.hasPermission(session, resource: 'admin', action: 'read');
     if (!canSee) {
-      return {
+      return _stringifyMap({
         'totalEnrollments': 0,
         'overdueEnrollments': 0,
         'complianceRatePercent': 0,
-      };
+      });
     }
     final orgId = me.organizationId;
     final orgUsers = await PharmaUser.db.find(
@@ -359,11 +360,11 @@ class AnalyticsEndpoint extends Endpoint {
           summaries.map((s) => s.complianceRate).reduce((a, b) => a + b) / summaries.length;
     }
     final complianceRatePercent = (avgCompliance * 100).round().clamp(0, 100);
-    return {
+    return _stringifyMap({
       'totalEnrollments': totalEnrollments,
       'overdueEnrollments': overdueEnrollments,
       'complianceRatePercent': complianceRatePercent,
-    };
+    });
   }
 
   /// Department compliance summary.
@@ -594,7 +595,7 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// SOP retraining queue - documents with training_required, employees not retrained.
-  Future<List<Map<String, dynamic>>> getSopRetrainingQueue(
+  Future<List<Map<String, String>>> getSopRetrainingQueue(
     Session session,
   ) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
@@ -603,13 +604,13 @@ class AnalyticsEndpoint extends Endpoint {
       session,
       where: (t) => t.trainingRequiredByQa.equals('training_required'),
     );
-    final result = <Map<String, dynamic>>[];
+    final result = <Map<String, String>>[];
     for (final doc in docs) {
-      result.add({
+      result.add(_stringifyMap({
         'documentId': doc.id,
         'title': doc.title,
         'documentNumber': doc.documentNumber,
-      });
+      }));
     }
     return result;
   }
@@ -630,11 +631,11 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// ANA-02: Training vs deviation correlation - departments/courses with deviation count vs training completion, CAPA effectiveness rate.
-  Future<Map<String, dynamic>> getTrainingVsDeviationCorrelation(
+  Future<Map<String, String>> getTrainingVsDeviationCorrelation(
     Session session,
   ) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) {
-      return {'byDepartment': <Map<String, dynamic>>[], 'capaEffectivenessRate': 0.0, 'totalCapas': 0, 'closedCapas': 0};
+      return _stringifyMap({'byDepartment': <Map<String, dynamic>>[], 'capaEffectivenessRate': 0.0, 'totalCapas': 0, 'closedCapas': 0});
     }
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final departments = await Department.db.find(session);
@@ -656,20 +657,20 @@ class AnalyticsEndpoint extends Endpoint {
         'complianceRate': metrics.complianceRate,
       });
     }
-    return {
+    return _stringifyMap({
       'byDepartment': deptData,
       'capaEffectivenessRate': capaEffectiveness,
       'totalCapas': allCapas.length,
       'closedCapas': closedCapas,
-    };
+    });
   }
 
   /// QA-07: Compliance vs deviation overlay - training completion vs deviation count by department.
-  Future<Map<String, dynamic>> getComplianceDeviationOverlay(
+  Future<Map<String, String>> getComplianceDeviationOverlay(
     Session session,
   ) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) {
-      return {'departmentCompliance': <Map<String, dynamic>>[], 'highRiskDepartments': <Map<String, dynamic>>[], 'totalDeviations': 0};
+      return _stringifyMap({'departmentCompliance': <Map<String, dynamic>>[], 'highRiskDepartments': <Map<String, dynamic>>[], 'totalDeviations': 0});
     }
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final summary = await getDepartmentComplianceSummary(session);
@@ -688,7 +689,7 @@ class AnalyticsEndpoint extends Endpoint {
         });
       }
     }
-    return {
+    return _stringifyMap({
       'departmentCompliance': summary
           .map((s) => {
                 'departmentName': s.departmentName,
@@ -698,23 +699,23 @@ class AnalyticsEndpoint extends Endpoint {
           .toList(),
       'highRiskDepartments': highRisk,
       'totalDeviations': capas.length,
-    };
+    });
   }
 
   /// ANA-03: SLA policy status and breach count.
-  Future<Map<String, dynamic>> getSlaSummary(Session session) async {
+  Future<Map<String, String>> getSlaSummary(Session session) async {
     if (await RbacHelper.getCurrentPharmaUser(session) == null) {
-      return {'policyCount': 0, 'totalBreaches': 0, 'openBreachCount': 0};
+      return _stringifyMap({'policyCount': 0, 'totalBreaches': 0, 'openBreachCount': 0});
     }
     await RbacHelper.requirePermission(session, resource: 'analytics', action: 'read');
     final policies = await SlaPolicy.db.find(session);
     final breaches = await SlaBreach.db.find(session);
     final openBreaches = breaches.where((b) => b.resolvedAt == null).toList();
-    return {
+    return _stringifyMap({
       'policyCount': policies.length,
       'totalBreaches': breaches.length,
       'openBreachCount': openBreaches.length,
-    };
+    });
   }
 
   /// Compliance trend by calendar month. Prefers [AnalyticsSnapshot] rows; falls back
@@ -1751,7 +1752,7 @@ class AnalyticsEndpoint extends Endpoint {
   }
 
   /// Get employee dashboard summary (combines multiple data sources for efficiency).
-  Future<Map<String, dynamic>> getEmployeeDashboardSummary(
+  Future<Map<String, String>> getEmployeeDashboardSummary(
     Session session,
     int userId,
   ) async {
@@ -1825,7 +1826,7 @@ class AnalyticsEndpoint extends Endpoint {
 
     final activeCerts = certificates.where((c) => c.status == 'active').length;
 
-    return {
+    return _stringifyMap({
       'totalEnrolled': inProgress + toDo,
       'inProgress': inProgress,
       'completed': completed,
@@ -1837,6 +1838,6 @@ class AnalyticsEndpoint extends Endpoint {
       'monthlyHours': monthlyHours,
       'alerts': alerts,
       'alertCount': alerts.length,
-    };
+    });
   }
 }

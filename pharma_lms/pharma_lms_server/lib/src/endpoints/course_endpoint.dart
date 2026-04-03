@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
@@ -172,7 +174,7 @@ class CourseEndpoint extends Endpoint {
   /// TRN-WF-01: Create Course with initial CourseVersion v1.0 atomically.
   /// This is the correct workflow entry point for trainers creating new courses.
   /// Returns a map with 'course' and 'courseVersion' keys.
-  Future<Map<String, dynamic>> createCourseWithVersion(
+  Future<Map<String, String>> createCourseWithVersion(
     Session session, {
     required String title,
     required int organizationId,
@@ -228,8 +230,8 @@ class CourseEndpoint extends Endpoint {
     );
 
     return {
-      'course': createdCourse.toJson(),
-      'courseVersion': createdVersion.toJson(),
+      'course': jsonEncode(createdCourse.toJson()),
+      'courseVersion': jsonEncode(createdVersion.toJson()),
     };
   }
 

@@ -31,7 +31,22 @@ services:
           name: pharma-lms-db
           property: password
       - key: SERVERPOD_REDIS_ENABLED
-        value: "false"
+        value: "true"
+      - key: SERVERPOD_REDIS_HOST
+        fromService:
+          name: pharma-lms-redis
+          type: redis
+          property: host
+      - key: SERVERPOD_REDIS_PORT
+        fromService:
+          name: pharma-lms-redis
+          type: redis
+          property: port
+      - key: SERVERPOD_REDIS_PASSWORD
+        fromService:
+          name: pharma-lms-redis
+          type: redis
+          property: password
       - key: SERVERPOD_API_SERVER_PORT
         value: "8080"
       - key: SERVERPOD_RUN_MODE
@@ -60,3 +75,9 @@ databases:
     region: oregon
     plan: starter
     postgresMajorVersion: "15"
+
+# Redis for session sharing, WebSocket pub/sub, cache, and future call coordination.
+# Render does not natively support Redis in render.yaml — use the Render dashboard
+# to create a managed Redis instance, or use Upstash/Redis Cloud.
+# Then set these env vars on the pharma-lms-api service:
+#   SERVERPOD_REDIS_HOST, SERVERPOD_REDIS_PORT, SERVERPOD_REDIS_PASSWORD

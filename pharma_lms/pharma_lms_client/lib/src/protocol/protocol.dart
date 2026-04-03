@@ -1325,9 +1325,9 @@ class Protocol extends _i1.SerializationManager {
           )
           as T;
     }
-    if (t == Map<String, dynamic>) {
+    if (t == Map<String, String>) {
       return (data as Map).map(
-            (k, v) => MapEntry(deserialize<String>(k), deserialize<dynamic>(v)),
+            (k, v) => MapEntry(deserialize<String>(k), deserialize<String>(v)),
           )
           as T;
     }
@@ -1370,9 +1370,9 @@ class Protocol extends _i1.SerializationManager {
       return (data as List).map((e) => deserialize<_i142.Capa>(e)).toList()
           as T;
     }
-    if (t == List<Map<String, dynamic>>) {
+    if (t == List<Map<String, String>>) {
       return (data as List)
-              .map((e) => deserialize<Map<String, dynamic>>(e))
+              .map((e) => deserialize<Map<String, String>>(e))
               .toList()
           as T;
     }
@@ -1380,18 +1380,6 @@ class Protocol extends _i1.SerializationManager {
       return (data as List)
               .map((e) => deserialize<_i143.ComplianceTrendPoint>(e))
               .toList()
-          as T;
-    }
-    if (t == List<Map<String, String>>) {
-      return (data as List)
-              .map((e) => deserialize<Map<String, String>>(e))
-              .toList()
-          as T;
-    }
-    if (t == Map<String, String>) {
-      return (data as Map).map(
-            (k, v) => MapEntry(deserialize<String>(k), deserialize<String>(v)),
-          )
           as T;
     }
     if (t == List<_i144.Assessment>) {
@@ -1414,6 +1402,18 @@ class Protocol extends _i1.SerializationManager {
       return (data as List)
               .map((e) => deserialize<_i147.QuestionBank>(e))
               .toList()
+          as T;
+    }
+    if (t == List<Map<String, dynamic>>) {
+      return (data as List)
+              .map((e) => deserialize<Map<String, dynamic>>(e))
+              .toList()
+          as T;
+    }
+    if (t == Map<String, dynamic>) {
+      return (data as Map).map(
+            (k, v) => MapEntry(deserialize<String>(k), deserialize<dynamic>(v)),
+          )
           as T;
     }
     if (t == List<_i148.AssessmentResult>) {
@@ -1502,11 +1502,11 @@ class Protocol extends _i1.SerializationManager {
               .toList()
           as T;
     }
-    if (t == _i1.getType<Map<String, dynamic>?>()) {
+    if (t == _i1.getType<Map<String, String>?>()) {
       return (data != null
               ? (data as Map).map(
                   (k, v) =>
-                      MapEntry(deserialize<String>(k), deserialize<dynamic>(v)),
+                      MapEntry(deserialize<String>(k), deserialize<String>(v)),
                 )
               : null)
           as T;

@@ -18,11 +18,33 @@ services:
       timeout: 5s
       retries: 5
 
+  # PgBouncer — connection pooler in transaction mode.
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.0
+    ports:
+      - "6432:6432"
+    environment:
+      DATABASE_URL: "postgres://postgres:vtiA6Sewk4NgyriJtYgg0zEHR1EZvsAr@postgres:5432/pharma_lms"
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 400
+      DEFAULT_POOL_SIZE: 50
+      MIN_POOL_SIZE: 10
+      SERVER_RESET_QUERY: "DISCARD ALL"
+      AUTH_TYPE: plain
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U postgres || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     ports:
       - "8091:6379"
-    command: redis-server --requirepass "O0m9SlB724P6jFwbfZS-t0A2WNEZCgIH"
+    command: redis-server --requirepass "O0m9SlB724P6jFwbfZS-t0A2WNEZCgIH" --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "O0m9SlB724P6jFwbfZS-t0A2WNEZCgIH", "ping"]
       interval: 5s

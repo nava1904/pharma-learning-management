@@ -687,7 +687,7 @@ class MaterialEndpoint extends Endpoint {
   }
 
   /// Get material with all its versions for Version History display.
-  Future<Map<String, dynamic>> getMaterialWithVersions(
+  Future<Map<String, String>> getMaterialWithVersions(
     Session session, {
     required int materialId,
   }) async {
@@ -705,10 +705,10 @@ class MaterialEndpoint extends Endpoint {
     );
     
     return {
-      'material': material.toJson(),
-      'versions': versions.map((v) => v.toJson()).toList(),
-      'versionCount': versions.length,
-      'latestVersion': versions.isNotEmpty ? versions.first.version : 0,
+      'material': jsonEncode(material.toJson()),
+      'versions': jsonEncode(versions.map((v) => v.toJson()).toList()),
+      'versionCount': versions.length.toString(),
+      'latestVersion': (versions.isNotEmpty ? versions.first.version : 0).toString(),
     };
   }
 }

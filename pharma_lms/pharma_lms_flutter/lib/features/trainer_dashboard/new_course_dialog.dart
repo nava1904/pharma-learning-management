@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
@@ -76,14 +78,17 @@ class _NewCourseDialogState extends State<NewCourseDialog> {
         createdById: widget.createdById,
       );
 
-      final courseData = result['course'];
+      final courseJson = result['course'];
       final Course course;
-      if (courseData is Course) {
-        course = courseData;
-      } else if (courseData is Map<String, dynamic>) {
-        course = Course.fromJson(courseData);
+      if (courseJson != null && courseJson.isNotEmpty) {
+        final decoded = jsonDecode(courseJson);
+        if (decoded is Map<String, dynamic>) {
+          course = Course.fromJson(decoded);
+        } else {
+          throw Exception('Unexpected course data format');
+        }
       } else {
-        throw Exception('Unexpected course data type: ${courseData.runtimeType}');
+        throw Exception('No course data returned');
       }
 
       if (mounted) {

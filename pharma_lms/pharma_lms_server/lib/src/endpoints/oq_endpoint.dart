@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../services/audit_service.dart';
 import '../services/esignature_service.dart';
 import '../services/rbac_helper.dart';
+
+/// Converts a Map<String, dynamic> to Map<String, String> for Serverpod wire serialization.
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v is Map || v is List ? jsonEncode(v) : (v?.toString() ?? '')));
 
 /// Operator Qualification (OQ) / On-the-Job Training (OJT) workflow endpoint.
 /// Implements the 4-phase OQ process: Theoretical → Practical → Dual E-Signature → QA Verification.
@@ -247,7 +253,7 @@ class OqEndpoint extends Endpoint {
 
   /// Check if all practical checklist items for a competency are passed by a user,
   /// with both evaluator and trainee e-signatures.
-  Future<Map<String, dynamic>> getOqProgress(
+  Future<Map<String, String>> getOqProgress(
     Session session, {
     required int userId,
     required int competencyId,
@@ -266,7 +272,7 @@ class OqEndpoint extends Endpoint {
     );
 
     if (items.isEmpty) {
-      return {
+      return _stringifyMap({
         'totalItems': 0,
         'passedItems': 0,
         'failedItems': 0,
@@ -275,7 +281,7 @@ class OqEndpoint extends Endpoint {
         'allDualSigned': false,
         'progressPct': 0.0,
         'details': <Map<String, dynamic>>[],
-      };
+      });
     }
 
     int passed = 0;
@@ -334,7 +340,7 @@ class OqEndpoint extends Endpoint {
     final total = items.length;
     final pct = total > 0 ? (passed / total * 100.0) : 0.0;
 
-    return {
+    return _stringifyMap({
       'totalItems': total,
       'passedItems': passed,
       'failedItems': failed,
@@ -343,10 +349,10 @@ class OqEndpoint extends Endpoint {
       'allDualSigned': allDualSigned,
       'progressPct': pct,
       'details': details,
-    };
+    });
   }
 
-  Map<String, dynamic> _emptyProgress() => {
+  Map<String, String> _emptyProgress() => _stringifyMap({
         'totalItems': 0,
         'passedItems': 0,
         'failedItems': 0,
@@ -355,7 +361,7 @@ class OqEndpoint extends Endpoint {
         'allDualSigned': false,
         'progressPct': 0.0,
         'details': <Map<String, dynamic>>[],
-      };
+      });
 
   // ─── QA Verification & Competency Award ───────────────────────────
 
@@ -382,13 +388,13 @@ class OqEndpoint extends Endpoint {
       organizationId: organizationId,
     );
 
-    if (progress['allPassed'] != true) {
+    if (progress['allPassed'] != 'true') {
       throw Exception(
         'Cannot award competency: not all checklist items passed. '
         '${progress["passedItems"]}/${progress["totalItems"]} passed.',
       );
     }
-    if (progress['allDualSigned'] != true) {
+    if (progress['allDualSigned'] != 'true') {
       throw Exception(
         'Cannot award competency: not all observations have dual e-signatures.',
       );

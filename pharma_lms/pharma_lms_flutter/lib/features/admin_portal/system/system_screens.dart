@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -412,7 +414,7 @@ class AdminSystemHealthScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScreen> {
-  Map<String, dynamic>? _health;
+  Map<String, String>? _health;
   String? _error;
   bool _loading = true;
 
@@ -431,7 +433,7 @@ class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScree
       final h = await client.analytics.getSystemHealth();
       if (mounted) {
         setState(() {
-          _health = h;
+          _health = h.map((k, v) => MapEntry(k, v.toString()));
           _loading = false;
         });
       }
@@ -499,8 +501,8 @@ class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScree
 
   Widget _buildMetricRow(BuildContext context) {
     final h = _health!;
-    final dbOk = h['databaseConnected'] == true;
-    final dlq = h['dlqCount'];
+    final dbOk = h['databaseConnected'] == 'true';
+    final dlq = int.tryParse(h['dlqCount'] ?? '');
     final lag = h['kafkaConsumerLag'];
     return Wrap(
       spacing: PharmaSpacing.md,
@@ -516,7 +518,7 @@ class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScree
           'Dead-letter queue',
           dlq == null ? '—' : '$dlq unresolved',
           Icons.queue_outlined,
-          (dlq is int && dlq > 0) ? PharmaColors.warningText : PharmaColors.success,
+          (dlq != null && dlq > 0) ? PharmaColors.warningText : PharmaColors.success,
         ),
         _buildHealthCard(
           'Event consumer lag',
@@ -553,9 +555,15 @@ class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScree
     );
   }
 
-  Widget _buildRecentJobs(Map<String, dynamic> h) {
+  Widget _buildRecentJobs(Map<String, String> h) {
     final raw = h['recentJobs'];
-    final jobs = raw is List ? raw : <dynamic>[];
+    List<dynamic> jobs = [];
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) jobs = decoded;
+      } catch (_) {}
+    }
     final rows = <List<String>>[];
     for (final j in jobs) {
       if (j is! Map) continue;

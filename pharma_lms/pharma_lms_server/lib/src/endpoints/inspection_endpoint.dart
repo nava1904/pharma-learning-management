@@ -9,6 +9,10 @@ import '../services/audit_service.dart';
 import '../services/esignature_service.dart';
 import '../services/rbac_helper.dart';
 
+/// Converts a Map<String, dynamic> to Map<String, String> for Serverpod wire serialization.
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v is Map || v is List ? jsonEncode(v) : (v?.toString() ?? '')));
+
 /// Inspection and auditor access endpoint.
 class InspectionEndpoint extends Endpoint {
   /// List inspection records (for Admin/QA).
@@ -28,7 +32,7 @@ class InspectionEndpoint extends Endpoint {
   }
 
   /// Create inspection record and generate time-limited access token.
-  Future<Map<String, dynamic>> createInspectionRecord(
+  Future<Map<String, String>> createInspectionRecord(
     Session session, {
     required String inspectionType,
     required int siteId,
@@ -64,16 +68,16 @@ class InspectionEndpoint extends Endpoint {
       userId: createdById,
     );
 
-    return {
+    return _stringifyMap({
       'inspectionRecordId': inserted.id,
       'accessToken': token,
       'expiresAt': expiresAt.toIso8601String(),
       'inviteUrl': '/auditor?token=$token',
-    };
+    });
   }
 
   /// Validate auditor token and return session scope.
-  Future<Map<String, dynamic>?> validateAuditorToken(
+  Future<Map<String, String>?> validateAuditorToken(
     Session session, {
     required String token,
   }) async {
@@ -86,13 +90,13 @@ class InspectionEndpoint extends Endpoint {
     );
     if (records.isEmpty) return null;
     final r = records.first;
-    return {
+    return _stringifyMap({
       'inspectionRecordId': r.id,
       'scopeDescription': r.scopeDescription,
       'expiresAt': r.tokenExpiresAt?.toIso8601String(),
       'siteName': r.site?.name,
       'inspectorNames': r.inspectorNames,
-    };
+    });
   }
 
   /// List page logs for an inspection record (for auditor session widget).
@@ -190,13 +194,13 @@ class InspectionEndpoint extends Endpoint {
   }
 
   /// Generate evidence package for auditor (token-based). One-click from auditor portal.
-  Future<Map<String, dynamic>> generateEvidencePackageForAuditor(
+  Future<Map<String, String>> generateEvidencePackageForAuditor(
     Session session, {
     required String token,
   }) async {
     final validation = await validateAuditorToken(session, token: token);
     if (validation == null) throw Exception('Invalid or expired token');
-    final inspectionRecordId = validation['inspectionRecordId'] as int?;
+    final inspectionRecordId = int.tryParse(validation['inspectionRecordId'] ?? '');
     if (inspectionRecordId == null) throw Exception('Invalid token response');
     final record = await InspectionRecord.db.findById(session, inspectionRecordId);
     if (record == null) throw Exception('Inspection record not found');
@@ -217,7 +221,7 @@ class InspectionEndpoint extends Endpoint {
 
   /// Generate inspection package (summary of in-scope records).
   /// Creates package with isOfficial: false; QA Director must sign to make official.
-  Future<Map<String, dynamic>> generateInspectionPackage(
+  Future<Map<String, String>> generateInspectionPackage(
     Session session, {
     required int inspectionRecordId,
     required int generatedById,
@@ -255,13 +259,13 @@ class InspectionEndpoint extends Endpoint {
     );
     final inserted = await InspectionPackage.db.insertRow(session, pkg);
 
-    return {
+    return _stringifyMap({
       'packageId': inserted.id,
       'fileHash': hash,
       'watermarkText': pkg.watermarkText,
       'includedRecordsCount': pkg.includedRecordsCount,
       'isOfficial': pkg.isOfficial,
-    };
+    });
   }
 
   /// Sign inspection package as official (QA Director e-sign). ADM-10.
@@ -322,7 +326,7 @@ class InspectionEndpoint extends Endpoint {
   /// AUD-02: Search employees for audit with full training chain.
   /// Returns users matching query (by name, email, or ID) with assignments,
   /// enrollments, training records, certificates.
-  Future<List<Map<String, dynamic>>> searchEmployeesForAudit(
+  Future<List<Map<String, String>>> searchEmployeesForAudit(
     Session session, {
     required String query,
     int? inspectionRecordId,
@@ -356,7 +360,7 @@ class InspectionEndpoint extends Endpoint {
       );
     }
 
-    final results = <Map<String, dynamic>>[];
+    final results = <Map<String, String>>[];
     for (final user in users) {
       final userId = user.id!;
       final assignments = await TrainingAssignment.db.find(
@@ -391,7 +395,7 @@ class InspectionEndpoint extends Endpoint {
         ),
       );
 
-      results.add({
+      results.add(_stringifyMap({
         'userId': userId,
         'user': {
           'id': user.id,
@@ -441,7 +445,7 @@ class InspectionEndpoint extends Endpoint {
                   'courseTitle': c.courseVersion?.course?.title,
                 })
             .toList(),
-      });
+      }));
     }
     return results;
   }
@@ -449,7 +453,7 @@ class InspectionEndpoint extends Endpoint {
   /// AUD-03: SOP training coverage - qualified vs non-qualified users.
   /// qualified = completed training for that SOP/course version.
   /// nonQualified = users in affected depts/roles who haven't completed.
-  Future<Map<String, dynamic>> getSopTrainingCoverage(
+  Future<Map<String, String>> getSopTrainingCoverage(
     Session session, {
     required int sopDocumentId,
     required int versionId,
@@ -558,10 +562,10 @@ class InspectionEndpoint extends Endpoint {
       }
     }
 
-    return {
+    return _stringifyMap({
       'qualified': qualified,
       'nonQualified': nonQualified,
-    };
+    });
   }
 
   String _generateSecureToken() {

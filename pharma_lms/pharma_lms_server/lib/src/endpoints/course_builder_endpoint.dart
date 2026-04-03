@@ -6,6 +6,10 @@ import '../generated/protocol.dart';
 import '../services/audit_service.dart';
 import '../services/rbac_helper.dart';
 
+/// Converts a Map<String, dynamic> to Map<String, String> for Serverpod wire serialization.
+Map<String, String> _stringifyMap(Map<String, dynamic> m) =>
+    m.map((k, v) => MapEntry(k, v is Map || v is List ? jsonEncode(v) : (v?.toString() ?? '')));
+
 /// Course builder endpoint for SME/trainers (TC-07: restricted editing).
 class CourseBuilderEndpoint extends Endpoint {
   Future<Module> createModule(
@@ -165,7 +169,7 @@ class CourseBuilderEndpoint extends Endpoint {
   /// This clones all modules and lessons, increments version, and sets supersededByVersionId.
   /// changeSummary is MANDATORY - describes what changed and why.
   /// Returns the new CourseVersion with all content copied.
-  Future<Map<String, dynamic>> createNewVersionFromExisting(
+  Future<Map<String, String>> createNewVersionFromExisting(
     Session session, {
     required int existingVersionId,
     required String changeSummary,
@@ -288,14 +292,14 @@ class CourseBuilderEndpoint extends Endpoint {
       userId: createdById,
     );
 
-    return {
+    return _stringifyMap({
       'courseVersion': newCourseVersion.toJson(),
       'oldVersionId': existingVersionId,
       'oldVersion': currentVersion,
       'newVersion': newVersion,
       'modulesCopied': oldModules.length,
       'changeSummary': changeSummary,
-    };
+    });
   }
 
   /// Helper to increment version string.

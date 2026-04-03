@@ -29,9 +29,9 @@ final adminDashboardKpiProvider = FutureProvider<AdminDashboardKpi>((ref) async 
         .length;
 
     final kpis = await client.analytics.getAdminDashboardKpis();
-    final totalEnrollments = (kpis['totalEnrollments'] as num?)?.toInt() ?? 0;
-    final complianceRate = (kpis['complianceRatePercent'] as num?)?.toInt() ?? 0;
-    final overdueCount = (kpis['overdueEnrollments'] as num?)?.toInt() ?? 0;
+    final totalEnrollments = int.tryParse(kpis['totalEnrollments'] ?? '') ?? 0;
+    final complianceRate = int.tryParse(kpis['complianceRatePercent'] ?? '') ?? 0;
+    final overdueCount = int.tryParse(kpis['overdueEnrollments'] ?? '') ?? 0;
 
     return AdminDashboardKpi(
       totalUsers: users.length,
@@ -718,10 +718,10 @@ final adminTrainingAnalyticsProvider = FutureProvider<TrainingAnalytics>((ref) a
     
     // Fetch real analytics from backend
     final kpis = await client.analytics.getAdminDashboardKpis();
-    final completionRate = (kpis['completionRatePercent'] as num?)?.toInt() ?? 0;
-    final passRate = (kpis['passRatePercent'] as num?)?.toInt() ?? 0;
-    final averageScore = (kpis['averageScorePercent'] as num?)?.toInt() ?? 0;
-    final complianceRate = (kpis['complianceRatePercent'] as num?)?.toInt() ?? 0;
+    final completionRate = int.tryParse(kpis['completionRatePercent'] ?? '') ?? 0;
+    final passRate = int.tryParse(kpis['passRatePercent'] ?? '') ?? 0;
+    final averageScore = int.tryParse(kpis['averageScorePercent'] ?? '') ?? 0;
+    final complianceRate = int.tryParse(kpis['complianceRatePercent'] ?? '') ?? 0;
     
     return TrainingAnalytics(
       totalCourses: courses.length,

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -746,12 +748,13 @@ class _AdminCourseCreateScreenState extends ConsumerState<AdminCourseCreateScree
         createdById: me.id!,
       );
 
-      final courseData = created['course'];
+      final courseJson = created['course'];
       Course? course;
-      if (courseData is Course) {
-        course = courseData;
-      } else if (courseData is Map<String, dynamic>) {
-        course = Course.fromJson(courseData);
+      if (courseJson != null && courseJson.isNotEmpty) {
+        final decoded = jsonDecode(courseJson);
+        if (decoded is Map<String, dynamic>) {
+          course = Course.fromJson(decoded);
+        }
       }
       if (!mounted) return;
       ref.invalidate(adminCoursesProvider);

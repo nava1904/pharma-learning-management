@@ -2501,7 +2501,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getSystemHealth(
+  _i3.Future<Map<String, String>> getSystemHealth(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -2523,7 +2523,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -2531,7 +2531,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> triggerManualJob(
+  _i3.Future<Map<String, String>> triggerManualJob(
     _i1.TestSessionBuilder sessionBuilder, {
     required String jobName,
   }) async {
@@ -2554,7 +2554,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -2562,7 +2562,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> runCertExpiryCheck(
+  _i3.Future<Map<String, String>> runCertExpiryCheck(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -2584,7 +2584,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -2592,7 +2592,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> runNotificationWorker(
+  _i3.Future<Map<String, String>> runNotificationWorker(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -2614,7 +2614,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -2622,7 +2622,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> runComplianceCalc(
+  _i3.Future<Map<String, String>> runComplianceCalc(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -2644,7 +2644,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -2652,7 +2652,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> runAuditTrailIntegrityCheck(
+  _i3.Future<Map<String, String>> runAuditTrailIntegrityCheck(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -2674,7 +2674,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -2682,7 +2682,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getAdminDashboardKpis(
+  _i3.Future<Map<String, String>> getAdminDashboardKpis(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -2704,7 +2704,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -3047,7 +3047,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<List<Map<String, dynamic>>> getSopRetrainingQueue(
+  _i3.Future<List<Map<String, String>>> getSopRetrainingQueue(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -3069,7 +3069,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<Map<String, dynamic>>>);
+                as _i3.Future<List<Map<String, String>>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -3107,7 +3107,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getTrainingVsDeviationCorrelation(
+  _i3.Future<Map<String, String>> getTrainingVsDeviationCorrelation(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -3129,7 +3129,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -3137,7 +3137,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getComplianceDeviationOverlay(
+  _i3.Future<Map<String, String>> getComplianceDeviationOverlay(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -3159,7 +3159,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -3167,7 +3167,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getSlaSummary(
+  _i3.Future<Map<String, String>> getSlaSummary(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -3189,7 +3189,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -3755,7 +3755,7 @@ class _AnalyticsEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getEmployeeDashboardSummary(
+  _i3.Future<Map<String, String>> getEmployeeDashboardSummary(
     _i1.TestSessionBuilder sessionBuilder,
     int userId,
   ) async {
@@ -3778,7 +3778,7 @@ class _AnalyticsEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -3990,7 +3990,7 @@ class _AssessmentBuilderEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getQuestionBankDetails(
+  _i3.Future<Map<String, String>> getQuestionBankDetails(
     _i1.TestSessionBuilder sessionBuilder, {
     required int questionBankId,
   }) async {
@@ -4013,7 +4013,7 @@ class _AssessmentBuilderEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -4121,7 +4121,7 @@ class _AssessmentBuilderEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> validateAssessmentForSubmission(
+  _i3.Future<Map<String, String>> validateAssessmentForSubmission(
     _i1.TestSessionBuilder sessionBuilder, {
     required int assessmentId,
   }) async {
@@ -4144,7 +4144,7 @@ class _AssessmentBuilderEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -6331,7 +6331,7 @@ class _CourseBuilderEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> createNewVersionFromExisting(
+  _i3.Future<Map<String, String>> createNewVersionFromExisting(
     _i1.TestSessionBuilder sessionBuilder, {
     required int existingVersionId,
     required String changeSummary,
@@ -6362,7 +6362,7 @@ class _CourseBuilderEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -6822,7 +6822,7 @@ class _CourseEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> createCourseWithVersion(
+  _i3.Future<Map<String, String>> createCourseWithVersion(
     _i1.TestSessionBuilder sessionBuilder, {
     required String title,
     required int organizationId,
@@ -6861,7 +6861,7 @@ class _CourseEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7559,7 +7559,7 @@ class _EventEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> triggerCapaTrainingComplete(
+  _i3.Future<Map<String, String>> triggerCapaTrainingComplete(
     _i1.TestSessionBuilder sessionBuilder, {
     required int capaId,
   }) async {
@@ -7582,7 +7582,7 @@ class _EventEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7590,7 +7590,7 @@ class _EventEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> triggerComplianceDropAlert(
+  _i3.Future<Map<String, String>> triggerComplianceDropAlert(
     _i1.TestSessionBuilder sessionBuilder, {
     required double threshold,
   }) async {
@@ -7613,7 +7613,7 @@ class _EventEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7621,7 +7621,7 @@ class _EventEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> triggerNewCourseRelease(
+  _i3.Future<Map<String, String>> triggerNewCourseRelease(
     _i1.TestSessionBuilder sessionBuilder, {
     required int courseVersionId,
   }) async {
@@ -7646,7 +7646,7 @@ class _EventEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7696,7 +7696,7 @@ class _InspectionEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> createInspectionRecord(
+  _i3.Future<Map<String, String>> createInspectionRecord(
     _i1.TestSessionBuilder sessionBuilder, {
     required String inspectionType,
     required int siteId,
@@ -7733,7 +7733,7 @@ class _InspectionEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7741,7 +7741,7 @@ class _InspectionEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>?> validateAuditorToken(
+  _i3.Future<Map<String, String>?> validateAuditorToken(
     _i1.TestSessionBuilder sessionBuilder, {
     required String token,
   }) async {
@@ -7764,7 +7764,7 @@ class _InspectionEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>?>);
+                as _i3.Future<Map<String, String>?>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7885,7 +7885,7 @@ class _InspectionEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> generateEvidencePackageForAuditor(
+  _i3.Future<Map<String, String>> generateEvidencePackageForAuditor(
     _i1.TestSessionBuilder sessionBuilder, {
     required String token,
   }) async {
@@ -7908,7 +7908,7 @@ class _InspectionEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7916,7 +7916,7 @@ class _InspectionEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> generateInspectionPackage(
+  _i3.Future<Map<String, String>> generateInspectionPackage(
     _i1.TestSessionBuilder sessionBuilder, {
     required int inspectionRecordId,
     required int generatedById,
@@ -7943,7 +7943,7 @@ class _InspectionEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -7992,7 +7992,7 @@ class _InspectionEndpoint {
     });
   }
 
-  _i3.Future<List<Map<String, dynamic>>> searchEmployeesForAudit(
+  _i3.Future<List<Map<String, String>>> searchEmployeesForAudit(
     _i1.TestSessionBuilder sessionBuilder, {
     required String query,
     int? inspectionRecordId,
@@ -8021,7 +8021,7 @@ class _InspectionEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<List<Map<String, dynamic>>>);
+                as _i3.Future<List<Map<String, String>>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -8029,7 +8029,7 @@ class _InspectionEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getSopTrainingCoverage(
+  _i3.Future<Map<String, String>> getSopTrainingCoverage(
     _i1.TestSessionBuilder sessionBuilder, {
     required int sopDocumentId,
     required int versionId,
@@ -8056,7 +8056,7 @@ class _InspectionEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -9140,7 +9140,7 @@ class _MaterialEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getMaterialWithVersions(
+  _i3.Future<Map<String, String>> getMaterialWithVersions(
     _i1.TestSessionBuilder sessionBuilder, {
     required int materialId,
   }) async {
@@ -9163,7 +9163,7 @@ class _MaterialEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -10543,7 +10543,7 @@ class _OqEndpoint {
     });
   }
 
-  _i3.Future<Map<String, dynamic>> getOqProgress(
+  _i3.Future<Map<String, String>> getOqProgress(
     _i1.TestSessionBuilder sessionBuilder, {
     required int userId,
     required int competencyId,
@@ -10572,7 +10572,7 @@ class _OqEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<Map<String, dynamic>>);
+                as _i3.Future<Map<String, String>>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
