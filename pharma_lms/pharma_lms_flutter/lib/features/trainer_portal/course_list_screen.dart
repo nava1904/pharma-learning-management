@@ -17,6 +17,7 @@ import '../../design_system/pharma_design_system.dart';
 import '../../design_system/pharma_components.dart';
 import '../../providers/user_provider.dart';
 import '../trainer_dashboard/new_course_dialog.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class CourseListScreen extends ConsumerStatefulWidget {
   const CourseListScreen({super.key, this.initialSearch});
@@ -226,19 +227,12 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
                         if (_loading)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 48),
-                            child: Center(child: CircularProgressIndicator()),
+                            child: TrainerPageLoading(cardCount: 3),
                           )
                         else if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 48),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(_error!, style: TextStyle(color: PharmaColors.danger)),
-                                const SizedBox(height: 12),
-                                FilledButton(onPressed: _load, child: const Text('Retry')),
-                              ],
-                            ),
+                          TrainerPageError(
+                            message: _error!,
+                            onRetry: _load,
                           )
                         else if (_filteredCourses.isEmpty)
                           PharmaEmptyState(

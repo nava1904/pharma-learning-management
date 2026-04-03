@@ -4,6 +4,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class GradingScreen extends ConsumerStatefulWidget {
   const GradingScreen({super.key, required this.assessmentId});
@@ -195,40 +196,29 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Grading Queue', style: PharmaTypography.headingSmall),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: PharmaColors.textPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
-      body: _buildBody(),
+    return TrainerPageScaffold(
+      title: 'Grading Queue',
+      icon: Icons.grading_rounded,
+      scrollable: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _loadData,
+          tooltip: 'Refresh',
+        ),
+      ],
+      child: _buildBody(),
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const TrainerPageLoading(cardCount: 3);
     }
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, color: PharmaColors.danger, size: 48),
-            const SizedBox(height: 12),
-            Text(_errorMessage!, style: PharmaTypography.bodyMedium),
-            const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-          ],
-        ),
+      return TrainerPageError(
+        message: _errorMessage!,
+        onRetry: _loadData,
       );
     }
     if (_ungradedResults.isEmpty) {

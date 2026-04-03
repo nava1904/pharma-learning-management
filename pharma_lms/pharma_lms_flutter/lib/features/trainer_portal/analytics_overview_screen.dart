@@ -6,6 +6,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class AnalyticsOverviewScreen extends ConsumerStatefulWidget {
   const AnalyticsOverviewScreen({super.key});
@@ -131,24 +132,9 @@ class _AnalyticsOverviewScreenState
     return RefreshIndicator(
       onRefresh: _loadData,
       child: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const TrainerPageLoading(cardCount: 4)
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48, color: PharmaColors.danger),
-                      const SizedBox(height: 12),
-                      Text(_error!, style: PharmaTypography.body),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
+              ? TrainerPageError(message: _error!, onRetry: _loadData)
               : ListView(
                   padding:
                       const EdgeInsets.all(PharmaSpacing.pagePadding),

@@ -14,6 +14,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 final _documentsProvider = FutureProvider<List<Document>>((ref) async {
   final user = await ref.watch(currentUserProvider.future);
@@ -62,8 +63,11 @@ class _SopDocumentLibraryScreenState extends ConsumerState<SopDocumentLibraryScr
     final docsAsync = ref.watch(_documentsProvider);
 
     return docsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error loading documents: $e')),
+      loading: () => const TrainerPageLoading(cardCount: 4),
+      error: (e, _) => TrainerPageError(
+        message: 'Error loading documents: $e',
+        onRetry: () => ref.invalidate(_documentsProvider),
+      ),
       data: (allDocs) {
         final filtered = _applyFilters(allDocs);
         final docTypes = _getDocumentTypes(allDocs);

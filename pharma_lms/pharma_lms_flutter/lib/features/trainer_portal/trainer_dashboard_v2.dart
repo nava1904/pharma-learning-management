@@ -18,6 +18,7 @@ import '../../design_system/pharma_design_system.dart';
 import '../../design_system/pharma_components.dart';
 import '../../providers/user_provider.dart';
 import '../shared/communication_sheets.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 // ─── PROVIDERS ───────────────────────────────────────────────────────────────
 
@@ -97,11 +98,17 @@ class TrainerDashboardV2 extends ConsumerWidget {
     final coursesAsync = ref.watch(trainerCoursesProvider);
 
     return userAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const TrainerPageLoading(cardCount: 4),
+      error: (e, _) => TrainerPageError(
+        message: '$e',
+        onRetry: () => ref.invalidate(currentUserProvider),
+      ),
       data: (user) => coursesAsync.when(
         loading: () => const _DashboardSkeleton(),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => TrainerPageError(
+          message: '$e',
+          onRetry: () => ref.invalidate(trainerCoursesProvider),
+        ),
         data: (myCourses) => _DashboardContent(
           user: user,
           myCourses: myCourses,

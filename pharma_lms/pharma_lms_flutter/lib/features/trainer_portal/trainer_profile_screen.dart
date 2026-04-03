@@ -16,6 +16,7 @@ import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/user_provider.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 // ─── PROVIDERS ───────────────────────────────────────────────────────────────
 
@@ -121,8 +122,11 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
     final email = ref.watch(currentUserEmailProvider) ?? '';
 
     return userAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const TrainerPageLoading(cardCount: 3),
+      error: (e, _) => TrainerPageError(
+        message: 'Could not load profile: $e',
+        onRetry: () => ref.invalidate(currentUserProvider),
+      ),
       data: (user) => _buildContent(context, ref, user, email),
     );
   }
@@ -298,7 +302,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
           ),
           const SizedBox(height: 16),
           coursesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const TrainerPageLoading(cardCount: 1),
             error: (_, __) => Row(children: [
               _activityStat('Courses Created', '—', Icons.school,
                   PharmaColors.emerald600),
@@ -364,12 +368,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
           ),
           const SizedBox(height: 16),
           auditAsync.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              ),
-            ),
+            loading: () => const TrainerPageLoading(cardCount: 2),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(16),
               child: Text(

@@ -17,6 +17,7 @@ import '../../design_system/pharma_design_system.dart';
 import '../../design_system/pharma_components.dart';
 import '../../providers/user_provider.dart';
 import '../shared/communication_sheets.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class NotificationCentreScreen extends ConsumerStatefulWidget {
   const NotificationCentreScreen({super.key});
@@ -205,30 +206,12 @@ class _NotificationCentreScreenState
 
   Widget _buildNotificationsTab() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const TrainerPageLoading(cardCount: 4);
     }
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            const SizedBox(height: 12),
-            Text('Failed to load notifications',
-                style: PharmaTypography.bodyMedium
-                    .copyWith(color: PharmaColors.danger)),
-            const SizedBox(height: 4),
-            Text(_error!,
-                style: PharmaTypography.caption
-                    .copyWith(color: PharmaColors.textTertiary),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _loadNotifications,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return TrainerPageError(
+        message: _error!,
+        onRetry: _loadNotifications,
       );
     }
     return Column(
@@ -276,30 +259,12 @@ class _NotificationCentreScreenState
 
   Widget _buildMessagesTab() {
     if (_loadingThreads) {
-      return const Center(child: CircularProgressIndicator());
+      return const TrainerPageLoading(cardCount: 3);
     }
     if (_threadsError != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            const SizedBox(height: 12),
-            Text('Failed to load messages',
-                style: PharmaTypography.bodyMedium
-                    .copyWith(color: PharmaColors.danger)),
-            const SizedBox(height: 4),
-            Text(_threadsError!,
-                style: PharmaTypography.caption
-                    .copyWith(color: PharmaColors.textTertiary),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _loadMessageThreads,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return TrainerPageError(
+        message: _threadsError!,
+        onRetry: _loadMessageThreads,
       );
     }
     if (_threads.isEmpty) {

@@ -9,6 +9,7 @@ import '../../core/client.dart';
 import '../../design_system/pharma_components.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class TrainerAssessmentsHubScreen extends ConsumerStatefulWidget {
   const TrainerAssessmentsHubScreen({super.key});
@@ -77,30 +78,9 @@ class _TrainerAssessmentsHubScreenState
         ),
         const SizedBox(height: PharmaSpacing.sectionGap),
         if (_loading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: CircularProgressIndicator(),
-            ),
-          )
+          const TrainerPageLoading(cardCount: 3)
         else if (_error != null)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(PharmaSpacing.lg),
-            decoration: BoxDecoration(
-              color: PharmaColors.dangerBg,
-              borderRadius: PharmaRadius.cardRadius,
-              border: Border.all(color: PharmaColors.danger.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_error!, style: PharmaTypography.body.copyWith(color: PharmaColors.dangerText)),
-                const SizedBox(height: 12),
-                FilledButton(onPressed: _load, child: const Text('Retry')),
-              ],
-            ),
-          )
+          TrainerPageError(message: _error!, onRetry: _load)
         else if (_courses.isEmpty)
           PharmaEmptyState(
             icon: Icons.quiz_outlined,

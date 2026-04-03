@@ -19,6 +19,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class CourseAnalyticsV2Screen extends ConsumerStatefulWidget {
   const CourseAnalyticsV2Screen({super.key, required this.courseId});
@@ -236,25 +237,11 @@ class _CourseAnalyticsV2ScreenState
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const TrainerPageLoading(cardCount: 5);
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            const SizedBox(height: 12),
-            Text(_error!, style: PharmaTypography.body),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadVersions,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
+      return TrainerPageError(message: _error!, onRetry: _loadVersions);
     }
 
     return RefreshIndicator(

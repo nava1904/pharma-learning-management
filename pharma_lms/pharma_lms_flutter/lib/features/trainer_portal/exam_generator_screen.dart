@@ -19,6 +19,7 @@ import '../../core/client.dart';
 import '../../core/file_download.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 final _questionBanksProvider = FutureProvider<List<QuestionBank>>((ref) async {
   final user = await ref.watch(currentUserProvider.future);
@@ -61,8 +62,11 @@ class _ExamGeneratorScreenState extends ConsumerState<ExamGeneratorScreen> {
     final banksAsync = ref.watch(_questionBanksProvider);
 
     return banksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error loading question banks: $e')),
+      loading: () => const TrainerPageLoading(cardCount: 3),
+      error: (e, _) => TrainerPageError(
+        message: 'Error loading question banks: $e',
+        onRetry: () => ref.invalidate(_questionBanksProvider),
+      ),
       data: (banks) => ListView(
         padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
         children: [

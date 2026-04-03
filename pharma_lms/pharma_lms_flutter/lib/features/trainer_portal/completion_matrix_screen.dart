@@ -17,6 +17,7 @@ import '../../core/client.dart';
 import '../../core/file_download.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class CompletionMatrixScreen extends ConsumerStatefulWidget {
   const CompletionMatrixScreen({super.key});
@@ -151,9 +152,9 @@ class _CompletionMatrixScreenState
         ),
         const SizedBox(height: 20),
         if (_loading)
-          const Center(child: CircularProgressIndicator())
+          const TrainerPageLoading(cardCount: 3)
         else if (_error != null)
-          Text(_error!, style: TextStyle(color: PharmaColors.danger))
+          TrainerPageError(message: _error!, onRetry: _load)
         else if (_grid == null || _grid!.isEmpty)
           Text('No data.', style: PharmaTypography.body)
         else

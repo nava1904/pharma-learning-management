@@ -15,6 +15,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart';
 
 import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 class AuditLogViewerScreen extends ConsumerStatefulWidget {
   const AuditLogViewerScreen({super.key});
@@ -130,10 +131,7 @@ class _AuditLogViewerScreenState extends ConsumerState<AuditLogViewerScreen> {
         _buildFilters(),
         const SizedBox(height: 16),
         if (_loading)
-          const Padding(
-            padding: EdgeInsets.all(40),
-            child: Center(child: CircularProgressIndicator()),
-          )
+          const TrainerPageLoading(cardCount: 4)
         else if (_error != null)
           _buildErrorCard()
         else

@@ -13,6 +13,7 @@ import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
 import '../shared/employee_multi_select_dialog.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 /// New standalone assignment campaign wizard.
 class StandaloneAssignmentWizardScreen extends ConsumerStatefulWidget {
@@ -242,20 +243,21 @@ class _StandaloneAssignmentWizardScreenState
   @override
   Widget build(BuildContext context) {
     if (_loadingMeta) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const TrainerPageLoading(cardCount: 4);
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('New assignment campaign'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
+    return TrainerPageScaffold(
+      title: 'New assignment campaign',
+      icon: Icons.campaign_rounded,
+      scrollable: false,
+      actions: [
+        TextButton.icon(
           onPressed: () => context.go('/trainer/assignments'),
+          icon: const Icon(Icons.close, size: 18),
+          label: const Text('Cancel'),
         ),
-      ),
-      body: Stepper(
+      ],
+      child: Stepper(
         currentStep: _step,
         onStepContinue: () {
           if (!_validateStep()) return;

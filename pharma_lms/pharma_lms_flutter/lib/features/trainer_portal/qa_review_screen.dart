@@ -7,6 +7,7 @@ import '../../core/client.dart';
 import '../../design_system/pharma_design_system.dart';
 import '../../providers/user_provider.dart';
 import '../shared/communication_sheets.dart';
+import 'widgets/trainer_page_scaffold.dart';
 
 /// Where this screen is shown: trainer workflow vs QA sign-off in the QA Portal shell.
 enum CourseQaReviewMode {
@@ -236,32 +237,11 @@ class _QAReviewScreenState extends ConsumerState<QAReviewScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const TrainerPageLoading(cardCount: 4);
     }
 
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-              const SizedBox(height: 16),
-              Text(_error!,
-                  style: PharmaTypography.body, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _loadData,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Retry'),
-                style: FilledButton.styleFrom(
-                    backgroundColor: PharmaColors.emerald600),
-              ),
-            ],
-          ),
-        ),
-      );
+      return TrainerPageError(message: _error!, onRetry: _loadData);
     }
 
     if (_course == null || _latestVersion == null) {
