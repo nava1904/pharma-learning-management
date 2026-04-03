@@ -1788,3 +1788,464 @@ class PharmaInfoBanner extends StatelessWidget {
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA CONFIRM DIALOG
+// Standardized confirmation dialog for destructive or important actions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaConfirmDialog extends StatelessWidget {
+  const PharmaConfirmDialog({
+    super.key,
+    required this.title,
+    required this.message,
+    this.confirmLabel = 'Confirm',
+    this.cancelLabel = 'Cancel',
+    this.isDangerous = false,
+    this.onConfirm,
+    this.icon,
+  });
+
+  final String title;
+  final String message;
+  final String confirmLabel;
+  final String cancelLabel;
+  final bool isDangerous;
+  final VoidCallback? onConfirm;
+  final IconData? icon;
+
+  /// Show as a modal dialog and return `true` if confirmed.
+  static Future<bool> show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    String confirmLabel = 'Confirm',
+    String cancelLabel = 'Cancel',
+    bool isDangerous = false,
+    IconData? icon,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PharmaConfirmDialog(
+        title: title,
+        message: message,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        isDangerous: isDangerous,
+        icon: icon,
+      ),
+    );
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accentColor = isDangerous ? PharmaColors.danger : PharmaColors.emerald600;
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: PharmaRadius.cardRadius),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(PharmaSpacing.cardPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: accentColor, size: 24),
+                ),
+                const SizedBox(height: PharmaSpacing.lg),
+              ],
+              Text(title, style: PharmaTypography.headingMedium, textAlign: TextAlign.center),
+              const SizedBox(height: PharmaSpacing.sm),
+              Text(message, style: PharmaTypography.body, textAlign: TextAlign.center),
+              const SizedBox(height: PharmaSpacing.xxl),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PharmaColors.textSecondary,
+                        side: const BorderSide(color: PharmaColors.borderMedium),
+                        shape: RoundedRectangleBorder(borderRadius: PharmaRadius.buttonRadius),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(cancelLabel),
+                    ),
+                  ),
+                  const SizedBox(width: PharmaSpacing.md),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        onConfirm?.call();
+                        Navigator.of(context).pop(true);
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accentColor,
+                        shape: RoundedRectangleBorder(borderRadius: PharmaRadius.buttonRadius),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(confirmLabel),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA BREADCRUMB
+// Breadcrumb navigation trail for deep screens
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaBreadcrumb extends StatelessWidget {
+  const PharmaBreadcrumb({
+    super.key,
+    required this.items,
+  });
+
+  final List<PharmaBreadcrumbItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < items.length; i++) ...[
+            if (i > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: PharmaSpacing.xs),
+                child: Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: PharmaColors.gray400,
+                ),
+              ),
+            _BreadcrumbChip(
+              item: items[i],
+              isLast: i == items.length - 1,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class PharmaBreadcrumbItem {
+  const PharmaBreadcrumbItem({
+    required this.label,
+    this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final IconData? icon;
+}
+
+class _BreadcrumbChip extends StatelessWidget {
+  const _BreadcrumbChip({required this.item, required this.isLast});
+
+  final PharmaBreadcrumbItem item;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isLast ? PharmaColors.textPrimary : PharmaColors.textTertiary;
+    final weight = isLast ? FontWeight.w600 : FontWeight.w400;
+
+    return InkWell(
+      onTap: isLast ? null : item.onTap,
+      borderRadius: PharmaRadius.cardRadius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (item.icon != null) ...[
+              Icon(item.icon, size: 16, color: color),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              item.label,
+              style: PharmaTypography.body.copyWith(color: color, fontWeight: weight),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA DATA TABLE
+// Pharma-grade data table with sorting, selection, and responsive columns
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaDataTable<T> extends StatelessWidget {
+  const PharmaDataTable({
+    super.key,
+    required this.columns,
+    required this.rows,
+    this.onRowTap,
+    this.emptyMessage = 'No records found',
+    this.isLoading = false,
+    this.headerStyle,
+  });
+
+  final List<PharmaTableColumn<T>> columns;
+  final List<T> rows;
+  final void Function(T row)? onRowTap;
+  final String emptyMessage;
+  final bool isLoading;
+  final TextStyle? headerStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return PharmaCard(
+        child: Column(
+          children: List.generate(
+            5,
+            (_) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: PharmaSkeletonLoader(height: 40, borderRadius: PharmaRadius.sm),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (rows.isEmpty) {
+      return PharmaCard(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
+            child: PharmaEmptyState(
+              icon: Icons.table_rows_outlined,
+              title: emptyMessage,
+              subtitle: '',
+            ),
+          ),
+        ),
+      );
+    }
+
+    return PharmaCard(
+      padding: EdgeInsets.zero,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: MediaQuery.sizeOf(context).width - 64),
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(PharmaColors.gray50),
+            headingTextStyle: headerStyle ?? PharmaTypography.labelMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: PharmaColors.textTertiary,
+            ),
+            dataTextStyle: PharmaTypography.body,
+            dividerThickness: 1,
+            horizontalMargin: PharmaSpacing.cardPadding,
+            columnSpacing: PharmaSpacing.xxl,
+            columns: columns.map((c) => DataColumn(
+              label: Text(c.header),
+            )).toList(),
+            rows: rows.map((row) => DataRow(
+              onSelectChanged: onRowTap != null ? (_) => onRowTap!(row) : null,
+              cells: columns.map((c) => DataCell(c.cellBuilder(row))).toList(),
+            )).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PharmaTableColumn<T> {
+  const PharmaTableColumn({
+    required this.header,
+    required this.cellBuilder,
+    this.flex = 1,
+  });
+
+  final String header;
+  final Widget Function(T row) cellBuilder;
+  final int flex;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA FILTER CHIP BAR
+// Horizontal scrollable filter chips commonly used on list screens
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaFilterChipBar extends StatelessWidget {
+  const PharmaFilterChipBar({
+    super.key,
+    required this.filters,
+    required this.selectedIndex,
+    required this.onSelected,
+    this.counts,
+  });
+
+  final List<String> filters;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final List<int>? counts;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (int i = 0; i < filters.length; i++) ...[
+            if (i > 0) const SizedBox(width: PharmaSpacing.sm),
+            _FilterChip(
+              label: filters[i],
+              isSelected: i == selectedIndex,
+              count: counts != null && i < counts!.length ? counts![i] : null,
+              onTap: () => onSelected(i),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    this.count,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final int? count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: PharmaRadius.pillRadius,
+      child: AnimatedContainer(
+        duration: PharmaDurations.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? PharmaColors.emerald600 : PharmaColors.cardBg,
+          borderRadius: PharmaRadius.pillRadius,
+          border: Border.all(
+            color: isSelected ? PharmaColors.emerald600 : PharmaColors.borderMedium,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: PharmaTypography.labelMedium.copyWith(
+                color: isSelected ? Colors.white : PharmaColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : PharmaColors.gray100,
+                  borderRadius: PharmaRadius.pillRadius,
+                ),
+                child: Text(
+                  '$count',
+                  style: PharmaTypography.labelSmall.copyWith(
+                    color: isSelected ? Colors.white : PharmaColors.textTertiary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHARMA TAB BAR
+// Styled tab bar matching the design system
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class PharmaTabBar extends StatelessWidget {
+  const PharmaTabBar({
+    super.key,
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<String> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: PharmaColors.gray100,
+        borderRadius: PharmaRadius.cardRadius,
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          for (int i = 0; i < tabs.length; i++)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onSelected(i),
+                child: AnimatedContainer(
+                  duration: PharmaDurations.fast,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: i == selectedIndex ? PharmaColors.cardBg : Colors.transparent,
+                    borderRadius: PharmaRadius.cardRadius,
+                    boxShadow: i == selectedIndex ? PharmaShadows.sm : null,
+                  ),
+                  child: Text(
+                    tabs[i],
+                    textAlign: TextAlign.center,
+                    style: PharmaTypography.labelMedium.copyWith(
+                      color: i == selectedIndex
+                          ? PharmaColors.textPrimary
+                          : PharmaColors.textTertiary,
+                      fontWeight: i == selectedIndex ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
