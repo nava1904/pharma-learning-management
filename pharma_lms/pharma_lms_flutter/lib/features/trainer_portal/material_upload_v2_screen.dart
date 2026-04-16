@@ -636,7 +636,7 @@ class _MaterialUploadV2ScreenState extends ConsumerState<MaterialUploadV2Screen>
                 ? Center(child: Text('No versions found', style: PharmaTypography.body))
                 : ListView.separated(
                     itemCount: versions.length,
-                    separatorBuilder: (_, __) => const Divider(),
+                    separatorBuilder: (_, _) => const Divider(),
                     itemBuilder: (_, i) {
                       final v = versions[i];
                       return ListTile(

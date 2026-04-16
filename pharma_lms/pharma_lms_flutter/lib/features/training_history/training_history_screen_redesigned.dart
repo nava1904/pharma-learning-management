@@ -266,7 +266,7 @@ class _HistoryContent extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: filtered.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s4),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s4),
               itemBuilder: (context, index) {
                 final record = filtered[index];
                 final certificate = _getCertificate(record);

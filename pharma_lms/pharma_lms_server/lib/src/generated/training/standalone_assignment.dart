@@ -41,6 +41,7 @@ abstract class StandaloneAssignment
     String? status,
     this.publishedAt,
     DateTime? createdAt,
+    this.assignedByType,
   }) : contentKind = contentKind ?? 'open_ended',
        targetType = targetType ?? 'individual',
        status = status ?? 'draft',
@@ -66,6 +67,7 @@ abstract class StandaloneAssignment
     String? status,
     DateTime? publishedAt,
     DateTime? createdAt,
+    String? assignedByType,
   }) = _StandaloneAssignmentImpl;
 
   factory StandaloneAssignment.fromJson(
@@ -113,6 +115,7 @@ abstract class StandaloneAssignment
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
+      assignedByType: jsonSerialization['assignedByType'] as String?,
     );
   }
 
@@ -162,6 +165,9 @@ abstract class StandaloneAssignment
 
   DateTime createdAt;
 
+  /// Source of assignment: trainer, batch, admin
+  String? assignedByType;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -188,6 +194,7 @@ abstract class StandaloneAssignment
     String? status,
     DateTime? publishedAt,
     DateTime? createdAt,
+    String? assignedByType,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -212,6 +219,7 @@ abstract class StandaloneAssignment
       'status': status,
       if (publishedAt != null) 'publishedAt': publishedAt?.toJson(),
       'createdAt': createdAt.toJson(),
+      if (assignedByType != null) 'assignedByType': assignedByType,
     };
   }
 
@@ -241,6 +249,7 @@ abstract class StandaloneAssignment
       'status': status,
       if (publishedAt != null) 'publishedAt': publishedAt?.toJson(),
       'createdAt': createdAt.toJson(),
+      if (assignedByType != null) 'assignedByType': assignedByType,
     };
   }
 
@@ -307,6 +316,7 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
     String? status,
     DateTime? publishedAt,
     DateTime? createdAt,
+    String? assignedByType,
   }) : super._(
          id: id,
          organizationId: organizationId,
@@ -327,6 +337,7 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
          status: status,
          publishedAt: publishedAt,
          createdAt: createdAt,
+         assignedByType: assignedByType,
        );
 
   /// Returns a shallow copy of this [StandaloneAssignment]
@@ -353,6 +364,7 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
     String? status,
     Object? publishedAt = _Undefined,
     DateTime? createdAt,
+    Object? assignedByType = _Undefined,
   }) {
     return StandaloneAssignment(
       id: id is int? ? id : this.id,
@@ -388,6 +400,9 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
       status: status ?? this.status,
       publishedAt: publishedAt is DateTime? ? publishedAt : this.publishedAt,
       createdAt: createdAt ?? this.createdAt,
+      assignedByType: assignedByType is String?
+          ? assignedByType
+          : this.assignedByType,
     );
   }
 }
@@ -468,6 +483,12 @@ class StandaloneAssignmentUpdateTable
         table.createdAt,
         value,
       );
+
+  _i1.ColumnValue<String, String> assignedByType(String? value) =>
+      _i1.ColumnValue(
+        table.assignedByType,
+        value,
+      );
 }
 
 class StandaloneAssignmentTable extends _i1.Table<int?> {
@@ -534,6 +555,10 @@ class StandaloneAssignmentTable extends _i1.Table<int?> {
       this,
       hasDefault: true,
     );
+    assignedByType = _i1.ColumnString(
+      'assignedByType',
+      this,
+    );
   }
 
   late final StandaloneAssignmentUpdateTable updateTable;
@@ -576,6 +601,9 @@ class StandaloneAssignmentTable extends _i1.Table<int?> {
   late final _i1.ColumnDateTime publishedAt;
 
   late final _i1.ColumnDateTime createdAt;
+
+  /// Source of assignment: trainer, batch, admin
+  late final _i1.ColumnString assignedByType;
 
   _i2.OrganizationTable get organization {
     if (_organization != null) return _organization!;
@@ -646,6 +674,7 @@ class StandaloneAssignmentTable extends _i1.Table<int?> {
     status,
     publishedAt,
     createdAt,
+    assignedByType,
   ];
 
   @override

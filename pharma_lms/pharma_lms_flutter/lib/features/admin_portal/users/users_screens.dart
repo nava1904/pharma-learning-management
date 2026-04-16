@@ -11,6 +11,7 @@ import '../access_review/access_review_screen.dart';
 import '../modules/01_user_identity/user_bulk_import_screen.dart';
 import '../modules/01_user_identity/user_create_screen.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER DIRECTORY SCREEN - Real data from backend
@@ -87,7 +88,7 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
                 'Loading...',
                 style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
           ],
         ),
@@ -534,50 +535,18 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.cardBg,
-        border: Border.all(color: PharmaColors.borderLight),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const AdminPageLoading(cardCount: 4);
   }
 
   Widget _buildErrorState(String error) {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.dangerBg,
-        border: Border.all(color: PharmaColors.danger),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text(
-              'Failed to load users',
-              style: PharmaTypography.bodyMedium.copyWith(color: PharmaColors.dangerText),
-            ),
-            Text(error, style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(adminUsersProvider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AdminPageError(
+      message: 'Failed to load users: $error',
+      onRetry: () => ref.invalidate(adminUsersProvider),
     );
   }
 }

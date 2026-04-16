@@ -112,7 +112,7 @@ class _CourseCatalogScreenRedesignedState extends ConsumerState<CourseCatalogScr
               childAspectRatio: 1.2,
             ),
             itemCount: 6,
-            itemBuilder: (_, __) => const SkeletonLoader(height: 200),
+            itemBuilder: (_, _) => const SkeletonLoader(height: 200),
           ),
         ],
       ),
@@ -568,9 +568,8 @@ class _CourseCard extends StatelessWidget {
     final meta = CourseCatalogMetadata.fromCourse(course);
     final tags = (course.tags ?? '').split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
     
-    final bool isMandatory = meta.isMandatory ?? tags.contains('Mandatory');
-    final bool isOptional = tags.contains('Optional') || (!isMandatory);
-    final bool isContentApproved = tags.contains('Content approved');
+  final bool isMandatory = meta.isMandatory ?? tags.contains('Mandatory');
+  final bool isContentApproved = tags.contains('Content approved');
     
     final List<String> regulatoryTags = tags.where((t) => t == 'GMP' || t == '21 CFR').toList();
     
@@ -624,7 +623,7 @@ class _CourseCard extends StatelessWidget {
                     ? Image.network(
                         coverage,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
+                        errorBuilder: (_, _, _) => Center(
                           child: Icon(courseIcon, color: Colors.grey.shade600, size: 28),
                         ),
                       )

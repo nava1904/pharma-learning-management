@@ -68,7 +68,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                           color: AppColors.slate600,
                         ),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
               ],
             ),

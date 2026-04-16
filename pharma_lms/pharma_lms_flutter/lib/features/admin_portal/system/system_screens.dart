@@ -8,6 +8,7 @@ import 'package:pharma_lms_flutter/core/client.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SYSTEM SETTINGS SCREEN
@@ -176,18 +177,10 @@ class _AdminSystemSettingsScreenState extends ConsumerState<AdminSystemSettingsS
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AdminPageLoading(cardCount: 3);
     }
     if (_loadError != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(_loadError!, style: TextStyle(color: PharmaColors.danger)),
-            TextButton(onPressed: _load, child: const Text('Retry')),
-          ],
-        ),
-      );
+      return AdminPageError(message: _loadError!, onRetry: _load);
     }
 
     return SingleChildScrollView(
@@ -522,7 +515,7 @@ class _AdminSystemHealthScreenState extends ConsumerState<AdminSystemHealthScree
         ),
         _buildHealthCard(
           'Event consumer lag',
-          lag == null ? '—' : '$lag',
+          lag ?? '—',
           Icons.hub_outlined,
           PharmaColors.info,
         ),

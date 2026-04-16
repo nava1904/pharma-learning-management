@@ -13,7 +13,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../organization/organization.dart' as _i2;
-import 'package:pharma_lms_server/src/generated/protocol.dart' as _i3;
+import '../assessment/question.dart' as _i3;
+import 'package:pharma_lms_server/src/generated/protocol.dart' as _i4;
 
 /// Question bank for assessments.
 abstract class QuestionBank
@@ -24,6 +25,7 @@ abstract class QuestionBank
     required this.organizationId,
     this.organization,
     this.tagsJson,
+    this.questions,
   });
 
   factory QuestionBank({
@@ -32,6 +34,7 @@ abstract class QuestionBank
     required int organizationId,
     _i2.Organization? organization,
     String? tagsJson,
+    List<_i3.Question>? questions,
   }) = _QuestionBankImpl;
 
   factory QuestionBank.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -41,10 +44,15 @@ abstract class QuestionBank
       organizationId: jsonSerialization['organizationId'] as int,
       organization: jsonSerialization['organization'] == null
           ? null
-          : _i3.Protocol().deserialize<_i2.Organization>(
+          : _i4.Protocol().deserialize<_i2.Organization>(
               jsonSerialization['organization'],
             ),
       tagsJson: jsonSerialization['tagsJson'] as String?,
+      questions: jsonSerialization['questions'] == null
+          ? null
+          : _i4.Protocol().deserialize<List<_i3.Question>>(
+              jsonSerialization['questions'],
+            ),
     );
   }
 
@@ -66,6 +74,9 @@ abstract class QuestionBank
   /// Tags as JSON (e.g., GMP, Sterility).
   String? tagsJson;
 
+  /// List of questions in this bank (not stored in DB, populated for API response)
+  List<_i3.Question>? questions;
+
   @override
   _i1.Table<int?> get table => t;
 
@@ -78,6 +89,7 @@ abstract class QuestionBank
     int? organizationId,
     _i2.Organization? organization,
     String? tagsJson,
+    List<_i3.Question>? questions,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -88,6 +100,8 @@ abstract class QuestionBank
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
       if (tagsJson != null) 'tagsJson': tagsJson,
+      if (questions != null)
+        'questions': questions?.toJson(valueToJson: (v) => v.toJson()),
     };
   }
 
@@ -101,6 +115,10 @@ abstract class QuestionBank
       if (organization != null)
         'organization': organization?.toJsonForProtocol(),
       if (tagsJson != null) 'tagsJson': tagsJson,
+      if (questions != null)
+        'questions': questions?.toJson(
+          valueToJson: (v) => v.toJsonForProtocol(),
+        ),
     };
   }
 
@@ -143,12 +161,14 @@ class _QuestionBankImpl extends QuestionBank {
     required int organizationId,
     _i2.Organization? organization,
     String? tagsJson,
+    List<_i3.Question>? questions,
   }) : super._(
          id: id,
          name: name,
          organizationId: organizationId,
          organization: organization,
          tagsJson: tagsJson,
+         questions: questions,
        );
 
   /// Returns a shallow copy of this [QuestionBank]
@@ -161,6 +181,7 @@ class _QuestionBankImpl extends QuestionBank {
     int? organizationId,
     Object? organization = _Undefined,
     Object? tagsJson = _Undefined,
+    Object? questions = _Undefined,
   }) {
     return QuestionBank(
       id: id is int? ? id : this.id,
@@ -170,6 +191,9 @@ class _QuestionBankImpl extends QuestionBank {
           ? organization
           : this.organization?.copyWith(),
       tagsJson: tagsJson is String? ? tagsJson : this.tagsJson,
+      questions: questions is List<_i3.Question>?
+          ? questions
+          : this.questions?.map((e0) => e0.copyWith()).toList(),
     );
   }
 }
@@ -191,6 +215,13 @@ class QuestionBankUpdateTable extends _i1.UpdateTable<QuestionBankTable> {
     table.tagsJson,
     value,
   );
+
+  _i1.ColumnValue<List<_i3.Question>, List<_i3.Question>> questions(
+    List<_i3.Question>? value,
+  ) => _i1.ColumnValue(
+    table.questions,
+    value,
+  );
 }
 
 class QuestionBankTable extends _i1.Table<int?> {
@@ -208,6 +239,10 @@ class QuestionBankTable extends _i1.Table<int?> {
       'tagsJson',
       this,
     );
+    questions = _i1.ColumnSerializable<List<_i3.Question>>(
+      'questions',
+      this,
+    );
   }
 
   late final QuestionBankUpdateTable updateTable;
@@ -222,6 +257,9 @@ class QuestionBankTable extends _i1.Table<int?> {
 
   /// Tags as JSON (e.g., GMP, Sterility).
   late final _i1.ColumnString tagsJson;
+
+  /// List of questions in this bank (not stored in DB, populated for API response)
+  late final _i1.ColumnSerializable<List<_i3.Question>> questions;
 
   _i2.OrganizationTable get organization {
     if (_organization != null) return _organization!;
@@ -242,6 +280,7 @@ class QuestionBankTable extends _i1.Table<int?> {
     name,
     organizationId,
     tagsJson,
+    questions,
   ];
 
   @override

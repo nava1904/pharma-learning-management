@@ -1261,6 +1261,18 @@ class Protocol extends _i1.SerializationManager {
     if (t == List<String>) {
       return (data as List).map((e) => deserialize<String>(e)).toList() as T;
     }
+    if (t == List<_i25.Question>) {
+      return (data as List).map((e) => deserialize<_i25.Question>(e)).toList()
+          as T;
+    }
+    if (t == _i1.getType<List<_i25.Question>?>()) {
+      return (data != null
+              ? (data as List)
+                    .map((e) => deserialize<_i25.Question>(e))
+                    .toList()
+              : null)
+          as T;
+    }
     if (t == List<_i52.QaValidationRuleResult>) {
       return (data as List)
               .map((e) => deserialize<_i52.QaValidationRuleResult>(e))

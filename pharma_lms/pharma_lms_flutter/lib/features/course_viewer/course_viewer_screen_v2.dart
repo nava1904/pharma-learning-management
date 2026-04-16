@@ -500,13 +500,13 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
               setState(() {
                 _lessonViewedMaterialIds.add(materialId);
               });
-              debugPrint('[CourseViewer] Realtime: material $materialId completed');
+
             }
           }
         }
       });
     } catch (e) {
-      debugPrint('[CourseViewer] WebSocket subscription failed: $e');
+
     }
   }
 
@@ -663,7 +663,7 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
         readTimeMet: true, // CRITICAL FIX: Forces backend to accept completion (FDA 21 CFR Part 11)
       );
     } catch (e) {
-      debugPrint('Progress update failed: $e');
+
     }
     if (!mounted) return;
     if (_currentLessonIndex < _lessons.length - 1) {
@@ -909,11 +909,23 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
                     const SizedBox(width: 4),
                     IconButton(
                       tooltip: 'Message instructor',
-                      onPressed: () => openLearnerInstructorChat(
-                        context,
-                        courseVersionId: _effectiveCourseVersionId,
-                        courseTitle: _courseTitle ?? 'Course',
-                      ),
+                      onPressed: () async {
+                        String? instructorName;
+                        try {
+                          final version = await client.course.getCourseVersion(_effectiveCourseVersionId);
+                          final course = version?.course;
+                          final createdBy = course?.createdBy;
+                          if (createdBy != null) {
+                            instructorName = '${createdBy.firstName} ${createdBy.lastName}'.trim();
+                          }
+                        } catch (_) {}
+                        openLearnerInstructorChat(
+                          context,
+                          courseVersionId: _effectiveCourseVersionId,
+                          courseTitle: _courseTitle ?? 'Course',
+                          instructorName: instructorName,
+                        );
+                      },
                       icon: const Icon(Icons.chat_bubble_outline, color: _textLight, size: 22),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -1276,7 +1288,7 @@ class _CourseViewerScreenV2State extends ConsumerState<CourseViewerScreenV2> wit
           final url = content['url'] as String? ?? '';
           if (url.isNotEmpty) {
             blockResources.add(_BlockResource(
-              title: content['title'] as String? ?? '${bt.replaceAll('_', ' ').toUpperCase()}',
+              title: content['title'] as String? ?? bt.replaceAll('_', ' ').toUpperCase(),
               type: bt,
               url: url,
             ));

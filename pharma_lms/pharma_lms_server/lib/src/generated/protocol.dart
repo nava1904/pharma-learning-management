@@ -7062,6 +7062,12 @@ class Protocol extends _i1.SerializationManagerServer {
           isNullable: true,
           dartType: 'String?',
         ),
+        _i2.ColumnDefinition(
+          name: 'questions',
+          columnType: _i2.ColumnType.json,
+          isNullable: true,
+          dartType: 'List<protocol:Question>?',
+        ),
       ],
       foreignKeys: [
         _i2.ForeignKeyDefinition(
@@ -8328,6 +8334,12 @@ class Protocol extends _i1.SerializationManagerServer {
           isNullable: false,
           dartType: 'DateTime',
           columnDefault: 'CURRENT_TIMESTAMP',
+        ),
+        _i2.ColumnDefinition(
+          name: 'assignedByType',
+          columnType: _i2.ColumnType.text,
+          isNullable: true,
+          dartType: 'String?',
         ),
       ],
       foreignKeys: [
@@ -10880,6 +10892,18 @@ class Protocol extends _i1.SerializationManagerServer {
     }
     if (t == List<String>) {
       return (data as List).map((e) => deserialize<String>(e)).toList() as T;
+    }
+    if (t == List<_i29.Question>) {
+      return (data as List).map((e) => deserialize<_i29.Question>(e)).toList()
+          as T;
+    }
+    if (t == _i1.getType<List<_i29.Question>?>()) {
+      return (data != null
+              ? (data as List)
+                    .map((e) => deserialize<_i29.Question>(e))
+                    .toList()
+              : null)
+          as T;
     }
     if (t == List<_i56.QaValidationRuleResult>) {
       return (data as List)

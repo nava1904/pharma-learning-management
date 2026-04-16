@@ -64,7 +64,7 @@ class _EmployeeDocumentScreenState extends ConsumerState<EmployeeDocumentScreen>
           // ─── Pending Acknowledgement Banner ───
           pendingAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (pending) {
               if (pending.isEmpty) return const SizedBox.shrink();
               return Padding(

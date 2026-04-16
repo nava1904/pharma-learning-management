@@ -8,6 +8,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BATCH LIST SCREEN
@@ -29,24 +30,10 @@ class _AdminBatchListScreenState extends ConsumerState<AdminBatchListScreen> {
     final statsAsync = ref.watch(adminBatchStatsProvider);
 
     return batchesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text('Error loading batches', style: PharmaTypography.body),
-            SizedBox(height: PharmaSpacing.xs),
-            Text(err.toString(), style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton.icon(
-              onPressed: () => ref.invalidate(adminBatchesProvider),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
+      loading: () => const AdminPageLoading(cardCount: 4),
+      error: (err, stack) => AdminPageError(
+        message: 'Error loading batches: $err',
+        onRetry: () => ref.invalidate(adminBatchesProvider),
       ),
       data: (batches) {
         final filteredBatches = _statusFilter == 'all'
@@ -65,7 +52,7 @@ class _AdminBatchListScreenState extends ConsumerState<AdminBatchListScreen> {
               // Stats Row
               statsAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (stats) => _buildStatsRow(stats, batches),
               ),
               SizedBox(height: PharmaSpacing.md),

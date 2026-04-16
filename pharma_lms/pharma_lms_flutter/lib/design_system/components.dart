@@ -141,24 +141,27 @@ class ComplianceAlertBanner extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.s4),
           // CTA Button — min 48px (Fitts's Law)
-          FilledButton(
-            onPressed: onViewOverdue,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: AppColors.n0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s5, // 20px
-                vertical: AppSpacing.s3,   // 12px
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: FilledButton(
+              onPressed: onViewOverdue,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: AppColors.n0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s5, // 20px
+                  vertical: AppSpacing.s3,   // 12px
+                ),
+                minimumSize: const Size(0, 44), // Apple HIG min tap target
               ),
-              minimumSize: const Size(0, 44), // Apple HIG min tap target
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Review Overdue'),
-                SizedBox(width: AppSpacing.s2),
-                Icon(Icons.arrow_forward_rounded, size: 16),
-              ],
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Review Overdue'),
+                  SizedBox(width: AppSpacing.s2),
+                  Icon(Icons.arrow_forward_rounded, size: 16),
+                ],
+              ),
             ),
           ),
         ],
@@ -539,7 +542,7 @@ class CourseCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (_, __, ___) => const SizedBox(),
+                          errorBuilder: (_, _, _) => const SizedBox(),
                         ),
                       ),
                     // Content type tag
@@ -732,14 +735,17 @@ class _CourseCardButton extends StatelessWidget {
     if (isOverdue || status == TrainingStatus.overdue) {
       return SizedBox(
         width: double.infinity,
-        child: FilledButton(
-          onPressed: () {},
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.danger,
-            foregroundColor: AppColors.n0,
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: FilledButton(
+            onPressed: () {},
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.n0,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+            ),
+            child: Text(status.ctaLabel),
           ),
-          child: Text(status.ctaLabel),
         ),
       );
     }
@@ -748,14 +754,17 @@ class _CourseCardButton extends StatelessWidget {
     if (status == TrainingStatus.completed) {
       return SizedBox(
         width: double.infinity,
-        child: OutlinedButton(
-          onPressed: () {},
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.teal,
-            side: const BorderSide(color: AppColors.teal),
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: OutlinedButton(
+            onPressed: () {},
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.teal,
+              side: const BorderSide(color: AppColors.teal),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+            ),
+            child: Text(status.ctaLabel),
           ),
-          child: Text(status.ctaLabel),
         ),
       );
     }
@@ -764,6 +773,26 @@ class _CourseCardButton extends StatelessWidget {
     if (status == TrainingStatus.inProgress) {
       return SizedBox(
         width: double.infinity,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: FilledButton(
+            onPressed: () {},
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.blue,
+              foregroundColor: AppColors.n0,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+            ),
+            child: Text(status.ctaLabel),
+          ),
+        ),
+      );
+    }
+
+    // NOT_STARTED: Primary blue button
+    return SizedBox(
+      width: double.infinity,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
         child: FilledButton(
           onPressed: () {},
           style: FilledButton.styleFrom(
@@ -773,20 +802,6 @@ class _CourseCardButton extends StatelessWidget {
           ),
           child: Text(status.ctaLabel),
         ),
-      );
-    }
-
-    // NOT_STARTED: Primary blue button
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: () {},
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.blue,
-          foregroundColor: AppColors.n0,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-        ),
-        child: Text(status.ctaLabel),
       ),
     );
   }
@@ -1244,7 +1259,7 @@ class CredentialCard extends StatelessWidget {
                           child: Image.network(
                             logoUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (_, _, _) => Icon(
                               Icons.workspace_premium_rounded,
                               color: borderColor,
                               size: 28,
@@ -1595,7 +1610,7 @@ class _ModuleSection extends StatelessWidget {
   }
 }
 
-class _LessonItem extends StatelessWidget {
+class _LessonItem extends StatefulWidget {
   const _LessonItem({
     required this.lesson,
     required this.isCurrent,
@@ -1607,53 +1622,76 @@ class _LessonItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_LessonItem> createState() => _LessonItemState();
+}
+
+class _LessonItemState extends State<_LessonItem> {
+  bool _hovering = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isCurrent ? AppColors.blueLight : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s4,
-            vertical: AppSpacing.s3,
-          ),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: isCurrent ? AppColors.blue : Colors.transparent,
-                width: 3,
-              ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: Material(
+        color: widget.isCurrent ? AppColors.blueLight : Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.ease,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s4,
+              vertical: AppSpacing.s3,
             ),
-          ),
-          child: Row(
-            children: [
-              // Completion indicator
-              _LessonStatusIcon(
-                isComplete: lesson.isCompleted,
-                isCurrent: isCurrent,
-              ),
-              const SizedBox(width: AppSpacing.s3),
-              // Title
-              Expanded(
-                child: Text(
-                  lesson.title,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: isCurrent ? AppColors.blue : AppColors.n700,
-                    fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: widget.isCurrent ? AppColors.blue : Colors.transparent,
+                  width: 3,
                 ),
               ),
-              // Duration
-              if (lesson.durationMinutes != null)
-                Text(
-                  lesson.durationMinutes!.durationLabel,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.n500,
+              boxShadow: _hovering
+                  ? [
+                      BoxShadow(
+                        color: AppColors.success.withOpacity(0.18), // light green shadow
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                // Completion indicator
+                _LessonStatusIcon(
+                  isComplete: widget.lesson.isCompleted,
+                  isCurrent: widget.isCurrent,
+                ),
+                const SizedBox(width: AppSpacing.s3),
+                // Title
+                Expanded(
+                  child: Text(
+                    widget.lesson.title,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: widget.isCurrent ? AppColors.blue : AppColors.n700,
+                      fontWeight: widget.isCurrent ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-            ],
+                // Duration
+                if (widget.lesson.durationMinutes != null)
+                  Text(
+                    widget.lesson.durationMinutes!.durationLabel,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.n500,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

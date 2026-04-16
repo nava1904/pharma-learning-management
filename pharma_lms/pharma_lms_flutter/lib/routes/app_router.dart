@@ -252,11 +252,11 @@ List<RouteBase> get _buildRoutes => [
         ),
         GoRoute(
           path: '/assessments',
-          redirect: (_, __) => '/employee/assessments',
+          redirect: (_, _) => '/employee/assessments',
         ),
         GoRoute(
           path: '/certificates',
-          redirect: (_, __) => '/employee',
+          redirect: (_, _) => '/employee',
         ),
         // Course Viewer V2 (full Serverpod wiring) - inside AppLayout shell
         GoRoute(

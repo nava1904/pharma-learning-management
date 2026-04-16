@@ -60,7 +60,7 @@ class EmployeeComplianceDetailScreen extends ConsumerWidget {
             children: [
               Expanded(child: overdueAsync.when(
                 loading: () => const StatCardSkeleton(),
-                error: (_, __) => _MiniStatCard(value: '—', label: 'Overdue', color: AppColors.danger),
+                error: (_, _) => _MiniStatCard(value: '—', label: 'Overdue', color: AppColors.danger),
                 data: (list) => _MiniStatCard(
                   value: '${list.length}', label: 'Overdue', color: AppColors.danger,
                 ),
@@ -68,7 +68,7 @@ class EmployeeComplianceDetailScreen extends ConsumerWidget {
               const SizedBox(width: AppSpacing.s4),
               Expanded(child: dueSoonAsync.when(
                 loading: () => const StatCardSkeleton(),
-                error: (_, __) => _MiniStatCard(value: '—', label: 'Due Soon', color: AppColors.warning),
+                error: (_, _) => _MiniStatCard(value: '—', label: 'Due Soon', color: AppColors.warning),
                 data: (list) => _MiniStatCard(
                   value: '${list.length}', label: 'Due This Month', color: AppColors.warning,
                 ),
@@ -76,7 +76,7 @@ class EmployeeComplianceDetailScreen extends ConsumerWidget {
               const SizedBox(width: AppSpacing.s4),
               Expanded(child: pendingAckAsync.when(
                 loading: () => const StatCardSkeleton(),
-                error: (_, __) => _MiniStatCard(value: '—', label: 'Pending Ack', color: AppColors.teal),
+                error: (_, _) => _MiniStatCard(value: '—', label: 'Pending Ack', color: AppColors.teal),
                 data: (list) => _MiniStatCard(
                   value: '${list.length}', label: 'Pending Ack', color: AppColors.teal,
                 ),
@@ -84,7 +84,7 @@ class EmployeeComplianceDetailScreen extends ConsumerWidget {
               const SizedBox(width: AppSpacing.s4),
               Expanded(child: certsAsync.when(
                 loading: () => const StatCardSkeleton(),
-                error: (_, __) => _MiniStatCard(value: '—', label: 'Certificates', color: AppColors.blue),
+                error: (_, _) => _MiniStatCard(value: '—', label: 'Certificates', color: AppColors.blue),
                 data: (list) => _MiniStatCard(
                   value: '${list.length}', label: 'Certificates', color: AppColors.blue,
                 ),
@@ -96,7 +96,7 @@ class EmployeeComplianceDetailScreen extends ConsumerWidget {
           // ─── Overdue Training Section ───
           overdueAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (overdue) {
               if (overdue.isEmpty) return const SizedBox.shrink();
               return Column(
@@ -129,7 +129,7 @@ class EmployeeComplianceDetailScreen extends ConsumerWidget {
           // ─── Certificate Expiry Countdown ───
           certsAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (certs) {
               final expiring = certs.where((c) =>
                   c.expiresAt != null &&

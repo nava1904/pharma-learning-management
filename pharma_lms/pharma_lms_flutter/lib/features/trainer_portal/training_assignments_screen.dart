@@ -1538,7 +1538,7 @@ class _SubmissionsDialogState extends State<_SubmissionsDialog> {
                       )
                     : ListView.separated(
                         itemCount: _submissions!.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const Divider(height: 1),
                         itemBuilder: (ctx, i) =>
                             _buildSubmissionTile(_submissions![i], kind),

@@ -564,7 +564,7 @@ class _TrainingMatrixScreenState extends State<TrainingMatrixScreen> {
                         : ListView.separated(
                             padding: const EdgeInsets.all(8),
                             itemCount: _jobRoles.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: 4),
                             itemBuilder: (context, index) {
                               final role = _jobRoles[index];

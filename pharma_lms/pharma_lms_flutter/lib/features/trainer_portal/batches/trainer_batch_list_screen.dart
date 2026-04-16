@@ -53,7 +53,7 @@ class _TrainerBatchListScreenState extends ConsumerState<TrainerBatchListScreen>
           statsAsync.when(
             data: (stats) => _buildStatsRow(stats),
             loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
           const SizedBox(height: PharmaSpacing.sectionGap),
 

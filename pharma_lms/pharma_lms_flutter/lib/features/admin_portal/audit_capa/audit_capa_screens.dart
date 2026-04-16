@@ -6,6 +6,7 @@ import 'package:pharma_lms_flutter/core/client.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUDIT TRAIL SCREEN - Real data from backend (FDA 21 CFR Part 11 compliant)
@@ -463,35 +464,13 @@ class _AdminAuditTrailScreenState extends ConsumerState<AdminAuditTrailScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.cardBg,
-        border: Border.all(color: PharmaColors.borderLight),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
+    return const AdminPageLoading(cardCount: 4);
   }
 
   Widget _buildErrorState(String error) {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.dangerBg,
-        border: Border.all(color: PharmaColors.danger),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text('Failed to load audit trail', style: PharmaTypography.bodyMedium),
-            Text(error, style: PharmaTypography.caption),
-          ],
-        ),
-      ),
+    return AdminPageError(
+      message: 'Failed to load audit trail: $error',
+      onRetry: () => ref.invalidate(adminAuditTrailProvider),
     );
   }
 }
@@ -619,8 +598,8 @@ class AdminCapaRegisterScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'CAPAs',
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('$e'),
+            loading: () => const AdminPageLoading(cardCount: 2),
+            error: (e, _) => AdminPageError(message: '$e'),
             data: (capas) {
               if (capas.isEmpty) {
                 return Text(

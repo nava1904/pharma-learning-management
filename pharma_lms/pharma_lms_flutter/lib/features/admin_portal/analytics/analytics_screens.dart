@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ANALYTICS DASHBOARD SCREEN - Real data from backend
@@ -539,35 +540,13 @@ class _AdminAnalyticsDashboardScreenState extends ConsumerState<AdminAnalyticsDa
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      child: const Center(child: CircularProgressIndicator()),
-    );
+    return const AdminPageLoading(cardCount: 4);
   }
 
   Widget _buildErrorState(String error) {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.dangerBg,
-        border: Border.all(color: PharmaColors.danger),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text('Failed to load analytics', style: PharmaTypography.bodyMedium),
-            Text(error, style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(adminTrainingAnalyticsProvider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AdminPageError(
+      message: 'Failed to load analytics: $error',
+      onRetry: () => ref.invalidate(adminTrainingAnalyticsProvider),
     );
   }
 }
@@ -590,8 +569,8 @@ class AdminReportBuilderScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Definitions',
           child: defs.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('$e'),
+            loading: () => const AdminPageLoading(cardCount: 2),
+            error: (e, _) => AdminPageError(message: '$e'),
             data: (list) {
               if (list.isEmpty) {
                 return Text(

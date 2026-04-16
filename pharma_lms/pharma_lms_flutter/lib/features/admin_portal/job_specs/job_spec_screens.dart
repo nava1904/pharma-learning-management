@@ -6,6 +6,7 @@ import 'package:pharma_lms_client/pharma_lms_client.dart' show JobRole, Training
 import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // JOB SPEC LIST SCREEN - Real data from backend
@@ -304,35 +305,13 @@ class _AdminJobSpecListScreenState extends ConsumerState<AdminJobSpecListScreen>
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      child: const Center(child: CircularProgressIndicator()),
-    );
+    return const AdminPageLoading(cardCount: 3);
   }
 
   Widget _buildErrorState(String error) {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.dangerBg,
-        border: Border.all(color: PharmaColors.danger),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text('Failed to load job specifications', style: PharmaTypography.bodyMedium),
-            Text(error, style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(adminJobRolesProvider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AdminPageError(
+      message: 'Failed to load job specifications: $error',
+      onRetry: () => ref.invalidate(adminJobRolesProvider),
     );
   }
 }
@@ -354,8 +333,8 @@ class AdminJobSpecCreateScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Existing roles',
           child: roles.when(
-            loading: () => const CircularProgressIndicator(),
-            error: (e, _) => Text('$e'),
+            loading: () => const AdminPageLoading(cardCount: 2),
+            error: (e, _) => AdminPageError(message: '$e'),
             data: (list) {
               if (list.isEmpty) {
                 return Text(
@@ -418,8 +397,8 @@ class AdminTrainingMatrixScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Entries',
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('$e'),
+            loading: () => const AdminPageLoading(cardCount: 2),
+            error: (e, _) => AdminPageError(message: '$e'),
             data: (entries) {
               if (entries.isEmpty) {
                 return Text(
@@ -461,8 +440,8 @@ class AdminGapAnalysisScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Department gaps',
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('$e'),
+            loading: () => const AdminPageLoading(cardCount: 2),
+            error: (e, _) => AdminPageError(message: '$e'),
             data: (rows) {
               final filtered = rows.where((r) => r.overdue > 0 || r.complianceRate < 90).toList();
               if (filtered.isEmpty) {

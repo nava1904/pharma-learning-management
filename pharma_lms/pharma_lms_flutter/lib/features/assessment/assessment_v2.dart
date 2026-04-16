@@ -394,7 +394,7 @@ class AssessmentNotifier extends ChangeNotifier {
         certificateId: cert.id,
       ));
     } catch (e) {
-      debugPrint('Training completion note: $e');
+
       _updateState(_state.copyWith(
         needsEsignature: false,
         esignatureId: esignatureId,
@@ -1151,7 +1151,7 @@ class _QuestionPalette extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         shrinkWrap: true,
         itemCount: totalQuestions,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final isCurrent = index == currentIndex;
           final isAnswered = questions[index].id != null && 

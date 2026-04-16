@@ -24,6 +24,7 @@ class StandaloneAssignmentEndpoint extends Endpoint {
     String targetType = 'individual',
     int? targetDepartmentId,
     int? targetBatchId,
+    String? assignedByType,
   }) async {
     final me = await RbacHelper.getCurrentPharmaUser(session);
     if (me?.id == null) return null;
@@ -51,6 +52,7 @@ class StandaloneAssignmentEndpoint extends Endpoint {
       targetDepartmentId: targetDepartmentId,
       targetBatchId: targetBatchId,
       status: 'draft',
+      assignedByType: assignedByType,
     );
     return StandaloneAssignment.db.insertRow(session, row);
   }
@@ -166,12 +168,25 @@ class StandaloneAssignmentEndpoint extends Endpoint {
       throw Exception('No recipients resolved for this assignment');
     }
 
+    // Auto-infer assignedByType if not set during creation
+    String? byType = a.assignedByType;
+    if (byType == null || byType.isEmpty) {
+      if (a.targetType == 'batch') {
+        byType = 'batch';
+      } else if (await RbacHelper.hasPermission(session, resource: 'admin', action: 'write')) {
+        byType = 'admin';
+      } else {
+        byType = 'trainer';
+      }
+    }
+
     final now = DateTime.now();
     var published = await StandaloneAssignment.db.updateRow(
       session,
       a.copyWith(
         status: 'published',
         publishedAt: now,
+        assignedByType: byType,
       ),
     );
 
@@ -281,6 +296,7 @@ class StandaloneAssignmentEndpoint extends Endpoint {
         assignment: StandaloneAssignment.include(
           questionBank: QuestionBank.include(),
           courseVersion: CourseVersion.include(course: Course.include()),
+          createdBy: PharmaUser.include(),
         ),
       ),
     );

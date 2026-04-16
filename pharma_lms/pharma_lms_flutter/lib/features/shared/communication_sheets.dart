@@ -85,7 +85,7 @@ Future<void> openLearnerInstructorChat(
   BuildContext context, {
   required int courseVersionId,
   required String courseTitle,
-  /// When set (e.g. from dashboard recent activity), scroll to this message after load.
+  String? instructorName,
   int? focusMessageId,
 }) async {
   await showModalBottomSheet<void>(
@@ -98,6 +98,7 @@ Future<void> openLearnerInstructorChat(
       child: LearnerInstructorChatSheet(
         courseVersionId: courseVersionId,
         courseTitle: courseTitle,
+        instructorName: instructorName,
         focusMessageId: focusMessageId,
       ),
     ),
@@ -332,11 +333,13 @@ class LearnerInstructorChatSheet extends ConsumerStatefulWidget {
     super.key,
     required this.courseVersionId,
     required this.courseTitle,
+    this.instructorName,
     this.focusMessageId,
   });
 
   final int courseVersionId;
   final String courseTitle;
+  final String? instructorName;
   final int? focusMessageId;
 
   @override
@@ -566,9 +569,11 @@ class _LearnerInstructorChatSheetState extends ConsumerState<LearnerInstructorCh
     final meAsync = ref.watch(currentUserProvider);
     final meId = meAsync.valueOrNull?.id;
 
-    final title = _isLearner
-        ? 'Message instructor — ${widget.courseTitle}'
-        : 'Learner messages — ${widget.courseTitle}';
+  final title = _isLearner
+    ? (widget.instructorName != null && widget.instructorName!.isNotEmpty
+      ? 'Message instructor: ${widget.instructorName} — ${widget.courseTitle}'
+      : 'Message instructor — ${widget.courseTitle}')
+    : 'Learner messages — ${widget.courseTitle}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

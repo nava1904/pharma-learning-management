@@ -9355,6 +9355,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<int?>(),
               nullable: true,
             ),
+            'assignedByType': _i1.ParameterDescription(
+              name: 'assignedByType',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -9375,6 +9380,7 @@ class Endpoints extends _i1.EndpointDispatch {
                         targetType: params['targetType'],
                         targetDepartmentId: params['targetDepartmentId'],
                         targetBatchId: params['targetBatchId'],
+                        assignedByType: params['assignedByType'],
                       ),
         ),
         'updateStandaloneAssignment': _i1.MethodConnector(

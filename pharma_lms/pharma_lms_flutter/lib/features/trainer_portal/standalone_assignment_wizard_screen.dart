@@ -214,6 +214,7 @@ class _StandaloneAssignmentWizardScreenState
         targetType: _targetType,
         targetDepartmentId: _selectedDepartment?.id,
         targetBatchId: _selectedBatch?.id,
+  assignedByType: 'trainer',
       );
       if (created?.id == null) {
         _snack('Could not create assignment (check permissions)');

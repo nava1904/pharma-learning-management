@@ -1838,7 +1838,7 @@ class _CourseBuilderV2ScreenState extends State<CourseBuilderV2Screen>
                                 height: 120,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorBuilder: (_, _, _) => Container(
                                   height: 120,
                                   color: PharmaColors.gray100,
                                   child: Center(

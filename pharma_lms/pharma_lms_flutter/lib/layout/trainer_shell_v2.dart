@@ -789,7 +789,7 @@ class _TrainerHeaderState extends ConsumerState<_TrainerHeader> {
               ),
             ),
             loading: () => const SizedBox(width: 36, height: 36),
-            error: (_, __) => const Icon(Icons.person, size: 20),
+            error: (_, _) => const Icon(Icons.person, size: 20),
           ),
         ],
       ),

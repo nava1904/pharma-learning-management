@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_lms_client/pharma_lms_client.dart';
 
@@ -51,8 +50,8 @@ double computeComplianceScorePercent(List<Enrollment> enrollments) {
 }
 
 void _logDashboardAnalytics(String name, Object error, StackTrace stackTrace) {
-  debugPrint('[Dashboard] $name failed: $error');
-  debugPrint('$stackTrace');
+
+
 }
 
 /// Same row shape as [AnalyticsEndpoint.getOverdueDashboardItems] when the analytics

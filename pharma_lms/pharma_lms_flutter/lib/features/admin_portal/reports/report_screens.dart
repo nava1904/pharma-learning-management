@@ -9,6 +9,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 class AdminComplianceReportDashboardScreen extends ConsumerWidget {
   const AdminComplianceReportDashboardScreen({super.key});
@@ -24,7 +25,7 @@ class AdminComplianceReportDashboardScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'By department',
           child: rows.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const AdminPageLoading(cardCount: 3),
             error: (e, _) => Text('$e'),
             data: (list) {
               if (list.isEmpty) {
@@ -100,7 +101,7 @@ class AdminGapReportScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Gaps by department',
           child: summary.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const AdminPageLoading(cardCount: 3),
             error: (e, _) => Text('$e'),
             data: (list) {
               final sorted = [...list]..sort((a, b) => b.overdue.compareTo(a.overdue));
@@ -195,7 +196,7 @@ class AdminScheduledReportScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Report definitions',
           child: defs.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const AdminPageLoading(cardCount: 3),
             error: (e, _) => Text('$e'),
             data: (list) {
               if (list.isEmpty) {

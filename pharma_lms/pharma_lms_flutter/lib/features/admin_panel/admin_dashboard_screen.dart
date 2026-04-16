@@ -1060,7 +1060,7 @@ class _OverviewTab extends StatelessWidget {
               );
             },
             loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
           const SizedBox(height: 24),
 
@@ -1081,7 +1081,7 @@ class _OverviewTab extends StatelessWidget {
                   ),
                 ),
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               ),
               openCapasAsync.when(
                 data: (list) => SizedBox(
@@ -1095,7 +1095,7 @@ class _OverviewTab extends StatelessWidget {
                   ),
                 ),
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               ),
               dlqAsync.when(
                 data: (c) => SizedBox(
@@ -1109,7 +1109,7 @@ class _OverviewTab extends StatelessWidget {
                   ),
                 ),
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               ),
             ],
           ),
@@ -1138,7 +1138,7 @@ class _OverviewTab extends StatelessWidget {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
           const SizedBox(height: 24),
 

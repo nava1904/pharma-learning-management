@@ -79,7 +79,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
             ],
           ),
           loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
-          error: (_, __) => const Text('Failed to load KPIs'),
+          error: (_, _) => const Text('Failed to load KPIs'),
         ),
         const SizedBox(height: 16),
         AdminSectionCard(
@@ -93,7 +93,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                   .toList(),
             ),
             loading: () => const SizedBox(height: 60, child: Center(child: CircularProgressIndicator())),
-            error: (_, __) => const Text('Failed to load queues'),
+            error: (_, _) => const Text('Failed to load queues'),
           ),
         ),
         const SizedBox(height: 16),
@@ -119,7 +119,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                       ],
                     ),
                     loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const Text('Failed to load batch stats'),
+                    error: (_, _) => const Text('Failed to load batch stats'),
                   ),
                   const SizedBox(height: 12),
                   batchesAsync.when(
@@ -139,7 +139,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                                 .toList(),
                           ),
                     loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                    error: (_, __) => const Text('Failed to load batches'),
+                    error: (_, _) => const Text('Failed to load batches'),
                   ),
                 ],
               ),
@@ -179,10 +179,10 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                     );
                   },
                   loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                  error: (_, __) => const Text('Failed to load users'),
+                  error: (_, _) => const Text('Failed to load users'),
                 ),
                 loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Text('Failed to load departments'),
+                error: (_, _) => const Text('Failed to load departments'),
               ),
             );
           },
@@ -208,7 +208,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                   ),
                 ),
                 loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Text('Failed to load compliance score'),
+                error: (_, _) => const Text('Failed to load compliance score'),
               ),
             );
           },
@@ -239,7 +239,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                         ),
                       ),
                 loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Text('Failed to load audit feed'),
+                error: (_, _) => const Text('Failed to load audit feed'),
               ),
             );
           },

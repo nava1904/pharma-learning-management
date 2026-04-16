@@ -944,7 +944,7 @@ class _ProfileSummaryCard extends ConsumerWidget {
         );
       },
       loading: () => _SkeletonCard(height: 80),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
@@ -1048,7 +1048,7 @@ class _ComplianceDonutCard extends ConsumerWidget {
         );
       },
       loading: () => _SkeletonCard(height: 200),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -1244,7 +1244,7 @@ class _UpNextCard extends ConsumerWidget {
             loading: () => Column(
               children: List.generate(2, (_) => _SkeletonItem()),
             ),
-            error: (_, __) => _EmptyUpNext(),
+            error: (_, _) => _EmptyUpNext(),
           ),
         ],
       ),

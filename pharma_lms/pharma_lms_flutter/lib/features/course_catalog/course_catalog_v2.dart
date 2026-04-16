@@ -501,7 +501,7 @@ class _CourseCardV2State extends State<_CourseCardV2> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            errorBuilder: (_, __, ___) => _courseCardImageFallback(),
+                            errorBuilder: (_, _, _) => _courseCardImageFallback(),
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return _courseCardImageFallback();

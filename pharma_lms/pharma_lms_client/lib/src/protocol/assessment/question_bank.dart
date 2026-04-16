@@ -12,7 +12,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import '../organization/organization.dart' as _i2;
-import 'package:pharma_lms_client/src/protocol/protocol.dart' as _i3;
+import '../assessment/question.dart' as _i3;
+import 'package:pharma_lms_client/src/protocol/protocol.dart' as _i4;
 
 /// Question bank for assessments.
 abstract class QuestionBank implements _i1.SerializableModel {
@@ -22,6 +23,7 @@ abstract class QuestionBank implements _i1.SerializableModel {
     required this.organizationId,
     this.organization,
     this.tagsJson,
+    this.questions,
   });
 
   factory QuestionBank({
@@ -30,6 +32,7 @@ abstract class QuestionBank implements _i1.SerializableModel {
     required int organizationId,
     _i2.Organization? organization,
     String? tagsJson,
+    List<_i3.Question>? questions,
   }) = _QuestionBankImpl;
 
   factory QuestionBank.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -39,10 +42,15 @@ abstract class QuestionBank implements _i1.SerializableModel {
       organizationId: jsonSerialization['organizationId'] as int,
       organization: jsonSerialization['organization'] == null
           ? null
-          : _i3.Protocol().deserialize<_i2.Organization>(
+          : _i4.Protocol().deserialize<_i2.Organization>(
               jsonSerialization['organization'],
             ),
       tagsJson: jsonSerialization['tagsJson'] as String?,
+      questions: jsonSerialization['questions'] == null
+          ? null
+          : _i4.Protocol().deserialize<List<_i3.Question>>(
+              jsonSerialization['questions'],
+            ),
     );
   }
 
@@ -62,6 +70,9 @@ abstract class QuestionBank implements _i1.SerializableModel {
   /// Tags as JSON (e.g., GMP, Sterility).
   String? tagsJson;
 
+  /// List of questions in this bank (not stored in DB, populated for API response)
+  List<_i3.Question>? questions;
+
   /// Returns a shallow copy of this [QuestionBank]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -71,6 +82,7 @@ abstract class QuestionBank implements _i1.SerializableModel {
     int? organizationId,
     _i2.Organization? organization,
     String? tagsJson,
+    List<_i3.Question>? questions,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -81,6 +93,8 @@ abstract class QuestionBank implements _i1.SerializableModel {
       'organizationId': organizationId,
       if (organization != null) 'organization': organization?.toJson(),
       if (tagsJson != null) 'tagsJson': tagsJson,
+      if (questions != null)
+        'questions': questions?.toJson(valueToJson: (v) => v.toJson()),
     };
   }
 
@@ -99,12 +113,14 @@ class _QuestionBankImpl extends QuestionBank {
     required int organizationId,
     _i2.Organization? organization,
     String? tagsJson,
+    List<_i3.Question>? questions,
   }) : super._(
          id: id,
          name: name,
          organizationId: organizationId,
          organization: organization,
          tagsJson: tagsJson,
+         questions: questions,
        );
 
   /// Returns a shallow copy of this [QuestionBank]
@@ -117,6 +133,7 @@ class _QuestionBankImpl extends QuestionBank {
     int? organizationId,
     Object? organization = _Undefined,
     Object? tagsJson = _Undefined,
+    Object? questions = _Undefined,
   }) {
     return QuestionBank(
       id: id is int? ? id : this.id,
@@ -126,6 +143,9 @@ class _QuestionBankImpl extends QuestionBank {
           ? organization
           : this.organization?.copyWith(),
       tagsJson: tagsJson is String? ? tagsJson : this.tagsJson,
+      questions: questions is List<_i3.Question>?
+          ? questions
+          : this.questions?.map((e0) => e0.copyWith()).toList(),
     );
   }
 }

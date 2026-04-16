@@ -10,6 +10,7 @@ import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import 'package:pharma_lms_flutter/core/client.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUESTION BANK SCREEN - Real data from backend
@@ -195,9 +196,9 @@ class _AdminQuestionBankScreenState extends ConsumerState<AdminQuestionBankScree
     
     return questionsAsync.when(
       data: (questions) => _buildQuestionsList(questions, bankId),
-      loading: () => Padding(
-        padding: EdgeInsets.all(PharmaSpacing.cardPadding),
-        child: const Center(child: CircularProgressIndicator()),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(24),
+        child: AdminPageLoading(cardCount: 2),
       ),
       error: (e, s) => Padding(
         padding: EdgeInsets.all(PharmaSpacing.cardPadding),
@@ -616,35 +617,13 @@ class _AdminQuestionBankScreenState extends ConsumerState<AdminQuestionBankScree
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      child: const Center(child: CircularProgressIndicator()),
-    );
+    return const AdminPageLoading(cardCount: 3);
   }
 
   Widget _buildErrorState(String error) {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.dangerBg,
-        border: Border.all(color: PharmaColors.danger),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text('Failed to load question banks', style: PharmaTypography.bodyMedium),
-            Text(error, style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(adminQuestionBanksProvider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AdminPageError(
+      message: error,
+      onRetry: () => ref.invalidate(adminQuestionBanksProvider),
     );
   }
 }

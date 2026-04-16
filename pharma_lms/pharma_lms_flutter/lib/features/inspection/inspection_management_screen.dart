@@ -724,7 +724,7 @@ class _InspectionManagementScreenState extends State<InspectionManagementScreen>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _records.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final record = _records[index];
                 return _InspectionRecordTile(

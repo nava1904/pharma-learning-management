@@ -39,6 +39,7 @@ abstract class StandaloneAssignment implements _i1.SerializableModel {
     String? status,
     this.publishedAt,
     DateTime? createdAt,
+    this.assignedByType,
   }) : contentKind = contentKind ?? 'open_ended',
        targetType = targetType ?? 'individual',
        status = status ?? 'draft',
@@ -64,6 +65,7 @@ abstract class StandaloneAssignment implements _i1.SerializableModel {
     String? status,
     DateTime? publishedAt,
     DateTime? createdAt,
+    String? assignedByType,
   }) = _StandaloneAssignmentImpl;
 
   factory StandaloneAssignment.fromJson(
@@ -111,6 +113,7 @@ abstract class StandaloneAssignment implements _i1.SerializableModel {
       createdAt: jsonSerialization['createdAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['createdAt']),
+      assignedByType: jsonSerialization['assignedByType'] as String?,
     );
   }
 
@@ -158,6 +161,9 @@ abstract class StandaloneAssignment implements _i1.SerializableModel {
 
   DateTime createdAt;
 
+  /// Source of assignment: trainer, batch, admin
+  String? assignedByType;
+
   /// Returns a shallow copy of this [StandaloneAssignment]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -181,6 +187,7 @@ abstract class StandaloneAssignment implements _i1.SerializableModel {
     String? status,
     DateTime? publishedAt,
     DateTime? createdAt,
+    String? assignedByType,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -205,6 +212,7 @@ abstract class StandaloneAssignment implements _i1.SerializableModel {
       'status': status,
       if (publishedAt != null) 'publishedAt': publishedAt?.toJson(),
       'createdAt': createdAt.toJson(),
+      if (assignedByType != null) 'assignedByType': assignedByType,
     };
   }
 
@@ -237,6 +245,7 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
     String? status,
     DateTime? publishedAt,
     DateTime? createdAt,
+    String? assignedByType,
   }) : super._(
          id: id,
          organizationId: organizationId,
@@ -257,6 +266,7 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
          status: status,
          publishedAt: publishedAt,
          createdAt: createdAt,
+         assignedByType: assignedByType,
        );
 
   /// Returns a shallow copy of this [StandaloneAssignment]
@@ -283,6 +293,7 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
     String? status,
     Object? publishedAt = _Undefined,
     DateTime? createdAt,
+    Object? assignedByType = _Undefined,
   }) {
     return StandaloneAssignment(
       id: id is int? ? id : this.id,
@@ -318,6 +329,9 @@ class _StandaloneAssignmentImpl extends StandaloneAssignment {
       status: status ?? this.status,
       publishedAt: publishedAt is DateTime? ? publishedAt : this.publishedAt,
       createdAt: createdAt ?? this.createdAt,
+      assignedByType: assignedByType is String?
+          ? assignedByType
+          : this.assignedByType,
     );
   }
 }

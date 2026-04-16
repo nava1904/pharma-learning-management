@@ -4595,12 +4595,9 @@ class EndpointSeed extends _i2.EndpointRef {
     {},
   );
 
-  /// Comprehensive seed with 100 learners, 15 trainers, 12 pharma courses,
-  /// Full compliance: HMAC signatures, assessment attempts,
-  /// training matrix, material progress tracking.
-  ///
-  /// On failure, returns a plain-text report starting with `SEED FAILED:` (HTTP 200)
-  /// so `curl` shows the cause; check server logs for the same stack trace.
+  /// Comprehensive seed with 100 learners, 10 trainers, 5 admin, 5 QA,
+  /// 12 pharma courses, analytics snapshots, quality events, ILT batches,
+  /// material progress, certificates, e-signatures, competencies, and more.
   _i3.Future<String> runComprehensiveSeed() =>
       caller.callServerEndpoint<String>(
         'seed',
@@ -4609,8 +4606,6 @@ class EndpointSeed extends _i2.EndpointRef {
       );
 
   /// Provisions Serverpod auth accounts for all PharmaUser records.
-  /// Uses [_seedPassword] as the default password for all accounts.
-  /// Skips users that already have an email auth account.
   _i3.Future<String> provisionAuthAccounts() =>
       caller.callServerEndpoint<String>(
         'seed',
@@ -4618,7 +4613,7 @@ class EndpointSeed extends _i2.EndpointRef {
         {},
       );
 
-  /// Fix admin passwords by re-provisioning them with proper password hashes
+  /// Fix admin passwords by re-provisioning them
   _i3.Future<String> fixAdminPasswords() => caller.callServerEndpoint<String>(
     'seed',
     'fixAdminPasswords',
@@ -4782,6 +4777,7 @@ class EndpointStandaloneAssignment extends _i2.EndpointRef {
     required String targetType,
     int? targetDepartmentId,
     int? targetBatchId,
+    String? assignedByType,
   }) => caller.callServerEndpoint<_i79.StandaloneAssignment?>(
     'standaloneAssignment',
     'createStandaloneAssignment',
@@ -4796,6 +4792,7 @@ class EndpointStandaloneAssignment extends _i2.EndpointRef {
       'targetType': targetType,
       'targetDepartmentId': targetDepartmentId,
       'targetBatchId': targetBatchId,
+      'assignedByType': assignedByType,
     },
   );
 

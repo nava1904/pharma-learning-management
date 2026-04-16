@@ -194,7 +194,7 @@ class DownloadsScreen extends ConsumerWidget {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: downloads.length,
-                        separatorBuilder: (_, __) => Divider(height: 1, color: PharmaColors.borderLight),
+                        separatorBuilder: (_, _) => Divider(height: 1, color: PharmaColors.borderLight),
                         itemBuilder: (_, i) => _DownloadRow(
                           item: downloads[i],
                           certificate: certList[i],

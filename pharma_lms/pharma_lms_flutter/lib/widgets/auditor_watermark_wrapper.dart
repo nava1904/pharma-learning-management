@@ -46,7 +46,7 @@ class _AuditorWatermarkWrapperState extends State<AuditorWatermarkWrapper> {
         if (id != null) {
           setState(() {
             _inspectionRecordId = id;
-            _inspectorNames = result['inspectorNames'] as String?;
+            _inspectorNames = result['inspectorNames'];
           });
           unawaited(client.inspection.logAuditorPageView(
             inspectionRecordId: id,

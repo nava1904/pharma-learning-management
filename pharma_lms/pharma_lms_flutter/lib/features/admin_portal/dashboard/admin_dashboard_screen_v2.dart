@@ -43,7 +43,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
               return const SizedBox.shrink();
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
 
           Padding(
@@ -119,7 +119,7 @@ class AdminDashboardScreenV2 extends ConsumerWidget {
                           child: CircularProgressIndicator(
                               color: PharmaColors.clinicalPrimary)),
                     ),
-                    error: (_, __) => const Text('Failed to load queues'),
+                    error: (_, _) => const Text('Failed to load queues'),
                   ),
                 ),
 
@@ -217,7 +217,7 @@ class _KpiGridSection extends ConsumerWidget {
             child: CircularProgressIndicator(
                 color: PharmaColors.clinicalPrimary)),
       ),
-      error: (_, __) => const Text('Failed to load KPIs'),
+      error: (_, _) => const Text('Failed to load KPIs'),
     );
   }
 }
@@ -280,7 +280,7 @@ class _SystemHealthMonitorCard extends StatelessWidget {
                       strokeWidth: 2,
                       color: PharmaColors.clinicalPrimary)),
             ),
-            error: (_, __) => Row(
+            error: (_, _) => Row(
               children: [
                 Expanded(
                   child: ClinicalHealthCell(
@@ -347,7 +347,7 @@ class _OverdueTrainingsTable extends ConsumerWidget {
               )
             : const SizedBox.shrink(),
         loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
+        error: (_, _) => const SizedBox.shrink(),
       ),
       child: departmentsAsync.when(
         data: (departments) => usersAsync.when(
@@ -389,7 +389,7 @@ class _OverdueTrainingsTable extends ConsumerWidget {
                 child: CircularProgressIndicator(
                     color: PharmaColors.clinicalPrimary)),
           ),
-          error: (_, __) => const Text('Failed to load users'),
+          error: (_, _) => const Text('Failed to load users'),
         ),
         loading: () => const SizedBox(
           height: 60,
@@ -397,7 +397,7 @@ class _OverdueTrainingsTable extends ConsumerWidget {
               child: CircularProgressIndicator(
                   color: PharmaColors.clinicalPrimary)),
         ),
-        error: (_, __) => const Text('Failed to load departments'),
+        error: (_, _) => const Text('Failed to load departments'),
       ),
     );
   }
@@ -421,7 +421,7 @@ class _ESignatureReadinessSection extends ConsumerWidget {
                 child: CircularProgressIndicator(
                     color: PharmaColors.clinicalPrimary)),
           ),
-          error: (_, __) => const Text('Failed to load e-signature data'),
+          error: (_, _) => const Text('Failed to load e-signature data'),
         );
   }
 }
@@ -487,7 +487,7 @@ class _RecentAuditFeedSection extends ConsumerWidget {
                   child: CircularProgressIndicator(
                       color: PharmaColors.clinicalPrimary)),
             ),
-            error: (_, __) => const Text('Failed to load audit feed'),
+            error: (_, _) => const Text('Failed to load audit feed'),
           ),
         ],
       ),
@@ -533,7 +533,7 @@ class _ActiveBatchesSection extends ConsumerWidget {
             ),
             loading: () => const LinearProgressIndicator(
                 color: PharmaColors.clinicalPrimary),
-            error: (_, __) => const Text('Failed to load batch stats'),
+            error: (_, _) => const Text('Failed to load batch stats'),
           ),
           const SizedBox(height: 16),
           batchesAsync.when(
@@ -571,7 +571,7 @@ class _ActiveBatchesSection extends ConsumerWidget {
                   child: CircularProgressIndicator(
                       color: PharmaColors.clinicalPrimary)),
             ),
-            error: (_, __) => const Text('Failed to load batches'),
+            error: (_, _) => const Text('Failed to load batches'),
           ),
         ],
       ),

@@ -94,7 +94,7 @@ class _AssessmentScreenRedesignedState extends ConsumerState<AssessmentScreenRed
   bool _passed = false;
 
   // Backend data
-  // ignore: unused_field - kept for debugging/future use
+
   Assessment? _assessment;
   List<Question> _questions = [];
   AssessmentAttempt? _currentAttempt;
@@ -272,7 +272,7 @@ class _AssessmentScreenRedesignedState extends ConsumerState<AssessmentScreenRed
       );
     } catch (e) {
       // Silently fail - answer is still stored locally
-      debugPrint('Failed to record answer: $e');
+
     }
   }
 
@@ -284,7 +284,7 @@ class _AssessmentScreenRedesignedState extends ConsumerState<AssessmentScreenRed
         return decoded.map((e) => e.toString()).toList();
       }
     } catch (e) {
-      debugPrint('Failed to parse options: $e');
+
     }
     return [];
   }

@@ -9,6 +9,7 @@ import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import 'package:pharma_lms_flutter/core/client.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COURSE CATALOGUE SCREEN - Real data from backend
@@ -85,7 +86,7 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
                 'Loading...',
                 style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
           ],
         ),
@@ -421,50 +422,18 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.cardBg,
-        border: Border.all(color: PharmaColors.borderLight),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const AdminPageLoading(cardCount: 3);
   }
 
   Widget _buildErrorState(String error) {
-    return Container(
-      padding: EdgeInsets.all(PharmaSpacing.xl),
-      decoration: BoxDecoration(
-        color: PharmaColors.dangerBg,
-        border: Border.all(color: PharmaColors.danger),
-        borderRadius: BorderRadius.circular(PharmaRadius.md),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text(
-              'Failed to load courses',
-              style: PharmaTypography.bodyMedium.copyWith(color: PharmaColors.dangerText),
-            ),
-            Text(error, style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(adminCoursesProvider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AdminPageError(
+      message: error,
+      onRetry: () => ref.invalidate(adminCoursesProvider),
     );
   }
 }
@@ -502,10 +471,8 @@ class AdminCourseApprovalScreen extends ConsumerWidget {
           // Pending Courses
           pendingCoursesAsync.when(
             data: (courses) => _buildPendingCoursesList(context, ref, courses),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(
-              child: Text('Error loading courses: $e'),
-            ),
+            loading: () => const AdminPageLoading(cardCount: 3),
+            error: (e, s) => AdminPageError(message: 'Error loading courses: $e'),
           ),
         ],
       ),

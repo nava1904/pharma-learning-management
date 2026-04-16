@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/client.dart';
@@ -200,11 +199,11 @@ final notificationRealtimeProvider = Provider.autoDispose<void>((ref) {
         if (eventType == 'notification') {
           // Instant refresh on push notification
           ref.invalidate(notificationsProvider);
-          debugPrint('[Notifications] WebSocket push → refresh');
+
         }
       });
     } catch (e) {
-      debugPrint('[Notifications] WebSocket unavailable ($e), using polling fallback');
+
     }
 
     // Polling fallback: 30s if WebSocket connected (light keep-alive), or primary if not

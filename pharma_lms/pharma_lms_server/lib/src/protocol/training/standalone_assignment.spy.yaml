@@ -21,6 +21,8 @@ fields:
   status: String, default='draft'
   publishedAt: DateTime?
   createdAt: DateTime, default=now
+  ### Source of assignment: trainer, batch, admin
+  assignedByType: String?
 
 indexes:
   standalone_assignment_org_idx:

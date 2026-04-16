@@ -61,7 +61,7 @@ class _AdminBatchListScreenState extends ConsumerState<AdminBatchListScreen> {
               // Stats Row
               statsAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (stats) => _buildStatsRow(stats, batches),
               ),
               SizedBox(height: PharmaSpacing.md),

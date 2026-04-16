@@ -79,22 +79,17 @@ class EmployeePageScaffold extends StatelessWidget {
           ),
           const SizedBox(height: PharmaSpacing.lg),
           // ── CONTENT ──
-          if (scrollable)
-            Expanded(child: child)
-          else
-            child,
+          Expanded(child: child),
         ],
       ),
     );
 
-    if (scrollable) {
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: body),
-        ],
-      );
-    }
+    body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: body),
+      ],
+    );
 
     if (onRefresh != null) {
       return RefreshIndicator(

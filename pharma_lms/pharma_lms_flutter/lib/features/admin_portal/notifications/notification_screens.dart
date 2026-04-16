@@ -6,6 +6,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NOTIFICATION TEMPLATES SCREEN
@@ -28,7 +29,7 @@ class _AdminNotificationTemplateScreenState extends ConsumerState<AdminNotificat
     final statsAsync = ref.watch(adminNotificationTemplateStatsProvider);
 
     return templatesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const AdminPageLoading(cardCount: 3),
       error: (err, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -66,7 +67,7 @@ class _AdminNotificationTemplateScreenState extends ConsumerState<AdminNotificat
               // Stats Row
               statsAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (stats) => _buildStatsRow(stats),
               ),
               SizedBox(height: PharmaSpacing.md),
@@ -556,7 +557,7 @@ class AdminReminderRulesScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Reminder templates',
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const AdminPageLoading(cardCount: 3),
             error: (e, _) => Text('$e'),
             data: (templates) {
               final rows = templates

@@ -10,3 +10,5 @@ fields:
   organization: Organization?, relation
   ### Tags as JSON (e.g., GMP, Sterility).
   tagsJson: String?
+  ### List of questions in this bank (not stored in DB, populated for API response)
+  questions: List<Question>?

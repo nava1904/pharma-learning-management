@@ -129,7 +129,7 @@ class _NotificationCentreContentState
                   horizontal: PharmaSpacing.md,
                 ),
                 itemCount: filtered.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const SizedBox(height: PharmaSpacing.md),
                 itemBuilder: (context, index) {
                   final n = filtered[index];

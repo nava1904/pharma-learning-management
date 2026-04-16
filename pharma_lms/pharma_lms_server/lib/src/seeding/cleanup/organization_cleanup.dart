@@ -31,6 +31,7 @@ class OrganizationCleanup {
         final inClause = placeholders.join(',');
         final userParams = QueryParameters.named(params);
 
+        // ── User-FK tables ──────────────────────────────────────────────
         await session.db.unsafeQuery(
           'DELETE FROM delegated_authority WHERE "delegatorId" IN ($inClause) OR "delegateeId" IN ($inClause)',
           parameters: userParams,
@@ -107,6 +108,10 @@ class OrganizationCleanup {
           parameters: userParams,
         );
         await session.db.unsafeQuery(
+          'DELETE FROM access_log WHERE "userId" IN ($inClause)',
+          parameters: userParams,
+        );
+        await session.db.unsafeQuery(
           'DELETE FROM training_waiver WHERE "userId" IN ($inClause)',
           parameters: userParams,
         );
@@ -134,12 +139,26 @@ class OrganizationCleanup {
           'DELETE FROM sme_assignment WHERE "smeUserId" IN ($inClause) OR "invitedById" IN ($inClause)',
           parameters: userParams,
         );
-          await session.db.unsafeQuery(
+        await session.db.unsafeQuery(
           'DELETE FROM sme_review_comment WHERE "authorId" IN ($inClause)',
+          parameters: userParams,
+        );
+        await session.db.unsafeQuery(
+          'DELETE FROM observation_log WHERE "userId" IN ($inClause) OR "evaluatorId" IN ($inClause)',
+          parameters: userParams,
+        );
+        await session.db.unsafeQuery(
+          'DELETE FROM standalone_assignment_recipient WHERE "userId" IN ($inClause)',
           parameters: userParams,
         );
       }
 
+      // ── ILT batches ───────────────────────────────────────────────────
+      await session.db.unsafeQuery(
+        r'''DELETE FROM batch_attendance_record WHERE "batchId" IN (
+            SELECT id FROM training_batch WHERE "organizationId" = @orgId)''',
+        parameters: orgParams,
+      );
       await session.db.unsafeQuery(
         r'''DELETE FROM batch_announcement WHERE "batchId" IN (
             SELECT id FROM training_batch WHERE "organizationId" = @orgId)''',
@@ -160,8 +179,18 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
-      // With session_replication_role = replica, FK triggers are off, so one DELETE
-      // can remove all threaded rows (self-FK) for these course versions.
+      // ── Standalone assignments ────────────────────────────────────────
+      await session.db.unsafeQuery(
+        r'''DELETE FROM standalone_assignment_recipient WHERE "assignmentId" IN (
+            SELECT id FROM standalone_assignment WHERE "organizationId" = @orgId)''',
+        parameters: orgParams,
+      );
+      await session.db.unsafeQuery(
+        'DELETE FROM standalone_assignment WHERE "organizationId" = @orgId',
+        parameters: orgParams,
+      );
+
+      // ── Course content (threaded tables first) ────────────────────────
       await session.db.unsafeQuery(
         'DELETE FROM sme_review_comment WHERE $_cvInOrg',
         parameters: orgParams,
@@ -189,7 +218,6 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
-      // assignment_submission has "assignmentId", not "lessonId".
       await session.db.unsafeQuery(
         r'''DELETE FROM assignment_submission WHERE "assignmentId" IN (
             SELECT id FROM assignment WHERE "lessonId" IN (
@@ -316,6 +344,7 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
+      // ── Analytics & compliance snapshots ──────────────────────────────
       await session.db.unsafeQuery(
         r'''DELETE FROM department_compliance_snapshot WHERE "departmentId" IN (
             SELECT d.id FROM department d
@@ -324,8 +353,15 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
+      // ── Quality & inspection ──────────────────────────────────────────
       await session.db.unsafeQuery(
         r'''DELETE FROM inspection_package WHERE "inspectionRecordId" IN (
+            SELECT id FROM inspection_record WHERE "siteId" IN (
+              SELECT id FROM site WHERE "organizationId" = @orgId))''',
+        parameters: orgParams,
+      );
+      await session.db.unsafeQuery(
+        r'''DELETE FROM auditor_session WHERE "inspectionRecordId" IN (
             SELECT id FROM inspection_record WHERE "siteId" IN (
               SELECT id FROM site WHERE "organizationId" = @orgId))''',
         parameters: orgParams,
@@ -352,6 +388,7 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
+      // ── Documents ─────────────────────────────────────────────────────
       await session.db.unsafeQuery(
         r'''DELETE FROM approval_workflow WHERE "documentVersionId" IN (
             SELECT id FROM document_version WHERE "documentId" IN (
@@ -380,6 +417,7 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
+      // ── Org-level config tables ───────────────────────────────────────
       final orgTablesDirect = <String>[
         'certificate_template',
         'notification_template',
@@ -397,6 +435,7 @@ class OrganizationCleanup {
         parameters: orgParams,
       );
 
+      // ── Electronic signatures (after all referencing tables) ──────────
       if (userIds.isNotEmpty) {
         final placeholders = <String>[];
         final params = <String, dynamic>{};
@@ -413,11 +452,13 @@ class OrganizationCleanup {
         );
       }
 
+      // ── Users ─────────────────────────────────────────────────────────
       await session.db.unsafeQuery(
         'DELETE FROM pharma_user WHERE "organizationId" = @orgId',
         parameters: orgParams,
       );
 
+      // ── Org structure ─────────────────────────────────────────────────
       await session.db.unsafeQuery(
         r'''DELETE FROM job_role WHERE "departmentId" IN (
             SELECT d.id FROM department d

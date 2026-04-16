@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'client.dart';
@@ -56,11 +55,11 @@ class LmsRealtime {
           }
         },
         onError: (e) {
-          debugPrint('[LmsRealtime] WebSocket error: $e');
+
           _scheduleReconnect();
         },
         onDone: () {
-          debugPrint('[LmsRealtime] WebSocket closed');
+
           _channel = null;
           _listenSub = null;
           if (!_intentionalDisconnect) {
@@ -73,9 +72,9 @@ class LmsRealtime {
         _channel!.sink.add(jsonEncode({'op': 'subscribe', 'rooms': _activeRooms.toList()}));
       }
       _reconnectAttempts = 0; // Reset backoff on successful connect
-      debugPrint('[LmsRealtime] Connected, rooms: ${_activeRooms.length}');
+
     } catch (e) {
-      debugPrint('[LmsRealtime] Connection failed: $e');
+
       _channel = null;
       _listenSub = null;
       _scheduleReconnect();
@@ -93,7 +92,7 @@ class LmsRealtime {
           .clamp(1, 30),
     );
     _reconnectAttempts++;
-    debugPrint('[LmsRealtime] Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)');
+
     _reconnectTimer = Timer(delay, () async {
       _channel = null;
       _listenSub = null;

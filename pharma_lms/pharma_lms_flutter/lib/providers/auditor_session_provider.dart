@@ -30,10 +30,10 @@ final auditorSessionProvider =
     if (id == null) return null;
     return AuditorSession(
       inspectionRecordId: id,
-      scopeDescription: result['scopeDescription'] as String?,
-      expiresAt: result['expiresAt'] as String?,
-      siteName: result['siteName'] as String?,
-      inspectorNames: result['inspectorNames'] as String?,
+      scopeDescription: result['scopeDescription'],
+      expiresAt: result['expiresAt'],
+      siteName: result['siteName'],
+      inspectorNames: result['inspectorNames'],
     );
   } catch (_) {
     return null;

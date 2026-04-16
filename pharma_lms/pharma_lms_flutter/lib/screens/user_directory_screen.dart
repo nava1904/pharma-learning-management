@@ -28,7 +28,7 @@ class _UserList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       itemCount: users.length,
-      separatorBuilder: (_, __) => const Divider(),
+      separatorBuilder: (_, _) => const Divider(),
       itemBuilder: (context, i) {
         final user = users[i];
         return ListTile(

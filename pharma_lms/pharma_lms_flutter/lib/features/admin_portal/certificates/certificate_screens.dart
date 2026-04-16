@@ -6,6 +6,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CERTIFICATE REGISTER SCREEN
@@ -28,24 +29,10 @@ class _AdminCertificateListScreenState extends ConsumerState<AdminCertificateLis
     final statsAsync = ref.watch(adminCertificateStatsProvider);
 
     return certificatesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: PharmaColors.danger),
-            SizedBox(height: PharmaSpacing.md),
-            Text('Error loading certificates', style: PharmaTypography.body),
-            SizedBox(height: PharmaSpacing.xs),
-            Text(err.toString(), style: PharmaTypography.caption),
-            SizedBox(height: PharmaSpacing.md),
-            ElevatedButton.icon(
-              onPressed: () => ref.invalidate(adminCertificatesProvider),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
+      loading: () => const AdminPageLoading(cardCount: 4),
+      error: (err, stack) => AdminPageError(
+        message: 'Error loading certificates: $err',
+        onRetry: () => ref.invalidate(adminCertificatesProvider),
       ),
       data: (certificates) {
         final filteredCerts = certificates.where((c) {

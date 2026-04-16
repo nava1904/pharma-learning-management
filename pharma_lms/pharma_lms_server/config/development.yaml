@@ -30,9 +30,11 @@ webServer:
 # This is the database setup for your server.
 database:
   host: localhost
-  port: 5432
+  port: 8090
   name: pharma_lms
+  password: vtiA6Sewk4NgyriJtYgg0zEHR1EZvsAr
   user: postgres
+  ssl: false
   #requireSsl: true # defaults to false
   #isUnixSocket: true # defaults to false
   # Scaled for 1000 concurrent users: each heartbeat/API call uses a DB connection.

@@ -69,6 +69,8 @@ class _CertificateScreenState extends State<CertificateScreen> {
   }
 
   Future<void> _downloadPdf(BuildContext context, Certificate cert) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -76,30 +78,25 @@ class _CertificateScreenState extends State<CertificateScreen> {
     );
     try {
       final bytes = await generateCertificatePdf(cert);
-      if (!context.mounted) return;
       final id = cert.id ?? 0;
       final saved = await saveBytesToFile(bytes, 'vyuh_lms_certificate_$id.pdf');
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(saved ? 'Certificate downloaded' : 'Download cancelled'),
-            backgroundColor: saved ? PharmaColors.emerald600 : null,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(saved ? 'Certificate downloaded' : 'Download cancelled'),
+          backgroundColor: saved ? PharmaColors.emerald600 : null,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download failed: $e'),
-            backgroundColor: PharmaColors.danger,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: PharmaColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

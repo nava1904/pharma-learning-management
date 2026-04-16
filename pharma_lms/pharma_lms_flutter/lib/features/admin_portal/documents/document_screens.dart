@@ -5,6 +5,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 class AdminDocumentLibraryScreen extends ConsumerWidget {
   const AdminDocumentLibraryScreen({super.key});
@@ -20,7 +21,7 @@ class AdminDocumentLibraryScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Documents',
           child: docs.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const AdminPageLoading(cardCount: 2),
             error: (e, _) => Text('$e'),
             data: (list) {
               if (list.isEmpty) {
@@ -167,7 +168,7 @@ class AdminDocumentAcknowledgementScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Training-linked documents',
           child: docs.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const AdminPageLoading(cardCount: 2),
             error: (e, _) => Text('$e'),
             data: (list) {
               final gated = list.where((d) => (d.trainingRequiredByQa ?? '').isNotEmpty).toList();

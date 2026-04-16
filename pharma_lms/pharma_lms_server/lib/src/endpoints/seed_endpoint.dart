@@ -7,9 +7,17 @@ import 'package:serverpod_auth_idp_server/providers/email.dart';
 
 import '../generated/protocol.dart';
 import '../seeding/cleanup/organization_cleanup.dart';
+import '../seeding/seed_context.dart';
+import '../seeding/tables/access_session_seed.dart';
+import '../seeding/tables/analytics_seed.dart';
 import '../seeding/tables/department_seed.dart';
+import '../seeding/tables/infrastructure_seed.dart';
+import '../seeding/tables/material_progress_seed.dart';
 import '../seeding/tables/organization_seed.dart';
+import '../seeding/tables/qa_users_seed.dart';
+import '../seeding/tables/quality_seed.dart';
 import '../seeding/tables/site_seed.dart';
+import '../seeding/tables/training_batch_seed.dart';
 
 /// Default password for all seed/demo users.
 /// In production, users would register with their own passwords.
@@ -30,10 +38,8 @@ class SeedEndpoint extends Endpoint {
 
   /// Clear all seed data and re-run comprehensive seed
   Future<String> clearAndReseed(Session session) async {
-    // Delete in reverse dependency order
     final messages = <String>[];
 
-    // Delete existing PharmaTech organization and all related data
     final existingOrg = await Organization.db.findFirstRow(
       session,
       where: (t) => t.name.equals('PharmaTech India Pvt Ltd'),
@@ -46,19 +52,15 @@ class SeedEndpoint extends Endpoint {
       messages.add('No existing PharmaTech India organization found');
     }
 
-    // Now run the comprehensive seed
     final seedResult = await runComprehensiveSeed(session);
     messages.add(seedResult);
 
-    return messages.join('\\n');
+    return messages.join('\n');
   }
 
-  /// Comprehensive seed with 100 learners, 15 trainers, 12 pharma courses,
-  /// Full compliance: HMAC signatures, assessment attempts,
-  /// training matrix, material progress tracking.
-  ///
-  /// On failure, returns a plain-text report starting with `SEED FAILED:` (HTTP 200)
-  /// so `curl` shows the cause; check server logs for the same stack trace.
+  /// Comprehensive seed with 100 learners, 10 trainers, 5 admin, 5 QA,
+  /// 12 pharma courses, analytics snapshots, quality events, ILT batches,
+  /// material progress, certificates, e-signatures, competencies, and more.
   Future<String> runComprehensiveSeed(Session session) async {
     try {
       return await _runComprehensiveSeed(session);
@@ -84,22 +86,17 @@ class SeedEndpoint extends Endpoint {
     // HMAC secret for integrity hashes (FR-02-02 AC-06)
     const hmacSecret = 'pharma-lms-super-secret-audit-key-2026';
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 1: Organization & Sites
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 1: Organization, Sites, Departments
+    // ═══════════════════════════════════════════════════════════════════════
     final org = await OrganizationSeed.insert(session);
     final orgId = org.id!;
-
     final siteIds = await SiteSeed.insertForOrganization(session, orgId);
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 2: Departments
-    // ═══════════════════════════════════════════════════════════════════════════
     final deptIds = await DepartmentSeed.insertForDefaultSite(session, siteIds[0]);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 3: Roles
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 2: Roles & Permissions
+    // ═══════════════════════════════════════════════════════════════════════
     final roleData = [
       ['Admin', 'admin'],
       ['QA Director', 'qa_director'],
@@ -122,76 +119,36 @@ class SeedEndpoint extends Endpoint {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 3b: Permissions (RBAC resource:action per role)
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Format: [roleCode, resource, action]
+    // Permissions
     final permissionData = <List<String>>[
-      // Admin — full access
       ['admin', '*', '*'],
-
-      // QA Director — full read, write quality_event & compliance
-      ['qa_director', '*', 'read'],
-      ['qa_director', 'quality_event', 'write'],
-      ['qa_director', 'compliance', 'write'],
-      ['qa_director', 'course', 'write'],
-
-      // QA Manager — same as director
-      ['qa_manager', '*', 'read'],
-      ['qa_manager', 'quality_event', 'write'],
-      ['qa_manager', 'compliance', 'write'],
-      ['qa_manager', 'course', 'write'],
-
-      // Trainer — course, material, assessment, training, analytics, audit, document (SOP library)
-      ['trainer', 'course', 'read'],
-      ['trainer', 'course', 'write'],
-      ['trainer', 'material', 'read'],
-      ['trainer', 'material', 'write'],
-      ['trainer', 'assessment', 'read'],
-      ['trainer', 'assessment', 'write'],
-      ['trainer', 'training', 'read'],
-      ['trainer', 'training', 'write'],
-      ['trainer', 'training', 'assign'],
-      ['trainer', 'analytics', 'read'],
-      ['trainer', 'analytics', 'write'],
-      ['trainer', 'audit', 'read'],
-      ['trainer', 'organization', 'read'],
-      ['trainer', 'compliance', 'read'],
-      ['trainer', 'quality_event', 'read'],
-      ['trainer', 'document', 'read'],
+      ['qa_director', '*', 'read'], ['qa_director', 'quality_event', 'write'],
+      ['qa_director', 'compliance', 'write'], ['qa_director', 'course', 'write'],
+      ['qa_manager', '*', 'read'], ['qa_manager', 'quality_event', 'write'],
+      ['qa_manager', 'compliance', 'write'], ['qa_manager', 'course', 'write'],
+      ['trainer', 'course', 'read'], ['trainer', 'course', 'write'],
+      ['trainer', 'material', 'read'], ['trainer', 'material', 'write'],
+      ['trainer', 'assessment', 'read'], ['trainer', 'assessment', 'write'],
+      ['trainer', 'training', 'read'], ['trainer', 'training', 'write'],
+      ['trainer', 'training', 'assign'], ['trainer', 'analytics', 'read'],
+      ['trainer', 'analytics', 'write'], ['trainer', 'audit', 'read'],
+      ['trainer', 'organization', 'read'], ['trainer', 'compliance', 'read'],
+      ['trainer', 'quality_event', 'read'], ['trainer', 'document', 'read'],
       ['trainer', 'document', 'write'],
-
-      // SME — same as trainer (including document for SOP library)
-      ['sme', 'course', 'read'],
-      ['sme', 'course', 'write'],
-      ['sme', 'material', 'read'],
-      ['sme', 'material', 'write'],
-      ['sme', 'assessment', 'read'],
-      ['sme', 'assessment', 'write'],
-      ['sme', 'training', 'read'],
-      ['sme', 'training', 'write'],
-      ['sme', 'training', 'assign'],
-      ['sme', 'analytics', 'read'],
-      ['sme', 'audit', 'read'],
-      ['sme', 'organization', 'read'],
-      ['sme', 'compliance', 'read'],
-      ['sme', 'document', 'read'],
+      ['sme', 'course', 'read'], ['sme', 'course', 'write'],
+      ['sme', 'material', 'read'], ['sme', 'material', 'write'],
+      ['sme', 'assessment', 'read'], ['sme', 'assessment', 'write'],
+      ['sme', 'training', 'read'], ['sme', 'training', 'write'],
+      ['sme', 'training', 'assign'], ['sme', 'analytics', 'read'],
+      ['sme', 'audit', 'read'], ['sme', 'organization', 'read'],
+      ['sme', 'compliance', 'read'], ['sme', 'document', 'read'],
       ['sme', 'document', 'write'],
-
-      // Employee — read training, compliance, analytics, organization
-      ['employee', 'training', 'read'],
-      ['employee', 'compliance', 'read'],
-      ['employee', 'analytics', 'read'],
-      ['employee', 'organization', 'read'],
-      ['employee', 'course', 'read'],
-      ['employee', 'material', 'read'],
+      ['employee', 'training', 'read'], ['employee', 'compliance', 'read'],
+      ['employee', 'analytics', 'read'], ['employee', 'organization', 'read'],
+      ['employee', 'course', 'read'], ['employee', 'material', 'read'],
       ['employee', 'assessment', 'read'],
-
-      // Auditor — read everything
-      ['auditor', '*', 'read'],
-      ['auditor', 'audit', 'read'],
+      ['auditor', '*', 'read'], ['auditor', 'audit', 'read'],
     ];
-
     for (final p in permissionData) {
       final roleId = roleIds[p[0]];
       if (roleId != null) {
@@ -211,9 +168,9 @@ class SeedEndpoint extends Endpoint {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 4: Job Roles
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 3: Job Roles
+    // ═══════════════════════════════════════════════════════════════════════
     final jobRoleData = [
       ['QA Specialist', 'QA-SPEC', 0],
       ['QC Analyst', 'QC-ANAL', 1],
@@ -243,9 +200,9 @@ class SeedEndpoint extends Endpoint {
       jobRoleIds.add(jr.id!);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 4b: Signature Meanings (FR-02-01)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 3b: Signature Meanings (FR-02-01)
+    // ═══════════════════════════════════════════════════════════════════════
     final meaningCompletion = await SignatureMeaning.db.insertRow(
       session,
       SignatureMeaning(
@@ -279,9 +236,9 @@ class SeedEndpoint extends Endpoint {
       ),
     );
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 5: Trainers (15)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 4: Trainers (10)
+    // ═══════════════════════════════════════════════════════════════════════
     final trainerData = [
       ['rajesh.venkataraman@pharmatech.in', 'Dr. Rajesh', 'Venkataraman', 'TRN-001', 0, 0, 0],
       ['sneha.krishnamurthy@pharmatech.in', 'Sneha', 'Krishnamurthy', 'TRN-002', 0, 7, 11],
@@ -293,11 +250,6 @@ class SeedEndpoint extends Endpoint {
       ['ankit.joshi@pharmatech.in', 'Ankit', 'Joshi', 'TRN-008', 4, 7, 10],
       ['lakshmi.iyer@pharmatech.in', 'Lakshmi', 'Iyer', 'TRN-009', 3, 0, 0],
       ['rahul.deshmukh@pharmatech.in', 'Rahul', 'Deshmukh', 'TRN-010', 1, 1, 1],
-      ['deepa.menon@pharmatech.in', 'Deepa', 'Menon', 'TRN-011', 0, 7, 11],
-      ['suresh.kumar@pharmatech.in', 'Suresh', 'Kumar', 'TRN-012', 2, 5, 7],
-      ['anjali.rao@pharmatech.in', 'Anjali', 'Rao', 'TRN-013', 4, 9, 13],
-      ['karthik.pillai@pharmatech.in', 'Karthik', 'Pillai', 'TRN-014', 3, 2, 3],
-      ['divya.bhat@pharmatech.in', 'Divya', 'Bhat', 'TRN-015', 0, 3, 5],
     ];
     final trainerIds = <int>[];
     for (final t in trainerData) {
@@ -323,9 +275,9 @@ class SeedEndpoint extends Endpoint {
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 6: Learners (100)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 5: Learners (100)
+    // ═══════════════════════════════════════════════════════════════════════
     final learnerNames = [
       ['Ramesh', 'Gupta'], ['Priyanka', 'Singh'], ['Manoj', 'Verma'],
       ['Sunita', 'Devi'], ['Arvind', 'Khanna'], ['Fatima', 'Khan'],
@@ -384,20 +336,18 @@ class SeedEndpoint extends Endpoint {
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 6a: Admin Users (5) — for comprehensive admin portal testing
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 5b: Admin Users (5)
+    // ═══════════════════════════════════════════════════════════════════════
     final adminUsers = <List<dynamic>>[
-      // [email, firstName, lastName, employeeId, siteId_idx, deptId_idx, roleCode]
       ['super.admin@pharmacorp.demo', 'Super', 'Administrator', 'ADM-001', 0, 0, 'admin'],
       ['content.admin@pharmacorp.demo', 'Content', 'Administrator', 'ADM-002', 0, 7, 'admin'],
       ['qa.manager@pharmacorp.demo', 'Quality', 'Manager', 'ADM-003', 1, 0, 'qa_manager'],
       ['training.admin@pharmacorp.demo', 'Training', 'Administrator', 'ADM-004', 2, 7, 'admin'],
       ['audit.officer@pharmacorp.demo', 'Audit', 'Officer', 'ADM-005', 4, 3, 'auditor'],
     ];
-    
+    final adminUserIds = <int>[];
     for (final a in adminUsers) {
-      // Check if admin user already exists
       final existingAdmin = await PharmaUser.db.findFirstRow(
         session,
         where: (t) => t.email.equals(a[0] as String),
@@ -412,12 +362,13 @@ class SeedEndpoint extends Endpoint {
             employeeId: a[3] as String,
             siteId: siteIds[a[4] as int],
             departmentId: deptIds[a[5] as int],
-            jobRoleId: jobRoleIds[0], // Placeholder job role
+            jobRoleId: jobRoleIds[0],
             organizationId: orgId,
             status: 'active',
-            hireDate: dt(-730), // 2 years ago (long tenure for admins)
+            hireDate: dt(-730),
           ),
         );
+        adminUserIds.add(adminUser.id!);
         await UserRole.db.insertRow(
           session,
           UserRole(userId: adminUser.id!, roleId: roleIds[a[6] as String]!),
@@ -425,12 +376,10 @@ class SeedEndpoint extends Endpoint {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 6b: Demo Users (for development/testing login flow)
-    // These match the emails in auth_provider.dart demo mode
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 5c: Demo Users (for development/testing login flow)
+    // ═══════════════════════════════════════════════════════════════════════
     final demoUsers = [
-      // [email, firstName, lastName, employeeId, roleCode]
       ['employee@pharmacorp.demo', 'Demo', 'Employee', 'DEMO-EMP', 'employee'],
       ['admin@pharmacorp.demo', 'Demo', 'Admin', 'DEMO-ADM', 'admin'],
       ['qa@pharmacorp.demo', 'Demo', 'QA', 'DEMO-QA', 'qa_manager'],
@@ -438,9 +387,7 @@ class SeedEndpoint extends Endpoint {
       ['auditor@pharmacorp.demo', 'Demo', 'Auditor', 'DEMO-AUD', 'auditor'],
       ['analytics@pharmacorp.demo', 'Demo', 'Analytics', 'DEMO-ANA', 'admin'],
     ];
-    
     for (final d in demoUsers) {
-      // Check if demo user already exists
       final existingDemo = await PharmaUser.db.findFirstRow(
         session,
         where: (t) => t.email.equals(d[0]),
@@ -453,12 +400,12 @@ class SeedEndpoint extends Endpoint {
             firstName: d[1],
             lastName: d[2],
             employeeId: d[3],
-            siteId: siteIds[0], // Mumbai HQ
-            departmentId: deptIds[0], // First department
-            jobRoleId: jobRoleIds[0], // First job role
+            siteId: siteIds[0],
+            departmentId: deptIds[0],
+            jobRoleId: jobRoleIds[0],
             organizationId: orgId,
             status: 'active',
-            hireDate: dt(-365), // 1 year ago
+            hireDate: dt(-365),
           ),
         );
         await UserRole.db.insertRow(
@@ -468,9 +415,37 @@ class SeedEndpoint extends Endpoint {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 7: Courses (12)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 5d: QA Users (5) — dedicated quality assurance users
+    // ═══════════════════════════════════════════════════════════════════════
+    // Build a partial context for QA seed (needs orgId, siteIds, deptIds, jobRoleIds, roleIds)
+    final partialCtx = SeedContext(
+      orgId: orgId,
+      siteIds: siteIds,
+      deptIds: deptIds,
+      jobRoleIds: jobRoleIds,
+      roleIds: roleIds,
+      trainerIds: trainerIds,
+      learnerIds: learnerIds,
+      qaUserIds: [], // will be filled after
+      adminUserIds: adminUserIds,
+      courseVersionIds: [],
+      courseIds: [],
+      assessmentIds: [],
+      enrollmentIds: [],
+      materialIds: [],
+      questionBankIds: [],
+      documentIds: [],
+      documentVersionIds: [],
+      baseDate: baseDate,
+      hmacSecret: hmacSecret,
+      completionMeaning: meaningCompletion.meaning,
+    );
+    final qaUserIds = await QaUsersSeed.insert(session, partialCtx);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 6: Courses (12) with modules, lessons, assessments, materials
+    // ═══════════════════════════════════════════════════════════════════════
     final courseConfigs = [
       ['GMP Fundamentals', 'SOP-GMP-001', '21 CFR Part 211'],
       ['21 CFR Part 11', 'SOP-EREC-002', 'Electronic records compliance'],
@@ -485,119 +460,26 @@ class SeedEndpoint extends Endpoint {
       ['Audit Readiness', 'SOP-AUDIT-011', 'FDA/EMA inspection prep'],
       ['New Employee Induction', 'SOP-INDUCT-012', 'Company policies'],
     ];
-    // Discovery catalogue metadata (Flutter catalog reads [Course.customMetadataJson]).
     final catalogMetaByIndex = <int, String>{
-      0: jsonEncode({
-        'department': 'Quality',
-        'difficulty': 'beginner',
-        'creditHours': 4,
-        'estimatedMinutes': 240,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1582719471137-c3967ffb841b?w=800&q=80',
-      }),
-      1: jsonEncode({
-        'department': 'Quality',
-        'difficulty': 'intermediate',
-        'creditHours': 6,
-        'estimatedMinutes': 360,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80',
-      }),
-      2: jsonEncode({
-        'department': 'Clinical',
-        'difficulty': 'intermediate',
-        'creditHours': 6,
-        'estimatedMinutes': 300,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80',
-      }),
-      3: jsonEncode({
-        'department': 'R&D',
-        'difficulty': 'advanced',
-        'creditHours': 3,
-        'estimatedMinutes': 180,
-        'isMandatory': false,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1532187863486-abf9db0301d0?w=800&q=80',
-      }),
-      4: jsonEncode({
-        'department': 'Manufacturing',
-        'difficulty': 'intermediate',
-        'creditHours': 5,
-        'estimatedMinutes': 200,
-        'isMandatory': false,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800&q=80',
-      }),
-      5: jsonEncode({
-        'department': 'Manufacturing',
-        'difficulty': 'advanced',
-        'creditHours': 8,
-        'estimatedMinutes': 480,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1579684385127-1ef15d5081ce?w=800&q=80',
-      }),
-      6: jsonEncode({
-        'department': 'Quality',
-        'difficulty': 'intermediate',
-        'creditHours': 4,
-        'estimatedMinutes': 220,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&q=80',
-      }),
-      7: jsonEncode({
-        'department': 'Quality',
-        'difficulty': 'beginner',
-        'creditHours': 3,
-        'estimatedMinutes': 120,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1556761175-5973dc0f64e7?w=800&q=80',
-      }),
-      8: jsonEncode({
-        'department': 'EHS',
-        'difficulty': 'beginner',
-        'creditHours': 2,
-        'estimatedMinutes': 90,
-        'isMandatory': false,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80',
-      }),
-      9: jsonEncode({
-        'department': 'R&D',
-        'difficulty': 'advanced',
-        'creditHours': 12,
-        'estimatedMinutes': 600,
-        'isMandatory': false,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80',
-      }),
-      10: jsonEncode({
-        'department': 'Regulatory',
-        'difficulty': 'intermediate',
-        'creditHours': 4,
-        'estimatedMinutes': 240,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&q=80',
-      }),
-      11: jsonEncode({
-        'department': 'Quality',
-        'difficulty': 'beginner',
-        'creditHours': 2,
-        'estimatedMinutes': 60,
-        'isMandatory': true,
-        'imageUrl':
-            'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80',
-      }),
+      0: jsonEncode({'department': 'Quality', 'difficulty': 'beginner', 'creditHours': 4, 'estimatedMinutes': 240, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1582719471137-c3967ffb841b?w=800&q=80'}),
+      1: jsonEncode({'department': 'Quality', 'difficulty': 'intermediate', 'creditHours': 6, 'estimatedMinutes': 360, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80'}),
+      2: jsonEncode({'department': 'Clinical', 'difficulty': 'intermediate', 'creditHours': 6, 'estimatedMinutes': 300, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80'}),
+      3: jsonEncode({'department': 'R&D', 'difficulty': 'advanced', 'creditHours': 3, 'estimatedMinutes': 180, 'isMandatory': false, 'imageUrl': 'https://images.unsplash.com/photo-1532187863486-abf9db0301d0?w=800&q=80'}),
+      4: jsonEncode({'department': 'Manufacturing', 'difficulty': 'intermediate', 'creditHours': 5, 'estimatedMinutes': 200, 'isMandatory': false, 'imageUrl': 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800&q=80'}),
+      5: jsonEncode({'department': 'Manufacturing', 'difficulty': 'advanced', 'creditHours': 8, 'estimatedMinutes': 480, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1579684385127-1ef15d5081ce?w=800&q=80'}),
+      6: jsonEncode({'department': 'Quality', 'difficulty': 'intermediate', 'creditHours': 4, 'estimatedMinutes': 220, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&q=80'}),
+      7: jsonEncode({'department': 'Quality', 'difficulty': 'beginner', 'creditHours': 3, 'estimatedMinutes': 120, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1556761175-5973dc0f64e7?w=800&q=80'}),
+      8: jsonEncode({'department': 'EHS', 'difficulty': 'beginner', 'creditHours': 2, 'estimatedMinutes': 90, 'isMandatory': false, 'imageUrl': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80'}),
+      9: jsonEncode({'department': 'R&D', 'difficulty': 'advanced', 'creditHours': 12, 'estimatedMinutes': 600, 'isMandatory': false, 'imageUrl': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80'}),
+      10: jsonEncode({'department': 'Regulatory', 'difficulty': 'intermediate', 'creditHours': 4, 'estimatedMinutes': 240, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&q=80'}),
+      11: jsonEncode({'department': 'Quality', 'difficulty': 'beginner', 'creditHours': 2, 'estimatedMinutes': 60, 'isMandatory': true, 'imageUrl': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80'}),
     };
+
     final courseVersionIds = <int>[];
+    final courseIds = <int>[];
     final assessmentIds = <int>[];
+    final materialIds = <int>[];
+    final questionBankIds = <int>[];
 
     for (var i = 0; i < courseConfigs.length; i++) {
       final c = courseConfigs[i];
@@ -613,6 +495,8 @@ class SeedEndpoint extends Endpoint {
           customMetadataJson: catalogMetaByIndex[i],
         ),
       );
+      courseIds.add(course.id!);
+
       final cv = await CourseVersion.db.insertRow(
         session,
         CourseVersion(
@@ -641,6 +525,8 @@ class SeedEndpoint extends Endpoint {
         session,
         QuestionBank(name: '${c[0]} Quiz', organizationId: orgId),
       );
+      questionBankIds.add(qb.id!);
+
       for (var qi = 0; qi < 5; qi++) {
         await Question.db.insertRow(
           session,
@@ -667,7 +553,7 @@ class SeedEndpoint extends Endpoint {
       );
       assessmentIds.add(assessment.id!);
 
-      // Modules & Lessons
+      // Modules & Lessons with Materials
       for (var mi = 0; mi < 3; mi++) {
         final mod = await Module.db.insertRow(
           session,
@@ -683,6 +569,7 @@ class SeedEndpoint extends Endpoint {
               organizationId: orgId,
             ),
           );
+          materialIds.add(mat.id!);
           await Lesson.db.insertRow(
             session,
             Lesson(
@@ -697,9 +584,9 @@ class SeedEndpoint extends Endpoint {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 8: Enrollments & Certificates
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 7: Enrollments, Certificates, E-signatures
+    // ═══════════════════════════════════════════════════════════════════════
     var assignmentCount = 0;
     var completedCount = 0;
     var overdueCount = 0;
@@ -812,10 +699,9 @@ class SeedEndpoint extends Endpoint {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 8b: DEMO EMPLOYEE — Rich data for testing ALL employee portal features
-    // Login with "Employee" button → employee@pharmacorp.demo
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 7b: DEMO EMPLOYEE — Rich data for testing ALL employee portal
+    // ═══════════════════════════════════════════════════════════════════════
     final demoEmployee = await PharmaUser.db.findFirstRow(
       session,
       where: (t) => t.email.equals('employee@pharmacorp.demo'),
@@ -825,7 +711,7 @@ class SeedEndpoint extends Endpoint {
       final demoUid = demoEmployee.id!;
       final demoAssigner = trainerIds[0];
 
-      // ── 1. COMPLETED courses (4) — shows in Training History, Certifications ──
+      // Completed courses (4)
       for (var ci = 0; ci < 4; ci++) {
         final cvId = courseVersionIds[ci];
         final completedDate = dt(-60 + ci * 10);
@@ -858,7 +744,6 @@ class SeedEndpoint extends Endpoint {
         assignmentCount++;
         completedCount++;
 
-        // Assessment attempt with passing score
         await AssessmentAttempt.db.insertRow(
           session,
           AssessmentAttempt(
@@ -871,7 +756,6 @@ class SeedEndpoint extends Endpoint {
           ),
         );
 
-        // E-signature + Certificate
         final sigPayload = '$demoUid-cert-$cvId-${completedDate.toIso8601String()}';
         final hmac = Hmac(sha256, utf8.encode(hmacSecret));
         final integrityHash = hmac.convert(utf8.encode(sigPayload)).toString();
@@ -922,7 +806,7 @@ class SeedEndpoint extends Endpoint {
         certificateCount++;
       }
 
-      // ── 2. IN-PROGRESS courses (3) — shows on Dashboard "Continue Learning" ──
+      // In-progress courses (3)
       for (var ci = 4; ci < 7; ci++) {
         final cvId = courseVersionIds[ci];
         final demoAssignment = await TrainingAssignment.db.insertRow(
@@ -932,7 +816,7 @@ class SeedEndpoint extends Endpoint {
             courseVersionId: cvId,
             assignedById: demoAssigner,
             assignedAt: dt(-30),
-            dueDate: dt(14 + ci), // Due in ~2-3 weeks
+            dueDate: dt(14 + ci),
             priority: ci == 4 ? 'high' : 'medium',
             source: 'manual',
             reason: 'Annual refresher training',
@@ -952,7 +836,7 @@ class SeedEndpoint extends Endpoint {
         assignmentCount++;
       }
 
-      // ── 3. NOT-STARTED / ASSIGNED courses (3) — shows in My Learning "To Do" ──
+      // Not-started courses (3)
       for (var ci = 7; ci < 10; ci++) {
         final cvId = courseVersionIds[ci];
         final demoAssignment = await TrainingAssignment.db.insertRow(
@@ -962,7 +846,7 @@ class SeedEndpoint extends Endpoint {
             courseVersionId: cvId,
             assignedById: demoAssigner,
             assignedAt: dt(-5),
-            dueDate: dt(25 + ci), // Due in ~1 month
+            dueDate: dt(25 + ci),
             priority: 'low',
             source: 'manual',
             reason: 'New SOP revision training',
@@ -980,7 +864,7 @@ class SeedEndpoint extends Endpoint {
         assignmentCount++;
       }
 
-      // ── 4. OVERDUE courses (2) — triggers overdue alerts + notifications ──
+      // Overdue courses (2)
       for (var ci = 10; ci < 12; ci++) {
         final cvId = courseVersionIds[ci];
         final demoAssignment = await TrainingAssignment.db.insertRow(
@@ -990,7 +874,7 @@ class SeedEndpoint extends Endpoint {
             courseVersionId: cvId,
             assignedById: demoAssigner,
             assignedAt: dt(-60),
-            dueDate: dt(-5 - ci), // Already past due
+            dueDate: dt(-5 - ci),
             priority: 'high',
             source: 'job_role',
             reason: 'Compliance requirement — overdue',
@@ -1009,7 +893,7 @@ class SeedEndpoint extends Endpoint {
         overdueCount++;
       }
 
-      // ── 5. Audit trail entries for demo employee ──
+      // Demo employee audit trail
       final demoAuditActions = [
         ['LOGIN', 'User', 'login', -3],
         ['LESSON_OPENED', 'Lesson', 'lesson_opened', -3],
@@ -1041,7 +925,7 @@ class SeedEndpoint extends Endpoint {
         );
       }
 
-      // ── ILT batch + roster (My Batches employee UI) — same CV as first in-progress assignment
+      // ILT batch for demo employee
       final iltCvId = courseVersionIds[4];
       final iltBatch = await TrainingBatch.db.insertRow(
         session,
@@ -1057,8 +941,7 @@ class SeedEndpoint extends Endpoint {
           completedCount: 0,
           status: 'in progress',
           location: 'Mumbai HQ — Training Room A',
-          notes:
-              'SOP updates: see document control.\nWeekly cohort sync: Fridays 10:00 IST.\nUse My Batches to track cohort progress.',
+          notes: 'SOP updates: see document control.\nWeekly cohort sync: Fridays 10:00 IST.',
         ),
       );
       final rosterEntries = <(int uid, String?)>[
@@ -1073,11 +956,7 @@ class SeedEndpoint extends Endpoint {
       for (final r in rosterEntries) {
         await TrainingBatchParticipant.db.insertRow(
           session,
-          TrainingBatchParticipant(
-            batchId: iltBatch.id!,
-            userId: r.$1,
-            role: r.$2,
-          ),
+          TrainingBatchParticipant(batchId: iltBatch.id!, userId: r.$1, role: r.$2),
         );
       }
       await TrainingBatch.db.updateRow(
@@ -1086,9 +965,9 @@ class SeedEndpoint extends Endpoint {
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 9: Audit Trail with Row Hashes
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 8: Audit Trail with Row Hashes
+    // ═══════════════════════════════════════════════════════════════════════
     final auditActions = ['LOGIN', 'LOGOUT', 'LESSON_OPENED', 'LESSON_COMPLETED',
       'ASSESSMENT_STARTED', 'ASSESSMENT_SUBMITTED', 'CERTIFICATE_GENERATED'];
 
@@ -1129,9 +1008,9 @@ class SeedEndpoint extends Endpoint {
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 11: SOP Documents & Versions (for trainer SOP library + linkage)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 9: SOP Documents & Versions
+    // ═══════════════════════════════════════════════════════════════════════
     final sopConfigs = [
       ['GMP Manufacturing Procedures', 'SOP-GMP-001', 'sop', true],
       ['Cleaning Validation Protocol', 'SOP-CLN-002', 'sop', true],
@@ -1147,6 +1026,8 @@ class SeedEndpoint extends Endpoint {
       ['Employee Induction Guide', 'SOP-INDUCT-012', 'guide', false],
     ];
 
+    final documentIds = <int>[];
+    final documentVersionIds = <int>[];
     for (var i = 0; i < sopConfigs.length; i++) {
       final s = sopConfigs[i];
       final doc = await Document.db.insertRow(
@@ -1159,8 +1040,9 @@ class SeedEndpoint extends Endpoint {
           trainingRequiredByQa: (s[3] as bool) ? 'training_required' : 'no_training_required',
         ),
       );
+      documentIds.add(doc.id!);
 
-      await DocumentVersion.db.insertRow(
+      final dv = await DocumentVersion.db.insertRow(
         session,
         DocumentVersion(
           documentId: doc.id!,
@@ -1172,9 +1054,10 @@ class SeedEndpoint extends Endpoint {
           effectiveDate: dt(-180 + i * 5),
         ),
       );
+      documentVersionIds.add(dv.id!);
 
       if (i < 4) {
-        await DocumentVersion.db.insertRow(
+        final dv2 = await DocumentVersion.db.insertRow(
           session,
           DocumentVersion(
             documentId: doc.id!,
@@ -1186,17 +1069,17 @@ class SeedEndpoint extends Endpoint {
             effectiveDate: dt(-30 + i * 3),
           ),
         );
+        documentVersionIds.add(dv2.id!);
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 12: Draft & Under-Review Course Versions (for trainer workflows)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 10: Draft & Under-Review Course Versions
+    // ═══════════════════════════════════════════════════════════════════════
     final existingCourses = await Course.db.find(
       session,
       where: (t) => t.organizationId.equals(orgId),
     );
-
     final firstMaterial = await Material.db.findFirstRow(session);
     final defaultMaterialId = firstMaterial?.id ?? 1;
 
@@ -1221,7 +1104,6 @@ class SeedEndpoint extends Endpoint {
           orderIndex: 0,
         ),
       );
-
       await Lesson.db.insertRow(
         session,
         Lesson(
@@ -1232,14 +1114,12 @@ class SeedEndpoint extends Endpoint {
           durationMinutes: 45,
         ),
       );
-
       draftVersionCount++;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 13: Training Records (for analytics/learner progress)
-    // Uses completed enrollments + creates e-signatures for the records
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 11: Training Records (for analytics/learner progress)
+    // ═══════════════════════════════════════════════════════════════════════
     var trainingRecordCount = 0;
     for (var i = 0; i < enrollmentIds.length && i < completedCount; i++) {
       final learnerId = learnerIds[i % learnerIds.length];
@@ -1255,7 +1135,6 @@ class SeedEndpoint extends Endpoint {
           entityId: enrollmentIds[i].toString(),
         ),
       );
-
       await TrainingRecord.db.insertRow(
         session,
         TrainingRecord(
@@ -1270,9 +1149,9 @@ class SeedEndpoint extends Endpoint {
       trainingRecordCount++;
     }
 
-    // ═══ PHASE: Trainer Portal Seed Data ═══
-
-    // 1. Course versions with pending_approval and needs_revision statuses
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 12: Trainer Portal Data
+    // ═══════════════════════════════════════════════════════════════════════
     final pendingApprovalVersions = await CourseVersion.db.find(
       session,
       where: (t) => t.status.equals('under_review'),
@@ -1284,7 +1163,7 @@ class SeedEndpoint extends Endpoint {
       );
     }
 
-    // 2. CourseReview records for QA history
+    // CourseReview records
     var courseReviewCount = 0;
     final effectiveVersions = await CourseVersion.db.find(
       session,
@@ -1299,34 +1178,28 @@ class SeedEndpoint extends Endpoint {
         comments: 'Content meets GMP requirements. Assessment pool adequate.',
         reviewChecklistJson: '{"contentAccuracy":true,"regulatoryCompliance":true,"assessmentValidity":true}',
       ));
-      courseReviewCount++;
-
       await CourseReview.db.insertRow(session, CourseReview(
         courseVersionId: effectiveVersions[1].id!,
         reviewerId: trainerIds[1],
         decision: 'approved',
         comments: 'Approved after revision. All issues addressed.',
       ));
-      courseReviewCount++;
-
       await CourseReview.db.insertRow(session, CourseReview(
         courseVersionId: effectiveVersions[2].id!,
         reviewerId: trainerIds[2],
         decision: 'returned_for_changes',
         comments: 'Module 2 needs updated SOP references. Question pool insufficient.',
       ));
-      courseReviewCount++;
-
       await CourseReview.db.insertRow(session, CourseReview(
         courseVersionId: effectiveVersions[3].id!,
         reviewerId: trainerIds[0],
         decision: 'rejected',
         comments: 'Does not meet 21 CFR Part 11 requirements. Major revision needed.',
       ));
-      courseReviewCount++;
+      courseReviewCount = 4;
     }
 
-    // 3. Trainer-specific audit events
+    // Trainer audit events
     final allCourses = await Course.db.find(session, where: (t) => t.organizationId.equals(orgId));
     final allCourseIds = allCourses.map((c) => c.id!).toList();
     final trainerAuditActions = [
@@ -1345,40 +1218,28 @@ class SeedEndpoint extends Endpoint {
           ipAddress: '10.0.1.${100 + i}',
         ));
       }
-    } else {
-      session.log('Skipping trainer audit seed: no courses found for organization.');
     }
 
-    // Demo trainer login (trainer@pharmacorp.demo) is not in [trainerIds] — seed audit rows
-    // so Trainer Dashboard → Recent Activity is non-empty after comprehensive seed.
+    // Demo trainer audit
     final demoTrainerUser = await PharmaUser.db.findFirstRow(
       session,
       where: (t) => t.email.equals('trainer@pharmacorp.demo'),
     );
     if (demoTrainerUser?.id != null && allCourseIds.isNotEmpty) {
-      final demoTrainerAudit = [
-        'CourseCreated',
-        'LessonCreated',
-        'MaterialUploaded',
-        'CourseSubmittedForQA',
-        'DraftSaved',
-      ];
+      final demoTrainerAudit = ['CourseCreated', 'LessonCreated', 'MaterialUploaded', 'CourseSubmittedForQA', 'DraftSaved'];
       for (var i = 0; i < demoTrainerAudit.length; i++) {
-        await AuditTrail.db.insertRow(
-          session,
-          AuditTrail(
-            entityType: 'course',
-            entityId: '${allCourseIds[i % allCourseIds.length]}',
-            action: demoTrainerAudit[i],
-            timestamp: dt(-14 + i),
-            userId: demoTrainerUser!.id!,
-            ipAddress: '10.0.1.${180 + i}',
-          ),
-        );
+        await AuditTrail.db.insertRow(session, AuditTrail(
+          entityType: 'course',
+          entityId: '${allCourseIds[i % allCourseIds.length]}',
+          action: demoTrainerAudit[i],
+          timestamp: dt(-14 + i),
+          userId: demoTrainerUser!.id!,
+          ipAddress: '10.0.1.${180 + i}',
+        ));
       }
     }
 
-    // 4. Trainer in-app notifications
+    // Trainer notifications
     for (var i = 0; i < 5; i++) {
       await Notification.db.insertRow(session, Notification(
         userId: trainerIds[i % trainerIds.length],
@@ -1389,7 +1250,7 @@ class SeedEndpoint extends Endpoint {
       ));
     }
 
-    // 5. Standalone question banks (not tied to courses)
+    // Standalone question banks
     final standaloneBank1 = await QuestionBank.db.insertRow(session, QuestionBank(
       name: 'General GMP Knowledge Pool',
       organizationId: orgId,
@@ -1412,7 +1273,7 @@ class SeedEndpoint extends Endpoint {
       ));
     }
 
-    // 6. CourseSopLink records (explicit SOP-course links)
+    // CourseSopLink
     var sopLinkCount = 0;
     final sopDocs = await Document.db.find(session, limit: 6);
     for (var i = 0; i < sopDocs.length && i < allCourseIds.length; i++) {
@@ -1424,29 +1285,85 @@ class SeedEndpoint extends Endpoint {
       sopLinkCount++;
     }
 
-    // 7. UserPreference records for demo trainer
+    // Demo trainer preferences
     final demoTrainer = await PharmaUser.db.findFirstRow(
       session,
       where: (t) => t.email.equals('trainer@pharmacorp.demo'),
     );
     if (demoTrainer != null) {
-      await UserPreference.db.insertRow(session, UserPreference(
-        userId: demoTrainer.id!,
-        preferenceKey: 'email_notifications',
-        preferenceValue: 'true',
-      ));
-      await UserPreference.db.insertRow(session, UserPreference(
-        userId: demoTrainer.id!,
-        preferenceKey: 'auto_save_drafts',
-        preferenceValue: 'true',
-      ));
-      await UserPreference.db.insertRow(session, UserPreference(
-        userId: demoTrainer.id!,
-        preferenceKey: 'dark_mode',
-        preferenceValue: 'false',
-      ));
+      for (final pref in [
+        ('email_notifications', 'true'),
+        ('auto_save_drafts', 'true'),
+        ('dark_mode', 'false'),
+      ]) {
+        await UserPreference.db.insertRow(session, UserPreference(
+          userId: demoTrainer.id!,
+          preferenceKey: pref.$1,
+          preferenceValue: pref.$2,
+        ));
+      }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 13: NEW — Modular seed phases (analytics, quality, batches, etc.)
+    // ═══════════════════════════════════════════════════════════════════════
+    final ctx = SeedContext(
+      orgId: orgId,
+      siteIds: siteIds,
+      deptIds: deptIds,
+      jobRoleIds: jobRoleIds,
+      roleIds: roleIds,
+      trainerIds: trainerIds,
+      learnerIds: learnerIds,
+      qaUserIds: qaUserIds,
+      adminUserIds: adminUserIds,
+      courseVersionIds: courseVersionIds,
+      courseIds: courseIds,
+      assessmentIds: assessmentIds,
+      enrollmentIds: enrollmentIds,
+      materialIds: materialIds,
+      questionBankIds: questionBankIds,
+      documentIds: documentIds,
+      documentVersionIds: documentVersionIds,
+      baseDate: baseDate,
+      hmacSecret: hmacSecret,
+      completionMeaning: meaningCompletion.meaning,
+    );
+
+    // Analytics snapshots (6 months of org + department trending)
+    await AnalyticsSeed.insertAnalyticsSnapshots(session, ctx);
+    await AnalyticsSeed.insertDeptComplianceSnapshots(session, ctx);
+
+    // Quality events, CAPAs, inspections
+    await QualitySeed.insert(session, ctx);
+
+    // Training batches with participants, live classes, attendance
+    await TrainingBatchSeed.insert(session, ctx);
+
+    // Material progress for learners
+    final materialProgressCount = await MaterialProgressSeed.insert(session, ctx);
+
+    // Infrastructure: facilities, cert templates, competencies, notifications, config
+    await InfrastructureSeed.insertFacilities(session, ctx);
+    await InfrastructureSeed.insertCertificateTemplates(session, ctx);
+    await InfrastructureSeed.insertCompetencies(session, ctx);
+    await InfrastructureSeed.insertNotificationTemplates(session, ctx);
+    await InfrastructureSeed.insertSystemConfiguration(session, ctx);
+    await InfrastructureSeed.insertFeatureFlags(session, ctx);
+    await InfrastructureSeed.insertScheduledJobLogs(session, ctx);
+    await InfrastructureSeed.insertRetentionPolicies(session);
+
+    // Access logs, user sessions, standalone assignments, waivers, SME, messages
+    await AccessSessionSeed.insertAccessLogs(session, ctx);
+    await AccessSessionSeed.insertUserSessions(session, ctx);
+    await AccessSessionSeed.insertStandaloneAssignments(session, ctx);
+    await AccessSessionSeed.insertTrainingWaivers(session, ctx);
+    await AccessSessionSeed.insertSmeData(session, ctx);
+    await AccessSessionSeed.insertMessages(session, ctx);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUMMARY
+    // ═══════════════════════════════════════════════════════════════════════
     var result = '''
 COMPREHENSIVE SEED COMPLETED
 ═══════════════════════════════════════════════════════════════════════════════
@@ -1454,8 +1371,11 @@ Organization:  PharmaTech India Pvt Ltd
 Sites:         5
 Departments:   10
 Job Roles:     14
-Trainers:      15
+Trainers:      10
 Learners:      100
+QA Users:      5
+Admin Users:   ${adminUserIds.length}
+Demo Users:    6
 Courses:       12
 Modules:       36
 Lessons:       108
@@ -1470,11 +1390,31 @@ SOP Documents: ${sopConfigs.length}
 Draft Versions: $draftVersionCount
 Training Recs: $trainingRecordCount
 CourseReviews: $courseReviewCount
-SOP Links: $sopLinkCount
-Standalone Question Banks: 2 (23 questions)
-Trainer Audit Events: ${trainerAuditActions.length}
-Trainer Notifications: 5
-UserPreferences: 3
+SOP Links:     $sopLinkCount
+Standalone Q Banks: 2 (23 questions)
+Material Progress: $materialProgressCount
+Analytics Snapshots: 6 (monthly)
+Dept Compliance Snapshots: 60 (10 depts × 6 months)
+Quality Events: 10 (deviations + CAPAs + change controls)
+CAPAs:         4
+Inspections:   5
+Inspection Reports: 2
+Training Batches: 5 (with participants, live classes, attendance)
+Facilities:    6
+Cert Templates: 2
+Competencies:  8
+User Competencies: 40
+Notification Templates: 6
+System Config: 15 entries
+Feature Flags: 8
+Scheduled Jobs: 8
+Retention Policies: 6
+Access Logs:   ~100 (login/logout)
+User Sessions: ~35
+Standalone Assignments: 4 (with recipients)
+Training Waivers: 4
+SME Assignments: 3 (with review comments)
+Learner-Trainer Messages: 10+
 
 DEMO EMPLOYEE (employee@pharmacorp.demo):
   Completed:   4 courses (with certs + e-sigs + quiz scores)
@@ -1486,7 +1426,7 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
 ═══════════════════════════════════════════════════════════════════════════════
 ''';
 
-    // Provision Serverpod auth accounts so users can sign in with email/password.
+    // Provision Serverpod auth accounts
     try {
       final authResult = await provisionAuthAccounts(session);
       result += '\n$authResult';
@@ -1498,8 +1438,6 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
   }
 
   /// Provisions Serverpod auth accounts for all PharmaUser records.
-  /// Uses [_seedPassword] as the default password for all accounts.
-  /// Skips users that already have an email auth account.
   Future<String> provisionAuthAccounts(Session session) async {
     final users = await PharmaUser.db.find(session);
     if (users.isEmpty) return 'No users found. Run seed first.';
@@ -1519,7 +1457,6 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
         }
 
         final authUser = await AuthServices.instance.authUsers.create(session);
-
         await admin.createEmailAuthentication(
           session,
           authUserId: authUser.id,
@@ -1527,7 +1464,6 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
           password: _seedPassword,
         );
 
-        // Also create a profile so _onAuthenticated can read email from it
         await session.db.unsafeQuery(
           r'''INSERT INTO serverpod_auth_core_profile ("authUserId", email, "userName", "fullName")
               VALUES (@authUserId::uuid, @email, @userName, @fullName)
@@ -1550,102 +1486,7 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
     return 'Auth provisioned: $created created, $skipped skipped. Default password: $_seedPassword';
   }
 
-  /// Helper method to delete all data related to an organization.
-  /// Temporarily disables FK checks to avoid complex dependency ordering.
-  Future<void> _deleteExistingOrgData(Session session, int orgId) async {
-    await session.db.unsafeQuery("SET session_replication_role = 'replica'");
-
-    try {
-      final p = QueryParameters.named({'orgId': orgId});
-      const u = 'SELECT id FROM pharma_user WHERE "organizationId" = @orgId';
-      const c = 'SELECT id FROM course WHERE "organizationId" = @orgId';
-      const cv = 'SELECT id FROM course_version WHERE "courseId" IN ($c)';
-      const sit = 'SELECT id FROM site WHERE "organizationId" = @orgId';
-      const dep = 'SELECT id FROM department WHERE "siteId" IN ($sit)';
-
-      // Tables with "userId" column
-      for (final t in [
-        'access_log', 'audit_trail', 'assessment_attempt', 'certificate',
-        'electronic_signature', 'enrollment', 'material_progress',
-        'notification', 'training_assignment', 'training_record',
-        'training_waiver', 'user_competency', 'user_preference',
-        'user_role', 'user_session',
-      ]) {
-        await session.db.unsafeQuery('DELETE FROM $t WHERE "userId" IN ($u)', parameters: p);
-      }
-
-      // Tables referencing users via other column names
-      await session.db.unsafeQuery('DELETE FROM approval_workflow WHERE "approverId" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM auditor_session WHERE "auditorUserId" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM course_review WHERE "reviewerId" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM course_sop_link WHERE "linkedById" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM delegated_authority WHERE "delegatorId" IN ($u) OR "delegateeId" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM import_log WHERE "importedById" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM inspection_package WHERE "generatedById" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM inspection_record WHERE "createdById" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM report_export WHERE "exportedById" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM training_record_annotation WHERE "authorId" IN ($u)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM document_lifecycle WHERE "changedById" IN ($u)', parameters: p);
-
-      // Grandchild tables
-      await session.db.unsafeQuery('DELETE FROM notification_log WHERE "notificationId" IN (SELECT id FROM notification WHERE "userId" IN ($u))', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM assessment_result WHERE "attemptId" IN (SELECT id FROM assessment_attempt WHERE "userId" IN ($u))', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM training_expiration WHERE "certificateId" IN (SELECT id FROM certificate WHERE "userId" IN ($u))', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM capa WHERE "trainingAssignmentId" IN (SELECT id FROM training_assignment WHERE "userId" IN ($u))', parameters: p);
-
-      // ILT batch roster (before users / course_version)
-      await session.db.unsafeQuery(
-        'DELETE FROM training_batch_participant WHERE "batchId" IN (SELECT id FROM training_batch WHERE "organizationId" = @orgId)',
-        parameters: p,
-      );
-      await session.db.unsafeQuery('DELETE FROM training_batch WHERE "organizationId" = @orgId', parameters: p);
-
-      // Users
-      await session.db.unsafeQuery('DELETE FROM pharma_user WHERE "organizationId" = @orgId', parameters: p);
-
-      // Documents
-      await session.db.unsafeQuery('DELETE FROM change_control WHERE "documentVersionId" IN (SELECT id FROM document_version WHERE "documentId" IN (SELECT id FROM document WHERE "organizationId" = @orgId))', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM document_version WHERE "documentId" IN (SELECT id FROM document WHERE "organizationId" = @orgId)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM document WHERE "organizationId" = @orgId', parameters: p);
-
-      // Course content
-      await session.db.unsafeQuery('DELETE FROM lesson WHERE "moduleId" IN (SELECT id FROM module WHERE "courseVersionId" IN ($cv))', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM module WHERE "courseVersionId" IN ($cv)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM question WHERE "questionBankId" IN (SELECT "questionBankId" FROM assessment WHERE "courseVersionId" IN ($cv))', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM assessment WHERE "courseVersionId" IN ($cv)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM course_version WHERE "courseId" IN ($c)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM course_competency WHERE "courseId" IN ($c)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM training_matrix WHERE "courseId" IN ($c)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM course WHERE "organizationId" = @orgId', parameters: p);
-
-      // Org structure
-      await session.db.unsafeQuery('DELETE FROM department_compliance_snapshot WHERE "departmentId" IN ($dep)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM job_role WHERE "departmentId" IN ($dep)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM department WHERE "siteId" IN ($sit)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM quality_event WHERE "siteId" IN ($sit)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM inspection_report WHERE "organizationId" = @orgId', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM site WHERE "organizationId" = @orgId', parameters: p);
-
-      // Materials
-      await session.db.unsafeQuery('DELETE FROM material_version WHERE "materialId" IN (SELECT id FROM material WHERE "organizationId" = @orgId)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM material WHERE "organizationId" = @orgId', parameters: p);
-
-      // Question banks
-      await session.db.unsafeQuery('DELETE FROM question WHERE "questionBankId" IN (SELECT id FROM question_bank WHERE "organizationId" = @orgId)', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM question_bank WHERE "organizationId" = @orgId', parameters: p);
-
-      // Misc org-level tables
-      await session.db.unsafeQuery('DELETE FROM feature_flag WHERE "organizationId" = @orgId', parameters: p);
-      await session.db.unsafeQuery('DELETE FROM system_configuration WHERE "organizationId" = @orgId', parameters: p);
-
-      // Organization itself
-      await session.db.unsafeQuery('DELETE FROM organization WHERE id = @orgId', parameters: p);
-    } finally {
-      await session.db.unsafeQuery("SET session_replication_role = 'origin'");
-    }
-  }
-
-  /// Fix admin passwords by re-provisioning them with proper password hashes
+  /// Fix admin passwords by re-provisioning them
   Future<String> fixAdminPasswords(Session session) async {
     final adminEmails = [
       'super.admin@pharmacorp.demo',
@@ -1662,11 +1503,8 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
 
     for (final email in adminEmails) {
       try {
-        // Check if account exists
         final existing = await admin.findAccount(session, email: email);
-        
         if (existing == null) {
-          // Create new account if it doesn't exist
           final authUser = await AuthServices.instance.authUsers.create(session);
           await admin.createEmailAuthentication(
             session,
@@ -1674,9 +1512,6 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
             email: email,
             password: _seedPassword,
           );
-          session.log('Created new auth account for $email');
-
-          // Create profile
           await session.db.unsafeQuery(
             r'''INSERT INTO serverpod_auth_core_profile ("authUserId", email, "userName", "fullName")
                 VALUES (@authUserId::uuid, @email, @userName, @fullName)
@@ -1689,22 +1524,17 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
             }),
           );
         } else {
-          // Account exists - update password by directly deleting old email auth and recreating
           try {
-            // Try direct SQL delete of old email authentication
             await session.db.unsafeQuery(
-              r'''DELETE FROM serverpod_auth_core_email_auth 
+              r'''DELETE FROM serverpod_auth_core_email_auth
                   WHERE "authUserId" = @authUserId::uuid''',
               parameters: QueryParameters.named({
                 'authUserId': existing.id!.toString(),
               }),
             );
-            session.log('Deleted old email auth for $email');
           } catch (e) {
             session.log('Could not delete old email auth: $e');
           }
-
-          // Now recreate email authentication with new password
           try {
             await admin.createEmailAuthentication(
               session,
@@ -1712,17 +1542,14 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
               email: email,
               password: _seedPassword,
             );
-            session.log('Updated password for $email');
           } catch (e) {
             session.log('Could not create new email auth: $e');
           }
         }
-
         fixed++;
-        session.log('✓ Password fixed for $email');
       } catch (e) {
         failed++;
-        session.log('✗ Failed to fix password for $email: $e');
+        session.log('Failed to fix password for $email: $e');
       }
     }
 

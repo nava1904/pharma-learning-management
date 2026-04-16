@@ -319,7 +319,7 @@ class _DashboardContent extends ConsumerWidget {
               shrinkWrap: true,
               padding: EdgeInsets.zero,
               itemCount: actionCourses.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (_, _) => Divider(
                 height: 1,
                 color: PharmaColors.borderLight,
               ),
@@ -445,7 +445,7 @@ class _RecentActivitySection extends ConsumerWidget {
           padding: EdgeInsets.all(32),
           child: Center(child: CircularProgressIndicator()),
         ),
-        error: (_, __) => Padding(
+        error: (_, _) => Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
             'Unable to load recent activity',

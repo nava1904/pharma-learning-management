@@ -82,7 +82,7 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
                 'Loading...',
                 style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
           ],
         ),
@@ -522,7 +522,7 @@ class _AdminUserDirectoryScreenState extends ConsumerState<AdminUserDirectoryScr
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 

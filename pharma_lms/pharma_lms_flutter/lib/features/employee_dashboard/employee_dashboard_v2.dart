@@ -660,7 +660,7 @@ class _EsignatureReadinessCard extends StatelessWidget {
                 shrinkWrap: true,
                 padding: EdgeInsets.zero,
                 itemCount: rows.length > 5 ? 5 : rows.length,
-                separatorBuilder: (_, __) => Divider(height: 1, color: PharmaColors.borderLight),
+                separatorBuilder: (_, _) => Divider(height: 1, color: PharmaColors.borderLight),
                 itemBuilder: (context, i) {
                   final row = rows[i];
                   final kind = row['kind'] as String? ?? '';

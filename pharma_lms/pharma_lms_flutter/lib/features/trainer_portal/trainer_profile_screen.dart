@@ -303,7 +303,7 @@ class _TrainerProfileScreenState extends ConsumerState<TrainerProfileScreen> {
           const SizedBox(height: 16),
           coursesAsync.when(
             loading: () => const TrainerPageLoading(cardCount: 1),
-            error: (_, __) => Row(children: [
+            error: (_, _) => Row(children: [
               _activityStat('Courses Created', '—', Icons.school,
                   PharmaColors.emerald600),
               const SizedBox(width: 16),

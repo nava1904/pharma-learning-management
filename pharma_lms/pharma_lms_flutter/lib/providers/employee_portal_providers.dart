@@ -86,7 +86,9 @@ final dueSoonEnrollmentsProvider =
     final assignment = assignments.where((a) => a.courseVersionId == e.courseVersionId).firstOrNull;
     if (assignment != null &&
         assignment.dueDate.isAfter(now) &&
-        assignment.dueDate.isBefore(thirtyDaysFromNow)) return true;
+        assignment.dueDate.isBefore(thirtyDaysFromNow)) {
+      return true;
+    }
     return false;
   }).toList();
 });

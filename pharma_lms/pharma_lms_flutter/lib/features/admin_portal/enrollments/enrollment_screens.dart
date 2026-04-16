@@ -11,6 +11,7 @@ import 'package:pharma_lms_flutter/design_system/pharma_design_system.dart';
 import 'package:pharma_lms_flutter/providers/admin_providers_v2.dart';
 import 'package:pharma_lms_flutter/providers/user_provider.dart';
 import '../widgets/admin_page_frame.dart';
+import '../widgets/admin_page_scaffold.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LIST
@@ -30,8 +31,8 @@ class AdminEnrollmentListScreen extends ConsumerWidget {
         AdminSectionCard(
           title: 'Assignments',
           child: async.when(
-            loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
-            error: (e, _) => Text('Failed to load: $e'),
+            loading: () => const AdminPageLoading(cardCount: 3),
+            error: (e, _) => AdminPageError(message: 'Failed to load: $e'),
             data: (rows) {
               if (rows.isEmpty) {
                 return Text(

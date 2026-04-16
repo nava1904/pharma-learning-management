@@ -61,10 +61,10 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
               _validating = false;
               _session = AuditorSession(
                 inspectionRecordId: id,
-                scopeDescription: result['scopeDescription'] as String?,
-                expiresAt: result['expiresAt'] as String?,
-                siteName: result['siteName'] as String?,
-                inspectorNames: result['inspectorNames'] as String?,
+                scopeDescription: result['scopeDescription'],
+                expiresAt: result['expiresAt'],
+                siteName: result['siteName'],
+                inspectorNames: result['inspectorNames'],
               );
             });
             _startExpiryTimer();
@@ -156,7 +156,7 @@ class _AuditorPortalScreenState extends ConsumerState<AuditorPortalScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'SHA-256: ${(result['fileHash'] as String? ?? '').substring(0, 32)}...',
+                'SHA-256: ${(result['fileHash'] ?? '').substring(0, 32)}...',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

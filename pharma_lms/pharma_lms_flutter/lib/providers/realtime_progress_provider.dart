@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/lms_realtime.dart';
@@ -66,7 +65,7 @@ class RealtimeProgressNotifier extends StateNotifier<Map<int, double>> {
           // When a lesson is completed (100%), refresh the enrollment progress
           if (progressPct != null && progressPct >= 100 || readTimeMet == true) {
             _ref.invalidate(enrollmentProgressProvider);
-            debugPrint('[RealtimeProgress] Lesson completed → refresh enrollment progress');
+
           }
         }
 
@@ -92,7 +91,7 @@ class RealtimeProgressNotifier extends StateNotifier<Map<int, double>> {
         }
       });
     } catch (e) {
-      debugPrint('[RealtimeProgress] WebSocket unavailable: $e');
+
     }
   }
 

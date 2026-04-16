@@ -15,17 +15,21 @@ services:
   # Serverpod connects to PgBouncer (port 6432), PgBouncer multiplexes to PostgreSQL.
   # This allows 200+ Serverpod connections to share ~50 real PostgreSQL connections.
   pgbouncer:
-    image: edoburu/pgbouncer:1.22.0
+    image: pgbouncer/pgbouncer:latest
+    platform: linux/amd64
     ports:
       - "6432:6432"
     environment:
-      DATABASE_URL: "postgres://postgres:vtiA6Sewk4NgyriJtYgg0zEHR1EZvsAr@postgres:5432/pharma_lms"
+      DATABASES_HOST: postgres
+      DATABASES_USER: postgres
+      DATABASES_PASSWORD: vtiA6Sewk4NgyriJtYgg0zEHR1EZvsAr
+      DATABASES_DB: pharma_lms
       POOL_MODE: transaction
       MAX_CLIENT_CONN: 400
       DEFAULT_POOL_SIZE: 50
       MIN_POOL_SIZE: 10
       SERVER_RESET_QUERY: "DISCARD ALL"
-      AUTH_TYPE: plain
+      AUTH_TYPE: trust
     depends_on:
       - postgres
 

@@ -81,7 +81,7 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
                 'Loading...',
                 style: PharmaTypography.body.copyWith(color: PharmaColors.textTertiary),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
           ],
         ),
@@ -427,7 +427,7 @@ class _AdminCourseCatalogueScreenState extends ConsumerState<AdminCourseCatalogu
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 

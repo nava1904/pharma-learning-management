@@ -61,6 +61,7 @@ class PharmaLmsApp extends ConsumerWidget {
         title: PharmaBrand.name,
         theme: AppTheme.light,
         routerConfig: router,
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

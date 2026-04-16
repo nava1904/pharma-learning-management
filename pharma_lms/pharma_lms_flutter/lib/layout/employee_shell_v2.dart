@@ -61,7 +61,7 @@ class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   Timer? _idleTimer;
   bool _sessionWarningShown = false;
-  double _sessionProgress = 1.0; // 1.0 = full, 0.0 = expired
+  final ValueNotifier<double> _sessionProgress = ValueNotifier(1.0); // 1.0 = full, 0.0 = expired
   Timer? _sessionBarTimer;
 
   @override
@@ -75,22 +75,23 @@ class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
   void dispose() {
     _idleTimer?.cancel();
     _sessionBarTimer?.cancel();
+    _sessionProgress.dispose();
     super.dispose();
   }
 
-  /// SCR-22: Session timer bar — 2px bar at top showing remaining time
+  /// SCR-22: Session timer bar — 2px bar at top showing remaining time.
+  /// Uses ValueNotifier so only the progress bar rebuilds, not the entire shell.
   void _startSessionBar() {
     _sessionBarTimer?.cancel();
-    _sessionProgress = 1.0;
+    _sessionProgress.value = 1.0;
     const totalSeconds = _kIdleTimeoutMinutes * 60;
     var elapsed = 0;
     _sessionBarTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       elapsed++;
       if (mounted) {
-        setState(() {
-          _sessionProgress = 1.0 - (elapsed / totalSeconds);
-          if (_sessionProgress < 0) _sessionProgress = 0;
-        });
+        var p = 1.0 - (elapsed / totalSeconds);
+        if (p < 0) p = 0;
+        _sessionProgress.value = p;
       }
       if (elapsed >= totalSeconds) timer.cancel();
     });
@@ -214,16 +215,19 @@ class _EmployeeShellV2State extends ConsumerState<EmployeeShellV2> {
               child: Column(
                 children: [
                   // SCR-22: 2px session timer bar at top — emerald → amber → red
-                  LinearProgressIndicator(
-                    value: _sessionProgress,
-                    minHeight: 2,
-                    backgroundColor: PharmaColors.gray200,
-                    valueColor: AlwaysStoppedAnimation(
-                      _sessionProgress > 0.3
-                          ? PharmaColors.emerald500
-                          : _sessionProgress > 0.1
-                              ? PharmaColors.warning
-                              : PharmaColors.danger,
+                  ValueListenableBuilder<double>(
+                    valueListenable: _sessionProgress,
+                    builder: (_, progress, __) => LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 2,
+                      backgroundColor: PharmaColors.gray200,
+                      valueColor: AlwaysStoppedAnimation(
+                        progress > 0.3
+                            ? PharmaColors.emerald500
+                            : progress > 0.1
+                                ? PharmaColors.warning
+                                : PharmaColors.danger,
+                      ),
                     ),
                   ),
                   // Header
@@ -554,37 +558,47 @@ class _NavItemV2State extends State<_NavItemV2> {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = isActive
+        ? PharmaColors.emerald50
+        : _isHovered
+            ? PharmaColors.gray50
+            : Colors.transparent;
+
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: () => context.go(widget.route),
         child: AnimatedContainer(
-          duration: PharmaDurations.fast,
-          margin: const EdgeInsets.only(bottom: PharmaSpacing.xs),
+          duration: const Duration(milliseconds: 250), // Smoother transition
+          curve: Curves.ease,
+          margin: const EdgeInsets.only(bottom: 8.0), // Increased gap between items
           padding: const EdgeInsets.symmetric(
             horizontal: PharmaSpacing.md,
             vertical: PharmaSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: isActive
-                ? PharmaColors.emerald50
-                : _isHovered
-                    ? PharmaColors.gray50
-                    : Colors.transparent,
+            color: bgColor,
             borderRadius: PharmaRadius.buttonRadius,
             border: isActive
                 ? Border.all(color: PharmaColors.emerald200, width: 1)
-                : null,
+                : Border.all(color: Colors.transparent, width: 1),
           ),
           child: Row(
             children: [
-              Icon(
-                isActive ? widget.activeIcon : widget.icon,
-                size: 20,
-                color: isActive
-                    ? PharmaColors.emerald700
-                    : PharmaColors.textSecondary,
+              AnimatedSwitcher(
+                duration: PharmaDurations.fast,
+                child: Icon(
+                  isActive ? widget.activeIcon : widget.icon,
+                  key: ValueKey(isActive),
+                  size: 20,
+                  color: isActive
+                      ? PharmaColors.emerald700
+                      : _isHovered
+                          ? PharmaColors.textPrimary
+                          : PharmaColors.textSecondary,
+                ),
               ),
               const SizedBox(width: PharmaSpacing.md),
               Expanded(
@@ -594,7 +608,11 @@ class _NavItemV2State extends State<_NavItemV2> {
                       ? PharmaTypography.navItemActive.copyWith(
                           color: PharmaColors.emerald700,
                         )
-                      : PharmaTypography.navItem,
+                      : _isHovered
+                          ? PharmaTypography.navItem.copyWith(
+                              color: PharmaColors.textPrimary,
+                            )
+                          : PharmaTypography.navItem,
                 ),
               ),
               if (widget.badge != null)
@@ -704,9 +722,42 @@ class _HeaderV2 extends ConsumerWidget {
                           isDense: true,
                         ),
                         onSubmitted: (query) {
-                          if (query.trim().isNotEmpty) {
-                            context.go('/employee/catalog');
+                          final q = query.trim().toLowerCase();
+                          if (q.isEmpty) return;
+                          // Map keywords to routes
+                          final routes = {
+                            'dashboard': '/employee',
+                            'home': '/employee',
+                            'catalog': '/employee/catalog',
+                            'course': '/employee/catalog',
+                            'courses': '/employee/catalog',
+                            'learning': '/employee/lessons',
+                            'lessons': '/employee/lessons',
+                            'assessments': '/employee/assessments',
+                            'batches': '/employee/my-batches',
+                            'assignments': '/employee/standalone-assignments',
+                            'assigned': '/employee/assigned-training',
+                            'plan': '/employee/training-plan',
+                            'operator': '/employee/operator',
+                            'history': '/employee/training-history',
+                            'certifications': '/employee/credentials',
+                            'compliance': '/employee/compliance',
+                            'documents': '/employee/documents',
+                            'downloads': '/employee/downloads',
+                            'notifications': '/employee/notifications',
+                            'calendar': '/employee/calendar',
+                            'messages': '/employee/messages',
+                            'profile': '/employee/profile',
+                            'settings': '/employee/profile',
+                          };
+                          String? matchedRoute;
+                          for (final entry in routes.entries) {
+                            if (q.contains(entry.key)) {
+                              matchedRoute = entry.value;
+                              break;
+                            }
                           }
+                          context.go(matchedRoute ?? '/employee/catalog');
                         },
                       ),
                     ),
@@ -782,7 +833,7 @@ class _HeaderV2 extends ConsumerWidget {
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const Icon(Icons.person, color: Colors.white, size: 18),
+                error: (_, _) => const Icon(Icons.person, color: Colors.white, size: 18),
               ),
             ),
           ),
@@ -1072,7 +1123,7 @@ class _NotificationPanel extends StatelessWidget {
                 padding: EdgeInsets.all(PharmaSpacing.xxl),
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: PharmaColors.emerald500)),
               ),
-              error: (_, __) => Padding(
+              error: (_, _) => Padding(
                 padding: const EdgeInsets.all(PharmaSpacing.xxl),
                 child: Center(
                   child: Text('Unable to load notifications', style: PharmaTypography.body),
@@ -1101,7 +1152,7 @@ class _NotificationPanel extends StatelessWidget {
                   shrinkWrap: true,
                   padding: EdgeInsets.zero,
                   itemCount: notifications.length.clamp(0, 10),
-                  separatorBuilder: (_, __) => Divider(height: 1, color: PharmaColors.borderLight),
+                  separatorBuilder: (_, _) => Divider(height: 1, color: PharmaColors.borderLight),
                   itemBuilder: (context, index) {
                     final notif = notifications[index];
                     return _NotificationRow(notif: notif);
