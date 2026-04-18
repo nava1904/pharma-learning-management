@@ -47,12 +47,28 @@ class _AssessmentBuilderV2ScreenState
   bool _showAnswers = false;
   bool _showSubmissionHistory = false;
 
+  // Persistent controllers — never created inside build()
+  late final TextEditingController _timeLimitCtl;
+  late final TextEditingController _passingScoreCtl;
+  late final TextEditingController _displayCountCtl;
+
   int? _expandedQuestionId;
 
   @override
   void initState() {
     super.initState();
+    _timeLimitCtl = TextEditingController(text: '$_timeLimitMinutes');
+    _passingScoreCtl = TextEditingController(text: '$_passingScore');
+    _displayCountCtl = TextEditingController(text: '$_displayCount');
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _timeLimitCtl.dispose();
+    _passingScoreCtl.dispose();
+    _displayCountCtl.dispose();
+    super.dispose();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -91,6 +107,10 @@ class _AssessmentBuilderV2ScreenState
       _displayCount = existingAssessment.questionsToDisplay ?? 10;
       _showAnswers = existingAssessment.showAnswers;
       _showSubmissionHistory = existingAssessment.showSubmissionHistory;
+      // Sync persistent controllers with loaded values
+      _timeLimitCtl.text = '$_timeLimitMinutes';
+      _passingScoreCtl.text = '$_passingScore';
+      _displayCountCtl.text = '$_displayCount';
       _selectedQuestionBankId = existingAssessment.questionBankId;
       _questionBank = existingAssessment.questionBank;
       await _loadQuestionsForBank(existingAssessment.questionBankId);
@@ -120,7 +140,7 @@ class _AssessmentBuilderV2ScreenState
   }
 
   int get _totalInPool => _questions.length;
-  bool get _poolValid => _displayCount <= (_totalInPool / 2).floor();
+  bool get _poolValid => _totalInPool == 0 || _displayCount < _totalInPool;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SAVE / CRUD (unchanged logic, _showFeedback removed — consolidated into showAnswers)
@@ -129,7 +149,7 @@ class _AssessmentBuilderV2ScreenState
   Future<void> _saveAssessment() async {
     if (_effectiveCourseVersionId == null && widget.courseId > 0) { _snack('No course version available', err: true); return; }
     if (_selectedQuestionBankId == null) { _snack('Please select a question bank first', err: true); return; }
-    if (!_poolValid) { _snack('Display count must be ≤ ${(_totalInPool / 2).floor()} (pool / 2)', err: true); return; }
+    if (!_poolValid) { _snack('Display count must be less than pool size ($_totalInPool questions)', err: true); return; }
 
     setState(() => _isSaving = true);
     try {
@@ -851,9 +871,9 @@ class _AssessmentBuilderV2ScreenState
           Expanded(child: _settingsField(
             label: 'Duration (minutes)',
             child: TextField(
-              controller: TextEditingController(text: '$_timeLimitMinutes'),
+              controller: _timeLimitCtl,
               keyboardType: TextInputType.number,
-              onChanged: (v) => setState(() => _timeLimitMinutes = int.tryParse(v) ?? 60),
+              onChanged: (v) => setState(() => _timeLimitMinutes = int.tryParse(v) ?? _timeLimitMinutes),
               decoration: _fieldDecor(suffix: 'min'),
             ),
           )),
@@ -861,7 +881,7 @@ class _AssessmentBuilderV2ScreenState
           Expanded(child: _settingsField(
             label: 'Passing Percentage',
             child: TextField(
-              controller: TextEditingController(text: '$_passingScore'),
+              controller: _passingScoreCtl,
               keyboardType: TextInputType.number,
               onChanged: (v) { final val = int.tryParse(v); if (val != null && val >= 10 && val <= 100) setState(() => _passingScore = val); },
               decoration: _fieldDecor(suffix: '%'),
@@ -877,9 +897,9 @@ class _AssessmentBuilderV2ScreenState
             helper: '${_questions.length} total in pool',
             child: Row(children: [
               Expanded(child: TextField(
-                controller: TextEditingController(text: '$_displayCount'),
+                controller: _displayCountCtl,
                 keyboardType: TextInputType.number,
-                onChanged: (v) => setState(() => _displayCount = int.tryParse(v) ?? 10),
+                onChanged: (v) => setState(() => _displayCount = int.tryParse(v) ?? _displayCount),
                 decoration: _fieldDecor(),
               )),
               const SizedBox(width: 8),
@@ -901,7 +921,7 @@ class _AssessmentBuilderV2ScreenState
               child: Row(children: [
                 Icon(Icons.warning_amber, size: 14, color: PharmaColors.danger),
                 const SizedBox(width: 8),
-                Text('Display count must be ≤ ${(_totalInPool / 2).floor()} (total / 2)', style: TextStyle(fontSize: 12, color: PharmaColors.danger)),
+                Text('Display count must be less than pool size ($_totalInPool questions)', style: TextStyle(fontSize: 12, color: PharmaColors.danger)),
               ]),
             ),
           ),
@@ -1110,6 +1130,8 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
   late List<String> _options;
   late int _correctIndex;
   late TextEditingController _shortAnswerCtl;
+  // One persistent controller per option — never created inside build()
+  final List<TextEditingController> _optionCtls = [];
 
   @override
   void initState() {
@@ -1122,6 +1144,7 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
     _options = _parseOptions(widget.question.optionsJson);
     _correctIndex = int.tryParse(widget.question.correctAnswer ?? '') ?? 0;
     _shortAnswerCtl = TextEditingController(text: _type == 'short_answer' ? (widget.question.correctAnswer ?? '') : '');
+    _rebuildOptionCtls();
   }
 
   List<String> _parseOptions(String json) {
@@ -1132,10 +1155,20 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
     return ['Option A', 'Option B', 'Option C', 'Option D'];
   }
 
+  /// Rebuild the option controllers list to match _options length.
+  void _rebuildOptionCtls() {
+    for (final c in _optionCtls) c.dispose();
+    _optionCtls.clear();
+    for (final opt in _options) {
+      _optionCtls.add(TextEditingController(text: opt));
+    }
+  }
+
   @override
   void dispose() {
     _textCtl.dispose();
     _shortAnswerCtl.dispose();
+    for (final c in _optionCtls) c.dispose();
     super.dispose();
   }
 
@@ -1221,6 +1254,13 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
     while (_options.length < 2) {
       _options.add('');
     }
+    // Keep _optionCtls in sync with _options (size may differ after add/remove)
+    while (_optionCtls.length < _options.length) {
+      _optionCtls.add(TextEditingController(text: _options[_optionCtls.length]));
+    }
+    while (_optionCtls.length > _options.length) {
+      _optionCtls.removeLast().dispose();
+    }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Options (select the correct answer)', style: PharmaTypography.labelLarge.copyWith(fontSize: 12, color: PharmaColors.textSecondary)),
       const SizedBox(height: 8),
@@ -1228,7 +1268,6 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
         groupValue: _correctIndex,
         onChanged: (v) => setState(() => _correctIndex = v ?? 0),
         child: Column(children: List.generate(_options.length, (i) {
-          final ctl = TextEditingController(text: _options[i]);
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(children: [
@@ -1241,13 +1280,17 @@ class _QuestionInlineEditorState extends State<_QuestionInlineEditor> {
               ),
               const SizedBox(width: 8),
               Expanded(child: TextField(
-                controller: ctl,
+                controller: _optionCtls[i],
                 onChanged: (v) => _options[i] = v,
                 decoration: _decor('Option ${String.fromCharCode(65 + i)}'),
               )),
               if (_options.length > 2)
                 IconButton(icon: Icon(Icons.close, size: 16, color: PharmaColors.textTertiary), onPressed: () {
-                  setState(() { _options.removeAt(i); if (_correctIndex >= _options.length) _correctIndex = 0; });
+                  setState(() {
+                    _options.removeAt(i);
+                    _optionCtls.removeAt(i).dispose();
+                    if (_correctIndex >= _options.length) _correctIndex = 0;
+                  });
                 }),
             ]),
           );

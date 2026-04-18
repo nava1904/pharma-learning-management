@@ -283,6 +283,7 @@ mfa:
   - disableMfa:
   - isMfaVerified:
 notification:
+  - getUserNotifications:
   - getInAppNotifications:
   - getTrainerNotifications:
   - markNotificationRead:

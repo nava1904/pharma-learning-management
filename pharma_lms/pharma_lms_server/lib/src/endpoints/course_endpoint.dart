@@ -14,14 +14,19 @@ class CourseEndpoint extends Endpoint {
     String? status,
     String? search,
   }) async {
-    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    final me = await RbacHelper.getCurrentPharmaUser(session);
+    if (me == null) return [];
     if (!await RbacHelper.hasPermission(session, resource: 'course', action: 'read')) return [];
 
+    // Auto-scope to user's org when no explicit org is given and user has a real org.
+    // This prevents orphaned courses from other organizations appearing in the catalog.
+    final orgId = organizationId ?? (me.organizationId > 0 ? me.organizationId : null);
+
     List<Course> results;
-    if (organizationId != null) {
+    if (orgId != null) {
       results = await Course.db.find(
         session,
-        where: (t) => t.organizationId.equals(organizationId),
+        where: (t) => t.organizationId.equals(orgId),
       );
     } else {
       results = await Course.db.find(session);

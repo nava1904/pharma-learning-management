@@ -74,6 +74,25 @@ final notificationsProvider = FutureProvider.autoDispose<List<NotificationItem>>
     }
   } catch (_) {}
 
+  // 1b. Fetch admin/broadcast notifications (persisted Notification table)
+  try {
+    final userNotifs = await client.notification.getUserNotifications(user!.id!);
+    for (final n in userNotifs) {
+      notifications.add(NotificationItem(
+        id: 'admin_${n.id ?? 0}',
+        type: n.type,
+        title: n.type == 'admin_broadcast' ? 'Announcement' : n.type,
+        message: n.body ?? '',
+        dueDate: null,
+        timestamp: n.createdAt,
+        severity: 'info',
+        assignmentId: null,
+        certificateId: null,
+        isRead: n.readAt != null,
+      ));
+    }
+  } catch (_) {}
+
   // 2. Fetch certificate expiry notifications
   try {
     final certificates = ref.watch(certificatesProvider).valueOrNull ?? [];

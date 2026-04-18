@@ -6,6 +6,22 @@ import '../services/realtime_hub.dart';
 
 /// Notification domain endpoint (in-app; no email/push in stub).
 class NotificationEndpoint extends Endpoint {
+
+  /// Get all persisted notifications for a user (admin, broadcast, etc).
+  Future<List<Notification>> getUserNotifications(
+    Session session,
+    int userId,
+  ) async {
+    if (await RbacHelper.getCurrentPharmaUser(session) == null) return [];
+    // No permission check: all users can see their own notifications
+    return await Notification.db.find(
+      session,
+      where: (t) => t.userId.equals(userId),
+      orderBy: (t) => t.createdAt,
+      orderDescending: true,
+      limit: 50,
+    );
+  }
   /// Get in-app notifications: assignment due, overdue from TrainingAssignment.
   Future<List<InAppNotification>> getInAppNotifications(
     Session session,

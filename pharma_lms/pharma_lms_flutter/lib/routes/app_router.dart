@@ -62,7 +62,6 @@ import '../features/my_learning/my_training_screen.dart';
 import '../features/course_catalog/course_catalog_screen_redesigned.dart';
 import '../features/course_catalog/course_catalog_v2.dart';
 import '../features/training_history/training_history_v2.dart';
-import '../features/my_learning/lessons_screen.dart';
 import '../features/assessment/assessment_list_screen.dart';
 import '../features/certificate/public_verify_screen.dart';
 import '../features/waiver/training_waiver_screen.dart';
@@ -114,7 +113,6 @@ import '../features/employee_dashboard/notifications/employee_notification_scree
 import '../features/employee_dashboard/compliance/employee_compliance_detail_screen.dart';
 import '../features/employee_dashboard/calendar/employee_training_calendar_screen.dart';
 import '../features/employee_dashboard/documents/employee_document_screen.dart';
-import '../features/employee_dashboard/training_plan/employee_training_plan_screen.dart';
 // Trainer Batch Screens
 import '../features/trainer_portal/batches/trainer_batch_list_screen.dart';
 import '../features/trainer_portal/batches/trainer_batch_detail_screen.dart';
@@ -371,7 +369,7 @@ List<RouteBase> get _buildRoutes => [
             ),
             GoRoute(
               path: 'lessons',
-              builder: (context, state) => const LessonsScreen(),
+              builder: (context, state) => const MyTrainingScreen(),
             ),
             GoRoute(
               path: 'messages',
@@ -442,10 +440,6 @@ List<RouteBase> get _buildRoutes => [
             GoRoute(
               path: 'documents',
               builder: (context, state) => const EmployeeDocumentScreen(),
-            ),
-            GoRoute(
-              path: 'training-plan',
-              builder: (context, state) => const EmployeeTrainingPlanScreen(),
             ),
           ],
         ),

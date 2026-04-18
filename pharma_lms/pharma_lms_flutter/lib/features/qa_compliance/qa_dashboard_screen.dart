@@ -22,10 +22,6 @@ final slaBreachesProvider = FutureProvider<List<SlaBreach>>((ref) async {
   return await client.analytics.getSlaBreaches();
 });
 
-final pendingDocumentApprovalsCountProvider = FutureProvider<int>((ref) async {
-  return await client.qa.getPendingDocumentApprovalsCount();
-});
-
 final pendingCourseVersionsProvider = FutureProvider<List<CourseVersion>>((ref) async {
   return await client.qa.listPendingCourseVersions();
 });
@@ -53,7 +49,6 @@ class QACommandCenterScreen extends ConsumerWidget {
           ref.invalidate(auditReadinessProvider);
           ref.invalidate(qualityEventsProvider);
           ref.invalidate(slaBreachesProvider);
-          ref.invalidate(pendingDocumentApprovalsCountProvider);
           ref.invalidate(pendingCourseVersionsProvider);
           ref.invalidate(complianceDropAlertsProvider);
         },
@@ -123,17 +118,6 @@ class QACommandCenterScreen extends ConsumerWidget {
                       ),
                   iconBackgroundColor: PharmaColors.dangerBg,
                   iconColor: PharmaColors.danger,
-                ),
-                StatCard(
-                  label: 'Pending Approvals',
-                  icon: Icons.pending,
-                  value: ref.watch(pendingDocumentApprovalsCountProvider).when(
-                        data: (count) => '$count',
-                        loading: () => 'Loading...',
-                        error: (e, st) => 'Error',
-                      ),
-                  iconBackgroundColor: PharmaColors.emerald50,
-                  iconColor: PharmaColors.emerald600,
                 ),
               ],
             ),

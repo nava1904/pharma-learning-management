@@ -46,8 +46,6 @@ class CourseCatalogV2 extends ConsumerStatefulWidget {
 }
 
 class _CourseCatalogV2State extends ConsumerState<CourseCatalogV2> {
-  String _filter = 'all'; // 'all', 'in_progress', 'completed'
-
   @override
   Widget build(BuildContext context) {
     final coursesAsync = ref.watch(coursesProvider);
@@ -65,8 +63,6 @@ class _CourseCatalogV2State extends ConsumerState<CourseCatalogV2> {
         return _CourseCatalogContent(
           courses: courses,
           enrollments: enrollments,
-          filter: _filter,
-          onFilterChanged: (f) => setState(() => _filter = f),
           onEnroll: (course) => _handleEnroll(course),
           onOpenCourse: _openCourse,
         );
@@ -202,16 +198,12 @@ class _CourseCatalogContent extends StatelessWidget {
   const _CourseCatalogContent({
     required this.courses,
     required this.enrollments,
-    required this.filter,
-    required this.onFilterChanged,
     required this.onEnroll,
     required this.onOpenCourse,
   });
 
   final List<Course> courses;
   final List<Enrollment> enrollments;
-  final String filter;
-  final ValueChanged<String> onFilterChanged;
   final ValueChanged<Course> onEnroll;
   final Future<void> Function(Course course, Enrollment? enrollment) onOpenCourse;
 
@@ -224,52 +216,27 @@ class _CourseCatalogContent extends StatelessWidget {
       enrollmentMap[courseId] = e;
     }
 
-    // Filter courses based on selected filter
-    List<Course> filteredCourses = courses;
-    if (filter == 'in_progress') {
-      filteredCourses = courses.where((c) {
-        final enrollment = enrollmentMap[c.id];
-        return enrollment?.status == 'in_progress';
-      }).toList();
-    } else if (filter == 'completed') {
-      filteredCourses = courses.where((c) {
-        final enrollment = enrollmentMap[c.id];
-        return enrollment?.status == 'completed';
-      }).toList();
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ─────────────────────────────────────────────────────────────────
-          // HEADER ROW
-          // From React: title + filter buttons
+          // HEADER
           // ─────────────────────────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'My Courses',
-                    style: PharmaTypography.headingLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Continue your pharmaceutical training journey',
-                    style: PharmaTypography.body.copyWith(
-                      color: PharmaColors.textSecondary,
-                    ),
-                  ),
-                ],
+              Text(
+                'My Courses',
+                style: PharmaTypography.headingLarge,
               ),
-              _FilterButtons(
-                currentFilter: filter,
-                onFilterChanged: onFilterChanged,
+              const SizedBox(height: 8),
+              Text(
+                'Continue your pharmaceutical training journey',
+                style: PharmaTypography.body.copyWith(
+                  color: PharmaColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -279,8 +246,8 @@ class _CourseCatalogContent extends StatelessWidget {
           // COURSE GRID
           // From React: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
           // ─────────────────────────────────────────────────────────────────
-          if (filteredCourses.isEmpty)
-            _EmptyState(filter: filter)
+          if (courses.isEmpty)
+            const _EmptyState()
           else
             LayoutBuilder(
               builder: (context, constraints) {
@@ -301,9 +268,9 @@ class _CourseCatalogContent extends StatelessWidget {
                     // was overflowing by ~9px on typical breakpoints.
                     childAspectRatio: 0.68,
                   ),
-                  itemCount: filteredCourses.length,
+                  itemCount: courses.length,
                   itemBuilder: (context, index) {
-                    final course = filteredCourses[index];
+                    final course = courses[index];
                     final enrollment = enrollmentMap[course.id];
                     return _CourseCardV2(
                       course: course,
@@ -316,103 +283,6 @@ class _CourseCatalogContent extends StatelessWidget {
               },
             ),
         ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FILTER BUTTONS
-// From React: All Courses | In Progress buttons
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _FilterButtons extends StatelessWidget {
-  const _FilterButtons({
-    required this.currentFilter,
-    required this.onFilterChanged,
-  });
-
-  final String currentFilter;
-  final ValueChanged<String> onFilterChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _FilterButton(
-          label: 'All Courses',
-          isActive: currentFilter == 'all',
-          onTap: () => onFilterChanged('all'),
-        ),
-        const SizedBox(width: 8),
-        _FilterButton(
-          label: 'In Progress',
-          isActive: currentFilter == 'in_progress',
-          isPrimary: true,
-          onTap: () => onFilterChanged('in_progress'),
-        ),
-      ],
-    );
-  }
-}
-
-class _FilterButton extends StatefulWidget {
-  const _FilterButton({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-    this.isPrimary = false,
-  });
-
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-  final bool isPrimary;
-
-  @override
-  State<_FilterButton> createState() => _FilterButtonState();
-}
-
-class _FilterButtonState extends State<_FilterButton> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final isActiveOrHovered = widget.isActive || _isHovered;
-    
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: PharmaDurations.fast,
-          padding: const EdgeInsets.symmetric(
-            horizontal: PharmaSpacing.lg,
-            vertical: PharmaSpacing.md,
-          ),
-          decoration: BoxDecoration(
-            color: widget.isPrimary && widget.isActive
-                ? PharmaColors.emerald600
-                : isActiveOrHovered
-                    ? PharmaColors.gray50
-                    : Colors.transparent,
-            borderRadius: PharmaRadius.buttonRadius,
-            border: Border.all(
-              color: widget.isPrimary && widget.isActive
-                  ? PharmaColors.emerald600
-                  : PharmaColors.borderMedium,
-            ),
-          ),
-          child: Text(
-            widget.label,
-            style: PharmaTypography.button.copyWith(
-              color: widget.isPrimary && widget.isActive
-                  ? Colors.white
-                  : PharmaColors.textPrimary,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -801,21 +671,10 @@ class _StatusBadgeV2 extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.filter});
-
-  final String filter;
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    String message;
-    if (filter == 'in_progress') {
-      message = 'No courses in progress. Start learning today!';
-    } else if (filter == 'completed') {
-      message = 'No completed courses yet. Keep learning!';
-    } else {
-      message = 'No courses available at the moment.';
-    }
-
     return Container(
       padding: const EdgeInsets.all(PharmaSpacing.pagePadding),
       child: Center(
@@ -829,7 +688,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: PharmaSpacing.lg),
             Text(
-              message,
+              'No courses available at the moment.',
               style: PharmaTypography.body.copyWith(
                 color: PharmaColors.textSecondary,
               ),

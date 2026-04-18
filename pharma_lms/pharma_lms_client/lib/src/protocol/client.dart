@@ -1559,8 +1559,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     {'questionBankId': questionBankId},
   );
 
-  /// TRN-WF-03: Create assessment with 2x question pool validation.
-  /// questionsToDisplay must be <= totalQuestions / 2 for adequate randomization.
+  /// Create assessment — questionsToDisplay must be less than pool size.
   _i3.Future<_i28.Assessment> createAssessment({
     required int courseVersionId,
     required int questionBankId,
@@ -1589,7 +1588,7 @@ class EndpointAssessmentBuilder extends _i2.EndpointRef {
     },
   );
 
-  /// TRN-WF-03: Update assessment with 2x question pool validation.
+  /// Update assessment — questionsToDisplay must be less than pool size.
   _i3.Future<_i28.Assessment> updateAssessment({
     required int assessmentId,
     int? passingScore,
@@ -3782,6 +3781,14 @@ class EndpointNotification extends _i2.EndpointRef {
 
   @override
   String get name => 'notification';
+
+  /// Get all persisted notifications for a user (admin, broadcast, etc).
+  _i3.Future<List<_i61.Notification>> getUserNotifications(int userId) =>
+      caller.callServerEndpoint<List<_i61.Notification>>(
+        'notification',
+        'getUserNotifications',
+        {'userId': userId},
+      );
 
   /// Get in-app notifications: assignment due, overdue from TrainingAssignment.
   _i3.Future<List<_i64.InAppNotification>> getInAppNotifications(int userId) =>

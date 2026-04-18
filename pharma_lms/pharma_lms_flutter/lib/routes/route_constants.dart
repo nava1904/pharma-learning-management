@@ -54,7 +54,6 @@ class _EmployeeRoutes {
   String get compliance => '/employee/compliance';
   String get calendar => '/employee/calendar';
   String get documents => '/employee/documents';
-  String get trainingPlan => '/employee/training-plan';
 
   String course(String courseId) => '/employee/course/$courseId';
   String assessment(String courseId) => '/employee/assessment/$courseId';

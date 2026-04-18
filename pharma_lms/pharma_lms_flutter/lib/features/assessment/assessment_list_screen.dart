@@ -48,14 +48,16 @@ final userAssessmentsProvider = FutureProvider<List<_AssessmentData>>((ref) asyn
         final course = enrollment.courseVersion?.course;
         final isCompleted = enrollment.status == 'completed';
 
+        final maxAttempts = assessment.maxAttempts == 0 ? null : assessment.maxAttempts;
         assessments.add(_AssessmentData(
           assessment: assessment,
           enrollment: enrollment,
           courseTitle: course?.title ?? 'Unknown Course',
           courseDescription: course?.description ?? '',
           attemptCount: attemptCount,
+          maxAttempts: maxAttempts,
           status: _deriveStatus(enrollment.status),
-          progress: _deriveProgress(enrollment.status, isCompleted),
+          progress: _deriveProgress(attemptCount, maxAttempts, isCompleted),
         ));
       }
     } catch (_) {
@@ -72,9 +74,11 @@ String _deriveStatus(String? enrollmentStatus) {
   return 'not_started';
 }
 
-double _deriveProgress(String? enrollmentStatus, bool isCompleted) {
+double _deriveProgress(int attemptCount, int? maxAttempts, bool isCompleted) {
   if (isCompleted) return 100.0;
-  if (enrollmentStatus == 'in_progress') return 50.0;
+  if (maxAttempts != null && maxAttempts > 0) {
+    return (attemptCount / maxAttempts * 100).clamp(0.0, 100.0);
+  }
   return 0.0;
 }
 
@@ -84,6 +88,7 @@ class _AssessmentData {
   final String courseTitle;
   final String courseDescription;
   final int attemptCount;
+  final int? maxAttempts;
   final String status;
   final double progress;
 
@@ -93,6 +98,7 @@ class _AssessmentData {
     required this.courseTitle,
     required this.courseDescription,
     required this.attemptCount,
+    this.maxAttempts,
     required this.status,
     required this.progress,
   });
@@ -335,19 +341,21 @@ class _AssessmentCardState extends State<_AssessmentCard> {
                             const SizedBox(width: 16),
                             Row(
                               children: [
-                                // Progress display
+                                // Attempts display
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      'Progress',
+                                      'Attempts',
                                       style: PharmaTypography.caption.copyWith(
                                         color: PharmaColors.textSecondary,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${data.progress.toInt()}%',
+                                      data.maxAttempts != null
+                                          ? '${data.attemptCount} / ${data.maxAttempts}'
+                                          : '${data.attemptCount} / ∞',
                                       style: PharmaTypography.headingSmall.copyWith(
                                         color: PharmaColors.emerald600,
                                       ),
@@ -362,21 +370,6 @@ class _AssessmentCardState extends State<_AssessmentCard> {
                         ),
 
                         const SizedBox(height: 16),
-
-                        // Attempts info
-                        if (data.attemptCount > 0) ...[
-                          Row(
-                            children: [
-                              Icon(Icons.replay_rounded, size: 14, color: PharmaColors.textTertiary),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${data.attemptCount} attempt${data.attemptCount > 1 ? "s" : ""}',
-                                style: PharmaTypography.caption,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                        ],
 
                         // Progress bar
                         ClipRRect(

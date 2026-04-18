@@ -7315,6 +7315,26 @@ class Endpoints extends _i1.EndpointDispatch {
       name: 'notification',
       endpoint: endpoints['notification']!,
       methodConnectors: {
+        'getUserNotifications': _i1.MethodConnector(
+          name: 'getUserNotifications',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['notification'] as _i30.NotificationEndpoint)
+                      .getUserNotifications(
+                        session,
+                        params['userId'],
+                      ),
+        ),
         'getInAppNotifications': _i1.MethodConnector(
           name: 'getInAppNotifications',
           params: {

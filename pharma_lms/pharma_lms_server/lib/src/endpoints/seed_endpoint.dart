@@ -21,7 +21,7 @@ import '../seeding/tables/training_batch_seed.dart';
 
 /// Default password for all seed/demo users.
 /// In production, users would register with their own passwords.
-const _seedPassword = 'Pharma@2024!Secure';
+const _seedPassword = 'LMS@123';
 
 /// Seed endpoint for development/demo data.
 /// Provides comprehensive seed data for PharmaTech India with full FRD compliance.
@@ -240,7 +240,7 @@ class SeedEndpoint extends Endpoint {
     // PHASE 4: Trainers (10)
     // ═══════════════════════════════════════════════════════════════════════
     final trainerData = [
-      ['rajesh.venkataraman@pharmatech.in', 'Dr. Rajesh', 'Venkataraman', 'TRN-001', 0, 0, 0],
+      ['rajesh@pharmatech.in', 'Dr. Rajesh', 'Venkataraman', 'TRN-001', 0, 0, 0],
       ['sneha.krishnamurthy@pharmatech.in', 'Sneha', 'Krishnamurthy', 'TRN-002', 0, 7, 11],
       ['kavitha.subramaniam@pharmatech.in', 'Dr. Kavitha', 'Subramaniam', 'TRN-003', 1, 2, 4],
       ['arun.nair@pharmatech.in', 'Arun', 'Nair', 'TRN-004', 2, 3, 5],
@@ -317,7 +317,7 @@ class SeedEndpoint extends Endpoint {
       final user = await PharmaUser.db.insertRow(
         session,
         PharmaUser(
-          email: '${nameData[0].toLowerCase()}.${nameData[1].toLowerCase()}${i > 0 ? i : ''}@pharmatech.in',
+          email: i == 0 ? 'ramesh@pharmatech.in' : '${nameData[0].toLowerCase()}.${nameData[1].toLowerCase()}${i > 0 ? i : ''}@pharmatech.in',
           firstName: nameData[0],
           lastName: nameData[1],
           employeeId: 'EMP-${(1000 + i).toString()}',
@@ -340,7 +340,7 @@ class SeedEndpoint extends Endpoint {
     // PHASE 5b: Admin Users (5)
     // ═══════════════════════════════════════════════════════════════════════
     final adminUsers = <List<dynamic>>[
-      ['super.admin@pharmacorp.demo', 'Super', 'Administrator', 'ADM-001', 0, 0, 'admin'],
+      ['admin@pharmacorp.demo', 'Super', 'Administrator', 'ADM-001', 0, 0, 'admin'],
       ['content.admin@pharmacorp.demo', 'Content', 'Administrator', 'ADM-002', 0, 7, 'admin'],
       ['qa.manager@pharmacorp.demo', 'Quality', 'Manager', 'ADM-003', 1, 0, 'qa_manager'],
       ['training.admin@pharmacorp.demo', 'Training', 'Administrator', 'ADM-004', 2, 7, 'admin'],
@@ -381,7 +381,6 @@ class SeedEndpoint extends Endpoint {
     // ═══════════════════════════════════════════════════════════════════════
     final demoUsers = [
       ['employee@pharmacorp.demo', 'Demo', 'Employee', 'DEMO-EMP', 'employee'],
-      ['admin@pharmacorp.demo', 'Demo', 'Admin', 'DEMO-ADM', 'admin'],
       ['qa@pharmacorp.demo', 'Demo', 'QA', 'DEMO-QA', 'qa_manager'],
       ['trainer@pharmacorp.demo', 'Demo', 'Trainer', 'DEMO-TRN', 'trainer'],
       ['auditor@pharmacorp.demo', 'Demo', 'Auditor', 'DEMO-AUD', 'auditor'],
@@ -1489,7 +1488,7 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
   /// Fix admin passwords by re-provisioning them
   Future<String> fixAdminPasswords(Session session) async {
     final adminEmails = [
-      'super.admin@pharmacorp.demo',
+      'admin@pharmacorp.demo',
       'content.admin@pharmacorp.demo',
       'qa.manager@pharmacorp.demo',
       'training.admin@pharmacorp.demo',
@@ -1558,7 +1557,7 @@ DEMO EMPLOYEE (employee@pharmacorp.demo):
 
   String _getFullName(String email) {
     const names = {
-      'super.admin@pharmacorp.demo': 'Super Administrator',
+      'admin@pharmacorp.demo': 'Super Administrator',
       'content.admin@pharmacorp.demo': 'Content Administrator',
       'qa.manager@pharmacorp.demo': 'Quality Manager',
       'training.admin@pharmacorp.demo': 'Training Administrator',

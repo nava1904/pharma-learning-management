@@ -157,6 +157,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     // Count by type
     final multipleChoiceCount = questions.where((q) => q.questionType == 'multiple_choice').length;
     final trueFalseCount = questions.where((q) => q.questionType == 'true_false').length;
+    final maxAllowed = questions.length > 0 ? questions.length - 1 : 0;
     
     return _stringifyMap({
       'id': bank.id,
@@ -171,13 +172,12 @@ class AssessmentBuilderEndpoint extends Endpoint {
         'multiple_choice': multipleChoiceCount,
         'true_false': trueFalseCount,
       },
-      // TRN-WF-03: Maximum questions that can be displayed (half of total)
-      'maxQuestionsToDisplay': (questions.length / 2).floor(),
+      // Maximum questions that can be displayed (must be less than pool size)
+      'maxQuestionsToDisplay': questions.isEmpty ? 0 : questions.length - 1,
     });
   }
 
-  /// TRN-WF-03: Create assessment with 2x question pool validation.
-  /// questionsToDisplay must be <= totalQuestions / 2 for adequate randomization.
+  /// Create assessment — questionsToDisplay must be less than pool size.
   Future<Assessment> createAssessment(
     Session session, {
     required int courseVersionId,
@@ -192,19 +192,17 @@ class AssessmentBuilderEndpoint extends Endpoint {
     int? limitQuestions,
   }) async {
     await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
-    
-    // TRN-WF-03: Validate 2x question pool rule
+
+    // Validate: display count must be less than pool size
     if (questionsToDisplay != null) {
       final questions = await Question.db.find(
         session,
         where: (t) => t.questionBankId.equals(questionBankId),
       );
       final totalQuestions = questions.length;
-      final maxAllowed = (totalQuestions / 2).floor();
-      
-      if (questionsToDisplay > maxAllowed) {
+      if (totalQuestions > 0 && questionsToDisplay >= totalQuestions) {
         throw Exception(
-          'TRN-WF-03 Violation: Questions to display ($questionsToDisplay) cannot exceed half of question bank size ($totalQuestions). Maximum allowed: $maxAllowed',
+          'Questions to display ($questionsToDisplay) must be less than pool size ($totalQuestions).',
         );
       }
     }
@@ -235,7 +233,7 @@ class AssessmentBuilderEndpoint extends Endpoint {
     return result;
   }
 
-  /// TRN-WF-03: Update assessment with 2x question pool validation.
+  /// Update assessment — questionsToDisplay must be less than pool size.
   Future<Assessment> updateAssessment(
     Session session, {
     required int assessmentId,
@@ -251,19 +249,17 @@ class AssessmentBuilderEndpoint extends Endpoint {
     await RbacHelper.requirePermission(session, resource: 'assessment', action: 'write');
     final assessment = await Assessment.db.findById(session, assessmentId);
     if (assessment == null) throw Exception('Assessment not found');
-    
-    // TRN-WF-03: Validate 2x question pool rule if changing questionsToDisplay
+
+    // Validate: display count must be less than pool size
     if (questionsToDisplay != null) {
       final questions = await Question.db.find(
         session,
         where: (t) => t.questionBankId.equals(assessment.questionBankId),
       );
       final totalQuestions = questions.length;
-      final maxAllowed = (totalQuestions / 2).floor();
-      
-      if (questionsToDisplay > maxAllowed) {
+      if (totalQuestions > 0 && questionsToDisplay >= totalQuestions) {
         throw Exception(
-          'TRN-WF-03 Violation: Questions to display ($questionsToDisplay) cannot exceed half of question bank size ($totalQuestions). Maximum allowed: $maxAllowed',
+          'Questions to display ($questionsToDisplay) must be less than pool size ($totalQuestions).',
         );
       }
     }
@@ -313,17 +309,19 @@ class AssessmentBuilderEndpoint extends Endpoint {
       issues.add('Question bank has no questions');
     }
     
-    // Check 2x rule
+    // Validate display count < pool size
     final questionsToDisplay = assessment.questionsToDisplay ?? questions.length;
-    final maxAllowed = (questions.length / 2).floor();
-    if (questionsToDisplay > maxAllowed) {
-      issues.add('TRN-WF-03: Questions to display ($questionsToDisplay) exceeds maximum allowed ($maxAllowed)');
+    if (questions.isNotEmpty && questionsToDisplay >= questions.length) {
+      issues.add('Questions to display ($questionsToDisplay) must be less than pool size (${questions.length})');
     }
     
     // Check passing score is reasonable (10-100)
     if (assessment.passingScore < 10 || assessment.passingScore > 100) {
       issues.add('Passing score must be between 10 and 100');
     }
+
+    // Define maxAllowed as in getQuestionBankDetails
+    final maxAllowed = questions.isEmpty ? 0 : questions.length - 1;
     
     return _stringifyMap({
       'valid': issues.isEmpty,

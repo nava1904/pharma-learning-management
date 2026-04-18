@@ -391,13 +391,6 @@ class _SidebarV2 extends StatelessWidget {
                     currentPath: currentPath,
                   ),
                   _NavItemV2(
-                    icon: Icons.route_outlined,
-                    activeIcon: Icons.route_rounded,
-                    label: 'Training Plan',
-                    route: '/employee/training-plan',
-                    currentPath: currentPath,
-                  ),
-                  _NavItemV2(
                     icon: Icons.qr_code_scanner_outlined,
                     activeIcon: Icons.qr_code_scanner,
                     label: 'Operator check',
@@ -477,6 +470,7 @@ class _SidebarV2 extends StatelessWidget {
                     route: '/employee/profile',
                     currentPath: currentPath,
                   ),
+
                 ],
               ),
             ),
@@ -737,7 +731,6 @@ class _HeaderV2 extends ConsumerWidget {
                             'batches': '/employee/my-batches',
                             'assignments': '/employee/standalone-assignments',
                             'assigned': '/employee/assigned-training',
-                            'plan': '/employee/training-plan',
                             'operator': '/employee/operator',
                             'history': '/employee/training-history',
                             'certifications': '/employee/credentials',
